@@ -379,6 +379,24 @@
 		rad = ARMOR_RAD_RESISTANT
 		)
 
+/obj/item/clothing/head/helmet/space/void/engineering/salvage/engi
+	name = "engineering salvage voidsuit helmet"
+	desc = "A heavily modified salvage voidsuit helmet. It has been fitted with radiation-resistant plating, and an engineer paintjob."
+	icon_state = "rig0-salvage-engi"
+	item_state = "salvage_helm-engi"
+
+/obj/item/clothing/head/helmet/space/void/engineering/salvage/med
+	name = "medical salvage voidsuit helmet"
+	desc = "A heavily modified salvage voidsuit helmet. It has been fitted with radiation-resistant plating, and a medical paintjob."
+	icon_state = "rig0-salvage-med"
+	item_state = "salvage_helm-med"
+
+/obj/item/clothing/head/helmet/space/void/engineering/salvage/pilot
+	name = "pilot salvage voidsuit helmet"
+	desc = "A heavily modified salvage voidsuit helmet. It has been fitted with radiation-resistant plating, and a pilot paintjob."
+	icon_state = "rig0-salvage-pilot"
+	item_state = "salvage_helm-pilot"
+
 /obj/item/clothing/suit/space/void/engineering/salvage
 	name = "salvage voidsuit"
 	desc = "A hand-me-down salvage voidsuit. It has obviously had a lot of repair work done to its radiation shielding."
@@ -434,3 +452,34 @@
 	helmet = /obj/item/clothing/head/helmet/space/void/pilot
 	boots = /obj/item/clothing/shoes/magboots
 
+//Ceti
+/obj/item/clothing/suit/space/void/ceti
+	name = "CTI Voidsuit"
+	desc = "A xenoarcheology voidsuit designed for CTI researchers, by CTI researchers. Tools not included."
+	icon_state = "rig-ceti"
+	armor = list(
+		melee = ARMOR_MELEE_RESISTANT,
+		energy = ARMOR_ENERGY_RESISTANT,
+		bomb = ARMOR_BOMB_PADDED,
+		bio = ARMOR_BIO_SHIELDED,
+		rad = ARMOR_RAD_SHIELDED
+	)
+	allowed = list(/obj/item/device/flashlight,/obj/item/weapon/tank,/obj/item/device/suit_cooling_unit,/obj/item/stack/flag,/obj/item/weapon/storage/excavation,/obj/item/weapon/pickaxe,/obj/item/device/scanner/health,/obj/item/device/measuring_tape,/obj/item/device/ano_scanner,/obj/item/device/depth_scanner,/obj/item/device/core_sampler,/obj/item/device/gps,/obj/item/weapon/pinpointer/radio,/obj/item/device/radio/beacon,/obj/item/weapon/pickaxe/xeno,/obj/item/weapon/storage/bag/fossils)
+
+/obj/item/clothing/head/helmet/space/void/ceti
+	name = "CTI voidsuit helmet"
+	desc = "A specially made voidsuit helmet designed for use by CTI affiliated researchers."
+	icon_state = "rig0-ceti"
+	item_state = "helm-ceti"
+	armor = list(
+		melee = ARMOR_MELEE_RESISTANT,
+		energy = ARMOR_ENERGY_RESISTANT,
+		bomb = ARMOR_BOMB_PADDED,
+		bio = ARMOR_BIO_SHIELDED,
+		rad = ARMOR_RAD_SHIELDED
+	)
+	light_overlay = "helmet_light"
+
+/obj/item/clothing/suit/space/void/ceti/prepared
+	helmet = /obj/item/clothing/head/helmet/space/void/ceti
+	boots = /obj/item/clothing/shoes/magboots

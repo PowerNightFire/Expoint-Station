@@ -31,7 +31,7 @@ var/global/floorIsLava = 0
 ///////////////////////////////////////////////////////////////////////////////////////////////Panels
 
 /datum/admins/proc/show_player_panel(var/mob/M in SSmobs.mob_list)
-	set category = "Admin"
+	set category = null
 	set name = "Show Player Panel"
 	set desc="Edit player (respawn, ban, heal, etc)"
 
@@ -74,6 +74,7 @@ var/global/floorIsLava = 0
 		[admin_jump_link(M, src)]\] <br>
 		<b>Mob type:</b> [M.type]<br>
 		<b>Inactivity time:</b> [M.client ? "[M.client.inactivity/600] minutes" : "Logged out"]<br/><br/>
+		<A href='?src=\ref[src];paralyze=\ref[M]'>PARALYZE</A> |
 		<A href='?src=\ref[src];boot2=\ref[M]'>Kick</A> |
 		<A href='?_src_=holder;warn=[last_ckey]'>Warn</A> |
 		<A href='?src=\ref[src];newban=\ref[M];last_key=[last_ckey]'>Ban</A> |
@@ -162,7 +163,8 @@ var/global/floorIsLava = 0
 				body += {"<A href='?src=\ref[src];makeai=\ref[M]'>Make AI</A> |
 					<A href='?src=\ref[src];makerobot=\ref[M]'>Make Robot</A> |
 					<A href='?src=\ref[src];makealien=\ref[M]'>Make Alien</A> |
-					<A href='?src=\ref[src];makeslime=\ref[M]'>Make slime</A>
+					<A href='?src=\ref[src];makeslime=\ref[M]'>Make Slime</A> |
+					<A href='?src=\ref[src];makezombie=\ref[M]'>Make Zombie</A> |
 				"}
 
 			//Simple Animals
@@ -418,7 +420,7 @@ var/global/floorIsLava = 0
 			"}
 		if(1)
 			dat+= "Feed Channels<HR>"
-			if( isemptylist(news_network.network_channels) )
+			if( !length(news_network.network_channels) )
 				dat+="<I>No active channels found...</I>"
 			else
 				for(var/datum/feed_channel/CHANNEL in news_network.network_channels)
@@ -483,7 +485,7 @@ var/global/floorIsLava = 0
 					No further feed story additions are allowed while the D-Notice is in effect.<BR><BR>
 				"}
 			else
-				if( isemptylist(src.admincaster_feed_channel.messages) )
+				if( !length(admincaster_feed_channel.messages) )
 					dat+="<I>No feed messages found in channel...</I><BR>"
 				else
 					var/i = 0
@@ -505,7 +507,7 @@ var/global/floorIsLava = 0
 				Keep in mind that users attempting to view a censored feed will instead see the \[REDACTED\] tag above it.</FONT>
 				<HR>Select Feed channel to get Stories from:<BR>
 			"}
-			if(isemptylist(news_network.network_channels))
+			if(!length(news_network.network_channels))
 				dat+="<I>No feed channels found active...</I><BR>"
 			else
 				for(var/datum/feed_channel/CHANNEL in news_network.network_channels)
@@ -518,7 +520,7 @@ var/global/floorIsLava = 0
 				morale, integrity or disciplinary behaviour. A D-Notice will render a channel unable to be updated by anyone, without deleting any feed
 				stories it might contain at the time. You can lift a D-Notice if you have the required access at any time.</FONT><HR>
 			"}
-			if(isemptylist(news_network.network_channels))
+			if(!length(news_network.network_channels))
 				dat+="<I>No feed channels found active...</I><BR>"
 			else
 				for(var/datum/feed_channel/CHANNEL in news_network.network_channels)
@@ -530,7 +532,7 @@ var/global/floorIsLava = 0
 				<B>[src.admincaster_feed_channel.channel_name]: </B><FONT SIZE=1>\[ created by: <FONT COLOR='maroon'>[src.admincaster_feed_channel.author]</FONT> \]</FONT><BR>
 				<FONT SIZE=2><A href='?src=\ref[src];ac_censor_channel_author=\ref[src.admincaster_feed_channel]'>[(src.admincaster_feed_channel.author=="\[REDACTED\]") ? ("Undo Author censorship") : ("Censor channel Author")]</A></FONT><HR>
 			"}
-			if( isemptylist(src.admincaster_feed_channel.messages) )
+			if( !length(admincaster_feed_channel.messages) )
 				dat+="<I>No feed messages found in channel...</I><BR>"
 			else
 				for(var/datum/feed_message/MESSAGE in src.admincaster_feed_channel.messages)
@@ -550,7 +552,7 @@ var/global/floorIsLava = 0
 					No further feed story additions are allowed while the D-Notice is in effect.<BR><BR>
 				"}
 			else
-				if( isemptylist(src.admincaster_feed_channel.messages) )
+				if( !length(admincaster_feed_channel.messages) )
 					dat+="<I>No feed messages found in channel...</I><BR>"
 				else
 					for(var/datum/feed_message/MESSAGE in src.admincaster_feed_channel.messages)
@@ -754,9 +756,9 @@ var/global/floorIsLava = 0
 
 	config.aooc_allowed = !(config.aooc_allowed)
 	if (config.aooc_allowed)
-		to_world("<B>The AOOC channel has been globally enabled!</B>")
+		communicate_broadcast(/decl/communication_channel/aooc, "The AOOC channel has been globally enabled!", TRUE)
 	else
-		to_world("<B>The AOOC channel has been globally disabled!</B>")
+		communicate_broadcast(/decl/communication_channel/aooc, "The AOOC channel has been globally disabled!", TRUE)
 	log_and_message_admins("toggled AOOC.")
 	SSstatistics.add_field_details("admin_verb","TAOOC") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
@@ -867,19 +869,6 @@ var/global/floorIsLava = 0
 	world.update_status()
 	SSstatistics.add_field_details("admin_verb","TE") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
-/datum/admins/proc/toggleAI()
-	set category = "Server"
-	set desc="People can't be AI"
-	set name="Toggle AI"
-	config.allow_ai = !( config.allow_ai )
-	if (!( config.allow_ai ))
-		to_world("<B>The AI job is no longer chooseable.</B>")
-	else
-		to_world("<B>The AI job is chooseable now.</B>")
-	log_admin("[key_name(usr)] toggled AI allowed.")
-	world.update_status()
-	SSstatistics.add_field_details("admin_verb","TAI") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
-
 /datum/admins/proc/toggleaban()
 	set category = "Server"
 	set desc="Respawn basically"
@@ -892,29 +881,6 @@ var/global/floorIsLava = 0
 	log_and_message_admins("toggled respawn to [config.abandon_allowed ? "On" : "Off"].")
 	world.update_status()
 	SSstatistics.add_field_details("admin_verb","TR") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
-
-/datum/admins/proc/toggle_aliens()
-	set category = "Server"
-	set desc="Toggle alien mobs"
-	set name="Toggle Aliens"
-	if(!check_rights(R_ADMIN))
-		return
-
-	config.aliens_allowed = !config.aliens_allowed
-	log_admin("[key_name(usr)] toggled Aliens to [config.aliens_allowed].")
-	message_admins("[key_name_admin(usr)] toggled Aliens [config.aliens_allowed ? "on" : "off"].", 1)
-	SSstatistics.add_field_details("admin_verb","TA") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
-
-/datum/admins/proc/toggle_space_ninja()
-	set category = "Server"
-	set desc="Toggle space ninjas spawning."
-	set name="Toggle Space Ninjas"
-	if(!check_rights(R_ADMIN))
-		return
-
-	config.ninjas_allowed = !config.ninjas_allowed
-	log_and_message_admins("toggled Space Ninjas [config.ninjas_allowed ? "on" : "off"].")
-	SSstatistics.add_field_details("admin_verb","TSN") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
 /datum/admins/proc/delay()
 	set category = "Server"
@@ -1274,7 +1240,7 @@ var/global/floorIsLava = 0
 		to_chat(usr, "<b>No AIs located</b>")//Just so you know the thing is actually working and not just ignoring you.
 
 /datum/admins/proc/show_skills(mob/M)
-	set category = "Admin"
+	set category = null
 	set name = "Skill Panel"
 
 	if (!istype(src,/datum/admins))
@@ -1419,7 +1385,7 @@ var/global/floorIsLava = 0
 	SSticker.mode.process_autoantag()
 
 /datum/admins/proc/paralyze_mob(mob/H as mob in GLOB.player_list)
-	set category = "Admin"
+	set category = null
 	set name = "Toggle Paralyze"
 	set desc = "Toggles paralyze state, which stuns, blinds and mutes the victim."
 

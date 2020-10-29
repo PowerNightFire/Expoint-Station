@@ -144,6 +144,7 @@
 	var/base_icon_state = "body_scanner_0"
 	var/occupied_icon_state = "body_scanner_1"
 	var/on_store_message = "has entered long-term storage."
+	var/on_store_visible_message = "hums and hisses as it moves $occupant$ into storage." // $occupant$ is automatically converted to the occupant's name
 	var/on_store_name = "Cryogenic Oversight"
 	var/on_enter_occupant_message = "You feel cool air surround you. You go numb as your senses turn inward."
 	var/allow_occupant_types = list(/mob/living/carbon/human)
@@ -153,6 +154,7 @@
 	var/time_till_despawn = 9000  // Down to 15 minutes //30 minutes-ish is too long
 	var/time_entered = 0          // Used to keep track of the safe period.
 	var/obj/item/device/radio/intercom/announce //
+	var/announce_despawn = TRUE
 
 	var/obj/machinery/computer/cryopod/control_computer
 	var/last_no_computer_message = 0
@@ -249,7 +251,6 @@
 /obj/machinery/cryopod/Destroy()
 	if(occupant)
 		occupant.forceMove(loc)
-		occupant.resting = 1
 	. = ..()
 
 /obj/machinery/cryopod/Initialize()
@@ -410,8 +411,11 @@
 		control_computer._admin_logs += "[key_name(occupant)] ([role_alt_title]) at [stationtime2text()]"
 	log_and_message_admins("[key_name(occupant)] ([role_alt_title]) entered cryostorage.")
 
-	announce.autosay("[occupant.real_name], [role_alt_title], [on_store_message]", "[on_store_name]")
-	visible_message("<span class='notice'>\The [initial(name)] hums and hisses as it moves [occupant.real_name] into storage.</span>", range = 3)
+	if(announce_despawn)
+		announce.autosay("[occupant.real_name], [role_alt_title], [on_store_message]", "[on_store_name]")
+
+	var/despawnmessage = replacetext(on_store_visible_message, "$occupant$", occupant.real_name) 
+	visible_message(SPAN_NOTICE("\The [initial(name)] " + despawnmessage), range = 3)
 
 	//This should guarantee that ghosts don't spawn.
 	occupant.ckey = null
@@ -420,22 +424,42 @@
 	qdel(occupant)
 	set_occupant(null)
 
-/obj/machinery/cryopod/proc/attempt_enter(var/mob/target, var/mob/user)
-	if(target.client)
-		if(target != user)
-			if(alert(target,"Would you like to enter long-term storage?",,"Yes","No") != "Yes")
-				return
-	if(!user.incapacitated() && !user.anchored && user.Adjacent(src) && user.Adjacent(target))
-		visible_message("[user] starts putting [target] into \the [src].", range = 3)
-		if(!do_after(user, 20, src)|| QDELETED(target))
+/obj/machinery/cryopod/proc/attempt_enter(mob/target, mob/user)
+	if (!user.IsAdvancedToolUser())
+		to_chat(user, SPAN_WARNING("You're too simple to understand how to do that."))
+		return
+	if (user.incapacitated() || !user.Adjacent(src))
+		to_chat(user, SPAN_WARNING("You're in no position to do that."))
+		return
+	if (!user.Adjacent(target))
+		to_chat(user, SPAN_WARNING("\The [target] isn't close enough."))
+		return
+	if (user != target  && target.client)
+		var/response = alert(target, "Enter the [src]?", null, "Yes", "No")
+		if (response != "Yes")
+			to_chat(user, SPAN_WARNING("\The [target] refuses."))
 			return
-		set_occupant(target)
-
-		// Book keeping!
-		log_and_message_admins("has entered a stasis pod")
-
-		//Despawning occurs when process() is called with an occupant without a client.
-		src.add_fingerprint(target)
+	if (user.incapacitated() || !user.Adjacent(src))
+		to_chat(user, SPAN_WARNING("You're in no position to do that."))
+		return
+	if (!user.Adjacent(target))
+		to_chat(user, SPAN_WARNING("\The [target] isn't close enough."))
+		return
+	add_fingerprint(user)
+	var/reason = do_after_detailed(user, 2 SECONDS, src, do_flags = DO_DEFAULT | DO_TARGET_UNIQUE_ACT | DO_PUBLIC_PROGRESS)
+	if (reason)
+		if (reason == DO_TARGET_UNIQUE_ACT)
+			to_chat(user, SPAN_WARNING("\The [do_unique_target_user] is already using \the [src]."))
+		return
+	if (QDELETED(target))
+		return
+	if (!user.Adjacent(target))
+		to_chat(user, SPAN_WARNING("\The [target] isn't close enough."))
+		return
+	set_occupant(target)
+	if (user != target)
+		add_fingerprint(target)
+	log_and_message_admins("placed [target == user ? "themself" : key_name_admin(target)] into \a [src]")
 
 //Like grap-put, but for mouse-drop.
 /obj/machinery/cryopod/MouseDrop_T(var/mob/target, var/mob/user)

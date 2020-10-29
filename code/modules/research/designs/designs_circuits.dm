@@ -388,6 +388,13 @@
 	build_path = /obj/item/weapon/stock_parts/circuitboard/pacman/super/potato
 	sort_string = "JBAAD"
 
+/datum/design/circuit/pacmanreactor
+	name = "ICRER-2 nuclear generator"
+	id = "pacmanreactor"
+	req_tech = list(TECH_DATA = 4, TECH_POWER = 5, TECH_ENGINEERING = 5)
+	build_path = /obj/item/weapon/stock_parts/circuitboard/pacman/super/potato/reactor
+	sort_string = "JBAAE"
+
 /datum/design/circuit/batteryrack
 	name = "cell rack PSU"
 	id = "batteryrack"
@@ -759,6 +766,20 @@
 	req_tech = list(TECH_ENGINEERING = 2)
 	build_path = /obj/item/weapon/stock_parts/circuitboard/vending
 	sort_string = "WAABA"
+
+/datum/design/circuit/reagentgrinder
+	name = "reagent grinder"
+	id = "reagent_grinder"
+	req_tech = list(TECH_BIO = 2, TECH_MATERIAL = 2, TECH_ENGINEERING = 2)
+	build_path = /obj/item/weapon/stock_parts/circuitboard/reagentgrinder
+	sort_string = "WAABB"
+
+/datum/design/circuit/juicer
+	name = "blender"
+	id = "blender"
+	req_tech = list(TECH_BIO = 1, TECH_MATERIAL = 2, TECH_ENGINEERING = 1)
+	build_path = /obj/item/weapon/stock_parts/circuitboard/juicer
+	sort_string = "WAABC"
 
 /datum/design/circuit/aicore
 	name = "AI core"

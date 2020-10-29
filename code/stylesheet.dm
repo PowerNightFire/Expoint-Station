@@ -19,7 +19,7 @@ em						{font-style: normal;font-weight: bold;}
 .ooc img.text_tag		{width: 32px; height: 10px;}
 
 .ooc .everyone			{color: #002eb8;}
-.ooc .looc				{color: #3a9696;}
+.ooc .looc				{color: #3a7496;}
 .ooc .elevated			{color: #2e78d9;}
 .ooc .moderator			{color: #184880;}
 .ooc .developer			{color: #1b521f;}
@@ -60,6 +60,13 @@ em						{font-style: normal;font-weight: bold;}
 .expradio				{color: #929820;}
 .seciradio				{color: #935050;}
 .mediradio				{color: #509190;}
+
+.hailradio				{color: #cc00aa;}
+.exampleradio			{color: #ff00ff;}
+.voxradio				{color: #f32b06;}
+.bearcatradio			{color: #590e2d;}
+.colonyradio			{color: #ceaf3e;}
+.verneradio				{color: #738465;}
 
 /* Miscellaneous */
 .name					{font-weight: bold;}

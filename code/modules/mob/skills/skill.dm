@@ -28,13 +28,13 @@ GLOBAL_LIST_EMPTY(skills)
 /decl/hierarchy/skill/proc/update_special_effects(mob/mob, level)
 
 /decl/hierarchy/skill/Initialize()
-	..()
+	. = ..()
 	if(is_hidden_category())
 		if(!GLOB.skills.len)
 			for(var/decl/hierarchy/skill/C in children)
 				GLOB.skills += C.get_descendents()
 		else
-			log_error("<span class='warning'>Warning: multiple instances of /decl/hierarchy/skill have been created!</span>")
+			CRASH("Warning: multiple instances of /decl/hierarchy/skill have been created!")
 
 /decl/hierarchy/skill/dd_SortValue()
 	return ID
@@ -142,9 +142,9 @@ GLOBAL_LIST_EMPTY(skills)
 	desc = "Your ability to perform tasks requiring great strength, dexterity, or endurance."
 	levels = list( "Unskilled"			= "You are not used to manual labor, tire easily, and are likely not in great shape. Extended heavy labor may be dangerous for you.<br>- You can pull objects but start to generate Lactate after tiring out. Your strength increases with level.<br>- You can throw objects. Their speed, thrown distance, and force increases with level.<br>- You can sprint, the stamina consumption rate is lowered with each level.<br>- You can leap by clicking on a distant target with grab intent, leap range is increased and chances of falling over are decreased with each level.",
 						"Basic"				= "You have some familiarity with manual labor, and are in reasonable physical shape. Tasks requiring great dexterity or strength may still elude you.<br>- You can throw \"huge\" items or normal-sized mobs without getting weakened.",
-						"Trained"			= "You have sufficient strength and dexterity for even very strenuous tasks, and can work for a long time without tiring.",
-						"Experienced"		= "You have experience with heavy work in trying physical conditions, and are in excellent shape. You visit the gym frequently.",
-						"Master"		= "In addition to your excellent strength and endurance, you have a lot of experience with the specific physical demands of your job. You may have competitive experience with some form of athletics.")
+						"Trained"			= "You have sufficient strength and dexterity for more strenuous tasks, and can perform physical labor for longer periods without tiring.",
+						"Experienced"		= "You likely have experience with heavy work in trying physical conditions, and are in excellent shape. You may visit the gym frequently.",
+						"Master"		= "You are in excellent shape. You're well-adapted to performing heavy physical labor, and may have requested extra PT.")
 
 /decl/hierarchy/skill/general/computer
 	ID = "computer"
@@ -207,8 +207,8 @@ GLOBAL_LIST_EMPTY(skills)
 	desc = "This skill describes your expertise with and knowledge of weapons. A low level in this skill implies knowledge of simple weapons, for example flashes. A high level in this skill implies knowledge of complex weapons, such as unconfigured grenades, riot shields, pulse rifles or bombs. A low-medium level in this skill is typical for security officers, a high level of this skill is typical for special agents and soldiers."
 	levels = list( "Unskilled"			= "You know how to recognize a weapon when you see one. You can point a gun and shoot it, though results vary wildly. You might forget the safety, you can't control burst recoil well, and you don't have trained reflexes for gun fighting.<br>- You might fire your weapon randomly.",
 						"Basic"				= "You know how to handle weapons safely, and you're comfortable using simple weapons. Your aim is decent and you can usually be trusted not to do anything stupid with a weapon you are familiar with, but your training isn't automatic yet and your performance will degrade in high-stress situations.<br>- You can use firearms. Their accuracy and spread depend on your skill level.",
-						"Trained"			= "You have had extensive weapons training, or have used weapons in combat. Your aim is better now. You are familiar with most types of weapons and can use them in a pinch. You have an understanding of tactics, and can be trusted to stay calm under fire. You may have military or police experience and you probably carry a weapon on the job.",
-						"Experienced"		= "You've used firearms and other ranged weapons in high-stress situations, and your skills have become automatic. Your aim is good.",
+						"Trained"			= "You have had extensive weapons training, or have used weapons in combat. Your aim is better now. You are familiar with most types of weapons and can use them in a pinch. You have an understanding of tactics, and can be trusted to stay calm under fire. You may have military or police experience and you probably carry a weapon on the job.<br>-You have a chance to automatically unsafety a gun when firing on harm intent.",
+						"Experienced"		= "You've used firearms and other ranged weapons in high-stress situations, and your skills have become automatic. Your aim is good.<br>-You will automatically unsafety a gun when firing it on harm intent.<br>-You can perform tactical and speed reloads. The time taken decreases with level.",
 						"Master"		= "You are an exceptional shot with a variety of weapons, from simple to exotic. You use a weapon as naturally as though it were a part of your own body. You may be a sniper or special forces operator of some kind.<br>- You get extra accuracy for sniper rifles.<br>- You automatically eject shells from bolt-action firearms.")
 
 /decl/hierarchy/skill/security/weapons/get_cost(var/level)
@@ -283,8 +283,8 @@ GLOBAL_LIST_EMPTY(skills)
 	desc = "Describes your knowledge of the various engine types common on space stations, such as the PACMAN, singularity, supermatter or RUST engine."
 	levels = list( "Unskilled"			= "You know that \"delamination\" is a bad thing and that you should stay away from the singularity. You know the engine provides power, but you're unclear on the specifics. If you were to try to set up the engine, you would need someone to talk you through every detail--and even then, you'd probably make deadly mistakes.<br>- You can read the SM monitor readings with 40% error. This decreases with level.",
 						"Basic"				= "You know the basic theoretical principles of engine operation. You can try to set up the engine by yourself, but you are likely to need some assistance and supervision, otherwise you are likely to make mistakes. You are fully capable of running a PACMAN-type generator.",
-						"Trained"			= "You can set up the engine, and you probably won't botch it up too badly. You know how to protect yourself from radiation in the engine room. You can read the engine monitors and keep the engine going. An engine malfunction may stump you, but you can probably work out how to fix it... let's just hope you do so quickly enough to prevent serious damage.",
-						"Experienced"		= "You have years of experience with engines, and can set them up quickly and reliably. You're familiar with engine types other than the one you work with.<br>- You can fully read the SM monitor readings.<br>- You can examine the SM directly for its integrity.",
+						"Trained"			= "You can set up the engine, and you probably won't botch it up too badly. You know how to protect yourself from radiation in the engine room. You can read the engine monitors and keep the engine going. An engine malfunction may stump you, but you can probably work out how to fix it... let's just hope you do so quickly enough to prevent serious damage.<br>- You can fully read the SM monitor readings.",
+						"Experienced"		= "You have years of experience with engines, and can set them up quickly and reliably. You're familiar with engine types other than the one you work with.<br>- You can examine the SM directly for its integrity.",
 						"Master"		= "Your engine is your baby and you know every minute detail of its workings. You can optimize the engine and you probably have your own favorite custom setup. You could build an engine from the ground up. When things go wrong, you know exactly what has happened and how to fix the problem. You can safely handle singularities and supermatter.<br>- You can examine the SM directly for an approximate number of its EER.")
 	difficulty = SKILL_HARD
 

@@ -53,6 +53,9 @@
 	if(environment_smash >= 1)
 		damage = max(damage, 10)
 
+	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN*2)
+	playsound(loc, hitsound, 50, 1)
+
 	if(damage >= 10)
 		visible_message("<span class='danger'>\The [user] [attack_verb] into \the [src]!</span>")
 		take_damage(damage)
@@ -399,11 +402,14 @@
 		if("deny")
 			if(density && !(stat & (NOPOWER|BROKEN)))
 				flick("door_deny", src)
-				playsound(src.loc, 'sound/machines/buzz-two.ogg', 50, 0)
+				if (world.time > next_clicksound)
+					next_clicksound = world.time + CLICKSOUND_INTERVAL
+					playsound(src.loc, 'sound/machines/buzz-two.ogg', 50, 0)
 	return
 
 
 /obj/machinery/door/proc/open(var/forced = 0)
+	set waitfor = FALSE
 	if(!can_open(forced))
 		return
 	operating = 1
@@ -429,6 +435,7 @@
 	return world.time + (normalspeed ? 150 : 5)
 
 /obj/machinery/door/proc/close(var/forced = 0)
+	set waitfor = FALSE
 	if(!can_close(forced))
 		return
 	operating = 1

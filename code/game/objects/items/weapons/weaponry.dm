@@ -1,6 +1,7 @@
 /obj/item/weapon/nullrod
 	name = "null sceptre"
 	desc = "A sceptre of pure black obsidian capped at both ends with silver ferrules. Some religious groups claim it disrupts and dampens the powers of paranormal phenomenae."
+	icon = 'icons/obj/weapons/melee_physical.dmi'
 	icon_state = "nullrod"
 	item_state = "nullrod"
 	slot_flags = SLOT_BELT
@@ -30,7 +31,7 @@
 
 	if ((MUTATION_CLUMSY in user.mutations) && prob(50))
 		to_chat(user, "<span class='danger'>The rod slips out of your hand and hits your head.</span>")
-		user.take_organ_damage(10)
+		user.take_organ_damage(10, 0)
 		user.Paralyse(20)
 		return
 

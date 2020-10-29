@@ -639,12 +639,8 @@
 
 	//JOBBAN'S INNARDS
 	else if(href_list["jobban3"])
-		if(!check_rights(R_MOD,0) && !check_rights(R_ADMIN,0))
+		if(!check_rights(R_ADMIN,0))
 			to_chat(usr, "<span class='warning'>You do not have the appropriate permissions to add job bans!</span>")
-			return
-
-		if(check_rights(R_MOD,0) && !check_rights(R_ADMIN,0) && !config.mods_can_job_tempban) // If mod and tempban disabled
-			to_chat(usr, "<span class='warning'>Mod jobbanning is disabled!</span>")
 			return
 
 		var/mob/M = locate(href_list["jobban4"])
@@ -747,7 +743,7 @@
 		if(notbannedlist.len) //at least 1 unbanned job exists in job_list so we have stuff to ban.
 			switch(alert("Temporary Ban?",,"Yes","No", "Cancel"))
 				if("Yes")
-					if(!check_rights(R_MOD,0) && !check_rights(R_BAN, 0))
+					if(!check_rights(R_BAN, 0))
 						to_chat(usr, "<span class='warning'> You cannot issue temporary job-bans!</span>")
 						return
 					if(config.ban_legacy_system)
@@ -755,9 +751,6 @@
 						return
 					var/mins = input(usr,"How long (in minutes)?","Ban time",1440) as num|null
 					if(!mins)
-						return
-					if(check_rights(R_MOD, 0) && !check_rights(R_BAN, 0) && mins > config.mod_job_tempban_max)
-						to_chat(usr, "<span class='warning'> Moderators can only job tempban up to [config.mod_job_tempban_max] minutes!</span>")
 						return
 					var/reason = sanitize(input(usr,"Reason?","Please State Reason","") as text|null)
 					if(!reason)
@@ -865,12 +858,8 @@
 				DB_ban_unban(ckey(key), BANTYPE_JOB_PERMA, job)
 
 	else if(href_list["newban"])
-		if(!check_rights(R_MOD,0) && !check_rights(R_BAN, 0))
+		if(!check_rights(R_BAN, 0))
 			to_chat(usr, "<span class='warning'>You do not have the appropriate permissions to add bans!</span>")
-			return
-
-		if(check_rights(R_MOD,0) && !check_rights(R_ADMIN, 0) && !config.mods_can_job_tempban) // If mod and tempban disabled
-			to_chat(usr, "<span class='warning'>Mod jobbanning is disabled!</span>")
 			return
 
 		var/mob/M = locate(href_list["newban"])
@@ -887,9 +876,6 @@
 			if("Yes")
 				var/mins = input(usr,"How long (in minutes)?","Ban time",1440) as num|null
 				if(!mins)
-					return
-				if(check_rights(R_MOD, 0) && !check_rights(R_BAN, 0) && mins > config.mod_tempban_max)
-					to_chat(usr, "<span class='warning'>Moderators can only job tempban up to [config.mod_tempban_max] minutes!</span>")
 					return
 				if(mins >= 525600) mins = 525599
 				var/reason = sanitize(input(usr,"Reason?","reason","Griefer") as text|null)
@@ -1261,6 +1247,16 @@
 			return
 
 		usr.client.cmd_admin_animalize(M)
+
+	else if(href_list["makezombie"])
+		if(!check_rights(R_ADMIN))	return
+
+		var/mob/living/carbon/human/H = locate(href_list["makezombie"])
+		if(!istype(H))
+			to_chat(usr, "This can only be used on instances of type /mob/living/carbon/human")
+
+		log_and_message_admins("attempting to zombify [key_name_admin(H)]")
+		H.zombify()
 
 	else if(href_list["togmutate"])
 		if(!check_rights(R_SPAWN))	return
@@ -1961,6 +1957,11 @@
 					to_chat(usr, "Failed to add language '[lang2toggle]' from \the [M]!")
 
 			show_player_panel(M)
+
+	else if(href_list["paralyze"])
+		var/mob/M = locate(href_list["paralyze"])
+		paralyze_mob(M)
+
 
 	// player info stuff
 

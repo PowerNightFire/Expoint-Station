@@ -468,8 +468,8 @@ About the new airlock wires panel:
 			var/mob/living/carbon/C = user
 			if(istype(C) && C.hallucination_power > 25)
 				to_chat(user, "<span class='danger'>You feel a powerful shock course through your body!</span>")
-				user.adjustHalLoss(10)
-				user.Stun(10)
+				user.adjustHalLoss(20)
+				user.Stun(5)
 				return
 	..(user)
 
@@ -498,6 +498,12 @@ About the new airlock wires panel:
 
 /obj/machinery/door/airlock/requiresID()
 	return !(src.isWireCut(AIRLOCK_WIRE_IDSCAN) || aiDisabledIdScanner)
+
+/obj/machinery/door/airlock/check_access()
+	if (isWireCut(AIRLOCK_WIRE_IDSCAN) || aiDisabledIdScanner)
+		return !secured_wires
+	return ..()
+
 
 /obj/machinery/door/airlock/proc/isAllPowerLoss()
 	if(stat & (NOPOWER|BROKEN))
@@ -765,7 +771,8 @@ About the new airlock wires panel:
 			set_airlock_overlays(AIRLOCK_DENY)
 			if(density && arePowerSystemsOn())
 				flick("deny", src)
-				if(secured_wires)
+				if(secured_wires && world.time > next_clicksound)
+					next_clicksound = world.time + CLICKSOUND_INTERVAL
 					playsound(loc, open_failure_access_denied, 50, 0)
 			update_icon(AIRLOCK_CLOSED)
 		if("emag")
@@ -1150,7 +1157,7 @@ About the new airlock wires panel:
 				else
 					to_chat(user, "<span class='warning'>You need to be wielding \the [C] to do that.</span>")
 
-	else if(istype(C, /obj/item/device/floor_painter))
+	else if(istype(C, /obj/item/device/paint_sprayer))
 		return
 
 	else

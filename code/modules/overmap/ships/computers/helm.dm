@@ -22,11 +22,17 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 	var/area/overmap/map = locate() in world
 	for(var/obj/effect/overmap/visitable/sector/S in map)
 		if (S.known)
-			var/datum/computer_file/data/waypoint/R = new()
-			R.fields["name"] = S.name
-			R.fields["x"] = S.x
-			R.fields["y"] = S.y
-			known_sectors[S.name] = R
+			add_known_sector(S)
+
+/obj/machinery/computer/ship/helm/proc/add_known_sector(obj/effect/overmap/visitable/sector/S, notify = FALSE)
+	var/datum/computer_file/data/waypoint/R = new()
+	R.fields["name"] = S.name
+	R.fields["x"] = S.x
+	R.fields["y"] = S.y
+	known_sectors[S.name] = R
+
+	if (notify)
+		audible_message(SPAN_NOTICE("\The [src] pings with a new known sector: [S] at coordinates [S.x] by [S.y]."))
 
 /obj/machinery/computer/ship/helm/Process()
 	..()
@@ -72,7 +78,8 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 		var/turf/T = get_turf(linked)
 		var/obj/effect/overmap/visitable/sector/current_sector = locate() in T
 
-		data["viewing_silicon"] = issilicon(user)
+		var/mob/living/silicon/silicon = user
+		data["viewing_silicon"] = ismachinerestricted(silicon)
 
 		data["sector"] = current_sector ? current_sector.name : "Deep Space"
 		data["sector_info"] = current_sector ? current_sector.desc : "Not Available"
@@ -84,7 +91,7 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 		data["d_y"] = dy
 		data["speedlimit"] = speedlimit ? speedlimit*1000 : "Halted"
 		data["accel"] = min(round(linked.get_acceleration()*1000, 0.01),accellimit*1000)
-		data["heading"] = linked.get_heading() ? dir2angle(linked.get_heading()) : 0
+		data["heading"] = linked.get_heading_angle() ? linked.get_heading_angle() : 0
 		data["autopilot"] = autopilot
 		data["manual_control"] = viewing_overmap(user)
 		data["canburn"] = linked.can_burn()
@@ -228,7 +235,8 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 	var/turf/T = get_turf(linked)
 	var/obj/effect/overmap/visitable/sector/current_sector = locate() in T
 
-	data["viewing_silicon"] = issilicon(user)
+	var/mob/living/silicon/silicon = user
+	data["viewing_silicon"] = ismachinerestricted(silicon)
 
 	data["sector"] = current_sector ? current_sector.name : "Deep Space"
 	data["sector_info"] = current_sector ? current_sector.desc : "Not Available"
@@ -236,7 +244,7 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 	data["s_y"] = linked.y
 	data["speed"] = round(linked.get_speed()*1000, 0.01)
 	data["accel"] = round(linked.get_acceleration()*1000, 0.01)
-	data["heading"] = linked.get_heading() ? dir2angle(linked.get_heading()) : 0
+	data["heading"] = linked.get_heading_angle() ? linked.get_heading_angle() : 0
 	data["viewing"] = viewing_overmap(user)
 
 	if(linked.get_speed())

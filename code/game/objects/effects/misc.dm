@@ -60,6 +60,12 @@
 obj/effect/paint/ocean
 	color =	COLOR_OCEAN
 
+obj/effect/paint/palegreengray
+	color =	COLOR_PALE_GREEN_GRAY
+
+/obj/effect/paint/brown
+	color = COLOR_DARK_BROWN
+
 //Stripes the wall it spawns on, then dies
 /obj/effect/paint_stripe
 	name = "stripe of paint"
@@ -107,8 +113,8 @@ obj/effect/paint/ocean
 /obj/effect/paint_stripe/white
 	color = COLOR_SILVER
 
-/obj/effect/paint/brown
-	color = COLOR_DARK_BROWN
+/obj/effect/paint_stripe/gunmetal
+	color = COLOR_GUNMETAL
 
 /obj/effect/gas_setup	//cryogenic
 	icon = 'icons/mob/screen1.dmi'
@@ -117,6 +123,8 @@ obj/effect/paint/ocean
 	var/pressure = 20* ONE_ATMOSPHERE
 
 /obj/effect/gas_setup/Initialize()
+	SHOULD_CALL_PARENT(FALSE)
+	atom_flags |= ATOM_FLAG_INITIALIZED
 	var/obj/machinery/atmospherics/pipe/P = locate() in loc
 	if(P && !P.air_temporary)
 		P.air_temporary = new(P.volume, tempurature)

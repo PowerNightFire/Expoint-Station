@@ -26,7 +26,7 @@
 	boots = /obj/item/clothing/shoes/magboots
 	tank = /obj/item/weapon/tank/oxygen
 	mask = /obj/item/clothing/mask/breath
-	req_access = list(access_engine)
+	req_access = list(access_construction)
 	islocked = 1
 
 /obj/machinery/suit_storage_unit/engineering/unishi
@@ -106,4 +106,14 @@
 	tank = /obj/item/weapon/tank/oxygen
 	mask = /obj/item/clothing/mask/breath
 	req_access = list(access_syndicate)
+	islocked = 1
+
+/obj/machinery/suit_storage_unit/ceti
+	name = "CTI Voidsuit Storage Unit"
+	suit= /obj/item/clothing/suit/space/void/ceti
+	helmet = /obj/item/clothing/head/helmet/space/void/ceti
+	boots = /obj/item/clothing/shoes/magboots
+	tank = /obj/item/weapon/tank/oxygen
+	mask = /obj/item/clothing/mask/breath
+	req_access = list(access_xenoarch)
 	islocked = 1

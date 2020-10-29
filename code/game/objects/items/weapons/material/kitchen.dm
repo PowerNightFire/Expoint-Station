@@ -47,7 +47,7 @@
 			M.visible_message("<span class='notice'>\The [user] eats some [loaded] from \the [src].</span>")
 		else
 			user.visible_message("<span class='warning'>\The [user] begins to feed \the [M]!</span>")
-			if(!(M.can_force_feed(user, loaded) && do_mob(user, M, 5 SECONDS)))
+			if(!M.can_force_feed(user, loaded) || !do_after(user, 5 SECONDS, M))
 				return
 			M.visible_message("<span class='notice'>\The [user] feeds some [loaded] to \the [M] with \the [src].</span>")
 		playsound(M.loc,'sound/items/eatfood.ogg', rand(10,40), 1)
@@ -108,7 +108,7 @@
 /obj/item/weapon/material/kitchen/rollingpin/attack(mob/living/M as mob, mob/living/user as mob)
 	if ((MUTATION_CLUMSY in user.mutations) && prob(50) && user.unEquip(src))
 		to_chat(user, "<span class='warning'>\The [src] slips out of your hand and hits your head.</span>")
-		user.take_organ_damage(10)
+		user.take_organ_damage(10, 0)
 		user.Paralyse(2)
 		return
 	return ..()

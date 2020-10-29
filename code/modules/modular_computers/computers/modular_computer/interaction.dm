@@ -105,6 +105,9 @@
 
 // On-click handling. Turns on the computer if it's off and opens the GUI.
 /obj/item/modular_computer/attack_self(var/mob/user)
+	if(MUTATION_CLUMSY in user.mutations)
+		to_chat(user, SPAN_WARNING("You can't quite work out how to use [src]."))
+		return
 	if(enabled && screen_on)
 		ui_interact(user)
 	else if(!enabled && screen_on)
@@ -213,7 +216,7 @@
 		to_chat(user, "The time [stationtime2text()] is displayed in the corner of the screen.")
 
 	if(card_slot && card_slot.stored_card)
-		to_chat(user, "The [card_slot.stored_card] is inserted into it.")
+		to_chat(user, "[card_slot.stored_card] is inserted into it.")
 
 /obj/item/modular_computer/MouseDrop(var/atom/over_object)
 	var/mob/M = usr

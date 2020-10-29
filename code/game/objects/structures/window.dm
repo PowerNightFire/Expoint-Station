@@ -126,7 +126,7 @@
 		visible_message("<span class='warning'>\The [src] shatters!</span>")
 
 	var/debris_count = is_fulltile() ? 4 : 1
-	for(var/i = 0 to debris_count)
+	for(var/i = 1 to debris_count)
 		material.place_shard(loc)
 		if(reinf_material)
 			new /obj/item/stack/material/rods(loc, 1, reinf_material.name)
@@ -188,6 +188,9 @@
 		user.visible_message("<span class='danger'>[user] smashes through [src]!</span>")
 		user.do_attack_animation(src)
 		shatter()
+	else if(MUTATION_FERAL in user.mutations)
+		user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN*2) //Additional cooldown
+		attack_generic(user, 10, "smashes")
 
 	else if (user.a_intent && user.a_intent == I_HURT)
 

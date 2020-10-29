@@ -105,6 +105,7 @@ Class Procs:
 	var/interact_offline = 0 // Can the machine be interacted with while de-powered.
 	var/clicksound			// sound played on succesful interface use by a carbon lifeform
 	var/clickvol = 40		// sound played on succesful interface use
+	var/next_clicksound = 0 // value to compare with world.time for whether to play clicksound according to CLICKSOUND_INTERVAL
 	var/core_skill = SKILL_DEVICES //The skill used for skill checks for this machine (mostly so subtypes can use different skills).
 	var/operator_skill      // Machines often do all operations on Process(). This caches the user's skill while the operations are running.
 	var/base_type           // For mapped buildable types, set this to be the base type actually buildable.
@@ -223,7 +224,8 @@ Class Procs:
 		return STATUS_CLOSE
 
 	if(user.direct_machine_interface(src))
-		if (silicon_restriction && issilicon(user))
+		var/mob/living/silicon/silicon = user
+		if (silicon_restriction && ismachinerestricted(silicon))
 			if (silicon_restriction == STATUS_CLOSE)
 				to_chat(user, SPAN_WARNING("Remote AI systems detected. Firewall protections forbid remote AI access."))
 			return silicon_restriction
@@ -291,6 +293,10 @@ Class Procs:
 /obj/machinery/attack_hand(mob/user)
 	if((. = ..())) // Buckling, climbers; unlikely to return true.
 		return
+	if(MUTATION_FERAL in user.mutations)
+		user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN*2)
+		attack_generic(user, 10, "smashes")
+		return TRUE
 	if(!CanPhysicallyInteract(user))
 		return FALSE // The interactions below all assume physical access to the machine. If this is not the case, we let the machine take further action.
 	if(!user.IsAdvancedToolUser())
@@ -300,10 +306,10 @@ Class Procs:
 		var/mob/living/carbon/human/H = user
 		if(H.getBrainLoss() >= 55)
 			visible_message("<span class='warning'>[H] stares cluelessly at \the [src].</span>")
-			return 1
+			return TRUE
 		else if(prob(H.getBrainLoss()))
 			to_chat(user, "<span class='warning'>You momentarily forget how to use \the [src].</span>")
-			return 1
+			return TRUE
 	if((. = component_attack_hand(user)))
 		return
 	if(wires && (. = wires.Interact(user)))
@@ -399,7 +405,8 @@ Class Procs:
 
 /obj/machinery/CouldUseTopic(var/mob/user)
 	..()
-	if(clicksound && istype(user, /mob/living/carbon))
+	if(clicksound && world.time > next_clicksound && istype(user, /mob/living/carbon))
+		next_clicksound = world.time + CLICKSOUND_INTERVAL
 		playsound(src, clicksound, clickvol)
 
 /obj/machinery/proc/display_parts(mob/user)
@@ -412,6 +419,8 @@ Class Procs:
 
 /obj/machinery/examine(mob/user)
 	. = ..()
+	if (panel_open)
+		to_chat(user, "The service panel is open.")
 	if(component_parts && hasHUD(user, HUD_SCIENCE))
 		display_parts(user)
 	if(stat & NOSCREEN)

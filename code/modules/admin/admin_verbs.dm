@@ -1,6 +1,6 @@
 //admin verb groups - They can overlap if you so wish. Only one of each verb will exist in the verbs list regardless
 var/list/admin_verbs_default = list(
-	/datum/admins/proc/show_player_panel,	//shows an interface for individual players, with various links (links require additional flags,
+	/datum/admins/proc/show_player_panel, //shows an interface for individual players, with various links (links require additional flags), right-click player panel,
 	/client/proc/player_panel,
 	/client/proc/secrets,
 	/client/proc/deadmin_self,			//destroys our own admin datum so we can play as a regular player,
@@ -14,7 +14,6 @@ var/list/admin_verbs_default = list(
 //	/client/proc/deadchat				//toggles deadchat on/off,
 	)
 var/list/admin_verbs_admin = list(
-	/client/proc/player_panel_new,		//shows an interface for all players, with links to various panels,
 	/client/proc/invisimin,				//allows our mob to go invisible/visible,
 //	/datum/admins/proc/show_traitor_panel,	//interface which shows a mob's mind, -Removed due to rare practical use. Moved to debug verbs ~Errorage,
 	/datum/admins/proc/show_game_mode,  //Configuration window for the current game mode.,
@@ -76,7 +75,7 @@ var/list/admin_verbs_admin = list(
 	/client/proc/cmd_admin_rejuvenate,
 	/client/proc/toggleghostwriters,
 	/client/proc/toggledrones,
-	/datum/admins/proc/show_skills,
+	/datum/admins/proc/show_skills, //Right click skill menu,
 	/client/proc/man_up,
 	/client/proc/global_man_up,
 	/client/proc/response_team, // Response Teams admin verb,
@@ -116,8 +115,6 @@ var/list/admin_verbs_fun = list(
 	/client/proc/drop_bomb,
 	/client/proc/everyone_random,
 	/client/proc/cinematic,
-	/datum/admins/proc/toggle_aliens,
-	/datum/admins/proc/toggle_space_ninja,
 	/client/proc/cmd_admin_add_freeform_ai_law,
 	/client/proc/cmd_admin_add_random_ai_law,
 	/client/proc/toggle_random_events,
@@ -149,14 +146,11 @@ var/list/admin_verbs_server = list(
 	/client/proc/toggle_log_hrefs,
 	/datum/admins/proc/immreboot,
 	/client/proc/everyone_random,
-	/datum/admins/proc/toggleAI,
 	/client/proc/cmd_admin_delete,		// delete an instance/object/mob/etc,
 	/client/proc/cmd_debug_del_all,
 	/datum/admins/proc/adrev,
 	/datum/admins/proc/adspawn,
 	/datum/admins/proc/adjump,
-	/datum/admins/proc/toggle_aliens,
-	/datum/admins/proc/toggle_space_ninja,
 	/client/proc/toggle_random_events,
 	/client/proc/nanomapgen_DumpImage
 	)
@@ -173,7 +167,6 @@ var/list/admin_verbs_debug = list(
 	/client/proc/cmd_debug_mob_lists,
 	/client/proc/cmd_admin_delete,
 	/client/proc/cmd_debug_del_all,
-	/client/proc/cmd_debug_tog_aliens,
 	/client/proc/air_report,
 	/client/proc/reload_admins,
 	/client/proc/restart_controller,
@@ -255,8 +248,6 @@ var/list/admin_verbs_hideable = list(
 	/client/proc/cmd_admin_gib_self,
 	/client/proc/drop_bomb,
 	/client/proc/cinematic,
-	/datum/admins/proc/toggle_aliens,
-	/datum/admins/proc/toggle_space_ninja,
 	/client/proc/cmd_admin_add_freeform_ai_law,
 	/client/proc/cmd_admin_add_random_ai_law,
 	/client/proc/cmd_admin_create_centcom_report,
@@ -269,7 +260,6 @@ var/list/admin_verbs_hideable = list(
 	/client/proc/toggle_log_hrefs,
 	/datum/admins/proc/immreboot,
 	/client/proc/everyone_random,
-	/datum/admins/proc/toggleAI,
 	/datum/admins/proc/adrev,
 	/datum/admins/proc/adspawn,
 	/datum/admins/proc/adjump,
@@ -284,7 +274,6 @@ var/list/admin_verbs_hideable = list(
 	/client/proc/startSinglo,
 	/client/proc/cmd_debug_mob_lists,
 	/client/proc/cmd_debug_del_all,
-	/client/proc/cmd_debug_tog_aliens,
 	/client/proc/air_report,
 	/client/proc/enable_debug_verbs,
 	/client/proc/roll_dices,
@@ -301,17 +290,15 @@ var/list/admin_verbs_mod = list(
 	/client/proc/admin_ghost,			// allows us to ghost/reenter body at will,
 	/client/proc/cmd_mod_say,
 	/datum/admins/proc/show_player_info,
-	/client/proc/player_panel_new,
 	/client/proc/dsay,
-	/datum/admins/proc/show_skills,
-	/datum/admins/proc/show_player_panel,
+	/datum/admins/proc/show_skills,	// Right-click skill menu,
+	/datum/admins/proc/show_player_panel,// right-click player panel,
 	/client/proc/check_antagonists,
 	/client/proc/cmd_admin_direct_narrate,
 	/client/proc/aooc,
 	/datum/admins/proc/sendFax,
 	/client/proc/check_fax_history,
-	/datum/admins/proc/paralyze_mob,
-	/datum/admins/proc/view_persistent_data
+	/datum/admins/proc/paralyze_mob // right-click paralyze ,
 )
 
 /client/proc/add_admin_verbs()
@@ -433,15 +420,7 @@ var/list/admin_verbs_mod = list(
 	set name = "Player Panel"
 	set category = "Admin"
 	if(holder)
-		holder.player_panel_old()
-	SSstatistics.add_field_details("admin_verb","PP") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
-	return
-
-/client/proc/player_panel_new()
-	set name = "Player Panel New"
-	set category = "Admin"
-	if(holder)
-		holder.player_panel_new()
+		holder.player_panel()
 	SSstatistics.add_field_details("admin_verb","PPN") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 	return
 
