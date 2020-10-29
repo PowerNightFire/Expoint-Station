@@ -54,6 +54,6 @@
 	detectTime = -1
 	return 1
 
-/obj/machinery/camera/HasProximity(atom/movable/AM)
+/obj/machinery/camera/HasProximity(atom/movable/AM as mob|obj)
 	if(isliving(AM))
 		newTarget(AM)

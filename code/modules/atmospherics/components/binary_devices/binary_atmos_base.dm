@@ -21,15 +21,18 @@
 
 // Housekeeping and pipe network stuff below
 /obj/machinery/atmospherics/binary/network_expand(datum/pipe_network/new_network, obj/machinery/atmospherics/pipe/reference)
-	if((reference == node1) && (network1 != new_network))
-		qdel(network1)
+	if(reference == node1)
 		network1 = new_network
 
-	if((reference == node2) && (network2 != new_network))
-		qdel(network2)
+	else if(reference == node2)
 		network2 = new_network
 
-	new_network.normal_members |= src
+	if(new_network.normal_members.Find(src))
+		return 0
+
+	new_network.normal_members += src
+
+	return null
 
 /obj/machinery/atmospherics/binary/atmos_init()
 	..()
@@ -120,38 +123,3 @@
 	node2 = null
 
 	. = ..()
-
-/obj/machinery/atmospherics/binary/deconstruction_pressure_check()
-	var/datum/gas_mixture/int_air = return_air()
-	var/datum/gas_mixture/env_air = loc.return_air()
-	if ((int_air.return_pressure()-env_air.return_pressure()) > 2*ONE_ATMOSPHERE)
-		return FALSE
-	return TRUE
-
-// Will only be used if you set the anchorable obj flag.
-/obj/machinery/atmospherics/binary/wrench_floor_bolts(user)
-	. = ..()
-	if(anchored)
-		if(dir & (NORTH|SOUTH))
-			initialize_directions = NORTH|SOUTH
-		else if(dir & (EAST|WEST))
-			initialize_directions = EAST|WEST
-
-		atmos_init()
-		build_network()
-		if (node1)
-			node1.atmos_init()
-			node1.build_network()
-		if (node2)
-			node2.atmos_init()
-			node2.build_network()
-	else
-		if(node1)
-			node1.disconnect(src)
-			qdel(network1)
-		if(node2)
-			node2.disconnect(src)
-			qdel(network2)
-
-		node1 = null
-		node2 = null

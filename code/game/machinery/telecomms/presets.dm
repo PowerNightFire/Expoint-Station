@@ -25,10 +25,10 @@
 	freq_listening = list(AI_FREQ, SCI_FREQ, MED_FREQ, SUP_FREQ, SRV_FREQ, COMM_FREQ, ENG_FREQ, SEC_FREQ, ENT_FREQ)
 
 	//Common and other radio frequencies for people to freely use
-/obj/machinery/telecomms/receiver/preset_right/Initialize()
-	for(var/i = PUBLIC_LOW_FREQ, i < PUBLIC_HIGH_FREQ, i += 2)
-		freq_listening |= i
-	. = ..()
+	New()
+		for(var/i = PUBLIC_LOW_FREQ, i < PUBLIC_HIGH_FREQ, i += 2)
+			freq_listening |= i
+		..()
 
 /obj/machinery/telecomms/receiver/preset_cent
 	id = "CentComm Receiver"
@@ -52,12 +52,12 @@
 	freq_listening = list(SUP_FREQ, SRV_FREQ)
 	autolinkers = list("processor2", "supply", "service", "unused")
 
-/obj/machinery/telecomms/bus/preset_two/Initialize()
-	. = ..()
+/obj/machinery/telecomms/bus/preset_two/New()
 	for(var/i = PUBLIC_LOW_FREQ, i < PUBLIC_HIGH_FREQ, i += 2)
-		if(i == PUB_FREQ)
+		if(i == AI_FREQ || i == PUB_FREQ || i == MED_I_FREQ || i == SEC_I_FREQ)
 			continue
 		freq_listening |= i
+	..()
 
 /obj/machinery/telecomms/bus/preset_three
 	id = "Bus 3"
@@ -68,7 +68,7 @@
 /obj/machinery/telecomms/bus/preset_four
 	id = "Bus 4"
 	network = "tcommsat"
-	freq_listening = list(ENG_FREQ, AI_FREQ, PUB_FREQ, ENT_FREQ)
+	freq_listening = list(ENG_FREQ, AI_FREQ, PUB_FREQ, ENT_FREQ, MED_I_FREQ, SEC_I_FREQ)
 	autolinkers = list("processor4", "engineering", "common")
 
 /obj/machinery/telecomms/bus/preset_cent
@@ -138,11 +138,13 @@
 
 /obj/machinery/telecomms/server/presets/common
 	id = "Common Server"
-	freq_listening = list(PUB_FREQ, AI_FREQ, ENT_FREQ) // AI Private and Common
+	freq_listening = list(PUB_FREQ, AI_FREQ, ENT_FREQ, MED_I_FREQ, SEC_I_FREQ) // AI Private, Common, and Departmental Intercomms
 	channel_tags = list(
 		list(PUB_FREQ, "Common", COMMS_COLOR_COMMON),
 		list(AI_FREQ, "AI Private", COMMS_COLOR_AI),
-		list(ENT_FREQ, "Entertainment", COMMS_COLOR_ENTERTAIN)
+		list(ENT_FREQ, "Entertainment", COMMS_COLOR_ENTERTAIN),
+		list(MED_I_FREQ, "Medical (I)", COMMS_COLOR_MEDICAL_I),
+		list(SEC_I_FREQ, "Security (I)", COMMS_COLOR_SECURITY_I)
 	)
 	autolinkers = list("common")
 
@@ -152,12 +154,12 @@
 	freq_listening = list()
 	autolinkers = list("unused")
 
-/obj/machinery/telecomms/server/presets/unused/Initialize()
-	. = ..()
+/obj/machinery/telecomms/server/presets/unused/New()
 	for(var/i = PUBLIC_LOW_FREQ, i < PUBLIC_HIGH_FREQ, i += 2)
-		if(i == AI_FREQ || i == PUB_FREQ)
+		if(i == AI_FREQ || i == PUB_FREQ || i == MED_I_FREQ || i == SEC_I_FREQ)
 			continue
 		freq_listening |= i
+	..()
 
 /obj/machinery/telecomms/server/presets/command
 	id = "Command Server"

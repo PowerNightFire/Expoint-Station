@@ -1,7 +1,7 @@
 /obj/structure/pit
 	name = "pit"
 	desc = "Watch your step, partner."
-	icon = 'icons/obj/structures/pit.dmi'
+	icon = 'icons/obj/pit.dmi'
 	icon_state = "pit1"
 	blend_mode = BLEND_MULTIPLY
 	density = 0
@@ -9,7 +9,7 @@
 	var/open = 1
 
 /obj/structure/pit/attackby(obj/item/W, mob/user)
-	if( istype(W,/obj/item/shovel) )
+	if( istype(W,/obj/item/weapon/shovel) )
 		visible_message("<span class='notice'>\The [user] starts [open ? "filling" : "digging open"] \the [src]</span>")
 		if( do_after(user, 50) )
 			visible_message("<span class='notice'>\The [user] [open ? "fills" : "digs open"] \the [src]!</span>")
@@ -37,8 +37,8 @@
 
 /obj/structure/pit/on_update_icon()
 	icon_state = "pit[open]"
-	if(istype(loc,/turf/exterior))
-		var/turf/exterior/E = loc
+	if(istype(loc,/turf/simulated/floor/exoplanet))
+		var/turf/simulated/floor/exoplanet/E = loc
 		if(E.dirt_color)
 			color = E.dirt_color
 
@@ -128,7 +128,7 @@
 /obj/structure/gravemarker
 	name = "grave marker"
 	desc = "You're not the first."
-	icon = 'icons/obj/structures/gravestone.dmi'
+	icon = 'icons/obj/gravestone.dmi'
 	icon_state = "wood"
 	pixel_x = 15
 	pixel_y = 8
@@ -149,8 +149,8 @@
 /obj/structure/gravemarker/random/proc/generate()
 	icon_state = pick("wood","cross")
 
-	var/decl/cultural_info/S = SSlore.get_culture(CULTURE_HUMAN)
-	var/nam = S.get_random_name(null, pick(MALE,FEMALE))
+	var/decl/cultural_info/S = SSculture.get_culture(CULTURE_HUMAN)
+	var/nam = S.get_random_name(pick(MALE,FEMALE))
 	var/cur_year = game_year
 	var/born = cur_year - rand(5,150)
 	var/died = max(cur_year - rand(0,70),born)
@@ -158,13 +158,13 @@
 	message = "Here lies [nam], [born] - [died]."
 
 /obj/structure/gravemarker/attackby(obj/item/W, mob/user)
-	if(istype(W,/obj/item/hatchet))
+	if(istype(W,/obj/item/weapon/material/hatchet))
 		visible_message("<span class = 'warning'>\The [user] starts hacking away at \the [src] with \the [W].</span>")
 		if(!do_after(user, 30))
 			visible_message("<span class = 'warning'>\The [user] hacks \the [src] apart.</span>")
 			new /obj/item/stack/material/wood(src)
 			qdel(src)
-	if(istype(W,/obj/item/pen))
+	if(istype(W,/obj/item/weapon/pen))
 		var/msg = sanitize(input(user, "What should it say?", "Grave marker", message) as text|null)
 		if(msg)
 			message = msg

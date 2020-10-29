@@ -9,40 +9,22 @@
 	anchored = 1.0
 	idle_power_usage = 20
 	power_channel = LIGHT
-	required_interaction_dexterity = DEXTERITY_SIMPLE_MACHINES
-
 	var/on = 0
 	var/area/connected_area = null
 	var/other_area = null
 	var/image/overlay
 
-	construct_state = /decl/machine_construction/wall_frame/panel_closed/simple
-	frame_type = /obj/item/frame/button/light_switch
-	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc/buildable
-	)
-	base_type = /obj/machinery/light_switch/buildable
-
-/obj/machinery/light_switch/buildable
-	uncreated_component_parts = null
-
-/obj/machinery/light_switch/on
-	on = TRUE
-
 /obj/machinery/light_switch/Initialize()
-	..()
-	if(other_area)
-		connected_area = locate(other_area)
-	else
-		connected_area = get_area(src)
-
-	if(connected_area && name == initial(name))
-		SetName("light switch ([connected_area.name])")
-	return INITIALIZE_HINT_LATELOAD
-
-/obj/machinery/light_switch/LateInitialize()
 	. = ..()
-	connected_area?.set_lightswitch(on)
+	if(other_area)
+		src.connected_area = locate(other_area)
+	else
+		src.connected_area = get_area(src)
+
+	if(name == initial(name))
+		SetName("light switch ([connected_area.name])")
+
+	connected_area.set_lightswitch(on)
 	update_icon()
 
 /obj/machinery/light_switch/on_update_icon()
@@ -83,3 +65,25 @@
 		playsound(src, "switch", 30)
 		set_state(!on)
 		return TRUE
+
+/obj/machinery/light_switch/attackby(obj/item/tool as obj, mob/user as mob)
+	if(istype(tool, /obj/item/weapon/screwdriver))
+		new /obj/item/frame/light_switch(user.loc, 1)
+		qdel(src)
+
+
+/obj/machinery/light_switch/powered()
+	. = ..(power_channel, connected_area) //tie our powered status to the connected area
+
+/obj/machinery/light_switch/power_change()
+	. = ..()
+	//synch ourselves to the new state
+	if(connected_area) //If an APC initializes before we do it will force a power_change() before we can get our connected area
+		sync_state()
+
+/obj/machinery/light_switch/emp_act(severity)
+	if(stat & (BROKEN|NOPOWER))
+		..(severity)
+		return
+	power_change()
+	..(severity)

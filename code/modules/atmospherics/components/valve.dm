@@ -21,16 +21,6 @@
 	rotate_class = PIPE_ROTATE_TWODIR
 	build_icon_state = "mvalve"
 
-	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc
-	)
-	frame_type = /obj/item/pipe
-	construct_state = /decl/machine_construction/default/panel_closed/item_chassis
-	base_type = /obj/machinery/atmospherics/valve/buildable
-
-/obj/machinery/atmospherics/valve/buildable
-	uncreated_component_parts = null
-
 /obj/machinery/atmospherics/valve/open
 	open = 1
 	icon_state = "map_valve1"
@@ -217,12 +207,24 @@
 
 	return null
 
-/obj/machinery/atmospherics/valve/deconstruction_pressure_check()
+/obj/machinery/atmospherics/valve/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
+	if (!istype(W, /obj/item/weapon/wrench))
+		return ..()
 	var/datum/gas_mixture/int_air = return_air()
 	var/datum/gas_mixture/env_air = loc.return_air()
 	if ((int_air.return_pressure()-env_air.return_pressure()) > 2*ONE_ATMOSPHERE)
-		return FALSE
-	return TRUE
+		to_chat(user, "<span class='warning'>You cannot unwrench \the [src], it is too exerted due to internal pressure.</span>")
+		add_fingerprint(user)
+		return 1
+	playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
+	to_chat(user, "<span class='notice'>You begin to unfasten \the [src]...</span>")
+	if (do_after(user, 40, src))
+		user.visible_message( \
+			"<span class='notice'>\The [user] unfastens \the [src].</span>", \
+			"<span class='notice'>You have unfastened \the [src].</span>", \
+			"You hear a ratchet.")
+		new /obj/item/pipe(loc, src)
+		qdel(src)
 
 /obj/machinery/atmospherics/valve/examine(mob/user)
 	. = ..()
@@ -258,8 +260,8 @@
 	desc = "A digitally controlled valve."
 	icon = 'icons/atmos/digital_valve.dmi'
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/radio/receiver/buildable,
-		/obj/item/stock_parts/power/apc/buildable
+		/obj/item/weapon/stock_parts/radio/receiver,
+		/obj/item/weapon/stock_parts/power/apc
 	)
 	public_variables = list(/decl/public_access/public_variable/valve_open)
 	public_methods = list(
@@ -270,10 +272,6 @@
 	stock_part_presets = list(/decl/stock_part_preset/radio/receiver/valve = 1)
 
 	build_icon_state = "dvalve"
-	base_type = /obj/machinery/atmospherics/valve/digital/buildable
-
-/obj/machinery/atmospherics/valve/digital/buildable
-	uncreated_component_parts = null
 
 /obj/machinery/atmospherics/valve/digital/interface_interact(mob/user)
 	if(!CanInteract(user, DefaultTopicState()))
@@ -295,6 +293,7 @@
 
 /decl/stock_part_preset/radio/receiver/valve
 	frequency = FUEL_FREQ
+	filter = RADIO_ATMOSIA
 	receive_and_call = list(
 		"valve_open" = /decl/public_access/public_method/open_valve,
 		"valve_close" = /decl/public_access/public_method/close_valve,

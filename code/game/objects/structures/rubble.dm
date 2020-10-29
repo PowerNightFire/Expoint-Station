@@ -1,23 +1,26 @@
 /obj/structure/rubble
 	name = "pile of rubble"
 	desc = "One man's garbage is another man's treasure."
-	icon = 'icons/obj/structures/rubble.dmi'
+	icon = 'icons/obj/rubble.dmi'
 	icon_state = "base"
 	appearance_flags = PIXEL_SCALE
 	opacity = 1
 	density = 1
 	anchored = 1
-	maxhealth = 50
 
-	var/list/loot = list(/obj/item/cell,/obj/item/stack/material/iron,/obj/item/stack/material/rods)
+	var/list/loot = list(/obj/item/weapon/cell,/obj/item/stack/material/iron,/obj/item/stack/material/rods)
 	var/lootleft = 1
 	var/emptyprob = 95
+	var/health = 40
 	var/is_rummaging = 0
+
+/obj/structure/rubble/New()
+	if(prob(emptyprob)) 
+		lootleft = 0
+	..()
 
 /obj/structure/rubble/Initialize()
 	. = ..()
-	if(prob(emptyprob)) 
-		lootleft = 0
 	update_icon()
 
 /obj/structure/rubble/on_update_icon()
@@ -56,14 +59,14 @@
 			booty = new booty(loc)
 			lootleft--
 			update_icon()
-			to_chat(user, "<span class='notice'>You find something and pull it carefully out of \the [src].</span>")
+			to_chat(user, "<span class='notice'>You find \a [booty] and pull it carefully out of \the [src].</span>")
 		is_rummaging = 0
 	else
 		to_chat(user, "<span class='warning'>Someone is already rummaging here!</span>")
 		
 /obj/structure/rubble/attackby(var/obj/item/I, var/mob/user)
-	if (istype(I, /obj/item/pickaxe))
-		var/obj/item/pickaxe/P = I
+	if (istype(I, /obj/item/weapon/pickaxe))
+		var/obj/item/weapon/pickaxe/P = I
 		visible_message("[user] starts clearing away \the [src].")
 		if(do_after(user,P.digspeed, src))
 			visible_message("[user] clears away \the [src].")
@@ -71,36 +74,45 @@
 				var/obj/item/booty = pickweight(loot)
 				booty = new booty(loc)
 			qdel(src)
-		return TRUE
-	. = ..()
-
-/obj/structure/rubble/dismantle()
-	SHOULD_CALL_PARENT(FALSE)
-	qdel(src)
-	. = TRUE
-	
-/obj/structure/rubble/physically_destroyed()
-	SHOULD_CALL_PARENT(FALSE)
-	visible_message(SPAN_NOTICE("\The [src] is cleared away."))
-	qdel(src)
-	. = TRUE
+	else 
+		..()
+		health -= I.force
+		if(health < 1)
+			visible_message("[user] clears away \the [src].")
+			qdel(src)
 
 /obj/structure/rubble/house
-	loot = list(
-		/obj/item/archaeological_find/house,
-		/obj/item/archaeological_find/construction = 2
+	loot = list(/obj/item/weapon/archaeological_find/bowl,
+	/obj/item/weapon/archaeological_find/remains,
+	/obj/item/weapon/archaeological_find/bowl/urn,
+	/obj/item/weapon/archaeological_find/cutlery,
+	/obj/item/weapon/archaeological_find/statuette,
+	/obj/item/weapon/archaeological_find/instrument,
+	/obj/item/weapon/archaeological_find/container,
+	/obj/item/weapon/archaeological_find/mask,
+	/obj/item/weapon/archaeological_find/coin,
+	/obj/item/weapon/archaeological_find,
+	/obj/item/weapon/archaeological_find/material = 5,
+	/obj/item/weapon/archaeological_find/material/exotic = 2,
+	/obj/item/weapon/archaeological_find/parts = 3
 	)
 
 /obj/structure/rubble/lab
 	emptyprob = 30
 	loot = list(
-		/obj/item/archaeological_find/lab,
-		/obj/item/archaeological_find/construction = 6
+	/obj/item/weapon/archaeological_find/statuette,
+	/obj/item/weapon/archaeological_find/instrument,
+	/obj/item/weapon/archaeological_find/mask,
+	/obj/item/weapon/archaeological_find,
+	/obj/item/weapon/archaeological_find/material = 10,
+	/obj/item/weapon/archaeological_find/material/exotic = 10,
+	/obj/item/weapon/archaeological_find/parts = 10
 	)
 
 /obj/structure/rubble/war
 	emptyprob = 95 //can't have piles upon piles of guns
-	loot = list(
-		/obj/item/archaeological_find/blade,
-		/obj/item/archaeological_find/gun
-	)
+	loot = list(/obj/item/weapon/archaeological_find/knife,
+	/obj/item/weapon/archaeological_find/gun,
+	/obj/item/weapon/archaeological_find/laser,
+	/obj/item/weapon/archaeological_find/sword,
+	/obj/item/weapon/archaeological_find/katana)

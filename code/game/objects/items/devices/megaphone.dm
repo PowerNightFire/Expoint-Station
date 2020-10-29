@@ -1,7 +1,6 @@
-/obj/item/megaphone
+/obj/item/device/megaphone
 	name = "megaphone"
 	desc = "A device used to project your voice. Loudly."
-	icon = 'icons/obj/items/device/megaphone.dmi'
 	icon_state = "megaphone"
 	item_state = "radio"
 	w_class = ITEM_SIZE_SMALL
@@ -12,7 +11,7 @@
 	var/insults = 0
 	var/list/insultmsg = list("FUCK EVERYONE!", "I'M A TATER!", "ALL SECURITY TO SHOOT ME ON SIGHT!", "I HAVE A BOMB!", "CAPTAIN IS A COMDOM!", "FOR THE SYNDICATE!")
 
-/obj/item/megaphone/attack_self(mob/living/user)
+/obj/item/device/megaphone/attack_self(mob/living/user as mob)
 	if (user.client)
 		if(user.client.prefs.muted & MUTE_IC)
 			to_chat(src, "<span class='warning'>You cannot speak in IC (muted).</span>")
@@ -44,7 +43,7 @@
 			spamcheck = 0
 		return
 
-/obj/item/megaphone/emag_act(var/remaining_charges, var/mob/user)
+/obj/item/device/megaphone/emag_act(var/remaining_charges, var/mob/user)
 	if(!emagged)
 		to_chat(user, "<span class='warning'>You overload \the [src]'s voice synthesizer.</span>")
 		emagged = 1

@@ -4,10 +4,25 @@
 var/global/list/cable_list = list()					//Index for all cables, so that powernets don't have to look through the entire world all the time
 var/global/list/landmarks_list = list()				//list of all landmarks created
 var/global/list/side_effects = list()				//list of all medical sideeffects types by thier names |BS12
+var/global/list/mechas_list = list()				//list of all mechs. Used by hostile mobs target tracking.
+
+#define all_genders_define_list list(MALE,FEMALE,PLURAL,NEUTER)
+#define all_genders_text_list list("Male","Female","Plural","Neuter")
+
+//Languages/species/whitelist.
+var/global/list/all_species[0]
+var/global/list/datum/language/all_languages = list()
+var/global/list/language_keys[0]					// Table of say codes for all languages
+var/global/list/playable_species = list(SPECIES_HUMAN)    // A list of ALL playable species, whitelisted, latejoin or otherwise.
+
 var/list/mannequins_
 
+// Grabs
+var/global/list/all_grabstates[0]
+var/global/list/all_grabobjects[0]
+
 // Uplinks
-var/list/obj/item/uplink/world_uplinks = list()
+var/list/obj/item/device/uplink/world_uplinks = list()
 
 //Preferences stuff
 //Hairstyles
@@ -32,33 +47,32 @@ var/global/list/syndicate_access = list(access_maint_tunnels, access_syndicate, 
 
 // Strings which corraspond to bodypart covering flags, useful for outputting what something covers.
 var/global/list/string_part_flags = list(
-	"head" =       SLOT_HEAD,
-	"face" =       SLOT_FACE,
-	"eyes" =       SLOT_EYES,
-	"ears" =       SLOT_EARS,
-	"upper body" = SLOT_UPPER_BODY,
-	"lower body" = SLOT_LOWER_BODY,
-	"legs" =       SLOT_LEGS,
-	"feet" =       SLOT_FEET,
-	"arms" =       SLOT_ARMS,
-	"hands" =      SLOT_HANDS
+	"head" = HEAD,
+	"face" = FACE,
+	"eyes" = EYES,
+	"upper body" = UPPER_TORSO,
+	"lower body" = LOWER_TORSO,
+	"legs" = LEGS,
+	"feet" = FEET,
+	"arms" = ARMS,
+	"hands" = HANDS
 )
 
 // Strings which corraspond to slot flags, useful for outputting what slot something is.
 var/global/list/string_slot_flags = list(
-	"back" =     SLOT_BACK,
-	"face" =     SLOT_FACE,
-	"waist" =    SLOT_LOWER_BODY,
-	"ID slot" =  SLOT_ID,
-	"ears" =     SLOT_EARS,
-	"eyes" =     SLOT_EYES,
-	"hands" =    SLOT_HANDS,
-	"head" =     SLOT_HEAD,
-	"feet" =     SLOT_FEET,
-	"exo slot" = SLOT_OVER_BODY,
-	"body" =     SLOT_UPPER_BODY,
-	"uniform" =  SLOT_TIE,
-	"holster" =  SLOT_HOLSTER
+	"back" = SLOT_BACK,
+	"face" = SLOT_MASK,
+	"waist" = SLOT_BELT,
+	"ID slot" = SLOT_ID,
+	"ears" = SLOT_EARS,
+	"eyes" = SLOT_EYES,
+	"hands" = SLOT_GLOVES,
+	"head" = SLOT_HEAD,
+	"feet" = SLOT_FEET,
+	"exo slot" = SLOT_OCLOTHING,
+	"body" = SLOT_ICLOTHING,
+	"uniform" = SLOT_TIE,
+	"holster" = SLOT_HOLSTER
 )
 
 //////////////////////////
@@ -94,32 +108,71 @@ var/global/list/string_slot_flags = list(
 		var/datum/sprite_accessory/marking/M = new path()
 		GLOB.body_marking_styles_list[M.name] = M
 
+	//Languages and species.
+	paths = typesof(/datum/language)-/datum/language
+	for(var/T in paths)
+		var/datum/language/L = new T
+		all_languages[L.name] = L
+
+	for (var/language_name in all_languages)
+		var/datum/language/L = all_languages[language_name]
+		if(!(L.flags & NONGLOBAL))
+			language_keys[lowertext(L.key)] = L
+
+	var/rkey = 0
+	paths = typesof(/datum/species)
+	for(var/T in paths)
+
+		rkey++
+
+		var/datum/species/S = T
+		if(!initial(S.name))
+			continue
+
+		S = new T
+		S.race_key = rkey //Used in mob icon caching.
+		all_species[S.name] = S
+		if(!(S.spawn_flags & SPECIES_IS_RESTRICTED))
+			playable_species += S.name
+
+	//Grabs
+	paths = typesof(/datum/grab) - /datum/grab
+	for(var/T in paths)
+		var/datum/grab/G = new T
+		if(G.state_name)
+			all_grabstates[G.state_name] = G
+
+	paths = typesof(/obj/item/grab) - /obj/item/grab
+	for(var/T in paths)
+		var/obj/item/grab/G = T
+		all_grabobjects[initial(G.type_name)] = T
+
+	for(var/grabstate_name in all_grabstates)
+		var/datum/grab/G = all_grabstates[grabstate_name]
+		G.refresh_updown()
+
 	return 1
 
-// This is all placeholder procs for an eventual PR to change them to use decls.
-var/list/all_species
-var/list/playable_species // A list of ALL playable species, whitelisted, latejoin or otherwise.
-/proc/build_species_lists()
-	if(global.all_species && global.playable_species)
-		return
-	global.playable_species = list()
-	global.all_species = list()
-	for(var/species_type in typesof(/datum/species))
-		var/datum/species/species = species_type
-		var/species_name = initial(species.name)
-		if(species_name)
-			global.all_species[species_name] = new species
-			species = get_species_by_key(species_name)
-			if(!(species.spawn_flags & SPECIES_IS_RESTRICTED))
-				global.playable_species += species.name
-	if(GLOB.using_map.default_species)
-		global.playable_species |= GLOB.using_map.default_species
-/proc/get_species_by_key(var/species_key)
-	build_species_lists()
-	. = global.all_species[species_key]
-/proc/get_all_species()
-	build_species_lists()
-	. = global.all_species
-/proc/get_playable_species()
-	build_species_lists()
-	. = global.playable_species
+//*** params cache
+var/global/list/paramslist_cache = list()
+
+#define cached_key_number_decode(key_number_data) cached_params_decode(key_number_data, /proc/key_number_decode)
+#define cached_number_list_decode(number_list_data) cached_params_decode(number_list_data, /proc/number_list_decode)
+
+/proc/cached_params_decode(var/params_data, var/decode_proc)
+	. = paramslist_cache[params_data]
+	if(!.)
+		. = call(decode_proc)(params_data)
+		paramslist_cache[params_data] = .
+
+/proc/key_number_decode(var/key_number_data)
+	var/list/L = params2list(key_number_data)
+	for(var/key in L)
+		L[key] = text2num(L[key])
+	return L
+
+/proc/number_list_decode(var/number_list_data)
+	var/list/L = params2list(number_list_data)
+	for(var/i in 1 to L.len)
+		L[i] = text2num(L[i])
+	return L

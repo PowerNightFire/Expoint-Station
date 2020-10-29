@@ -1,8 +1,8 @@
-// The following procs are used to grab players for mobs produced by a seed.
+// The following procs are used to grab players for mobs produced by a seed (mostly for dionaea).
 /datum/seed/proc/handle_living_product(var/mob/living/host)
 	if(!host || !istype(host)) return
 
-	var/decl/ghosttrap/P = decls_repository.get_decl(/decl/ghosttrap/sentient_plant)
+	var/datum/ghosttrap/plant/P = get_ghost_trap("living plant")
 	P.request_player(host, "Someone is harvesting \a [display_name].", 15 SECONDS)
 
 	spawn(15 SECONDS)

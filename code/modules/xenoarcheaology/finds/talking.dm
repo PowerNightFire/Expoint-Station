@@ -9,6 +9,9 @@
 
 /datum/talking_atom/New(atom/holder)
 	holder_atom = holder
+	init()
+
+/datum/talking_atom/proc/init()
 	if(holder_atom)
 		START_PROCESSING(SSprocessing, src)
 
@@ -51,13 +54,13 @@
 		var/list/options = list("[holder_atom] seems to be listening intently to [source]...",\
 			"[holder_atom] seems to be focusing on [source]...",\
 			"[holder_atom] seems to turn it's attention to [source]...")
-		holder_atom.loc.visible_message("<span class='notice'>[html_icon(holder_atom)] [pick(options)]</span>")
+		holder_atom.loc.visible_message("<span class='notice'>[icon2html(holder_atom, viewers(get_turf(holder_atom)))] [pick(options)]</span>")
 
 	if(prob(20))
 		spawn(2)
 			SaySomething(pick(seperate))
 
-/*/obj/item/talkingcrystal/proc/debug()
+/*/obj/item/weapon/talkingcrystal/proc/debug()
 	//set src in view()
 	for(var/v in heard_words)
 		log_debug("[uppertext(v)]")
@@ -115,5 +118,5 @@
 			listening|=M
 
 	for(var/mob/M in listening)
-		to_chat(M, "[html_icon(holder_atom)] <b>[holder_atom]</b> reverberates, <span class='notice'>\"[msg]\"</span>")
+		to_chat(M, "[icon2html(holder_atom, M)] <b>[holder_atom]</b> reverberates, <span class='notice'>\"[msg]\"</span>")
 	last_talk_time = world.time

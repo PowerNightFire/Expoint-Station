@@ -4,7 +4,7 @@
 	icon_state = "injector0"
 	density = 1
 	anchored = 0
-	initial_access = list(access_engine)
+	req_access = list(access_engine)
 	idle_power_usage = 10
 	active_power_usage = 500
 	construct_state = /decl/machine_construction/default/panel_closed
@@ -15,7 +15,7 @@
 	var/fuel_usage = 0.001
 	var/initial_id_tag
 	var/injecting = 0
-	var/obj/item/fuel_assembly/cur_assembly
+	var/obj/item/weapon/fuel_assembly/cur_assembly
 	var/injection_rate = 1
 
 /obj/machinery/fusion_fuel_injector/Initialize()
@@ -48,7 +48,7 @@
 		lanm.set_tag(null, initial_id_tag)
 		return
 
-	if(istype(W, /obj/item/fuel_assembly))
+	if(istype(W, /obj/item/weapon/fuel_assembly))
 
 		if(injecting)
 			to_chat(user, "<span class='warning'>Shut \the [src] off before playing with the fuel rod!</span>")
@@ -134,17 +134,17 @@
 	set name = "Rotate Generator (Clockwise)"
 	set src in view(1)
 
-	if (usr.incapacitated() || anchored)
+	if (usr.incapacitated() || usr.restrained()  || anchored)
 		return
 
-	set_dir(turn(src.dir, -90))
+	src.dir = turn(src.dir, -90)
 
 /obj/machinery/fusion_fuel_injector/verb/rotate_anticlock()
 	set category = "Object"
 	set name = "Rotate Generator (Counter-clockwise)"
 	set src in view(1)
 
-	if (usr.incapacitated() || anchored)
+	if (usr.incapacitated() || usr.restrained()  || anchored)
 		return
 
-	set_dir(turn(src.dir, 90))
+	src.dir = turn(src.dir, 90)

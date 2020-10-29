@@ -16,10 +16,6 @@
 	if (above)
 		above.update_mimic()
 
-/turf/physically_destroyed()
-	SHOULD_CALL_PARENT(FALSE)
-	. = TRUE
-
 //Creates a new turf
 /turf/proc/ChangeTurf(var/turf/N, var/tell_universe = TRUE, var/force_lighting_update = FALSE, var/keep_air = FALSE)
 	if (!N)
@@ -39,8 +35,6 @@
 	var/old_lighting_overlay = lighting_overlay
 	var/old_corners = corners
 	var/old_ao_neighbors = ao_neighbors
-	var/old_above = above
-	var/old_prev_type = prev_type
 
 //	log_debug("Replacing [src.type] with [N]")
 
@@ -50,15 +44,18 @@
 
 	overlays.Cut()
 	underlays.Cut()
+	if(istype(src,/turf/simulated))
+		//Yeah, we're just going to rebuild the whole thing.
+		//Despite this being called a bunch during explosions,
+		//the zone will only really do heavy lifting once.
+		var/turf/simulated/S = src
+		if(S.zone) S.zone.rebuild()
 
 	// Run the Destroy() chain.
 	qdel(src)
 
-	var/old_opaque_counter = opaque_counter
+	var/old_opaque_counter = opaque_counter 
 	var/turf/simulated/W = new N(src)
-
-	above = old_above
-	prev_type = old_prev_type
 
 	if (permit_ao)
 		regenerate_ao()
@@ -82,7 +79,7 @@
 
 	SSair.mark_for_update(src) //handle the addition of the new turf.
 
-	for(var/turf/S in range(W,1))
+	for(var/turf/space/S in range(W,1))
 		S.update_starlight()
 
 	W.post_change()

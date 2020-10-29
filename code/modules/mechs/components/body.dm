@@ -1,4 +1,4 @@
-/obj/item/storage/mech
+/obj/item/weapon/storage/mech
 	w_class = ITEM_SIZE_NO_CONTAINER
 	max_w_class = ITEM_SIZE_LARGE
 	storage_slots = 4
@@ -11,7 +11,7 @@
 		. = E.Adjacent(neighbor, recurse)
 	return . || ..()
 
-/obj/item/storage/mech/Adjacent(var/atom/neighbor, var/recurse = 1) //in order to properly retrieve items
+/obj/item/weapon/storage/mech/Adjacent(var/atom/neighbor, var/recurse = 1) //in order to properly retrieve items
 	var/obj/item/mech_component/chassis/C = loc
 	if(istype(C))
 		. = C.Adjacent(neighbor, recurse-1)
@@ -21,27 +21,26 @@
 	name = "body"
 	icon_state = "loader_body"
 	gender = NEUTER
-	material = /decl/material/solid/metal/steel
-	has_hardpoints = list(HARDPOINT_BACK, HARDPOINT_LEFT_SHOULDER, HARDPOINT_RIGHT_SHOULDER)
 
 	var/mech_health = 300
-	var/obj/item/cell/cell
+	var/obj/item/weapon/cell/cell
 	var/obj/item/robot_parts/robot_component/diagnosis_unit/diagnostics
 	var/obj/item/robot_parts/robot_component/armour/exosuit/m_armour
 	var/obj/machinery/portable_atmospherics/canister/air_supply
-	var/obj/item/storage/mech/storage_compartment
+	var/obj/item/weapon/storage/mech/storage_compartment
 	var/datum/gas_mixture/cockpit
 	var/transparent_cabin = FALSE
 	var/hide_pilot =        FALSE
 	var/hatch_descriptor = "cockpit"
 	var/list/pilot_positions
 	var/pilot_coverage = 100
-	var/min_pilot_size = MOB_SIZE_SMALL
-	var/max_pilot_size = MOB_SIZE_LARGE
+	var/min_pilot_size = MOB_SMALL
+	var/max_pilot_size = MOB_LARGE
+	has_hardpoints = list(HARDPOINT_BACK, HARDPOINT_LEFT_SHOULDER, HARDPOINT_RIGHT_SHOULDER)
 	var/climb_time = 25
 
-/obj/item/mech_component/chassis/Initialize()
-	. = ..()
+/obj/item/mech_component/chassis/New()
+	..()
 	if(isnull(pilot_positions))
 		pilot_positions = list(
 			list(
@@ -90,6 +89,7 @@
 
 			cockpit.temperature = air.temperature
 			cockpit.update_values()
+
 	air_supply = new /obj/machinery/portable_atmospherics/canister/air(src)
 	storage_compartment = new(src)
 
@@ -128,6 +128,7 @@
 				else //just delete the cabin gas, we are somewhere with invalid air, so they wont mind the additional nothingness
 					qdel(removed)
 				changed = TRUE
+
 	if(changed)
 		cockpit.react()
 
@@ -136,7 +137,7 @@
 
 /obj/item/mech_component/chassis/prebuild()
 	diagnostics = new(src)
-	cell = new /obj/item/cell/exosuit(src)
+	cell = new /obj/item/weapon/cell/exosuit(src)
 	cell.charge = cell.maxcharge
 
 /obj/item/mech_component/chassis/attackby(var/obj/item/thing, var/mob/user)
@@ -145,7 +146,7 @@
 			to_chat(user, SPAN_WARNING("\The [src] already has a diagnostic system installed."))
 			return
 		if(install_component(thing, user)) diagnostics = thing
-	else if(istype(thing, /obj/item/cell))
+	else if(istype(thing, /obj/item/weapon/cell))
 		if(cell)
 			to_chat(user, SPAN_WARNING("\The [src] already has a cell installed."))
 			return
@@ -173,9 +174,11 @@
 	else . = ..()
 
 obj/item/mech_component/chassis/MouseDrop(atom/over)
-	if(CanMouseDrop(over))
-		if(storage_compartment)
-			return storage_compartment.MouseDrop(over)
+	if(!usr || !over) return
+	if(!Adjacent(usr) || !over.Adjacent(usr)) return
+
+	if(storage_compartment)
+		return storage_compartment.MouseDrop(over)
 
 /obj/item/mech_component/chassis/return_diagnostics(mob/user)
 	..()
@@ -187,3 +190,5 @@ obj/item/mech_component/chassis/MouseDrop(atom/over)
 		to_chat(user, SPAN_NOTICE(" Armor Integrity: <b>[round((((m_armour.max_dam - m_armour.total_dam) / m_armour.max_dam)) * 100)]%</b>"))
 	else
 		to_chat(user, SPAN_WARNING(" Armor Missing or Non-functional."))
+
+

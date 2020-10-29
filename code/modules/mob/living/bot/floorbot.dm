@@ -196,7 +196,7 @@
 		update_icons()
 	else if(istype(A, /obj/item/stack/material) && amount + 4 <= maxAmount)
 		var/obj/item/stack/material/M = A
-		if(M.get_material_type() == /decl/material/solid/metal/steel)
+		if(M.get_material_name() == MATERIAL_STEEL)
 			visible_message("<span class='notice'>\The [src] begins to make tiles.</span>")
 			busy = 1
 			anchored = TRUE
@@ -220,14 +220,14 @@
 	var/list/shrapnel = list()
 
 	for(var/I = 3, I<3 , I++) //Toolbox shatters.
-		shrapnel += new /obj/item/shard/shrapnel(Tsec)
+		shrapnel += new /obj/item/weapon/material/shard/shrapnel(Tsec)
 
 	for(var/Amt = amount, Amt>0, Amt--) //Why not just spit them out in a disorganized jumble?
 		shrapnel += new /obj/item/stack/tile/floor(Tsec)
 
 	if(prob(50))
 		shrapnel += new /obj/item/robot_parts/l_arm(Tsec)
-	shrapnel += new /obj/item/assembly/prox_sensor(Tsec)
+	shrapnel += new /obj/item/device/assembly/prox_sensor(Tsec)
 
 	var/datum/effect/effect/system/spark_spread/s = new /datum/effect/effect/system/spark_spread
 	s.set_up(3, 1, src)

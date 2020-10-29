@@ -1,10 +1,11 @@
 /mob/living/simple_animal/hostile/retaliate/aquatic
 	icon = 'icons/mob/simple_animal/aquatic.dmi'
-	meat_type = /obj/item/chems/food/snacks/fish
+	meat_type = /obj/item/weapon/reagent_containers/food/snacks/fish
 	turns_per_move = 5
-	natural_weapon = /obj/item/natural_weapon/bite
+	attacktext = "bitten"
+	attack_sound = 'sound/weapons/bite.ogg'
 	speed = 4
-	mob_size = MOB_SIZE_MEDIUM
+	mob_size = MOB_MEDIUM
 	emote_see = list("gnashes")
 
 	// They only really care if there's water around them or not.

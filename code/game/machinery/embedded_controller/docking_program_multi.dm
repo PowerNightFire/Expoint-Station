@@ -11,13 +11,11 @@
 	var/list/children_ready
 	var/list/children_override
 
-/datum/computer/file/embedded_program/docking/multi/reset_id_tags(base_tag)
-	. = ..()
+/datum/computer/file/embedded_program/docking/multi/New(var/obj/machinery/embedded_controller/M)
+	..(M)
 
-	children_tags = null
-
-	if (istype(master,/obj/machinery/embedded_controller/radio/docking_port_multi))	//if our parent controller is the right type, then we can auto-init stuff at construction
-		var/obj/machinery/embedded_controller/radio/docking_port_multi/controller = master
+	if (istype(M,/obj/machinery/embedded_controller/radio/docking_port_multi))	//if our parent controller is the right type, then we can auto-init stuff at construction
+		var/obj/machinery/embedded_controller/radio/docking_port_multi/controller = M
 		//parse child_tags_txt and create child tags
 		children_tags = splittext(controller.child_tags_txt, ";")
 
@@ -30,9 +28,6 @@
 /datum/computer/file/embedded_program/docking/multi/proc/clear_children_ready_status()
 	for (var/child_tag in children_tags)
 		children_ready[child_tag] = 0
-
-/datum/computer/file/embedded_program/docking/multi/get_receive_filters()
-	return ..() + children_tags
 
 /datum/computer/file/embedded_program/docking/multi/receive_signal(datum/signal/signal, receive_method, receive_param)
 	var/receive_tag = signal.data["tag"]		//for docking signals, this is the sender id
@@ -140,9 +135,6 @@
 	if (!docking_enabled|| override_enabled)	//only allow the port to be used as an airlock if nothing is docked here or the override is enabled
 		return ..(command)
 
-/datum/computer/file/embedded_program/airlock/multi_docking/get_receive_filters()
-	return ..() + master_tag // master_tag is specifically to get "dock_status"
-
 /datum/computer/file/embedded_program/airlock/multi_docking/receive_signal(datum/signal/signal, receive_method, receive_param)
 	..()
 
@@ -176,9 +168,11 @@
 			if (!override_enabled)
 				stop_cycling()
 				close_doors()
+				disable_mech_regulation()
 
 		if ("finish_docking")
 			if (!override_enabled)
+				enable_mech_regulation()
 				open_doors()
 
 		if ("finish_undocking")
@@ -222,10 +216,10 @@
 	signal.data["tag"] = id_tag
 	signal.data["command"] = command
 	signal.data["recipient"] = master_tag
-	post_signal(signal, master_tag)
+	post_signal(signal)
 
 /datum/computer/file/embedded_program/airlock/multi_docking/proc/broadcast_override_status()
 	var/datum/signal/signal = new
 	signal.data["tag"] = id_tag
 	signal.data["override_status"] = override_enabled? "enabled" : "disabled"
-	post_signal(signal, master_tag)
+	post_signal(signal)

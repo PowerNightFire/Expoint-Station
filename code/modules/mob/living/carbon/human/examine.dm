@@ -1,5 +1,4 @@
 /mob/living/carbon/human/examine(mob/user, distance)
-	SHOULD_CALL_PARENT(FALSE)
 	. = TRUE
 	var/skipgloves = 0
 	var/skipsuitstorage = 0
@@ -39,7 +38,7 @@
 		T = gender_datums[PLURAL]
 	else
 		if(icon)
-			msg += "[html_icon(icon)] " //fucking BYOND: this should stop dreamseeker crashing if we -somehow- examine somebody before their icon is generated
+			msg += "[icon2html(icon, user)] " //fucking BYOND: this should stop dreamseeker crashing if we -somehow- examine somebody before their icon is generated
 
 	if(!T)
 		// Just in case someone VVs the gender to something strange. It'll runtime anyway when it hits usages, better to CRASH() now with a helpful message.
@@ -51,7 +50,7 @@
 	if(!(skipjumpsuit && skipface))
 		var/species_name = "\improper "
 		if(is_synth && species.cyborg_noun)
-			species_name += "[species.cyborg_noun] [species.get_root_species_name(src)]"
+			species_name += "[species.cyborg_noun] [species.get_bodytype(src)]"
 		else
 			species_name += "[species.name]"
 		msg += ", <b><font color='[species.get_flesh_colour(src)]'>\a [species_name]!</font></b>[(user.can_use_codex() && SScodex.get_codex_entry(get_codex_value())) ?  SPAN_NOTICE(" \[<a href='?src=\ref[SScodex];show_examined_info=\ref[src];show_to=\ref[user]'>?</a>\]") : ""]"
@@ -81,12 +80,13 @@
 	if(back)
 		msg += "[T.He] [T.has] [back.get_examine_line()] on [T.his] back.\n"
 
-	//held items
-	for(var/bp in held_item_slots)
-		var/datum/inventory_slot/inv_slot = LAZYACCESS(held_item_slots, bp)
-		var/obj/item/organ/external/E = organs_by_name[bp]
-		if(inv_slot?.holding)
-			msg += "[T.He] [T.is] holding [inv_slot.holding.get_examine_line()] in [T.his] [E.name].\n"
+	//left hand
+	if(l_hand)
+		msg += "[T.He] [T.is] holding [l_hand.get_examine_line()] in [T.his] left hand.\n"
+
+	//right hand
+	if(r_hand)
+		msg += "[T.He] [T.is] holding [r_hand.get_examine_line()] in [T.his] right hand.\n"
 
 	//gloves
 	if(gloves && !skipgloves)
@@ -126,14 +126,14 @@
 
 	//handcuffed?
 	if(handcuffed)
-		if(istype(handcuffed, /obj/item/handcuffs/cable))
-			msg += "<span class='warning'>[T.He] [T.is] [html_icon(handcuffed)] restrained with cable!</span>\n"
+		if(istype(handcuffed, /obj/item/weapon/handcuffs/cable))
+			msg += "<span class='warning'>[T.He] [T.is] [icon2html(handcuffed, user)] restrained with cable!</span>\n"
 		else
-			msg += "<span class='warning'>[T.He] [T.is] [html_icon(handcuffed)] handcuffed!</span>\n"
+			msg += "<span class='warning'>[T.He] [T.is] [icon2html(handcuffed, user)] handcuffed!</span>\n"
 
 	//buckled
 	if(buckled)
-		msg += "<span class='warning'>[T.He] [T.is] [html_icon(buckled)] buckled to [buckled]!</span>\n"
+		msg += "<span class='warning'>[T.He] [T.is] [icon2html(buckled, user)] buckled to [buckled]!</span>\n"
 
 	//Jitters
 	if(is_jittery)
@@ -175,11 +175,8 @@
 					else
 						to_chat(user, "<span class='deadsay'>[T.He] [T.has] a pulse!</span>")
 
-	if(fire_stacks > 0)
-		msg += "[T.He] is covered in flammable liquid!\n"
-	else if(fire_stacks < 0)
-		msg += "[T.He] [T.is] soaking wet.\n"
-
+	if(fire_stacks)
+		msg += "[T.He] looks flammable.\n"
 	if(on_fire)
 		msg += "<span class='warning'>[T.He] [T.is] on fire!.</span>\n"
 
@@ -237,7 +234,7 @@
 				if(LAZYLEN(E.wounds) && E.parent)
 					wound_flavor_text[E.name] += "[T.He] [T.has] [E.get_wounds_desc()] on [T.his] [E.parent.name].<br>"
 			else
-				if(!is_synth && BP_IS_PROSTHETIC(E) && (E.parent && !BP_IS_PROSTHETIC(E.parent) && !BP_IS_ASSISTED(E.parent)))
+				if(!is_synth && BP_IS_ROBOTIC(E) && (E.parent && !BP_IS_ROBOTIC(E.parent) && !BP_IS_ASSISTED(E.parent)))
 					wound_flavor_text[E.name] = "[T.He] [T.has] a [E.name].\n"
 				var/wounddesc = E.get_wounds_desc()
 				if(wounddesc != "nothing")
@@ -279,48 +276,39 @@
 		var/perpname = "wot"
 		var/criminal = "None"
 
-		var/obj/item/card/id/id = GetIdCard()
+		var/obj/item/weapon/card/id/id = GetIdCard()
 		if(istype(id))
 			perpname = id.registered_name
 		else
 			perpname = src.name
 
 		if(perpname)
-			var/datum/computer_network/network = user.getHUDnetwork(HUD_SECURITY)
-			if(network)
-				var/datum/computer_file/report/crew_record/R = network.get_crew_record_by_name(perpname)
-				if(R)
-					criminal = R.get_criminalStatus()
+			var/datum/computer_file/report/crew_record/R = get_crewmember_record(perpname)
+			if(R)
+				criminal = R.get_criminalStatus()
 
-				msg += "<span class = 'deptradio'>Criminal status:</span> <a href='?src=\ref[src];criminal=1'>\[[criminal]\]</a>\n"
-				msg += "<span class = 'deptradio'>Security records:</span> <a href='?src=\ref[src];secrecord=`'>\[View\]</a>\n"
+			msg += "<span class = 'deptradio'>Criminal status:</span> <a href='?src=\ref[src];criminal=1'>\[[criminal]\]</a>\n"
+			msg += "<span class = 'deptradio'>Security records:</span> <a href='?src=\ref[src];secrecord=`'>\[View\]</a>\n"
 
 	if(hasHUD(user, HUD_MEDICAL))
 		var/perpname = "wot"
 		var/medical = "None"
 
-		var/obj/item/card/id/id = GetIdCard()
+		var/obj/item/weapon/card/id/id = GetIdCard()
 		if(istype(id))
 			perpname = id.registered_name
 		else
 			perpname = src.name
 
-		var/datum/computer_network/network = user.getHUDnetwork(HUD_MEDICAL)
-		if(network)
-			var/datum/computer_file/report/crew_record/R = network.get_crew_record_by_name(perpname)
-			if(R)
-				medical = R.get_status()
+		var/datum/computer_file/report/crew_record/R = get_crewmember_record(perpname)
+		if(R)
+			medical = R.get_status()
 
-			msg += "<span class = 'deptradio'>Physical status:</span> <a href='?src=\ref[src];medical=1'>\[[medical]\]</a>\n"
-			msg += "<span class = 'deptradio'>Medical records:</span> <a href='?src=\ref[src];medrecord=`'>\[View\]</a>\n"
+		msg += "<span class = 'deptradio'>Physical status:</span> <a href='?src=\ref[src];medical=1'>\[[medical]\]</a>\n"
+		msg += "<span class = 'deptradio'>Medical records:</span> <a href='?src=\ref[src];medrecord=`'>\[View\]</a>\n"
 
 
 	if(print_flavor_text()) msg += "[print_flavor_text()]\n"
-
-	if(mind && user.mind && name == real_name)
-		var/list/relations = matchmaker.get_relationships_between(user.mind, mind, TRUE)
-		if(length(relations))
-			msg += "<br><span class='notice'>You know them. <a href='byond://?src=\ref[src];show_relations=1'>More...</a></span><br>"
 
 	msg += "*---------*</span><br>"
 	msg += applying_pressure
@@ -336,37 +324,17 @@
 	to_chat(user, jointext(msg, null))
 
 //Helper procedure. Called by /mob/living/carbon/human/examine() and /mob/living/carbon/human/Topic() to determine HUD access to security and medical records.
-/proc/hasHUD(mob/M, hudtype)
-	return !!M.getHUDsource(hudtype)
-
-/mob/proc/getHUDsource(hudtype)
-	return
-
-/mob/living/carbon/human/getHUDsource(hudtype)
-	var/obj/item/clothing/glasses/G = glasses
-	if(!istype(G))
-		return 
-	if(G.hud_type & hudtype)
-		return G
-	if(G.hud && (G.hud.hud_type & hudtype))
-		return G.hud
-
-/mob/living/silicon/robot/getHUDsource(hudtype)
-	for(var/obj/item/borg/sight/sight in list(module_state_1, module_state_2, module_state_3))
-		if(istype(sight) && (sight.hud_type & hudtype))
-			return sight
-
-//Gets the computer network M's source of hudtype is using
-/mob/proc/getHUDnetwork(hudtype)
-	var/obj/O = getHUDsource(hudtype)
-	if(!O)
-		return
-	var/datum/extension/network_device/D = get_extension(O, /datum/extension/network_device)
-	return D.get_network()
-
-/mob/living/silicon/getHUDnetwork(hudtype)
-	if(getHUDsource(hudtype))
-		return get_computer_network()
+/proc/hasHUD(mob/M as mob, hudtype)
+	if(istype(M, /mob/living/carbon/human))
+		var/mob/living/carbon/human/H = M
+		var/obj/item/clothing/glasses/G = H.glasses
+		return istype(G) && ((G.hud_type & hudtype) || (G.hud && (G.hud.hud_type & hudtype)))
+	else if(istype(M, /mob/living/silicon/robot))
+		var/mob/living/silicon/robot/R = M
+		for(var/obj/item/borg/sight/sight in list(R.module_state_1, R.module_state_2, R.module_state_3))
+			if(istype(sight) && (sight.hud_type & hudtype))
+				return TRUE
+	return FALSE
 
 /mob/living/carbon/human/verb/pose()
 	set name = "Set Pose"

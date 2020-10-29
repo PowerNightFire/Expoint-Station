@@ -3,7 +3,7 @@
 	desc = "To stop that awful noise."
 	icon_state = "muzzle"
 	item_state = "muzzle"
-	body_parts_covered = SLOT_FACE
+	body_parts_covered = FACE
 	w_class = ITEM_SIZE_SMALL
 	gas_transfer_coefficient = 0.90
 	voicechange = 1
@@ -22,8 +22,8 @@
 	say_verbs = list("mumbles", "says")
 
 // Clumsy folks can't take the mask off themselves.
-/obj/item/clothing/mask/muzzle/attack_hand(mob/user)
-	if(user.wear_mask == src && !user.check_dexterity(DEXTERITY_GRIP))
+/obj/item/clothing/mask/muzzle/attack_hand(mob/user as mob)
+	if(user.wear_mask == src && !user.IsAdvancedToolUser())
 		return 0
 	..()
 
@@ -32,8 +32,8 @@
 	desc = "A sterile mask designed to help prevent the spread of diseases."
 	icon_state = "sterile"
 	item_state = "sterile"
-	w_class = ITEM_SIZE_SMALL
-	body_parts_covered = SLOT_FACE
+	w_class = ITEM_SIZE_TINY
+	body_parts_covered = FACE
 	item_flags = ITEM_FLAG_FLEXIBLEMATERIAL
 	gas_transfer_coefficient = 0.90
 	permeability_coefficient = 0.01
@@ -62,6 +62,49 @@
 	flags_inv = HIDEFACE
 	body_parts_covered = 0
 
+//scarves (fit in in mask slot)
+//None of these actually have on-mob sprites...
+/obj/item/clothing/mask/bluescarf
+	name = "blue neck scarf"
+	desc = "A blue neck scarf."
+	icon_state = "blueneckscarf"
+	item_state = "blueneckscarf"
+	body_parts_covered = FACE
+	item_flags = ITEM_FLAG_FLEXIBLEMATERIAL
+	w_class = ITEM_SIZE_SMALL
+	gas_transfer_coefficient = 0.90
+
+/obj/item/clothing/mask/redscarf
+	name = "red scarf"
+	desc = "A red and white checkered neck scarf."
+	icon_state = "redwhite_scarf"
+	item_state = "redwhite_scarf"
+	body_parts_covered = FACE
+	item_flags = ITEM_FLAG_FLEXIBLEMATERIAL
+	w_class = ITEM_SIZE_SMALL
+	gas_transfer_coefficient = 0.90
+
+/obj/item/clothing/mask/greenscarf
+	name = "green scarf"
+	desc = "A green neck scarf."
+	icon_state = "green_scarf"
+	item_state = "green_scarf"
+	body_parts_covered = FACE
+	item_flags = ITEM_FLAG_THICKMATERIAL
+	w_class = ITEM_SIZE_SMALL
+	gas_transfer_coefficient = 0.90
+
+/obj/item/clothing/mask/ninjascarf
+	name = "ninja scarf"
+	desc = "A stealthy, dark scarf."
+	icon_state = "ninja_scarf"
+	item_state = "ninja_scarf"
+	body_parts_covered = FACE
+	item_flags = ITEM_FLAG_THICKMATERIAL
+	w_class = ITEM_SIZE_SMALL
+	gas_transfer_coefficient = 0.90
+	siemens_coefficient = 0
+
 /obj/item/clothing/mask/pig
 	name = "pig mask"
 	desc = "A rubber pig mask."
@@ -70,7 +113,7 @@
 	flags_inv = HIDEFACE|BLOCKHAIR
 	w_class = ITEM_SIZE_SMALL
 	siemens_coefficient = 0.9
-	body_parts_covered = SLOT_HEAD|SLOT_FACE|SLOT_EYES
+	body_parts_covered = HEAD|FACE|EYES
 
 /obj/item/clothing/mask/horsehead
 	name = "horse head mask"
@@ -78,12 +121,12 @@
 	icon_state = "horsehead"
 	item_state = "horsehead"
 	flags_inv = HIDEFACE|BLOCKHAIR
-	body_parts_covered = SLOT_HEAD|SLOT_FACE|SLOT_EYES
+	body_parts_covered = HEAD|FACE|EYES
 	w_class = ITEM_SIZE_SMALL
 	siemens_coefficient = 0.9
 
-/obj/item/clothing/mask/horsehead/Initialize()
-	. = ..()
+/obj/item/clothing/mask/horsehead/New()
+	..()
 	// The horse mask doesn't cause voice changes by default, the wizard spell changes the flag as necessary
 	say_messages = list("NEEIIGGGHHHH!", "NEEEIIIIGHH!", "NEIIIGGHH!", "HAAWWWWW!", "HAAAWWW!")
 	say_verbs = list("whinnies", "neighs", "says")
@@ -95,30 +138,57 @@
 	icon_state = "s-ninja"
 	item_state = "s-ninja"
 	flags_inv = HIDEFACE
-	body_parts_covered = SLOT_FACE|SLOT_EYES
+	body_parts_covered = FACE|EYES
 	action_button_name = "Toggle MUI"
-	origin_tech = "{'programming':5,'engineering':5}"
+	origin_tech = list(TECH_DATA = 5, TECH_ENGINEERING = 5)
+	var/active = FALSE
+	var/mob/observer/eye/cameranet/eye
 
-/obj/item/clothing/mask/ai/Initialize()
-	. = ..()
-	set_extension(src, /datum/extension/eye/cameranet)
+/obj/item/clothing/mask/ai/New()
+	eye = new(src)
+	eye.name_sufix = "camera MIU"
+	..()
+
+/obj/item/clothing/mask/ai/Destroy()
+	if(eye)
+		if(active)
+			disengage_mask(eye.owner)
+		qdel(eye)
+		eye = null
+	..()
 
 /obj/item/clothing/mask/ai/attack_self(var/mob/user)
 	if(user.incapacitated())
 		return
-	if(user.get_equipped_item(slot_wear_mask_str) != src)
-		to_chat(user, SPAN_WARNING("You must be wearing \the [src] to activate it!"))
-		return
-	var/datum/extension/eye/cameranet/CN = get_extension(src, /datum/extension/eye)
-	if(!CN)
-		to_chat(user, SPAN_WARNING("\The [src] doesn't respond!"))
-		return
-	if(CN.current_looker)
-		CN.unlook()
-		to_chat(user, SPAN_NOTICE("You deactivate \the [src]."))
+	active = !active
+	to_chat(user, "<span class='notice'>You [active ? "" : "dis"]engage \the [src].</span>")
+	if(active)
+		engage_mask(user)
 	else
-		CN.look(user)
-		to_chat(user, SPAN_NOTICE("You activate \the [src]."))
+		disengage_mask(user)
+
+/obj/item/clothing/mask/ai/equipped(var/mob/user, var/slot)
+	..(user, slot)
+	engage_mask(user)
+
+/obj/item/clothing/mask/ai/dropped(var/mob/user)
+	..()
+	disengage_mask(user)
+
+/obj/item/clothing/mask/ai/proc/engage_mask(var/mob/user)
+	if(!active)
+		return
+	if(user.get_equipped_item(slot_wear_mask) != src)
+		return
+
+	eye.possess(user)
+	to_chat(eye.owner, "<span class='notice'>You feel disorented for a moment as your mind connects to the camera network.</span>")
+
+/obj/item/clothing/mask/ai/proc/disengage_mask(var/mob/user)
+	if(user == eye.owner)
+		to_chat(eye.owner, "<span class='notice'>You feel disorented for a moment as your mind disconnects from the camera network.</span>")
+		eye.release(eye.owner)
+		eye.forceMove(src)
 
 /obj/item/clothing/mask/rubber
 	name = "rubber mask"
@@ -126,7 +196,13 @@
 	icon_state = "balaclava"
 	flags_inv = HIDEFACE|BLOCKHAIR
 	siemens_coefficient = 0.9
-	body_parts_covered = SLOT_HEAD|SLOT_FACE|SLOT_EYES
+	body_parts_covered = HEAD|FACE|EYES
+
+/obj/item/clothing/mask/rubber/trasen
+	name = "Jack Trasen mask"
+	desc = "CEO of NanoTrasen corporation. Perfect for scaring the unionizing children."
+	icon_state = "trasen"
+	visible_name = "Jack Trasen"
 
 /obj/item/clothing/mask/rubber/barros
 	name = "Amaya Barros mask"
@@ -152,12 +228,12 @@
 	icon_state = "manmet"
 	var/species = SPECIES_HUMAN
 
-/obj/item/clothing/mask/rubber/species/Initialize()
-	. = ..()
+/obj/item/clothing/mask/rubber/species/New()
+	..()
 	visible_name = species
-	var/datum/species/S = get_species_by_key(species)
+	var/datum/species/S = all_species[species]
 	if(istype(S))
-		var/decl/cultural_info/C = SSlore.get_culture(S.default_cultural_info[TAG_CULTURE])
+		var/decl/cultural_info/C = SSculture.get_culture(S.default_cultural_info[TAG_CULTURE])
 		if(istype(C))
 			visible_name = C.get_random_name(pick(MALE,FEMALE))
 
@@ -166,21 +242,33 @@
 	desc = "A rubber cat mask."
 	icon_state = "catmet"
 
+/obj/item/clothing/mask/rubber/species/unathi
+	name = "unathi mask"
+	desc = "A rubber unathi mask."
+	icon_state = "lizmet"
+	species = SPECIES_UNATHI
+
+/obj/item/clothing/mask/rubber/species/skrell
+	name = "skrell mask"
+	desc = "A rubber skrell mask."
+	icon_state = "skrellmet"
+	species = SPECIES_SKRELL
+
 /obj/item/clothing/mask/spirit
 	name = "spirit mask"
 	desc = "An eerie mask of ancient, pitted wood."
 	icon_state = "spirit_mask"
 	item_state = "spirit_mask"
 	flags_inv = HIDEFACE
-	body_parts_covered = SLOT_FACE|SLOT_EYES
+	body_parts_covered = FACE|EYES
 
 // Bandanas below
 /obj/item/clothing/mask/bandana
 	name = "black bandana"
 	desc = "A fine bandana with nanotech lining. Can be worn on the head or face."
 	flags_inv = HIDEFACE
-	slot_flags = SLOT_FACE|SLOT_HEAD
-	body_parts_covered = SLOT_FACE
+	slot_flags = SLOT_MASK|SLOT_HEAD
+	body_parts_covered = FACE
 	icon_state = "bandblack"
 	item_state = "bandblack"
 	item_flags = ITEM_FLAG_FLEXIBLEMATERIAL
@@ -188,13 +276,13 @@
 
 /obj/item/clothing/mask/bandana/equipped(var/mob/user, var/slot)
 	switch(slot)
-		if(slot_wear_mask_str) //Mask is the default for all the settings
+		if(slot_wear_mask) //Mask is the default for all the settings
 			flags_inv = initial(flags_inv)
 			body_parts_covered = initial(body_parts_covered)
 			icon_state = initial(icon_state)
-		if(slot_head_str)
+		if(slot_head)
 			flags_inv = 0
-			body_parts_covered = SLOT_HEAD
+			body_parts_covered = HEAD
 			icon_state = "[initial(icon_state)]_up"
 			sprite_sheets = list()
 

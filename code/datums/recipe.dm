@@ -12,13 +12,13 @@
  * * default /datum/recipe/ procs does not rely on this parameter.
  *
  *  Functions you need:
- *  /datum/recipe/proc/make(var/obj/container)
+ *  /datum/recipe/proc/make(var/obj/container as obj)
  *    Creates result inside container,
  *    deletes prerequisite reagents,
  *    transfers reagents from prerequisite objects,
  *    deletes all prerequisite objects (even not needed for recipe at the moment).
  *
- *  /proc/select_recipe(list/datum/recipe/avaiable_recipes, obj/obj, exact = 1)
+ *  /proc/select_recipe(list/datum/recipe/avaiable_recipes, obj/obj as obj, exact = 1)
  *    Wonderful function that select suitable recipe for you.
  *    obj is a machine (or magik hat) with prerequisites,
  *    exact = 0 forces algorithm to ignore superfluous stuff.
@@ -26,16 +26,16 @@
  *
  *  Functions you do not need to call directly but could:
  *  /datum/recipe/proc/check_reagents(var/datum/reagents/avail_reagents)
- *  /datum/recipe/proc/check_items(var/obj/container)
+ *  /datum/recipe/proc/check_items(var/obj/container as obj)
  *
  * */
 
 /datum/recipe
 	var/display_name
-	var/list/reagents // example: = list(/decl/material/liquid/drink/juice/berry = 5) // do not list same reagent twice
-	var/list/items    // example: = list(/obj/item/crowbar, /obj/item/welder) // place /foo/bar before /foo
+	var/list/reagents // example: = list(/datum/reagent/drink/juice/berry = 5) // do not list same reagent twice
+	var/list/items    // example: = list(/obj/item/weapon/crowbar, /obj/item/weapon/welder) // place /foo/bar before /foo
 	var/list/fruit    // example: = list("fruit" = 3)
-	var/result        // example: = /obj/item/chems/food/snacks/donut/normal
+	var/result        // example: = /obj/item/weapon/reagent_containers/food/snacks/donut/normal
 	var/time = 100    // 1/10 part of second
 	var/hidden_from_codex = FALSE
 	var/lore_text
@@ -45,13 +45,13 @@
 /datum/recipe/proc/check_reagents(var/datum/reagents/avail_reagents)
 	. = 1
 	for (var/r_r in reagents)
-		var/aval_r_amnt = REAGENT_VOLUME(avail_reagents, r_r)
+		var/aval_r_amnt = avail_reagents.get_reagent_amount(r_r)
 		if (!(abs(aval_r_amnt - reagents[r_r])<0.5)) //if NOT equals
 			if (aval_r_amnt>reagents[r_r])
 				. = 0
 			else
 				return -1
-	if (length(reagents) < LAZYLEN(avail_reagents.reagent_volumes))
+	if ((reagents?(reagents.len):(0)) < avail_reagents.reagent_list.len)
 		return 0
 	return .
 
@@ -61,7 +61,7 @@
 		var/list/checklist = list()
 		 // You should trust Copy().
 		checklist = fruit.Copy()
-		for(var/obj/item/chems/food/snacks/grown/G in container)
+		for(var/obj/item/weapon/reagent_containers/food/snacks/grown/G in container)
 			if(!G.seed || !G.seed.kitchen_tag || isnull(checklist[G.seed.kitchen_tag]))
 				continue
 			checklist[G.seed.kitchen_tag]--
@@ -74,13 +74,13 @@
 					break
 	return .
 
-/datum/recipe/proc/check_items(var/obj/container)
+/datum/recipe/proc/check_items(var/obj/container as obj)
 	. = 1
 	if (items && items.len)
 		var/list/checklist = list()
 		checklist = items.Copy() // You should really trust Copy
 		for(var/obj/O in container.InsertedContents())
-			if(istype(O,/obj/item/chems/food/snacks/grown))
+			if(istype(O,/obj/item/weapon/reagent_containers/food/snacks/grown))
 				continue // Fruit is handled in check_fruit().
 			var/found = 0
 			for(var/i = 1; i < checklist.len+1; i++)
@@ -96,7 +96,7 @@
 	return .
 
 //general version
-/datum/recipe/proc/make(var/obj/container)
+/datum/recipe/proc/make(var/obj/container as obj)
 	var/obj/result_obj = new result(container)
 	for (var/obj/O in (container.InsertedContents()-result_obj))
 		O.reagents.trans_to_obj(result_obj, O.reagents.total_volume)
@@ -105,7 +105,7 @@
 	return result_obj
 
 // food-related
-/datum/recipe/proc/make_food(var/obj/container)
+/datum/recipe/proc/make_food(var/obj/container as obj)
 	if(!result)
 		log_error("<span class='danger'>Recipe [type] is defined without a result, please bug this.</span>")
 		return
@@ -117,16 +117,16 @@
 		return result_obj
 	for (var/obj/O in (container_contents-result_obj))
 		if (O.reagents)
-			O.reagents.clear_reagent(/decl/material/liquid/nutriment)
+			O.reagents.del_reagent(/datum/reagent/nutriment)
 			O.reagents.update_total()
 			O.reagents.trans_to_obj(result_obj, O.reagents.total_volume)
-		if(istype(O,/obj/item/holder/))
-			var/obj/item/holder/H = O
+		if(istype(O,/obj/item/weapon/holder/))
+			var/obj/item/weapon/holder/H = O
 			H.destroy_all()
 		qdel(O)
 	return result_obj
 
-/proc/select_recipe(var/list/datum/recipe/avaiable_recipes, var/obj/obj, var/exact)
+/proc/select_recipe(var/list/datum/recipe/avaiable_recipes, var/obj/obj as obj, var/exact)
 	var/list/datum/recipe/possible_recipes = new
 	var/target = exact ? 0 : 1
 	for (var/datum/recipe/recipe in avaiable_recipes)

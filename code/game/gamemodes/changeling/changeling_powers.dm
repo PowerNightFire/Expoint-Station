@@ -61,7 +61,7 @@ var/global/list/possible_changeling_IDs = list("Alpha","Beta","Gamma","Delta","E
 	if(!mind.changeling)	mind.changeling = new /datum/changeling(gender)
 
 	verbs += /datum/changeling/proc/EvolutionMenu
-	add_language(/decl/language/ling)
+	add_language(LANGUAGE_CHANGELING_GLOBAL)
 
 	var/lesser_form = !ishuman(src)
 
@@ -137,7 +137,7 @@ var/global/list/possible_changeling_IDs = list("Alpha","Beta","Gamma","Delta","E
 		languages += language
 
 	//This isn't strictly necessary but just to be safe...
-	add_language(/decl/language/ling)
+	add_language(LANGUAGE_CHANGELING_GLOBAL)
 
 	return
 
@@ -155,7 +155,7 @@ var/global/list/possible_changeling_IDs = list("Alpha","Beta","Gamma","Delta","E
 		to_chat(src, "<span class='warning'>We must be grabbing a creature in our active hand to absorb them.</span>")
 		return
 
-	var/mob/living/carbon/human/T = G.get_affecting_mob()
+	var/mob/living/carbon/human/T = G.affecting
 	if(!istype(T))
 		to_chat(src, "<span class='warning'>[T] is not compatible with our biology.</span>")
 		return
@@ -277,7 +277,7 @@ var/global/list/possible_changeling_IDs = list("Alpha","Beta","Gamma","Delta","E
 	changeling.geneticdamage = 30
 
 	var/S_name = chosen_dna.speciesName
-	var/datum/species/S_dat = get_species_by_key(S_name)
+	var/datum/species/S_dat = all_species[S_name]
 	var/changeTime = 2 SECONDS
 	if(mob_size != S_dat.mob_size)
 		src.visible_message("<span class='warning'>[src]'s body begins to twist, their mass changing rapidly!</span>")
@@ -325,7 +325,9 @@ var/global/list/possible_changeling_IDs = list("Alpha","Beta","Gamma","Delta","E
 	var/datum/changeling/changeling = changeling_power(1,0,0)
 	if(!changeling)	return
 
-	handle_pre_transformation()
+	if(src.has_brain_worms())
+		to_chat(src, "<span class='warning'>We cannot perform this ability at the present time!</span>")
+		return
 
 	var/mob/living/carbon/human/H = src
 
@@ -371,7 +373,7 @@ var/global/list/possible_changeling_IDs = list("Alpha","Beta","Gamma","Delta","E
 	C.dna = chosen_dna.Clone()
 
 	var/list/implants = list()
-	for (var/obj/item/implant/I in C) //Still preserving implants
+	for (var/obj/item/weapon/implant/I in C) //Still preserving implants
 		implants += I
 
 	ADD_TRANSFORMATION_MOVEMENT_HANDLER(C)
@@ -409,7 +411,7 @@ var/global/list/possible_changeling_IDs = list("Alpha","Beta","Gamma","Delta","E
 	O.setOxyLoss(C.getOxyLoss())
 	O.adjustFireLoss(C.getFireLoss())
 	O.set_stat(C.stat)
-	for (var/obj/item/implant/I in implants)
+	for (var/obj/item/weapon/implant/I in implants)
 		I.forceMove(O)
 		I.implanted = O
 
@@ -604,7 +606,7 @@ var/list/datum/absorbed_dna/hivemind_bank = list()
 	if(!chosen_dna)
 		return
 
-	var/datum/species/spec = get_species_by_key(chosen_dna.speciesName)
+	var/datum/species/spec = all_species[chosen_dna.speciesName]
 
 	if(spec && spec.species_flags & SPECIES_FLAG_NEED_DIRECT_ABSORB)
 		to_chat(src, "<span class='notice'>That species must be absorbed directly.</span>")
@@ -681,7 +683,7 @@ var/list/datum/absorbed_dna/hivemind_bank = list()
 	//STINGS//	//They get a pretty header because there's just so fucking many of them ;_;
 	//////////
 
-/mob/proc/sting_can_reach(mob/M, sting_range = 1)
+/mob/proc/sting_can_reach(mob/M as mob, sting_range = 1)
 	if(M.loc == src.loc)
 		return 1 //target and source are in the same thing
 	if(!isturf(src.loc) || !isturf(M.loc))
@@ -725,7 +727,7 @@ var/list/datum/absorbed_dna/hivemind_bank = list()
 			to_chat(src, "<span class='warning'>[T]'s armor has protected them.</span>")
 			return //thick clothes will protect from the sting
 
-	if(T.isSynthetic() || BP_IS_PROSTHETIC(target_limb)) return
+	if(T.isSynthetic() || BP_IS_ROBOTIC(target_limb)) return
 	if(!T.mind || !T.mind.changeling) return T	//T will be affected by the sting
 	to_chat(T, "<span class='warning'>You feel a tiny prick.</span>")
 	return
@@ -791,7 +793,7 @@ var/list/datum/absorbed_dna/hivemind_bank = list()
 	if(!T)	return 0
 	to_chat(T, "<span class='danger'>You feel a small prick and your chest becomes tight.</span>")
 	T.make_jittery(400)
-	if(T.reagents)	T.reagents.add_reagent(/decl/material/gas/carbon_monoxide, 40)
+	if(T.reagents)	T.reagents.add_reagent(/datum/reagent/lexorin, 40)
 	SSstatistics.add_field_details("changeling_powers","DTHS")
 	return 1
 

@@ -23,7 +23,7 @@
 	var/image/on_icon
 
 	var/heater_mode =          HEATER_MODE_HEAT
-	var/list/permitted_types = list(/obj/item/chems/glass)
+	var/list/permitted_types = list(/obj/item/weapon/reagent_containers/glass)
 	var/max_temperature =      200 CELSIUS
 	var/min_temperature =      40  CELSIUS
 	var/heating_power =        10 // K
@@ -50,9 +50,9 @@
 	. = ..()
 
 /obj/machinery/reagent_temperature/RefreshParts()
-	heating_power = initial(heating_power) * Clamp(total_component_rating_of_type(/obj/item/stock_parts/capacitor), 0, 10)
+	heating_power = initial(heating_power) * Clamp(total_component_rating_of_type(/obj/item/weapon/stock_parts/capacitor), 0, 10)
 
-	var/comp = 0.25 KILOWATTS * total_component_rating_of_type(/obj/item/stock_parts/micro_laser)
+	var/comp = 0.25 KILOWATTS * total_component_rating_of_type(/obj/item/weapon/stock_parts/micro_laser)
 	if(comp)
 		change_power_consumption(max(0.5 KILOWATTS, initial(active_power_usage) - comp), POWER_USE_ACTIVE)
 	..()
@@ -64,6 +64,20 @@
 	if(((stat & (BROKEN|NOPOWER)) || !anchored) && use_power >= POWER_USE_ACTIVE)
 		update_use_power(POWER_USE_IDLE)
 		queue_icon_update()
+
+/obj/machinery/reagent_temperature/proc/eject_beaker(mob/user)
+	if(!container)
+		return
+	var/obj/item/weapon/reagent_containers/B = container
+	user.put_in_hands(B)
+	container = null
+	update_icon()
+
+/obj/machinery/reagent_temperature/AltClick(mob/user)
+	if(CanDefaultInteract(user))
+		eject_beaker(user)
+	else
+		..()
 
 /obj/machinery/reagent_temperature/interface_interact(var/mob/user)
 	interact(user)
@@ -191,11 +205,7 @@
 			to_chat(user, SPAN_WARNING("The button clicks, but nothing happens."))
 
 	if(href_list["remove_container"])
-		if(container)
-			container.dropInto(loc)
-			user.put_in_hands(container)
-			container = null
-			update_icon()
+		eject_beaker(user)
 		. = TOPIC_REFRESH
 
 	if(. == TOPIC_REFRESH)

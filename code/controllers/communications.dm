@@ -103,13 +103,14 @@ var/const/PUBLIC_HIGH_FREQ	= 1489
 var/const/RADIO_HIGH_FREQ	= 1600
 
 var/const/BOT_FREQ	= 1447
+var/const/SKRELL_FREQ = 1598
 var/const/COMM_FREQ = 1353
 var/const/ERT_FREQ	= 1345
 var/const/AI_FREQ	= 1343
 var/const/DTH_FREQ	= 1341
 var/const/SYND_FREQ = 1213
 var/const/RAID_FREQ	= 1277
-var/const/ENT_FREQ	= 1461
+var/const/ENT_FREQ	= 1461 //entertainment frequency. This is not a diona exclusive frequency.
 
 // department channels
 var/const/PUB_FREQ = 1459
@@ -135,7 +136,8 @@ var/const/BUTTON_FREQ       = 1301 // Used by generic buttons controlling stuff
 var/const/BLAST_DOORS_FREQ  = 1303 // Used by blast doors, buttons controlling them, and mass drivers.
 var/const/AIRLOCK_FREQ      = 1305 // Used by airlocks and buttons controlling them.
 var/const/SHUTTLE_AIR_FREQ  = 1331 // Used by shuttles and shuttle-related atmos systems.
-var/const/EXTERNAL_AIR_FREQ = 1381 // Used by some external airlocks.
+var/const/AIRLOCK_AIR_FREQ  = 1379 // Used by some airlocks for atmos devices.
+var/const/EXTERNAL_AIR_FREQ = 1380 // Used by some external airlocks.
 
 var/list/radiochannels = list(
 	"Common"		= PUB_FREQ,
@@ -153,8 +155,9 @@ var/list/radiochannels = list(
 	"Service" 		= SRV_FREQ,
 	"AI Private"	= AI_FREQ,
 	"Entertainment" = ENT_FREQ,
-	"Medical(I)"	= MED_I_FREQ,
-	"Security(I)"	= SEC_I_FREQ
+	"Medical (I)"	= MED_I_FREQ,
+	"Security (I)"	= SEC_I_FREQ,
+	"Recon"			= SKRELL_FREQ
 )
 
 var/list/channel_color_presets = list(
@@ -170,7 +173,8 @@ var/list/channel_color_presets = list(
 	"Pretty Periwinkle" = COMMS_COLOR_CENTCOMM,
 	"Raging Red" = COMMS_COLOR_SECURITY,
 	"Spectacular Silver" = COMMS_COLOR_ENTERTAIN,
-	"Tantalizing Turquoise" = COMMS_COLOR_MEDICAL
+	"Tantalizing Turquoise" = COMMS_COLOR_MEDICAL,
+	"Viewable Violet" = COMMS_COLOR_SKRELL
 )
 
 // central command channels, i.e deathsquid & response teams
@@ -180,7 +184,7 @@ var/list/CENT_FREQS = list(ERT_FREQ, DTH_FREQ)
 var/list/ANTAG_FREQS = list(SYND_FREQ, RAID_FREQ)
 
 //Department channels, arranged lexically
-var/list/DEPT_FREQS = list(AI_FREQ, COMM_FREQ, ENG_FREQ, MED_FREQ, SEC_FREQ, SCI_FREQ, SRV_FREQ, SUP_FREQ, EXP_FREQ, ENT_FREQ)
+var/list/DEPT_FREQS = list(AI_FREQ, COMM_FREQ, ENG_FREQ, MED_FREQ, SEC_FREQ, SCI_FREQ, SRV_FREQ, SUP_FREQ, EXP_FREQ, ENT_FREQ, MED_I_FREQ, SEC_I_FREQ)
 
 #define TRANSMISSION_WIRE	0
 #define TRANSMISSION_RADIO	1
@@ -215,6 +219,10 @@ var/list/DEPT_FREQS = list(AI_FREQ, COMM_FREQ, ENG_FREQ, MED_FREQ, SEC_FREQ, SCI
 		return "srvradio"
 	if(frequency == ENT_FREQ) //entertainment
 		return "entradio"
+	if(frequency == MED_I_FREQ) // Medical intercom
+		return "mediradio"
+	if(frequency == SEC_I_FREQ) // Security intercom
+		return "seciradio"
 	if(frequency in DEPT_FREQS)
 		return "deptradio"
 
@@ -227,8 +235,6 @@ var/list/DEPT_FREQS = list(AI_FREQ, COMM_FREQ, ENG_FREQ, MED_FREQ, SEC_FREQ, SCI
 
 //This filter is special because devices belonging to default also recieve signals sent to any other filter.
 var/const/RADIO_DEFAULT = "radio_default"
-//This filter is special because devices belonging to it do not recieve any signals at all. Useful for devices which only transmit.
-var/const/RADIO_NULL = "radio_null"
 
 var/const/RADIO_TO_AIRALARM = "radio_airalarm" //air alarms
 var/const/RADIO_FROM_AIRALARM = "radio_airalarm_rcvr" //devices interested in recieving signals from air alarms
@@ -269,7 +275,7 @@ var/global/datum/controller/radio/radio_controller
 /datum/controller/radio
 	var/list/datum/radio_frequency/frequencies = list()
 
-/datum/controller/radio/proc/add_object(obj/device, var/new_frequency, var/object_filter)
+/datum/controller/radio/proc/add_object(obj/device as obj, var/new_frequency as num, var/object_filter = null as text|null)
 	var/f_text = num2text(new_frequency)
 	var/datum/radio_frequency/frequency = frequencies[f_text]
 
@@ -306,10 +312,10 @@ var/global/datum/controller/radio/radio_controller
 	return frequency
 
 /datum/radio_frequency
-	var/frequency // numerical frequency value
+	var/frequency as num
 	var/list/list/obj/devices = list()
 
-/datum/radio_frequency/proc/post_signal(obj/source, datum/signal/signal, var/radio_filter, var/range)
+/datum/radio_frequency/proc/post_signal(obj/source as obj|null, datum/signal/signal, var/radio_filter = null as text|null, var/range = null as num|null)
 	var/turf/start_point
 	if(range)
 		start_point = get_turf(source)
@@ -343,9 +349,7 @@ var/global/datum/controller/radio/radio_controller
 
 		device.receive_signal(signal, TRANSMISSION_RADIO, frequency)
 
-/datum/radio_frequency/proc/add_listener(obj/device, var/radio_filter)
-	if(radio_filter == RADIO_NULL)
-		return // Just don't add them
+/datum/radio_frequency/proc/add_listener(obj/device as obj, var/radio_filter as text|null)
 	if (!radio_filter)
 		radio_filter = RADIO_DEFAULT
 	var/list/obj/devices_line = devices[radio_filter]

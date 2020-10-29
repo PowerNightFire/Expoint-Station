@@ -1,7 +1,7 @@
 #define IC_MAX_SIZE_BASE		25
 #define IC_COMPLEXITY_BASE		75
 
-/obj/item/electronic_assembly
+/obj/item/device/electronic_assembly
 	name = "electronic assembly"
 	desc = "It's a case, for building small electronics with."
 	w_class = ITEM_SIZE_SMALL
@@ -14,8 +14,8 @@
 	var/max_components = IC_MAX_SIZE_BASE
 	var/max_complexity = IC_COMPLEXITY_BASE
 	var/opened = TRUE
-	var/obj/item/cell/battery // Internal cell which most circuits need to work.
-	var/cell_type = /obj/item/cell
+	var/obj/item/weapon/cell/battery // Internal cell which most circuits need to work.
+	var/cell_type = /obj/item/weapon/cell
 	var/can_charge = TRUE //Can it be charged in a recharger?
 	var/circuit_flags = IC_FLAG_ANCHORABLE
 	var/charge_sections = 4
@@ -50,7 +50,7 @@
 		COLOR_ASSEMBLY_PURPLE
 		)
 
-/obj/item/electronic_assembly/examine(mob/user)
+/obj/item/device/electronic_assembly/examine(mob/user)
 	. = ..()
 	if(IC_FLAG_ANCHORABLE & circuit_flags)
 		to_chat(user, "<span class='notice'>The anchoring bolts [anchored ? "are" : "can be"] <b>wrenched</b> in place and the maintenance panel [opened ? "can be" : "is"] <b>screwed</b> in place.</span>")
@@ -66,7 +66,7 @@
 		to_chat(user, "You can <a href='?src=\ref[src];ghostscan=1'>scan</a> this circuit.");
 
 
-/obj/item/electronic_assembly/proc/take_damage(var/amnt)
+/obj/item/device/electronic_assembly/proc/take_damage(var/amnt)
 	health = health - amnt
 	if(health <= 0)
 		visible_message("<span class='danger'>\The [src] falls to pieces!</span>")
@@ -75,16 +75,16 @@
 		visible_message("<span class='danger'>\The [src] starts to break apart!</span>")
 
 
-/obj/item/electronic_assembly/proc/check_interactivity(mob/user)
+/obj/item/device/electronic_assembly/proc/check_interactivity(mob/user)
 	return (!user.incapacitated() && CanUseTopic(user))
 
-/obj/item/electronic_assembly/GetAccess()
+/obj/item/device/electronic_assembly/GetAccess()
 	. = list()
 	for(var/obj/item/integrated_circuit/output/O in assembly_components)
 		var/o_access = O.GetAccess()
 		. |= o_access
 
-/obj/item/electronic_assembly/Bump(atom/AM)
+/obj/item/device/electronic_assembly/Bump(atom/AM)
 	collw = weakref(AM)
 	.=..()
 	if(istype(AM, /obj/machinery/door/airlock) ||  istype(AM, /obj/machinery/door/window))
@@ -92,22 +92,19 @@
 		if(D.check_access(src))
 			D.open()
 
-/obj/item/electronic_assembly/create_matter()
-	..()
-	LAZYSET(matter, /decl/material/solid/metal/steel, round((max_complexity + max_components) / 4) * SScircuit.cost_multiplier)
-
-/obj/item/electronic_assembly/Initialize()
-	. = ..()
+/obj/item/device/electronic_assembly/Initialize()
+	.=..()
 	START_PROCESSING(SScircuit, src)
+	matter[MATERIAL_STEEL] = round((max_complexity + max_components) / 4) * SScircuit.cost_multiplier
 
-/obj/item/electronic_assembly/Destroy()
+/obj/item/device/electronic_assembly/Destroy()
 	STOP_PROCESSING(SScircuit, src)
 	for(var/circ in assembly_components)
 		remove_component(circ)
 		qdel(circ)
 	return ..()
 
-/obj/item/electronic_assembly/Process()
+/obj/item/device/electronic_assembly/Process()
 	// First we generate power.
 	for(var/obj/item/integrated_circuit/passive/power/P in assembly_components)
 		P.make_energy()
@@ -123,13 +120,13 @@
 			if(power_failure || !draw_power(IC.power_draw_idle))
 				IC.power_fail()
 
-/obj/item/electronic_assembly/MouseDrop_T(atom/dropping, mob/user)
+/obj/item/device/electronic_assembly/MouseDrop_T(atom/dropping, mob/user)
 	if(user == dropping)
 		interact(user)
 	else
 		..()
 
-/obj/item/electronic_assembly/interact(mob/user)
+/obj/item/device/electronic_assembly/interact(mob/user)
 	if(!check_interactivity(user))
 		return
 
@@ -137,7 +134,7 @@
 		open_interact(user)
 	closed_interact(user)
 
-/obj/item/electronic_assembly/proc/closed_interact(mob/user)
+/obj/item/device/electronic_assembly/proc/closed_interact(mob/user)
 	var/HTML = list()
 	HTML += "<html><head><title>[src.name]</title></head><body>"
 	HTML += "<br><a href='?src=\ref[src];refresh=1'>\[Refresh\]</a>"
@@ -165,7 +162,7 @@
 		show_browser(user, jointext(HTML,null), "window=closed-assembly-\ref[src];size=600x350;border=1;can_resize=1;can_close=1;can_minimize=1")
 
 
-/obj/item/electronic_assembly/proc/open_interact(mob/user)
+/obj/item/device/electronic_assembly/proc/open_interact(mob/user)
 	var/total_part_size = return_total_size()
 	var/total_complexity = return_total_complexity()
 	var/list/HTML = list()
@@ -208,7 +205,7 @@
 	HTML += "</body></html>"
 	show_browser(user, jointext(HTML, null), "window=assembly-\ref[src];size=655x350;border=1;can_resize=1;can_close=1;can_minimize=1")
 
-/obj/item/electronic_assembly/Topic(href, href_list)
+/obj/item/device/electronic_assembly/Topic(href, href_list)
 	if(href_list["ghostscan"])
 		if((isobserver(usr) && ckeys_allowed_to_scan[usr.ckey]) || check_rights(R_ADMIN,0,usr))
 			if(assembly_components.len)
@@ -268,7 +265,7 @@
 
 	interact(usr) // To refresh the UI.
 
-/obj/item/electronic_assembly/proc/rename()
+/obj/item/device/electronic_assembly/proc/rename()
 	var/mob/M = usr
 	if(!check_interactivity(M))
 		return
@@ -280,13 +277,13 @@
 		to_chat(M, "<span class='notice'>The machine now has a label reading '[input]'.</span>")
 		name = input
 
-/obj/item/electronic_assembly/proc/add_allowed_scanner(ckey)
+/obj/item/device/electronic_assembly/proc/add_allowed_scanner(ckey)
 	ckeys_allowed_to_scan[ckey] = TRUE
 
-/obj/item/electronic_assembly/proc/can_move()
+/obj/item/device/electronic_assembly/proc/can_move()
 	return FALSE
 
-/obj/item/electronic_assembly/on_update_icon()
+/obj/item/device/electronic_assembly/on_update_icon()
 	if(opened)
 		icon_state = initial(icon_state) + "-open"
 	else
@@ -298,7 +295,7 @@
 	detail_overlay.color = detail_color
 	overlays += detail_overlay
 
-/obj/item/electronic_assembly/examine(mob/user)
+/obj/item/device/electronic_assembly/examine(mob/user)
 	. = ..()
 	for(var/I in assembly_components)
 		var/obj/item/integrated_circuit/IC = I
@@ -309,19 +306,19 @@
 		interact(user)
 
 //This only happens when this EA is loaded via the printer
-/obj/item/electronic_assembly/proc/post_load()
+/obj/item/device/electronic_assembly/proc/post_load()
 	for(var/I in assembly_components)
 		var/obj/item/integrated_circuit/IC = I
 		IC.on_data_written()
 
-/obj/item/electronic_assembly/proc/return_total_complexity()
+/obj/item/device/electronic_assembly/proc/return_total_complexity()
 	. = 0
 	var/obj/item/integrated_circuit/part
 	for(var/p in assembly_components)
 		part = p
 		. += part.complexity
 
-/obj/item/electronic_assembly/proc/return_total_size()
+/obj/item/device/electronic_assembly/proc/return_total_size()
 	. = 0
 	var/obj/item/integrated_circuit/part
 	for(var/p in assembly_components)
@@ -329,7 +326,7 @@
 		. += part.size
 
 // Returns true if the circuit made it inside.
-/obj/item/electronic_assembly/proc/try_add_component(obj/item/integrated_circuit/IC, mob/user)
+/obj/item/device/electronic_assembly/proc/try_add_component(obj/item/integrated_circuit/IC, mob/user)
 	if(!opened)
 		to_chat(user, "<span class='warning'>\The [src]'s hatch is closed, you can't put anything inside.</span>")
 		return FALSE
@@ -363,13 +360,13 @@
 
 
 // Actually puts the circuit inside, doesn't perform any checks.
-/obj/item/electronic_assembly/proc/add_component(obj/item/integrated_circuit/component)
+/obj/item/device/electronic_assembly/proc/add_component(obj/item/integrated_circuit/component)
 	component.forceMove(get_object())
 	component.assembly = src
 	assembly_components |= component
 
 
-/obj/item/electronic_assembly/proc/try_remove_component(obj/item/integrated_circuit/IC, mob/user, silent)
+/obj/item/device/electronic_assembly/proc/try_remove_component(obj/item/integrated_circuit/IC, mob/user, silent)
 	if(!opened)
 		if(!silent)
 			to_chat(user, "<span class='warning'>[src]'s hatch is closed, so you can't fiddle with the internal components.</span>")
@@ -393,14 +390,14 @@
 	return TRUE
 
 // Actually removes the component, doesn't perform any checks.
-/obj/item/electronic_assembly/proc/remove_component(obj/item/integrated_circuit/component)
+/obj/item/device/electronic_assembly/proc/remove_component(obj/item/integrated_circuit/component)
 	component.disconnect_all()
 	component.dropInto(loc)
 	component.assembly = null
 	assembly_components.Remove(component)
 
 
-/obj/item/electronic_assembly/afterattack(atom/target, mob/user, proximity)
+/obj/item/device/electronic_assembly/afterattack(atom/target, mob/user, proximity)
 	. = ..()
 	for(var/obj/item/integrated_circuit/input/S in assembly_components)
 		if(S.sense(target,user,proximity))
@@ -410,8 +407,8 @@
 				visible_message("<span class='notice'>\The [user] points \the [src] towards \the [target].</span>")
 
 
-/obj/item/electronic_assembly/attackby(obj/item/I, mob/living/user)
-	if(istype(I, /obj/item/wrench))
+/obj/item/device/electronic_assembly/attackby(obj/item/I, mob/living/user)
+	if(istype(I, /obj/item/weapon/wrench))
 		if(istype(loc, /turf) && (IC_FLAG_ANCHORABLE & circuit_flags))
 			user.visible_message("\The [user] wrenches \the [src]'s anchoring bolts [anchored ? "back" : "into position"].")
 			playsound(get_turf(user), 'sound/items/Ratchet.ogg',50)
@@ -426,7 +423,7 @@
 			for(var/obj/item/integrated_circuit/input/S in assembly_components)
 				S.attackby_react(I,user,user.a_intent)
 			return ..()
-	else if(istype(I, /obj/item/multitool) || istype(I, /obj/item/integrated_electronics/wirer) || istype(I, /obj/item/integrated_electronics/debugger))
+	else if(istype(I, /obj/item/device/multitool) || istype(I, /obj/item/device/integrated_electronics/wirer) || istype(I, /obj/item/device/integrated_electronics/debugger))
 		if(opened)
 			interact(user)
 			return TRUE
@@ -435,7 +432,7 @@
 			for(var/obj/item/integrated_circuit/input/S in assembly_components)
 				S.attackby_react(I,user,user.a_intent)
 			return ..()
-	else if(istype(I, /obj/item/cell))
+	else if(istype(I, /obj/item/weapon/cell))
 		if(!opened)
 			to_chat(user, "<span class='warning'>[src]'s hatch is closed, so you can't access \the [src]'s power supplier.</span>")
 			for(var/obj/item/integrated_circuit/input/S in assembly_components)
@@ -446,7 +443,7 @@
 			for(var/obj/item/integrated_circuit/input/S in assembly_components)
 				S.attackby_react(I,user,user.a_intent)
 			return ..()
-		var/obj/item/cell/cell = I
+		var/obj/item/weapon/cell/cell = I
 		if(user.unEquip(I,loc))
 			user.drop_from_inventory(I, loc)
 			cell.forceMove(src)
@@ -455,11 +452,11 @@
 			to_chat(user, "<span class='notice'>You slot \the [cell] inside \the [src]'s power supplier.</span>")
 			return TRUE
 		return FALSE
-	else if(istype(I, /obj/item/integrated_electronics/detailer))
-		var/obj/item/integrated_electronics/detailer/D = I
+	else if(istype(I, /obj/item/device/integrated_electronics/detailer))
+		var/obj/item/device/integrated_electronics/detailer/D = I
 		detail_color = D.detail_color
 		update_icon()
-	else if(istype(I, /obj/item/screwdriver))
+	else if(istype(I, /obj/item/weapon/screwdriver))
 		var/hatch_locked = FALSE
 		for(var/obj/item/integrated_circuit/manipulation/hatchlock/H in assembly_components)
 			// If there's more than one hatch lock, only one needs to be enabled for the assembly to be locked
@@ -488,26 +485,26 @@
 			for(var/obj/item/integrated_circuit/input/S in assembly_components)
 				S.attackby_react(I,user,user.a_intent)
 
-/obj/item/electronic_assembly/attack_self(mob/user)
+/obj/item/device/electronic_assembly/attack_self(mob/user)
 	interact(user)
 
-/obj/item/electronic_assembly/bullet_act(var/obj/item/projectile/P)
+/obj/item/device/electronic_assembly/bullet_act(var/obj/item/projectile/P)
 	take_damage(P.damage)
 
-/obj/item/electronic_assembly/emp_act(severity)
+/obj/item/device/electronic_assembly/emp_act(severity)
 	. = ..()
 	for(var/I in src)
 		var/atom/movable/AM = I
 		AM.emp_act(severity)
 
 // Returns true if power was successfully drawn.
-/obj/item/electronic_assembly/proc/draw_power(amount)
+/obj/item/device/electronic_assembly/proc/draw_power(amount)
 	if(battery && battery.use(amount * CELLRATE))
 		return TRUE
 	return FALSE
 
 // Ditto for giving.
-/obj/item/electronic_assembly/proc/give_power(amount)
+/obj/item/device/electronic_assembly/proc/give_power(amount)
 	if(battery && battery.give(amount * CELLRATE))
 		return TRUE
 	return FALSE
@@ -515,52 +512,52 @@
 
 // Returns the object that is supposed to be used in attack messages, location checks, etc.
 // Override in children for special behavior.
-/obj/item/electronic_assembly/proc/get_object()
+/obj/item/device/electronic_assembly/proc/get_object()
 	return src
 
-/obj/item/electronic_assembly/attack_hand(mob/user)
+/obj/item/device/electronic_assembly/attack_hand(mob/user)
 	if(anchored)
 		attack_self(user)
 		return
 	..()
 
-/obj/item/electronic_assembly/default //The /default electronic_assemblys are to allow the introduction of the new naming scheme without breaking old saves.
+/obj/item/device/electronic_assembly/default //The /default electronic_assemblys are to allow the introduction of the new naming scheme without breaking old saves.
   name = "type-a electronic assembly"
 
-/obj/item/electronic_assembly/calc
+/obj/item/device/electronic_assembly/calc
 	name = "type-b electronic assembly"
 	icon_state = "setup_small_calc"
 	desc = "It's a case, for building small electronics with. This one resembles a pocket calculator."
 
-/obj/item/electronic_assembly/clam
+/obj/item/device/electronic_assembly/clam
 	name = "type-c electronic assembly"
 	icon_state = "setup_small_clam"
 	desc = "It's a case, for building small electronics with. This one has a clamshell design."
 
-/obj/item/electronic_assembly/simple
+/obj/item/device/electronic_assembly/simple
 	name = "type-d electronic assembly"
 	icon_state = "setup_small_simple"
 	desc = "It's a case, for building small electronics with. This one has a simple design."
 
-/obj/item/electronic_assembly/hook
+/obj/item/device/electronic_assembly/hook
 	name = "type-e electronic assembly"
 	icon_state = "setup_small_hook"
 	desc = "It's a case, for building small electronics with. This one looks like it has a belt clip."
-	slot_flags = SLOT_LOWER_BODY
+	slot_flags = SLOT_BELT
 
-/obj/item/electronic_assembly/pda
+/obj/item/device/electronic_assembly/pda
 	name = "type-f electronic assembly"
 	icon_state = "setup_small_pda"
 	desc = "It's a case, for building small electronics with. This one resembles a PDA."
-	slot_flags = SLOT_LOWER_BODY | SLOT_ID
+	slot_flags = SLOT_BELT | SLOT_ID
 
-/obj/item/electronic_assembly/augment
+/obj/item/device/electronic_assembly/augment
 	name = "augment electronic assembly"
 	icon_state = "setup_augment"
 	desc = "It's a case, for building small electronics with. This one is designed to go inside a cybernetic augment."
 	circuit_flags = IC_FLAG_CAN_FIRE
 
-/obj/item/electronic_assembly/medium
+/obj/item/device/electronic_assembly/medium
 	name = "electronic mechanism"
 	icon_state = "setup_medium"
 	desc = "It's a case, for building medium-sized electronics with."
@@ -569,37 +566,41 @@
 	max_complexity = IC_COMPLEXITY_BASE * 2
 	health = 20
 
-/obj/item/electronic_assembly/medium/default
+/obj/item/device/electronic_assembly/medium/default
 	name = "type-a electronic mechanism"
 
-/obj/item/electronic_assembly/medium/box
+/obj/item/device/electronic_assembly/medium/box
 	name = "type-b electronic mechanism"
 	icon_state = "setup_medium_box"
 	desc = "It's a case, for building medium-sized electronics with. This one has a boxy design."
 
-/obj/item/electronic_assembly/medium/clam
+/obj/item/device/electronic_assembly/medium/clam
 	name = "type-c electronic mechanism"
 	icon_state = "setup_medium_clam"
 	desc = "It's a case, for building medium-sized electronics with. This one has a clamshell design."
 
-/obj/item/electronic_assembly/medium/medical
+/obj/item/device/electronic_assembly/medium/medical
 	name = "type-d electronic mechanism"
 	icon_state = "setup_medium_med"
 	desc = "It's a case, for building medium-sized electronics with. This one resembles some type of medical apparatus."
 
-/obj/item/electronic_assembly/medium/gun
+/obj/item/device/electronic_assembly/medium/gun
 	name = "type-e electronic mechanism"
 	icon_state = "setup_medium_gun"
 	item_state = "circuitgun"
 	desc = "It's a case, for building medium-sized electronics with. This one resembles a gun, or some type of tool, if you're feeling optimistic. It can fire guns and throw items while the user is holding it."
+	item_icons = list(
+		icon_l_hand = 'icons/mob/onmob/items/lefthand_guns.dmi',
+		icon_r_hand = 'icons/mob/onmob/items/righthand_guns.dmi'
+		)
 	circuit_flags = IC_FLAG_CAN_FIRE | IC_FLAG_ANCHORABLE
 
-/obj/item/electronic_assembly/medium/radio
+/obj/item/device/electronic_assembly/medium/radio
 	name = "type-f electronic mechanism"
 	icon_state = "setup_medium_radio"
 	desc = "It's a case, for building medium-sized electronics with. This one resembles an old radio."
 
-/obj/item/electronic_assembly/large
+/obj/item/device/electronic_assembly/large
 	name = "electronic machine"
 	icon_state = "setup_large"
 	desc = "It's a case, for building large electronics with."
@@ -608,35 +609,35 @@
 	max_complexity = IC_COMPLEXITY_BASE * 4
 	health = 30
 
-/obj/item/electronic_assembly/large/default
+/obj/item/device/electronic_assembly/large/default
 	name = "type-a electronic machine"
 
-/obj/item/electronic_assembly/large/scope
+/obj/item/device/electronic_assembly/large/scope
 	name = "type-b electronic machine"
 	icon_state = "setup_large_scope"
 	desc = "It's a case, for building large electronics with. This one resembles an oscilloscope."
 
-/obj/item/electronic_assembly/large/terminal
+/obj/item/device/electronic_assembly/large/terminal
 	name = "type-c electronic machine"
 	icon_state = "setup_large_terminal"
 	desc = "It's a case, for building large electronics with. This one resembles a computer terminal."
 
-/obj/item/electronic_assembly/large/arm
+/obj/item/device/electronic_assembly/large/arm
 	name = "type-d electronic machine"
 	icon_state = "setup_large_arm"
 	desc = "It's a case, for building large electronics with. This one resembles a robotic arm."
 
-/obj/item/electronic_assembly/large/tall
+/obj/item/device/electronic_assembly/large/tall
 	name = "type-e electronic machine"
 	icon_state = "setup_large_tall"
 	desc = "It's a case, for building large electronics with. This one has a tall design."
 
-/obj/item/electronic_assembly/large/industrial
+/obj/item/device/electronic_assembly/large/industrial
 	name = "type-f electronic machine"
 	icon_state = "setup_large_industrial"
 	desc = "It's a case, for building large electronics with. This one resembles some kind of industrial machinery."
 
-/obj/item/electronic_assembly/drone
+/obj/item/device/electronic_assembly/drone
 	name = "electronic drone"
 	icon_state = "setup_drone"
 	desc = "It's a case, for building mobile electronics with."
@@ -647,38 +648,38 @@
 	circuit_flags = 0
 	health = 50
 
-/obj/item/electronic_assembly/drone/can_move()
+/obj/item/device/electronic_assembly/drone/can_move()
 	return TRUE
 
-/obj/item/electronic_assembly/drone/default
+/obj/item/device/electronic_assembly/drone/default
 	name = "type-a electronic drone"
 
-/obj/item/electronic_assembly/drone/arms
+/obj/item/device/electronic_assembly/drone/arms
 	name = "type-b electronic drone"
 	icon_state = "setup_drone_arms"
 	desc = "It's a case, for building mobile electronics with. This one is armed and dangerous."
 
-/obj/item/electronic_assembly/drone/secbot
+/obj/item/device/electronic_assembly/drone/secbot
 	name = "type-c electronic drone"
 	icon_state = "setup_drone_secbot"
 	desc = "It's a case, for building mobile electronics with. This one resembles a Securitron."
 
-/obj/item/electronic_assembly/drone/medbot
+/obj/item/device/electronic_assembly/drone/medbot
 	name = "type-d electronic drone"
 	icon_state = "setup_drone_medbot"
 	desc = "It's a case, for building mobile electronics with. This one resembles a Medibot."
 
-/obj/item/electronic_assembly/drone/genbot
+/obj/item/device/electronic_assembly/drone/genbot
 	name = "type-e electronic drone"
 	icon_state = "setup_drone_genbot"
 	desc = "It's a case, for building mobile electronics with. This one has a generic bot design."
 
-/obj/item/electronic_assembly/drone/android
+/obj/item/device/electronic_assembly/drone/android
 	name = "type-f electronic drone"
 	icon_state = "setup_drone_android"
 	desc = "It's a case, for building mobile electronics with. This one has a hominoid design."
 
-/obj/item/electronic_assembly/wallmount
+/obj/item/device/electronic_assembly/wallmount
 	name = "wall-mounted electronic assembly"
 	icon_state = "setup_wallmount_medium"
 	desc = "It's a case, for building medium-sized electronics with. It has a magnetized backing to allow it to stick to walls, but you'll still need to wrench the anchoring bolts in place to keep it on."
@@ -687,11 +688,11 @@
 	max_complexity = IC_COMPLEXITY_BASE * 2
 	health = 10
 
-/obj/item/electronic_assembly/wallmount/afterattack(var/atom/a, var/mob/user, var/proximity)
+/obj/item/device/electronic_assembly/wallmount/afterattack(var/atom/a, var/mob/user, var/proximity)
 	if(proximity && istype(a ,/turf) && a.density)
 		mount_assembly(a,user)
 
-/obj/item/electronic_assembly/wallmount/heavy
+/obj/item/device/electronic_assembly/wallmount/heavy
 	name = "heavy wall-mounted electronic assembly"
 	icon_state = "setup_wallmount_large"
 	desc = "It's a case, for building large electronics with. It has a magnetized backing to allow it to stick to walls, but you'll still need to wrench the anchoring bolts in place to keep it on."
@@ -699,7 +700,7 @@
 	max_components = IC_MAX_SIZE_BASE * 4
 	max_complexity = IC_COMPLEXITY_BASE * 4
 
-/obj/item/electronic_assembly/wallmount/light
+/obj/item/device/electronic_assembly/wallmount/light
 	name = "light wall-mounted electronic assembly"
 	icon_state = "setup_wallmount_small"
 	desc = "It's a case, for building small electronics with. It has a magnetized backing to allow it to stick to walls, but you'll still need to wrench the anchoring bolts in place to keep it on."
@@ -707,10 +708,10 @@
 	max_components = IC_MAX_SIZE_BASE
 	max_complexity = IC_COMPLEXITY_BASE
 
-/obj/item/electronic_assembly/pickup()
+/obj/item/device/electronic_assembly/pickup()
 	transform = matrix() //Reset the matrix.
 
-/obj/item/electronic_assembly/wallmount/proc/mount_assembly(turf/on_wall, mob/user) //Yeah, this is admittedly just an abridged and kitbashed version of the wallframe attach procs.
+/obj/item/device/electronic_assembly/wallmount/proc/mount_assembly(turf/on_wall, mob/user) //Yeah, this is admittedly just an abridged and kitbashed version of the wallframe attach procs.
 	var/ndir = get_dir(on_wall, user)
 	if(!(ndir in GLOB.cardinal))
 		return

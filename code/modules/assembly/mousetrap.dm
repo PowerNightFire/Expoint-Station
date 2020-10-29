@@ -1,18 +1,17 @@
-/obj/item/assembly/mousetrap
-	name = "rat trap"
+/obj/item/device/assembly/mousetrap
+	name = "mousetrap"
 	desc = "A handy little spring-loaded trap for catching pesty rodents."
 	icon_state = "mousetrap"
-	origin_tech = "{'combat':1}"
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/slag = MATTER_AMOUNT_REINFORCEMENT)
+	origin_tech = list(TECH_COMBAT = 1)
+	matter = list(MATERIAL_STEEL = 100, MATERIAL_WASTE = 10)
 	var/armed = 0
 
-/obj/item/assembly/mousetrap/examine(mob/user)
+/obj/item/device/assembly/mousetrap/examine(mob/user)
 	. = ..()
 	if(armed)
 		to_chat(user, "It looks like it's armed.")
 
-/obj/item/assembly/mousetrap/on_update_icon()
+/obj/item/device/assembly/mousetrap/on_update_icon()
 	if(armed)
 		icon_state = "mousetraparmed"
 	else
@@ -20,7 +19,7 @@
 	if(holder)
 		holder.update_icon()
 
-/obj/item/assembly/mousetrap/proc/triggered(mob/target, var/type = "feet")
+/obj/item/device/assembly/mousetrap/proc/triggered(mob/target, var/type = "feet")
 	if(!armed)
 		return
 	var/obj/item/organ/external/affecting = null
@@ -48,31 +47,39 @@
 	update_icon()
 	pulse(0)
 
-/obj/item/assembly/mousetrap/proc/toggle_arming(var/mob/user)
+
+/obj/item/device/assembly/mousetrap/attack_self(mob/living/user)
 	if(!armed)
-		to_chat(user, SPAN_NOTICE("You arm [src]."))
-		return TRUE
-
-	if((MUTATION_CLUMSY in user.mutations) && prob(50))
-		var/which_hand = user.get_active_held_item_slot()
-		triggered(user, which_hand)
-		user.visible_message(SPAN_DANGER("\The [user] accidentally sets off [src], hurting their fingers."), \
-							 SPAN_DANGER("You accidentally trigger [src]!"))
-		return TRUE
-
-	to_chat(user, SPAN_NOTICE("You disarm [src]."))
+		to_chat(user, "<span class='notice'>You arm [src].</span>")
+	else
+		if((MUTATION_CLUMSY in user.mutations) && prob(50))
+			var/which_hand = BP_L_HAND
+			if(!user.hand)
+				which_hand = BP_R_HAND
+			triggered(user, which_hand)
+			user.visible_message("<span class='warning'>[user] accidentally sets off [src], breaking their fingers.</span>", \
+								 "<span class='warning'>You accidentally trigger [src]!</span>")
+			return
+		to_chat(user, "<span class='notice'>You disarm [src].</span>")
 	armed = !armed
 	update_icon()
 	playsound(user.loc, 'sound/weapons/handcuffs.ogg', 30, 1, -3)
-	return TRUE
 
-/obj/item/assembly/mousetrap/attack_self(mob/living/user)
-	. = toggle_arming(user) || ..()
 
-/obj/item/assembly/mousetrap/attack_hand(mob/living/user)
-	. = toggle_arming(user) || ..()
+/obj/item/device/assembly/mousetrap/attack_hand(mob/living/user)
+	if(armed)
+		if((MUTATION_CLUMSY in user.mutations) && prob(50))
+			var/which_hand = BP_L_HAND
+			if(!user.hand)
+				which_hand = BP_R_HAND
+			triggered(user, which_hand)
+			user.visible_message("<span class='warning'>[user] accidentally sets off [src], breaking their fingers.</span>", \
+								 "<span class='warning'>You accidentally trigger [src]!</span>")
+			return
+	..()
 
-/obj/item/assembly/mousetrap/Crossed(atom/movable/AM)
+
+/obj/item/device/assembly/mousetrap/Crossed(atom/movable/AM)
 	if(armed)
 		if(ishuman(AM))
 			var/mob/living/carbon/H = AM
@@ -85,27 +92,28 @@
 	..()
 
 
-/obj/item/assembly/mousetrap/on_found(mob/finder)
+/obj/item/device/assembly/mousetrap/on_found(mob/finder)
 	if(armed)
 		finder.visible_message("<span class='warning'>[finder] accidentally sets off [src], breaking their fingers.</span>", \
 							   "<span class='warning'>You accidentally trigger [src]!</span>")
-		triggered(finder, finder.get_active_held_item_slot())
+		triggered(finder, finder.hand ? BP_L_HAND : BP_R_HAND)
 		return 1	//end the search!
 	return 0
 
 
-/obj/item/assembly/mousetrap/hitby(atom/A)
-	..()
-	if(armed)
-		visible_message(SPAN_WARNING("\The [src] is triggered by \the [A]."))
-		triggered(A)
+/obj/item/device/assembly/mousetrap/hitby(atom/A)
+	if(!armed)
+		return ..()
+	visible_message("<span class='warning'>[src] is triggered by [A].</span>")
+	triggered(A)
 
-/obj/item/assembly/mousetrap/armed
+
+/obj/item/device/assembly/mousetrap/armed
 	icon_state = "mousetraparmed"
 	armed = 1
 
 
-/obj/item/assembly/mousetrap/verb/hide_under()
+/obj/item/device/assembly/mousetrap/verb/hide_under()
 	set src in oview(1)
 	set name = "Hide"
 	set category = "Object"

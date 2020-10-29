@@ -1,23 +1,23 @@
-/obj/item/beartrap
+/obj/item/weapon/beartrap
 	name = "mechanical trap"
 	throw_speed = 2
 	throw_range = 1
 	gender = PLURAL
-	icon = 'icons/obj/items/beartrap.dmi'
+	icon = 'icons/obj/items.dmi'
 	icon_state = "beartrap0"
 	randpixel = 0
 	desc = "A mechanically activated leg trap. Low-tech, but reliable. Looks like it could really hurt if you set it off."
 	throwforce = 0
 	w_class = ITEM_SIZE_NORMAL
-	origin_tech = "{'materials':1}"
-	material = /decl/material/solid/metal/steel
+	origin_tech = list(TECH_MATERIAL = 1)
+	matter = list(MATERIAL_STEEL = 18750)
 	can_buckle = 0 //disallow manual un/buckling
 	var/deployed = 0
 
-/obj/item/beartrap/proc/can_use(mob/user)
-	. = (user.check_dexterity(DEXTERITY_SIMPLE_MACHINES) && !issilicon(user) && !user.stat && !user.restrained())
+/obj/item/weapon/beartrap/proc/can_use(mob/user)
+	return (user.IsAdvancedToolUser() && !issilicon(user) && !user.stat && !user.restrained())
 
-/obj/item/beartrap/user_unbuckle_mob(mob/user)
+/obj/item/weapon/beartrap/user_unbuckle_mob(mob/user as mob)
 	if(buckled_mob && can_use(user))
 		user.visible_message(
 			"<span class='notice'>\The [user] begins freeing \the [buckled_mob] from \the [src].</span>",
@@ -29,7 +29,7 @@
 			unbuckle_mob()
 			anchored = 0
 
-/obj/item/beartrap/attack_self(mob/user)
+/obj/item/weapon/beartrap/attack_self(mob/user as mob)
 	..()
 	if(!deployed && can_use(user))
 		user.visible_message(
@@ -49,7 +49,7 @@
 			update_icon()
 			anchored = 1
 
-/obj/item/beartrap/attack_hand(mob/user)
+/obj/item/weapon/beartrap/attack_hand(mob/user as mob)
 	if(buckled_mob)
 		user_unbuckle_mob(user)
 	else if(deployed && can_use(user))
@@ -69,7 +69,7 @@
 	else
 		..()
 
-/obj/item/beartrap/proc/attack_mob(mob/living/L)
+/obj/item/weapon/beartrap/proc/attack_mob(mob/living/L)
 
 	var/target_zone
 	if(L.lying)
@@ -86,7 +86,7 @@
 	to_chat(L, "<span class='danger'>The steel jaws of \the [src] bite into you, trapping you in place!</span>")
 	deployed = 0
 
-/obj/item/beartrap/Crossed(atom/movable/AM)
+/obj/item/weapon/beartrap/Crossed(AM as mob|obj)
 	if(deployed && isliving(AM))
 		var/mob/living/L = AM
 		if(!MOVING_DELIBERATELY(L))
@@ -102,7 +102,7 @@
 			update_icon()
 	..()
 
-/obj/item/beartrap/on_update_icon()
+/obj/item/weapon/beartrap/on_update_icon()
 	..()
 
 	if(!deployed)

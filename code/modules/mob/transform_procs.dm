@@ -72,6 +72,8 @@
 	if(mind)
 		mind.transfer_to(O)
 		O.mind.original = O
+		var/datum/job/job = SSjobs.get_by_title(O.mind.assigned_role)
+		O.skillset.obtain_from_job(job)
 	else
 		O.key = key
 
@@ -86,7 +88,7 @@
 		if (!loc_landmark)
 			for(var/obj/effect/landmark/tripai in landmarks_list)
 				if (tripai.name == "tripai")
-					if((locate(/mob/living) in tripai.loc) || (locate(/obj/structure/aicore) in tripai.loc))
+					if((locate(/mob/living) in tripai.loc) || (locate(/obj/structure/AIcore) in tripai.loc))
 						continue
 					loc_landmark = tripai
 		if (!loc_landmark)
@@ -94,7 +96,7 @@
 			for(var/obj/effect/landmark/start/sloc in landmarks_list)
 				if (sloc.name == "AI")
 					loc_landmark = sloc
-		O.forceMove(loc_landmark ? loc_landmark.loc : get_turf(src))
+		O.forceMove(loc_landmark.loc)
 		O.on_mob_init()
 
 	O.add_ai_verbs()
@@ -131,7 +133,7 @@
 			if(mmi_type)
 				O.mmi = new mmi_type(O)
 				O.mmi.transfer_identity(src)
-	if(O.key != key)
+	else
 		O.key = key
 
 	O.dropInto(loc)
@@ -248,7 +250,7 @@
 /* Certain mob types have problems and should not be allowed to be controlled by players.
  *
  * This proc is here to force coders to manually place their mob in this list, hopefully tested.
- * This also gives a place to explain -why- players shouldnt be turn into certain mobs and hopefully someone can fix them.
+ * This also gives a place to explain -why- players shouldn't be turn into certain mobs and hopefully someone can fix them.
  */
 /mob/proc/safe_animal(var/MP)
 
@@ -305,11 +307,11 @@
 	log_admin("[key_name(src)] has transformed into a zombie!")
 	Weaken(5)
 	if (should_have_organ(BP_HEART))
-		vessel.add_reagent(species.blood_reagent, species.blood_volume - vessel.total_volume)
+		vessel.add_reagent(/datum/reagent/blood, species.blood_volume - vessel.total_volume)
 	for (var/o in organs)
 		var/obj/item/organ/organ = o
 		organ.vital = 0
-		if (!BP_IS_PROSTHETIC(organ))
+		if (!BP_IS_ROBOTIC(organ))
 			organ.rejuvenate(1)
 			organ.max_damage *= 3
 			organ.min_broken_damage = Floor(organ.max_damage * 0.75)

@@ -35,22 +35,20 @@
 
 	var/tmp/changing_turf
 
-	var/prev_type // Previous type of the turf, prior to turf translation.
-
 /turf/Initialize(mapload, ...)
 	. = ..()
 	if(dynamic_lighting)
 		luminosity = 0
 	else
 		luminosity = 1
+
 	RecalculateOpacity()
+
 	if (mapload && permit_ao)
 		queue_ao()
+
 	if (z_flags & ZM_MIMIC_BELOW)
 		setup_zmimic(mapload)
-	update_starlight()
-	if(flooded && !density)
-		fluid_update(FALSE)
 
 /turf/on_update_icon()
 	update_flood_overlay()
@@ -64,7 +62,6 @@
 		QDEL_NULL(flood_object)
 
 /turf/Destroy()
-
 	if (!changing_turf)
 		crash_with("Improper turf qdel. Do not qdel turfs directly.")
 
@@ -87,9 +84,8 @@
 	..()
 	return QDEL_HINT_IWILLGC
 
-/turf/explosion_act(severity)
-	SHOULD_CALL_PARENT(FALSE)
-	return
+/turf/ex_act(severity)
+	return 0
 
 /turf/proc/is_solid_structure()
 	return 1
@@ -99,8 +95,16 @@
 
 	if(user.restrained())
 		return 0
+	if (user.pulling)
+		if(user.pulling.anchored || !isturf(user.pulling.loc))
+			return 0
+		if(user.pulling.loc != user.loc && get_dist(user, user.pulling) > 1)
+			return 0
+		do_pull_click(user, src)
 
-	. = handle_hand_interception(user)
+	.=handle_hand_interception(user)
+	if (!.)
+		return 1
 
 /turf/proc/handle_hand_interception(var/mob/user)
 	var/datum/extension/turf_hand/THE
@@ -116,31 +120,14 @@
 	if(Adjacent(user))
 		attack_hand(user)
 
-/turf/attackby(obj/item/W, mob/user)
-
-	if(ATOM_IS_OPEN_CONTAINER(W) && W.reagents)
-		var/obj/effect/fluid/F = locate() in src
-		if(F && F.reagents?.total_volume)
-			var/taking = min(F.reagents?.total_volume, REAGENTS_FREE_SPACE(W.reagents))
-			if(taking > 0)
-				to_chat(user, SPAN_NOTICE("You fill \the [src] with [F.reagents.get_primary_reagent_name()] from \the [src]."))
-				F.reagents.trans_to(W, taking)
-				return TRUE
-
-	if(istype(W, /obj/item/storage))
-		var/obj/item/storage/S = W
+turf/attackby(obj/item/weapon/W as obj, mob/user as mob)
+	if(istype(W, /obj/item/weapon/storage))
+		var/obj/item/weapon/storage/S = W
 		if(S.use_to_pickup && S.collection_mode)
 			S.gather_all(src, user)
-		return TRUE
-
-	if(istype(W, /obj/item/grab))
-		var/obj/item/grab/G = W
-		step(G.affecting, get_dir(G.affecting.loc, src))
-		return TRUE
-
 	return ..()
 
-/turf/Enter(atom/movable/mover, atom/forget)
+/turf/Enter(atom/movable/mover as mob|obj, atom/forget as mob|obj|turf|area)
 
 	..()
 
@@ -193,6 +180,17 @@ var/const/enterloopsanity = 100
 
 	var/atom/movable/A = atom
 
+	if(ismob(A))
+		var/mob/M = A
+		if(!M.check_solid_ground())
+			inertial_drift(M)
+			//we'll end up checking solid ground again but we still need to check the other things.
+			//Ususally most people aren't in space anyways so hopefully this is acceptable.
+			M.update_floating()
+		else
+			M.inertia_dir = 0
+			M.make_floating(0) //we know we're not on solid ground so skip the checks to save a bit of processing
+
 	var/objects = 0
 	if(A && (A.movable_flags & MOVABLE_FLAG_PROXMOVE))
 		for(var/atom/movable/thing in range(1))
@@ -214,13 +212,27 @@ var/const/enterloopsanity = 100
 /turf/proc/protects_atom(var/atom/A)
 	return FALSE
 
+/turf/proc/inertial_drift(atom/movable/A)
+	if(!(A.last_move))	return
+	if((istype(A, /mob/) && src.x > 2 && src.x < (world.maxx - 1) && src.y > 2 && src.y < (world.maxy-1)))
+		var/mob/M = A
+		if(M.Allow_Spacemove(1)) //if this mob can control their own movement in space then they shouldn't be drifting
+			M.inertia_dir  = 0
+			return
+		spawn(5)
+			if(M && !(M.anchored) && !(M.pulledby) && (M.loc == src))
+				if(!M.inertia_dir)
+					M.inertia_dir = M.last_move
+				step(M, M.inertia_dir)
+	return
+
 /turf/proc/levelupdate()
 	for(var/obj/O in src)
 		O.hide(O.hides_under_flooring() && !is_plating())
 
 /turf/proc/AdjacentTurfs(var/check_blockage = TRUE)
 	. = list()
-	for(var/turf/t in (RANGE_TURFS(src, 1) - src))
+	for(var/turf/t in (trange(1,src) - src))
 		if(check_blockage)
 			if(!t.density)
 				if(!LinkBlocked(src, t) && !TurfBlockedNonWindow(t))
@@ -261,8 +273,7 @@ var/const/enterloopsanity = 100
 
 //expects an atom containing the reagents used to clean the turf
 /turf/proc/clean(atom/source, mob/user = null, var/time = null, var/message = null)
-	set waitfor = FALSE
-	if(source.reagents.has_reagent(/decl/material/liquid/water, 1) || source.reagents.has_reagent(/decl/material/liquid/cleaner, 1))
+	if(source.reagents.has_reagent(/datum/reagent/water, 1) || source.reagents.has_reagent(/datum/reagent/space_cleaner, 1))
 		if(user && time && !do_after(user, time, src))
 			return
 		clean_blood()
@@ -270,8 +281,8 @@ var/const/enterloopsanity = 100
 		if(message)
 			to_chat(user, message)
 	else
-		to_chat(user, SPAN_WARNING("\The [source] is too dry to wash that."))
-	source.reagents.touch_turf(src)
+		to_chat(user, "<span class='warning'>\The [source] is too dry to wash that.</span>")
+	source.reagents.trans_to_turf(src, 1, 10)	//10 is the multiplier for the reaction effect. probably needed to wet the floor properly.
 
 /turf/proc/remove_cleanables()
 	for(var/obj/effect/O in src)
@@ -287,19 +298,18 @@ var/const/enterloopsanity = 100
 		decals = null
 
 // Called when turf is hit by a thrown object
-/turf/hitby(atom/movable/AM, var/datum/thrownthing/TT)
-	..()
-	if(density)
+/turf/hitby(atom/movable/AM as mob|obj, var/datum/thrownthing/TT)
+	if(src.density)
 		if(isliving(AM))
 			var/mob/living/M = AM
 			M.turf_collision(src, TT.speed)
-			if(M.pinned)
+			if(M.pinned.len)
 				return
-		addtimer(CALLBACK(src, /turf/proc/bounce_off, AM, TT.init_dir), 2)
 
-/turf/proc/bounce_off(var/atom/movable/AM, var/direction)
-	step(AM, turn(direction, 180))
-
+		var/intial_dir = TT.init_dir
+		spawn(2)
+			step(AM, turn(intial_dir, 180))
+				
 /turf/proc/can_engrave()
 	return FALSE
 
@@ -322,11 +332,10 @@ var/const/enterloopsanity = 100
 	var/message = sanitize(input("Enter a message to engrave.", "Graffiti") as null|text, trim = TRUE)
 	if(!message)
 		return FALSE
+
 	if(!vandal || vandal.incapacitated() || !Adjacent(vandal) || !tool.loc == vandal)
 		return FALSE
-	message = vandal.handle_writing_literacy(vandal, message, TRUE)
-	if(!message)
-		return
+
 	vandal.visible_message("<span class='warning'>\The [vandal] begins carving something into \the [src].</span>")
 
 	if(!do_after(vandal, max(20, length(message)), src))
@@ -352,20 +361,12 @@ var/const/enterloopsanity = 100
 /turf/proc/is_floor()
 	return FALSE
 
-/turf/proc/update_starlight()
-	if(!config.starlight)
-		return
-	var/area/A = get_area(src)
-	if(!A.show_starlight)
-		return
-	//Let's make sure not to break everything if people use a crazy setting.
-	var/turf/T = locate(/turf/simulated) in RANGE_TURFS(src,1)
-	if(T)
-		A = get_area(T)
-		if(A && A.dynamic_lighting)
-			set_light(min(0.1*config.starlight, 1), 1, 3, l_color = SSskybox.background_color)
-			return
-	set_light(0)
-
-/turf/proc/get_footstep_sound(var/mob/caller)
-	return
+/turf/proc/get_obstruction()
+	if (density)
+		LAZYADD(., src)
+	if (contents.len > 100 || contents.len <= !!lighting_overlay)
+		return    // fuck it, too/not-enough much shit here
+	for (var/thing in src)
+		var/atom/movable/AM = thing
+		if (AM.simulated && AM.blocks_airlock())
+			LAZYADD(., AM)

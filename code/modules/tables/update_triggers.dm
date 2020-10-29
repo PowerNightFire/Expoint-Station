@@ -1,4 +1,4 @@
-/obj/structure/window/LateInitialize()
+/obj/structure/window/New()
 	..()
 	for(var/obj/structure/table/T in view(src, 1))
 		T.update_connections()

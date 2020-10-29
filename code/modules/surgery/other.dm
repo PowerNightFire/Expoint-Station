@@ -8,11 +8,10 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/fix_tendon
 	name = "Repair tendon"
-	description = "This procedure repairs damage to a tendon."
 	allowed_tools = list(
-		/obj/item/sutures = 100,
+		/obj/item/weapon/FixOVein = 100,
 		/obj/item/stack/cable_coil = 75,
-		/obj/item/tape_roll = 50
+		/obj/item/weapon/tape_roll = 50
 	)
 	can_infect = 1
 	blood_level = 1
@@ -52,11 +51,10 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/fix_vein
 	name = "Repair arterial bleeding"
-	description = "This procedure repairs damage to an artery."
 	allowed_tools = list(
-		/obj/item/sutures = 100,
+		/obj/item/weapon/FixOVein = 100,
 		/obj/item/stack/cable_coil = 75,
-		/obj/item/tape_roll = 50
+		/obj/item/weapon/tape_roll = 50
 	)
 	can_infect = 1
 	blood_level = 1
@@ -99,16 +97,17 @@
 /decl/surgery_step/hardsuit
 	name = "Remove hardsuit"
 	allowed_tools = list(
-		/obj/item/weldingtool = 80,
-		/obj/item/circular_saw = 60,
-		/obj/item/gun/energy/plasmacutter = 30
+		/obj/item/weapon/weldingtool = 80,
+		/obj/item/weapon/circular_saw = 60,
+		/obj/item/psychic_power/psiblade/master/grand/paramount = 100,
+		/obj/item/psychic_power/psiblade = 75,
+		/obj/item/weapon/gun/energy/plasmacutter = 30
 	)
 	can_infect = 0
 	blood_level = 0
 	min_duration = 120
 	max_duration = 180
 	surgery_candidate_flags = 0
-	hidden_from_codex = TRUE
 
 /decl/surgery_step/hardsuit/assess_bodypart(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
 	return TRUE
@@ -120,10 +119,10 @@
 	if(!istype(target))
 		return FALSE
 	if(isWelder(tool))
-		var/obj/item/weldingtool/welder = tool
+		var/obj/item/weapon/weldingtool/welder = tool
 		if(!welder.isOn() || !welder.remove_fuel(1,user))
 			return FALSE
-	return (target_zone == BP_CHEST) && istype(target.back, /obj/item/rig) && !(target.back.canremove)
+	return (target_zone == BP_CHEST) && istype(target.back, /obj/item/weapon/rig) && !(target.back.canremove)
 
 /decl/surgery_step/hardsuit/begin_step(mob/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
 	user.visible_message("[user] starts cutting through the support systems of [target]'s [target.back] with \the [tool]." , \
@@ -132,7 +131,7 @@
 
 /decl/surgery_step/hardsuit/end_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
 
-	var/obj/item/rig/rig = target.back
+	var/obj/item/weapon/rig/rig = target.back
 	if(!istype(rig))
 		return
 	rig.reset()
@@ -149,16 +148,15 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/sterilize
 	name = "Sterilize wound"
-	description = "This procedure sterilizes a wound with alcohol."
 	allowed_tools = list(
-		/obj/item/chems/spray = 100,
-		/obj/item/chems/dropper = 100,
-		/obj/item/chems/glass/bottle = 90,
-		/obj/item/chems/food/drinks/flask = 90,
-		/obj/item/chems/glass/beaker = 75,
-		/obj/item/chems/food/drinks/bottle = 75,
-		/obj/item/chems/food/drinks/glass2 = 75,
-		/obj/item/chems/glass/bucket = 50
+		/obj/item/weapon/reagent_containers/spray = 100,
+		/obj/item/weapon/reagent_containers/dropper = 100,
+		/obj/item/weapon/reagent_containers/glass/bottle = 90,
+		/obj/item/weapon/reagent_containers/food/drinks/flask = 90,
+		/obj/item/weapon/reagent_containers/glass/beaker = 75,
+		/obj/item/weapon/reagent_containers/food/drinks/bottle = 75,
+		/obj/item/weapon/reagent_containers/food/drinks/glass2 = 75,
+		/obj/item/weapon/reagent_containers/glass/bucket = 50
 	)
 	can_infect = 0
 	blood_level = 0
@@ -183,17 +181,17 @@
 /decl/surgery_step/sterilize/end_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
 
-	if (!istype(tool, /obj/item/chems))
+	if (!istype(tool, /obj/item/weapon/reagent_containers))
 		return
 
-	var/obj/item/chems/container = tool
+	var/obj/item/weapon/reagent_containers/container = tool
 
 	var/amount = container.amount_per_transfer_from_this
 	var/temp_holder = new/obj()
 	var/datum/reagents/temp_reagents = new(amount, temp_holder)
 	container.reagents.trans_to_holder(temp_reagents, amount)
 
-	var/trans = temp_reagents.trans_to_mob(target, temp_reagents.total_volume, CHEM_INJECT) //technically it's contact, but the reagents are being applied to internal tissue
+	var/trans = temp_reagents.trans_to_mob(target, temp_reagents.total_volume, CHEM_BLOOD) //technically it's contact, but the reagents are being applied to internal tissue
 	if (trans > 0)
 		user.visible_message("<span class='notice'>[user] rubs [target]'s [affected.name] down with \the [tool]'s contents</span>.", \
 			"<span class='notice'>You rub [target]'s [affected.name] down with \the [tool]'s contents.</span>")
@@ -204,24 +202,24 @@
 /decl/surgery_step/sterilize/fail_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
 
-	if (!istype(tool, /obj/item/chems))
+	if (!istype(tool, /obj/item/weapon/reagent_containers))
 		return
 
-	var/obj/item/chems/container = tool
+	var/obj/item/weapon/reagent_containers/container = tool
 
-	container.reagents.trans_to_mob(target, container.amount_per_transfer_from_this, CHEM_INJECT)
+	container.reagents.trans_to_mob(target, container.amount_per_transfer_from_this, CHEM_BLOOD)
 
 	user.visible_message("<span class='warning'>[user]'s hand slips, spilling \the [tool]'s contents over the [target]'s [affected.name]!</span>" , \
 	"<span class='warning'>Your hand slips, spilling \the [tool]'s contents over the [target]'s [affected.name]!</span>")
 	affected.disinfect()
 
-/decl/surgery_step/sterilize/proc/check_chemicals(var/obj/item/chems/container)
-	if(istype(container) && ATOM_IS_OPEN_CONTAINER(container))
-		if(container.reagents.has_reagent(/decl/material/liquid/antiseptic))
+/decl/surgery_step/sterilize/proc/check_chemicals(var/obj/item/weapon/reagent_containers/container)
+	if(istype(container) && container.is_open_container())
+		if(container.reagents.has_reagent(/datum/reagent/sterilizine))
 			return TRUE
 		else
-			for(var/rtype in container?.reagents?.reagent_volumes)
-				var/decl/material/liquid/ethanol/booze = decls_repository.get_decl(rtype)
-				if(istype(booze) && booze.strength <= 40)
+			var/datum/reagent/ethanol/booze = locate() in container.reagents.reagent_list
+			if(istype(booze))
+				if(booze.strength <= 40)
 					return TRUE
 	return FALSE

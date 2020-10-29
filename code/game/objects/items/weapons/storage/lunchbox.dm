@@ -1,7 +1,6 @@
-/obj/item/storage/lunchbox
+/obj/item/weapon/storage/lunchbox
 	max_storage_space = 8 //slightly smaller than a toolbox
 	name = "rainbow lunchbox"
-	icon = 'icons/obj/items/storage/lunchbox.dmi'
 	icon_state = "lunchbox_rainbow"
 	item_state = "toolbox_pink"
 	desc = "A little lunchbox. This one is the colors of the rainbow!"
@@ -10,8 +9,8 @@
 	var/filled = FALSE
 	attack_verb = list("lunched")
 
-/obj/item/storage/lunchbox/Initialize()
-	. = ..()
+/obj/item/weapon/storage/lunchbox/New()
+	..()
 	if(filled)
 		var/list/lunches = lunchables_lunches()
 		var/lunch = lunches[pick(lunches)]
@@ -25,60 +24,84 @@
 		var/drink = drinks[pick(drinks)]
 		new drink(src)
 
-/obj/item/storage/lunchbox/filled
+/obj/item/weapon/storage/lunchbox/filled
 	filled = TRUE
 
-/obj/item/storage/lunchbox/heart
+/obj/item/weapon/storage/lunchbox/heart
 	name = "heart lunchbox"
 	icon_state = "lunchbox_lovelyhearts"
 	item_state = "toolbox_pink"
 	desc = "A little lunchbox. This one has cute little hearts on it!"
 
-/obj/item/storage/lunchbox/heart/filled
+/obj/item/weapon/storage/lunchbox/heart/filled
 	filled = TRUE
 
-/obj/item/storage/lunchbox/cat
+/obj/item/weapon/storage/lunchbox/cat
 	name = "cat lunchbox"
 	icon_state = "lunchbox_sciencecatshow"
 	item_state = "toolbox_green"
 	desc = "A little lunchbox. This one has a cute little science cat from a popular show on it!"
 
-/obj/item/storage/lunchbox/cat/filled
+/obj/item/weapon/storage/lunchbox/cat/filled
 	filled = TRUE
 
-/obj/item/storage/lunchbox/mars
+/obj/item/weapon/storage/lunchbox/nt
+	name = "\improper NanoTrasen brand lunchbox"
+	icon_state = "lunchbox_nanotrasen"
+	item_state = "toolbox_blue"
+	desc = "A little lunchbox. This one is branded with the NanoTrasen logo!"
+
+/obj/item/weapon/storage/lunchbox/dais
+	name = "\improper DAIS brand lunchbox"
+	icon_state = "lunchbox_dais"
+	item_state = "toolbox_blue"
+	desc = "A little lunchbox. This one is branded with the Deimos Advanced Information Systems logo!"
+
+/obj/item/weapon/storage/lunchbox/nt/filled
+	filled = TRUE
+
+/obj/item/weapon/storage/lunchbox/mars
 	name = "\improper Mariner University lunchbox"
 	icon_state = "lunchbox_marsuniversity"
 	item_state = "toolbox_red"
 	desc = "A little lunchbox. This one is branded with the Mariner university logo!"
 
-/obj/item/storage/lunchbox/mars/filled
+/obj/item/weapon/storage/lunchbox/mars/filled
 	filled = TRUE
 
-/obj/item/storage/lunchbox/cti
+/obj/item/weapon/storage/lunchbox/cti
 	name = "\improper CTI lunchbox"
 	icon_state = "lunchbox_cti"
 	item_state = "toolbox_blue"
 	desc = "A little lunchbox. This one is branded with the CTI logo!"
 
-/obj/item/storage/lunchbox/cti/filled
+/obj/item/weapon/storage/lunchbox/cti/filled
 	filled = TRUE
 
-/obj/item/storage/lunchbox/syndicate
+/obj/item/weapon/storage/lunchbox/nymph
+	name = "\improper Diona nymph lunchbox"
+	icon_state = "lunchbox_dionanymph"
+	item_state = "toolbox_yellow"
+	desc = "A little lunchbox. This one is an adorable Diona nymph on the side!"
+
+/obj/item/weapon/storage/lunchbox/nymph/filled
+	filled = TRUE
+
+/obj/item/weapon/storage/lunchbox/syndicate
 	name = "black and red lunchbox"
 	icon_state = "lunchbox_syndie"
 	item_state = "toolbox_syndi"
 	desc = "A little lunchbox. This one is a sleek black and red, made of a durable steel!"
 
-/obj/item/storage/lunchbox/syndicate/filled
+/obj/item/weapon/storage/lunchbox/syndicate/filled
 	filled = TRUE
 
-/obj/item/storage/lunchbox/TCC
+/obj/item/weapon/storage/lunchbox/TCC
 	name = "\improper GCC lunchbox"
 	icon_state = "lunchbox_tcc"
 	item_state = "toolbox_syndi"
 	desc = "A little lunchbox. This one is branded with the flag of the Gilgamesh Colonial Confederation!"
 
-/obj/item/storage/lunchbox/syndicate/filled
+/obj/item/weapon/storage/lunchbox/syndicate/filled
 	filled = TRUE
 

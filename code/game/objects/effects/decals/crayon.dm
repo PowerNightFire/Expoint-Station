@@ -3,24 +3,25 @@
 	desc = "A rune drawn in crayon."
 	icon = 'icons/obj/rune.dmi'
 
-/obj/effect/decal/cleanable/crayon/Initialize(mapload, main = "#ffffff", shade = "#000000", var/type = "rune")
-	name = type
-	desc = "A [type] drawn in crayon."
+	New(location,main = "#ffffff",shade = "#000000",var/type = "rune")
+		..()
 
-	switch(type)
-		if("rune")
-			type = "rune[rand(1,6)]"
-		if("graffiti")
-			type = pick("amyjon","face","matt","revolution","engie","guy","end","dwarf","uboa")
+		name = type
+		desc = "A [type] drawn in crayon."
 
-	var/icon/mainOverlay = new/icon('icons/effects/crayondecal.dmi',"[type]",2.1)
-	var/icon/shadeOverlay = new/icon('icons/effects/crayondecal.dmi',"[type]s",2.1)
+		switch(type)
+			if("rune")
+				type = "rune[rand(1,6)]"
+			if("graffiti")
+				type = pick("amyjon","face","matt","revolution","engie","guy","end","dwarf","uboa")
 
-	mainOverlay.Blend(main,ICON_ADD)
-	shadeOverlay.Blend(shade,ICON_ADD)
+		var/icon/mainOverlay = new/icon('icons/effects/crayondecal.dmi',"[type]",2.1)
+		var/icon/shadeOverlay = new/icon('icons/effects/crayondecal.dmi',"[type]s",2.1)
 
-	overlays += mainOverlay
-	overlays += shadeOverlay
+		mainOverlay.Blend(main,ICON_ADD)
+		shadeOverlay.Blend(shade,ICON_ADD)
 
-	add_hiddenprint(usr)
-	. = ..()
+		overlays += mainOverlay
+		overlays += shadeOverlay
+
+		add_hiddenprint(usr)

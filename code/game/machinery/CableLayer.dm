@@ -1,6 +1,7 @@
 /obj/machinery/cablelayer
 	name = "automatic cable layer"
-	icon = 'icons/obj/machines/pipe_dispenser.dmi'
+
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "pipe_d"
 	density = 1
 	var/obj/structure/cable/last_piece
@@ -8,10 +9,10 @@
 	var/max_cable = 100
 	var/on = 0
 
-/obj/machinery/cablelayer/Initialize()
-	. = ..()
+/obj/machinery/cablelayer/New()
 	cable = new(src)
 	cable.amount = 100
+	..()
 
 /obj/machinery/cablelayer/Move(new_turf,M_Dir)
 	..()
@@ -25,7 +26,7 @@
 	user.visible_message("\The [user] [!on?"dea":"a"]ctivates \the [src].", "You switch [src] [on? "on" : "off"]")
 	return TRUE
 
-/obj/machinery/cablelayer/attackby(var/obj/item/O, var/mob/user)
+/obj/machinery/cablelayer/attackby(var/obj/item/O as obj, var/mob/user as mob)
 	if(istype(O, /obj/item/stack/cable_coil))
 
 		var/result = load_cable(O)

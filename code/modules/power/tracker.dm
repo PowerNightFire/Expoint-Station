@@ -15,14 +15,14 @@
 	var/sun_angle = 0		// sun angle as set by sun datum
 	var/obj/machinery/power/solar_control/control = null
 
-/obj/machinery/power/tracker/Initialize(mapload, var/obj/item/solar_assembly/S)
-	. = ..(mapload)
+/obj/machinery/power/tracker/New(var/turf/loc, var/obj/item/solar_assembly/S)
+	..(loc)
 	Make(S)
 	connect_to_network()
 
 /obj/machinery/power/tracker/Destroy()
 	unset_control() //remove from control computer
-	. = ..()
+	..()
 
 //set the control of the tracker to a given computer if closer than SOLAR_MAX_DIST
 /obj/machinery/power/tracker/proc/set_control(var/obj/machinery/power/solar_control/SC)
@@ -56,7 +56,7 @@
 	if(powernet && (powernet == control.powernet)) //update if we're still in the same powernet
 		control.cdir = angle
 
-/obj/machinery/power/tracker/attackby(var/obj/item/W, var/mob/user)
+/obj/machinery/power/tracker/attackby(var/obj/item/weapon/W, var/mob/user)
 
 	if(isCrowbar(W))
 		playsound(src.loc, 'sound/machines/click.ogg', 50, 1)
@@ -74,7 +74,7 @@
 
 // Tracker Electronic
 
-/obj/item/tracker_electronics
+/obj/item/weapon/tracker_electronics
 
 	name = "tracker electronics"
 	icon = 'icons/obj/doors/door_assembly.dmi'

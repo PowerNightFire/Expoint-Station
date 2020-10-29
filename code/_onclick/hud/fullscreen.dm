@@ -22,15 +22,8 @@
 	screen.severity = severity
 
 	screens[category] = screen
-	screen.transform = null
-	if(screen && client)
-		if(screen.screen_loc != ui_entire_screen)
-			if(max(client.last_view_x_dim, client.last_view_y_dim) > 7)
-				var/matrix/M = matrix()
-				M.Scale(ceil(client.last_view_x_dim/7),ceil(client.last_view_y_dim/7))
-				screen.transform = M
-		if(stat != DEAD || screen.allstate)
-			client.screen += screen
+	if(client && (stat != DEAD || screen.allstate))
+		client.screen += screen
 	return screen
 
 /mob/proc/clear_fullscreen(category, animated = 10)
@@ -63,15 +56,8 @@
 
 /mob/proc/reload_fullscreen()
 	if(client)
-		var/largest_bound = max(client.last_view_x_dim, client.last_view_y_dim)
 		for(var/category in screens)
-			var/obj/screen/fullscreen/screen = screens[category]
-			screen.transform = null
-			if(screen.screen_loc != ui_entire_screen && largest_bound > 7)
-				var/matrix/M = matrix()
-				M.Scale(ceil(client.last_view_x_dim/7), ceil(client.last_view_y_dim/7))
-				screen.transform = M
-			client.screen |= screen
+			client.screen |= screens[category]
 
 /obj/screen/fullscreen
 	icon = 'icons/mob/screen_full.dmi'
@@ -105,7 +91,7 @@
 /obj/screen/fullscreen/blackout
 	icon = 'icons/mob/screen1.dmi'
 	icon_state = "black"
-	screen_loc = ui_entire_screen
+	screen_loc = "WEST,SOUTH to EAST,NORTH"
 	layer = BLIND_LAYER
 
 /obj/screen/fullscreen/impaired
@@ -114,13 +100,13 @@
 
 /obj/screen/fullscreen/blurry
 	icon = 'icons/mob/screen1.dmi'
-	screen_loc = ui_entire_screen
+	screen_loc = "WEST,SOUTH to EAST,NORTH"
 	icon_state = "blurry"
 	alpha = 100
 
 /obj/screen/fullscreen/flash
 	icon = 'icons/mob/screen1.dmi'
-	screen_loc = ui_entire_screen
+	screen_loc = "WEST,SOUTH to EAST,NORTH"
 	icon_state = "flash"
 
 /obj/screen/fullscreen/flash/noise
@@ -128,10 +114,8 @@
 
 /obj/screen/fullscreen/high
 	icon = 'icons/mob/screen1.dmi'
-	screen_loc = ui_entire_screen
+	screen_loc = "WEST,SOUTH to EAST,NORTH"
 	icon_state = "druggy"
-	alpha = 127
-	blend_mode = BLEND_MULTIPLY
 
 /obj/screen/fullscreen/noise
 	icon = 'icons/effects/static.dmi'
@@ -166,10 +150,3 @@
 /obj/screen/fullscreen/pain
 	icon_state = "brutedamageoverlay6"
 	alpha = 0
-
-/obj/screen/fullscreen/blueprints
-	icon = 'icons/effects/blueprints.dmi'
-	icon_state = "base"
-	screen_loc = ui_entire_screen
-	alpha = 100
-	layer = FULLSCREEN_LAYER

@@ -23,10 +23,9 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/cavity/make_space
 	name = "Hollow out cavity"
-	description = "This procedure is used to prepare a patient to have something large implanted in their body."
 	allowed_tools = list(
-		/obj/item/surgicaldrill = 100,
-		/obj/item/pen = 75,
+		/obj/item/weapon/surgicaldrill = 100,
+		/obj/item/weapon/pen = 75,
 		/obj/item/stack/material/rods = 50
 	)
 	min_duration = 60
@@ -55,12 +54,11 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/cavity/close_space
 	name = "Close cavity"
-	description = "This procedure is used to repair and close off a cavity within the body."
 	allowed_tools = list(
-		/obj/item/cautery = 100,
+		/obj/item/weapon/cautery = 100,
 		/obj/item/clothing/mask/smokable/cigarette = 75,
-		/obj/item/flame/lighter = 50,
-		/obj/item/weldingtool = 25
+		/obj/item/weapon/flame/lighter = 50,
+		/obj/item/weapon/weldingtool = 25
 	)
 	min_duration = 60
 	max_duration = 80
@@ -91,7 +89,6 @@
 	allowed_tools = list(/obj/item = 100)
 	min_duration = 80
 	max_duration = 100
-	hidden_from_codex = TRUE
 
 /decl/surgery_step/cavity/place_item/can_use(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
 	if(istype(user,/mob/living/silicon/robot))
@@ -112,7 +109,7 @@
 			return FALSE
 		var/total_volume = tool.get_storage_cost()
 		for(var/obj/item/I in affected.implants)
-			if(istype(I,/obj/item/implant))
+			if(istype(I,/obj/item/weapon/implant))
 				continue
 			total_volume += I.get_storage_cost()
 		if(total_volume > max_volume)
@@ -134,7 +131,7 @@
 		return
 	user.visible_message("<span class='notice'>[user] puts \the [tool] inside [target]'s [affected.cavity_name] cavity.</span>", \
 	"<span class='notice'>You put \the [tool] inside [target]'s [affected.cavity_name] cavity.</span>" )
-	if (tool.w_class > affected.cavity_max_w_class/2 && prob(50) && !BP_IS_PROSTHETIC(affected) && affected.sever_artery())
+	if (tool.w_class > affected.cavity_max_w_class/2 && prob(50) && !BP_IS_ROBOTIC(affected) && affected.sever_artery())
 		to_chat(user, "<span class='warning'>You tear some blood vessels trying to fit such a big object in this cavity.</span>")
 		affected.owner.custom_pain("You feel something rip in your [affected.name]!", 1,affecting = affected)
 	affected.implants += tool
@@ -145,11 +142,10 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/cavity/implant_removal
 	name = "Remove foreign body"
-	description = "This procedure is used to remove foreign bodies like shrapnel or implants from a patient."
 	allowed_tools = list(
-		/obj/item/hemostat = 100,
-		/obj/item/wirecutters = 75,
-		/obj/item/kitchen/utensil/fork = 20
+		/obj/item/weapon/hemostat = 100,
+		/obj/item/weapon/wirecutters = 75,
+		/obj/item/weapon/material/kitchen/utensil/fork = 20
 	)
 	min_duration = 80
 	max_duration = 100
@@ -174,7 +170,7 @@
 	var/exposed = 0
 	if(affected.how_open() >= (affected.encased ? SURGERY_ENCASED : SURGERY_RETRACTED))
 		exposed = 1
-	if(BP_IS_PROSTHETIC(affected) && affected.hatch_state == HATCH_OPENED)
+	if(BP_IS_ROBOTIC(affected) && affected.hatch_state == HATCH_OPENED)
 		exposed = 1
 
 	var/find_prob = 0
@@ -191,8 +187,8 @@
 
 		var/obj/item/obj = pick(loot)
 
-		if(istype(obj,/obj/item/implant))
-			var/obj/item/implant/imp = obj
+		if(istype(obj,/obj/item/weapon/implant))
+			var/obj/item/weapon/implant/imp = obj
 			if (imp.islegal())
 				find_prob +=60
 			else
@@ -204,7 +200,18 @@
 			user.visible_message("<span class='notice'>[user] takes something out of incision on [target]'s [affected.name] with \the [tool].</span>", \
 			"<span class='notice'>You take \the [obj] out of incision on \the [target]'s [affected.name] with \the [tool].</span>" )
 			target.remove_implant(obj, TRUE, affected)
+
 			BITSET(target.hud_updateflag, IMPLOYAL_HUD)
+
+			//Handle possessive brain borers.
+			if(istype(obj,/mob/living/simple_animal/borer))
+				var/mob/living/simple_animal/borer/worm = obj
+				if(worm.controlling)
+					target.release_control()
+				worm.detatch()
+				worm.leave_host()
+
+
 			playsound(target.loc, 'sound/effects/squelch1.ogg', 15, 1)
 		else
 			user.visible_message("<span class='notice'>[user] removes \the [tool] from [target]'s [affected.name].</span>", \
@@ -216,7 +223,7 @@
 /decl/surgery_step/cavity/implant_removal/fail_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
 	..()
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
-	for(var/obj/item/implant/imp in affected.implants)
+	for(var/obj/item/weapon/implant/imp in affected.implants)
 		var/fail_prob = 10
 		fail_prob += 100 - tool_quality(tool)
 		if (prob(fail_prob))

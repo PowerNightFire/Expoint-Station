@@ -10,10 +10,11 @@
 	throwforce = 1.0
 	throw_speed = 3
 	throw_range = 5
-	origin_tech = "{'biotech':3}"
+	origin_tech = list(TECH_BIO = 3)
 	attack_verb = list("attacked", "slapped", "whacked")
 	relative_size = 85
 	damage_reduction = 0
+	can_be_printed = FALSE
 
 	var/can_use_mmi = TRUE
 	var/mob/living/carbon/brain/brainmob = null
@@ -22,7 +23,7 @@
 	var/healed_threshold = 1
 	var/oxygen_reserve = 6
 
-/obj/item/organ/internal/brain/robotize(var/company, var/skip_prosthetics, var/keep_organs, var/apply_material = /decl/material/solid/metal/steel)
+/obj/item/organ/internal/brain/robotize()
 	replace_self_with(/obj/item/organ/internal/posibrain)
 
 /obj/item/organ/internal/brain/mechassist()
@@ -38,12 +39,12 @@
 		tmp_owner.internal_organs_by_name[organ_tag] = new replace_path(tmp_owner, 1)
 		tmp_owner = null
 
-/obj/item/organ/internal/brain/robotize(var/company, var/skip_prosthetics, var/keep_organs, var/apply_material = /decl/material/solid/metal/steel)
+/obj/item/organ/internal/brain/robotize()
 	. = ..()
 	icon_state = "brain-prosthetic"
 
-/obj/item/organ/internal/brain/Initialize()
-	. = ..()
+/obj/item/organ/internal/brain/New(var/mob/living/carbon/holder)
+	..()
 	if(species)
 		set_max_damage(species.total_health)
 	else
@@ -90,6 +91,11 @@
 	if(name == initial(name))
 		name = "\the [owner.real_name]'s [initial(name)]"
 
+	var/mob/living/simple_animal/borer/borer = owner.has_brain_worms()
+
+	if(borer)
+		borer.detatch() //Should remove borer if the brain is removed - RR
+
 	transfer_identity(owner)
 
 	..()
@@ -131,6 +137,8 @@
 		return
 	to_chat(owner, "<span class = 'notice' font size='10'><B>What happened...?</B></span>")
 	alert(owner, "You have taken massive brain damage! You will not be able to remember the events leading up to your injury.", "Brain Damaged")
+	if(owner.psi)
+		owner.psi.check_latency_trigger(20, "physical trauma")
 
 /obj/item/organ/internal/brain/Process()
 	if(owner)
@@ -235,10 +243,9 @@
 	if(is_bruised() && prob(1) && owner.eye_blurry <= 0)
 		to_chat(owner, "<span class='warning'>It becomes hard to see for some reason.</span>")
 		owner.eye_blurry = 10
-	var/held = owner.get_active_hand()
-	if(damage >= 0.5*max_damage && prob(1) && held)
+	if(damage >= 0.5*max_damage && prob(1) && owner.get_active_hand())
 		to_chat(owner, "<span class='danger'>Your hand won't respond properly, and you drop what you are holding!</span>")
-		owner.unEquip(held)
+		owner.unequip_item()
 	if(damage >= 0.6*max_damage)
 		owner.slurring = max(owner.slurring, 2)
 	if(is_broken())

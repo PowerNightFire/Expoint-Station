@@ -1,4 +1,4 @@
-#define DEFAULT_SEED "glowbell"
+#define DEFAULT_SEED "glowshroom"
 #define VINE_GROWTH_STAGES 5
 
 /proc/spacevine_infestation(var/potency_min=70, var/potency_max=100, var/maturation_min=5, var/maturation_max=15)
@@ -13,10 +13,10 @@
 			seed.set_trait(TRAIT_STINGS, 1)
 			seed.set_trait(TRAIT_CARNIVOROUS,2)
 
-			seed.display_name = "strange plant" //more thematic for the vine infestation event
+			seed.display_name = "strange plants" //more thematic for the vine infestation event
 
 			//make vine zero start off fully matured
-			new /obj/effect/vine(T, seed, null, 1)
+			new /obj/effect/vine(T,seed, start_matured = 1)
 
 			log_and_message_admins("Spacevines spawned in \the [get_area(T)]", location = T)
 			return
@@ -38,7 +38,7 @@
 /obj/effect/vine
 	name = "vine"
 	anchored = 1
-	icon = 'icons/obj/hydroponics/hydroponics_growing.dmi'
+	icon = 'icons/obj/hydroponics_growing.dmi'
 	icon_state = ""
 	pass_flags = PASS_FLAG_TABLE
 	mouse_opacity = 1
@@ -61,24 +61,28 @@
 /obj/effect/vine/single
 	spread_chance = 0
 
-/obj/effect/vine/Initialize(mapload, var/datum/seed/newseed, var/obj/effect/vine/newparent, var/start_matured = 0)
-	. = ..(mapload)
-
+/obj/effect/vine/New(var/newloc, var/datum/seed/newseed, var/obj/effect/vine/newparent, var/start_matured = 0)
 	if(!newparent)
 		parent = src
 	else
 		parent = newparent
 		parent.possible_children = max(0, parent.possible_children - 1)
-
 	seed = newseed
 	if(start_matured)
 		mature_time = 0
 		health = max_health
+	..()
+
+/obj/effect/vine/Initialize()
+	. = ..()
+
+	if(!SSplants)
+		log_error("<span class='danger'>Plant controller does not exist and [src] requires it. Aborting.</span>")
+		return INITIALIZE_HINT_QDEL
 	if(!istype(seed))
 		seed = SSplants.seeds[DEFAULT_SEED]
 	if(!seed)
 		return INITIALIZE_HINT_QDEL
-
 	name = seed.display_name
 	max_health = round(seed.get_trait(TRAIT_ENDURANCE)/2)
 	if(seed.get_trait(TRAIT_SPREAD) == 2)
@@ -127,7 +131,7 @@
 		layer = (seed && seed.force_layer) ? seed.force_layer : ABOVE_OBJ_LAYER
 		if(growth_type in list(GROWTH_VINES,GROWTH_BIOMASS))
 			set_opacity(1)
-		if(islist(seed.chems) && !isnull(seed.chems[/decl/material/solid/wood]))
+		if(islist(seed.chems) && !isnull(seed.chems[/datum/reagent/woodpulp]))
 			set_density(1)
 			set_opacity(1)
 
@@ -194,7 +198,7 @@
 	floor = 1
 	return 1
 
-/obj/effect/vine/attackby(var/obj/item/W, var/mob/user)
+/obj/effect/vine/attackby(var/obj/item/weapon/W, var/mob/user)
 	START_PROCESSING(SSvines, src)
 
 	if(W.edge && W.w_class < ITEM_SIZE_NORMAL && user.a_intent != I_HURT)
@@ -258,15 +262,21 @@
 	if(aggression > 0)
 		adjust_health(-aggression*5)
 
-/obj/effect/vine/physically_destroyed()
-	SHOULD_CALL_PARENT(FALSE)
-	die_off()
-	. = TRUE
-
-/obj/effect/vine/explosion_act(severity)
-	. = ..()
-	if(. && !QDELETED(src) && (severity == 1 || (severity == 2 && prob(50)) || (severity == 3 && prob(5))))
-		physically_destroyed(src)
+/obj/effect/vine/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			die_off()
+			return
+		if(2.0)
+			if (prob(50))
+				die_off()
+				return
+		if(3.0)
+			if (prob(5))
+				die_off()
+				return
+		else
+	return
 
 /obj/effect/vine/proc/adjust_health(value)
 	health = Clamp(health + value, 0, max_health)

@@ -1,4 +1,4 @@
-/obj/item/cable_painter
+obj/item/device/cable_painter
 	name = "cable painter"
 	desc = "A device for repainting cables."
 	icon = 'icons/obj/bureaucracy.dmi'
@@ -8,22 +8,22 @@
 	var/list/modes
 	w_class = ITEM_SIZE_SMALL
 
-/obj/item/cable_painter/Initialize()
-	. = ..()
+obj/item/device/cable_painter/New()
+	..()
 	color_selection = pick(GLOB.possible_cable_colours)
 
-obj/item/cable_painter/examine(mob/user, distance)
+obj/item/device/cable_painter/examine(mob/user, distance)
 	. = ..()
 	if(distance <= 1)
 		to_chat(user, "The color is currently set to [lowertext(color_selection)].")
 
-/obj/item/cable_painter/attack_self(mob/user)
+obj/item/device/cable_painter/attack_self(mob/user)
 	var/new_color_selection = input("What color would you like to use?", "Choose a Color", color_selection) as null|anything in GLOB.possible_cable_colours
 	if(new_color_selection && !user.incapacitated() && (src in user))
 		color_selection = new_color_selection
 		to_chat(user, "<span class='notice'>You change the paint mode to [lowertext(color_selection)].</span>")
 
-/obj/item/cable_painter/afterattack(var/atom/A, var/mob/user, var/proximity)
+/obj/item/device/cable_painter/afterattack(var/atom/A, var/mob/user, var/proximity)
 	if(!proximity)
 		return ..()
 	if(istype(A, /obj/structure/cable))

@@ -1,9 +1,19 @@
-/mob/living/Initialize()
-	. = ..()
+/mob/living/New()
+	..()
 	if(stat == DEAD)
 		add_to_dead_mob_list()
 	else
 		add_to_living_mob_list()
+
+//mob verbs are faster than object verbs. See mob/verb/examine.
+/mob/living/verb/pulled(atom/movable/AM as mob|obj in oview(1))
+	set name = "Pull"
+	set category = "Object"
+
+	if(AM.Adjacent(src))
+		src.start_pulling(AM)
+
+	return
 
 //mob verbs are faster than object verbs. See above.
 /mob/living/pointed(atom/A as mob|obj|turf in view())
@@ -14,7 +24,7 @@
 	if(!..())
 		return 0
 
-	usr.visible_message("<b>[src]</b> points to <a href='?src=\ref[A];look_at_me=1'>[A]</a>")
+	usr.visible_message("<b>[src]</b> points to [A]")
 	return 1
 
 /*one proc, four uses
@@ -66,9 +76,14 @@ default behaviour is:
 			var/mob/living/tmob = AM
 
 			for(var/mob/living/M in range(tmob, 1))
-				if(tmob.pinned.len || (locate(/obj/item/grab, LAZYLEN(tmob.grabbed_by))))
+				if(tmob.pinned.len ||  ((M.pulling == tmob && ( tmob.restrained() && !( M.restrained() ) && M.stat == 0)) || locate(/obj/item/grab, tmob.grabbed_by.len)) )
 					if ( !(world.time % 5) )
 						to_chat(src, "<span class='warning'>[tmob] is restrained, you cannot push past</span>")
+					now_pushing = 0
+					return
+				if( tmob.pulling == M && ( M.restrained() && !( tmob.restrained() ) && tmob.stat == 0) )
+					if ( !(world.time % 5) )
+						to_chat(src, "<span class='warning'>[tmob] is restraining [M], you cannot push past</span>")
 					now_pushing = 0
 					return
 
@@ -94,7 +109,11 @@ default behaviour is:
 						to_chat(src, "<span class='danger'>You fail to push [tmob]'s fat ass out of the way.</span>")
 						now_pushing = 0
 						return
-				for(var/obj/item/shield/riot/shield in tmob.get_held_items())
+				if(tmob.r_hand && istype(tmob.r_hand, /obj/item/weapon/shield/riot))
+					if(prob(99))
+						now_pushing = 0
+						return
+				if(tmob.l_hand && istype(tmob.l_hand, /obj/item/weapon/shield/riot))
 					if(prob(99))
 						now_pushing = 0
 						return
@@ -145,7 +164,7 @@ default behaviour is:
 
 /proc/swap_density_check(var/mob/swapper, var/mob/swapee)
 	var/turf/T = get_turf(swapper)
-	if(T.density)
+	if(T?.density)
 		return 1
 	for(var/atom/movable/A in T)
 		if(A == swapper)
@@ -154,8 +173,7 @@ default behaviour is:
 			return 1
 
 /mob/living/proc/can_swap_with(var/mob/living/tmob)
-	if(!tmob)
-		return
+	if(!tmob) return
 	if(tmob.buckled || buckled || tmob.anchored)
 		return 0
 	//BubbleWrap: people in handcuffs are always switched around as if they were on 'help' intent to prevent a person being pulled from being seperated from their puller
@@ -292,41 +310,41 @@ default behaviour is:
 	return
 
 //Recursive function to find everything a mob is holding.
-/mob/living/get_contents(var/obj/item/storage/Storage = null)
+/mob/living/get_contents(var/obj/item/weapon/storage/Storage = null)
 	var/list/L = list()
 
 	if(Storage) //If it called itself
 		L += Storage.return_inv()
 
 		//Leave this commented out, it will cause storage items to exponentially add duplicate to the list
-		//for(var/obj/item/storage/S in Storage.return_inv()) //Check for storage items
+		//for(var/obj/item/weapon/storage/S in Storage.return_inv()) //Check for storage items
 		//	L += get_contents(S)
 
-		for(var/obj/item/gift/G in Storage.return_inv()) //Check for gift-wrapped items
+		for(var/obj/item/weapon/gift/G in Storage.return_inv()) //Check for gift-wrapped items
 			L += G.gift
-			if(istype(G.gift, /obj/item/storage))
+			if(istype(G.gift, /obj/item/weapon/storage))
 				L += get_contents(G.gift)
 
 		for(var/obj/item/smallDelivery/D in Storage.return_inv()) //Check for package wrapped items
 			L += D.wrapped
-			if(istype(D.wrapped, /obj/item/storage)) //this should never happen
+			if(istype(D.wrapped, /obj/item/weapon/storage)) //this should never happen
 				L += get_contents(D.wrapped)
 		return L
 
 	else
 
 		L += src.contents
-		for(var/obj/item/storage/S in src.contents)	//Check for storage items
+		for(var/obj/item/weapon/storage/S in src.contents)	//Check for storage items
 			L += get_contents(S)
 
-		for(var/obj/item/gift/G in src.contents) //Check for gift-wrapped items
+		for(var/obj/item/weapon/gift/G in src.contents) //Check for gift-wrapped items
 			L += G.gift
-			if(istype(G.gift, /obj/item/storage))
+			if(istype(G.gift, /obj/item/weapon/storage))
 				L += get_contents(G.gift)
 
 		for(var/obj/item/smallDelivery/D in src.contents) //Check for package wrapped items
 			L += D.wrapped
-			if(istype(D.wrapped, /obj/item/storage)) //this should never happen
+			if(istype(D.wrapped, /obj/item/weapon/storage)) //this should never happen
 				L += get_contents(D.wrapped)
 		return L
 
@@ -346,7 +364,7 @@ default behaviour is:
 	var/t = shooter.zone_sel?.selecting
 	if ((t in list( BP_EYES, BP_MOUTH )))
 		t = BP_HEAD
-	var/obj/item/organ/external/def_zone = ran_zone(t, target = src)
+	var/obj/item/organ/external/def_zone = ran_zone(t)
 	return def_zone
 
 
@@ -421,7 +439,7 @@ default behaviour is:
 	ear_deaf = 0
 	ear_damage = 0
 	drowsyness = 0
-	drugged = 0
+	druggy = 0
 	jitteriness = 0
 	confused = 0
 
@@ -499,21 +517,19 @@ default behaviour is:
 
 	return
 
-/mob/living/handle_grabs_after_move()
-	..()
-	if(!skill_check(SKILL_MEDICAL, SKILL_BASIC))
-		for(var/obj/item/grab/grab in get_active_grabs())
-			var/mob/affecting_mob = grab.get_affecting_mob()
-			if(affecting_mob)
-				affecting_mob.handle_grab_damage()
-
 /mob/living/Move(a, b, flag)
 	if (buckled)
 		return
 
+	if(get_dist(src, pulling) > 1)
+		stop_pulling()
+
+	var/turf/old_loc = get_turf(src)
+
 	. = ..()
 
-	handle_grabs_after_move()
+	if(. && pulling)
+		handle_pulling_after_move(old_loc)
 
 	if (s_active && !( s_active in contents ) && get_turf(s_active) != get_turf(src))	//check !( s_active in contents ) first so we hopefully don't have to call get_turf() so much.
 		s_active.close(src)
@@ -521,6 +537,90 @@ default behaviour is:
 	if(update_slimes)
 		for(var/mob/living/carbon/slime/M in view(1,src))
 			M.UpdateFeed()
+
+/mob/living/proc/can_pull()
+	if(!moving)
+		return FALSE
+	if(pulling.anchored)
+		return FALSE
+	if(!isturf(pulling.loc))
+		return FALSE
+	if(restrained())
+		return FALSE
+
+	if(get_dist(src, pulling) > 2)
+		return FALSE
+
+	if(pulling.z != z)
+		if(pulling.z < z)
+			return FALSE
+		var/turf/T = GetAbove(src)
+		if(!isopenspace(T))
+			return FALSE
+	return TRUE
+
+/mob/living/proc/handle_pulling_after_move(turf/old_loc)
+	if(!pulling)
+		return
+
+	if(!can_pull())
+		stop_pulling()
+		return
+
+	if(pulling.loc == loc || pulling.loc == old_loc)
+		return
+
+	if (!isliving(pulling))
+		step(pulling, get_dir(pulling.loc, old_loc))
+	else
+		var/mob/living/M = pulling
+		if(M.grabbed_by.len)
+			if (prob(75))
+				var/obj/item/grab/G = pick(M.grabbed_by)
+				if(istype(G))
+					M.visible_message(SPAN_WARNING("[G.affecting] has been pulled from [G.assailant]'s grip by [src]!"), SPAN_WARNING("[G.affecting] has been pulled from your grip by [src]!"))
+					qdel(G)
+		if (!M.grabbed_by.len)
+			M.handle_pull_damage(src)
+
+			var/atom/movable/t = M.pulling
+			M.stop_pulling()
+			step(M, get_dir(pulling.loc, old_loc))
+			if(t)
+				M.start_pulling(t)
+
+	handle_dir_after_pull()
+
+/mob/living/proc/handle_dir_after_pull()
+	if(pulling)
+		if(isobj(pulling))
+			var/obj/O = pulling
+			if(O.w_class >= ITEM_SIZE_HUGE || O.density)
+				return set_dir(get_dir(src, pulling))
+		if(isliving(pulling))
+			var/mob/living/L = pulling
+			// If pulled mob was bigger than us, we morelike will turn
+			// I made additional check in case if someone want a hand walk
+			if(L.mob_size > mob_size || L.lying || a_intent != I_HELP)
+				return set_dir(get_dir(src, pulling))
+
+/mob/living/proc/handle_pull_damage(mob/living/puller)
+	var/area/A = get_area(src)
+	if(!A.has_gravity)
+		return
+	var/turf/location = get_turf(src)
+	if(lying && prob(getBruteLoss() / 6))
+		location.add_blood(src)
+		if(prob(25))
+			src.adjustBruteLoss(1)
+			visible_message("<span class='danger'>\The [src]'s [src.isSynthetic() ? "state worsens": "wounds open more"] from being dragged!</span>")
+			. = TRUE
+	if(src.pull_damage())
+		if(prob(25))
+			src.adjustBruteLoss(2)
+			visible_message("<span class='danger'>\The [src]'s [src.isSynthetic() ? "state" : "wounds"] worsen terribly from being dragged!</span>")
+			location.add_blood(src)
+			. = TRUE
 
 /mob/living/verb/resist()
 	set name = "Resist"
@@ -536,7 +636,7 @@ default behaviour is:
 
 /mob/living/proc/process_resist()
 	//Getting out of someone's inventory.
-	if(istype(src.loc, /obj/item/holder))
+	if(istype(src.loc, /obj/item/weapon/holder))
 		escape_inventory(src.loc)
 		return
 
@@ -551,7 +651,7 @@ default behaviour is:
 		if(C.mob_breakout(src))
 			return TRUE
 
-/mob/living/proc/escape_inventory(obj/item/holder/H)
+/mob/living/proc/escape_inventory(obj/item/weapon/holder/H)
 	if(H != src.loc) return
 
 	var/mob/M = H.loc //Get our mob holder (if any).
@@ -563,10 +663,10 @@ default behaviour is:
 
 		// Update whether or not this mob needs to pass emotes to contents.
 		for(var/atom/A in M.contents)
-			if(istype(A,/mob) || istype(A,/obj/item/holder))
+			if(istype(A,/mob/living/simple_animal/borer) || istype(A,/obj/item/weapon/holder))
 				return
 		M.status_flags &= ~PASSEMOTES
-	else if(istype(H.loc,/obj/item/clothing/accessory/storage/holster) || istype(H.loc,/obj/item/storage/belt/holster))
+	else if(istype(H.loc,/obj/item/clothing/accessory/storage/holster) || istype(H.loc,/obj/item/weapon/storage/belt/holster))
 		var/datum/extension/holster/holster = get_extension(src, /datum/extension/holster)
 		if(holster.holstered == H)
 			holster.clear_holster()
@@ -617,11 +717,14 @@ default behaviour is:
 		return 1
 
 /mob/living/proc/cannot_use_vents()
-	if(mob_size > MOB_SIZE_SMALL)
+	if(mob_size > MOB_SMALL)
 		return "You can't fit into that vent."
 	return null
 
 /mob/living/proc/has_brain()
+	return 1
+
+/mob/living/proc/has_eyes()
 	return 1
 
 /mob/living/proc/slip(var/slipped_on,stun_duration=8)
@@ -636,10 +739,13 @@ default behaviour is:
 		return
 	return 1
 
-/mob/living/carbon/get_contained_external_atoms()
-	. = contents.Copy()
-	. -= internal_organs
-	. -= organs
+//Organs should not be removed via inventory procs.
+/mob/living/carbon/drop_from_inventory(var/obj/item/W, var/atom/Target = null)
+	if(W in internal_organs)
+		return
+	if(W in organs)
+		return
+	. = ..()
 
 //damage/heal the mob ears and adjust the deaf amount
 /mob/living/adjustEarDamage(var/damage, var/deaf)
@@ -755,21 +861,19 @@ default behaviour is:
 	if(!can_drown() || !loc.is_flooded(lying))
 		return FALSE
 	if(prob(5))
-		var/obj/effect/fluid/F = locate() in loc
-		to_chat(src, SPAN_DANGER("You choke and splutter as you inhale [(F?.reagents && F.reagents.get_primary_reagent_name()) || "liquid"]!"))
-		F?.reagents?.trans_to_holder(get_ingested_reagents(), min(F.reagents.total_volume, rand(2,5)))
-
+		to_chat(src, SPAN_DANGER("You choke and splutter as you inhale water!"))
 	var/turf/T = get_turf(src)
 	T.show_bubbles()
 	return TRUE // Presumably chemical smoke can't be breathed while you're underwater.
 
-/mob/living/fluid_act(var/datum/reagents/fluids)
+/mob/living/water_act(var/depth)
 	..()
+	wash_mob(src)
 	for(var/thing in get_equipped_items(TRUE))
 		if(isnull(thing)) continue
 		var/atom/movable/A = thing
-		if(A.simulated)
-			A.fluid_act(fluids)
+		if(A.simulated && !A.waterproof)
+			A.water_act(depth)
 
 /mob/living/proc/nervous_system_failure()
 	return FALSE
@@ -792,70 +896,5 @@ default behaviour is:
 /mob/living/proc/eyecheck()
 	return FLASH_PROTECTION_NONE
 
-/mob/living/proc/adjust_nutrition(var/amt)
-	return
-
-/mob/living/proc/adjust_hydration(var/amt)
-	return
-
-/mob/living/proc/add_chemical_effect(var/effect, var/magnitude = 1)
-	return
-
-/mob/living/proc/add_up_to_chemical_effect(var/effect, var/magnitude = 1)
-	return
-
-/mob/living/proc/adjust_immunity(var/amt)
-	return
-
-/mob/living/handle_reading_literacy(var/mob/user, var/text_content, var/skip_delays)
-	if(skill_check(SKILL_LITERACY, SKILL_ADEPT))
-		. = text_content
-	else
-		if(!skip_delays)
-			to_chat(src, SPAN_NOTICE("You scan the writing..."))
-			if(user != src)
-				to_chat(user, SPAN_NOTICE("\The [src] scans the writing..."))
-		if(skill_check(SKILL_LITERACY, SKILL_BASIC))
-			if(skip_delays || do_after(src, 1 SECOND, user))
-				. = stars(text_content, 85)
-		else if(skip_delays || do_after(src, 3 SECONDS, user))
-			. = ..()
-
-/mob/living/handle_writing_literacy(var/mob/user, var/text_content, var/skip_delays)
-	if(skill_check(SKILL_LITERACY, SKILL_ADEPT))
-		. = text_content
-	else
-		if(!skip_delays)
-			to_chat(src, SPAN_NOTICE("You write laboriously..."))
-			if(user != src)
-				to_chat(user, SPAN_NOTICE("\The [src] writes laboriously..."))
-		if(skill_check(SKILL_LITERACY, SKILL_BASIC))
-			if(skip_delays || do_after(src, 3 SECONDS, user))
-				. = stars(text_content, 85)
-		else if(skip_delays || do_after(src, 5 SECONDS, user))
-			. = ..()
-
-/mob/living/can_be_injected_by(var/atom/injector)
-	return ..() && (can_inject(null, 0, BP_CHEST) || can_inject(null, 0, BP_GROIN))
-
-/mob/living/handle_grab_damage()
-	..()
-	if(!has_gravity())
-		return
-	if(isturf(loc) && pull_damage() && prob(getBruteLoss() / 6))
-		blood_splatter(loc, src, large = TRUE)
-		if(prob(25))
-			adjustBruteLoss(1)
-			visible_message(SPAN_DANGER("\The [src]'s [isSynthetic() ? "state worsens": "wounds open more"] from being dragged!"))
-
-/mob/living/CanUseTopicPhysical(mob/user)
-	. = CanUseTopic(user, GLOB.physical_no_access_state)
-
-/mob/living/proc/is_telekinetic()
+/mob/living/proc/InStasis()
 	return FALSE
-
-/mob/living/proc/can_do_special_ranged_attack(var/check_flag = TRUE)
-	return TRUE
-
-/mob/living/proc/get_ingested_reagents()
-	return reagents

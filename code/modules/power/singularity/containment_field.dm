@@ -26,11 +26,10 @@
 /obj/machinery/containment_field/physical_attack_hand(mob/user)
 	return shock(user)
 
-/obj/machinery/containment_field/explosion_act(severity)
-	SHOULD_CALL_PARENT(FALSE)
+/obj/machinery/containment_field/ex_act(severity)
 	return 0
 
-/obj/machinery/containment_field/HasProximity(atom/movable/AM)
+/obj/machinery/containment_field/HasProximity(atom/movable/AM as mob|obj)
 	if(istype(AM,/mob/living/silicon) && prob(40))
 		shock(AM)
 		return 1
@@ -41,7 +40,7 @@
 
 
 
-/obj/machinery/containment_field/shock(mob/living/user)
+/obj/machinery/containment_field/shock(mob/living/user as mob)
 	if(hasShocked)
 		return 0
 	if(!FG1 || !FG2)

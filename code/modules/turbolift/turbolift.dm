@@ -1,14 +1,3 @@
-/*
- * Turbolifts! Sort of like multishuttles-lite.
- *
- * How-to: Map /obj/turbolift_map_holder in at the bottom of the shaft, give it a depth
- * value equivalent to the number of floors it should span (inclusive of the first),
- * and at runtime it will update the map, set areas and create control panels and
- * wifi-set doors appropriate to itself. You will save time at init if you map the
- * elevator shaft in properly before runtime, but ultimately you're just avoiding a
- * bunch of ChangeTurf() calls.
- */
-
 // Lift master datum. One per turbolift.
 /datum/turbolift
 	var/datum/turbolift_floor/target_floor              // Where are we going?
@@ -20,8 +9,6 @@
 	var/floor_wait_delay = 9 SECONDS                    // Time to wait at floor stops.
 	var/obj/structure/lift/panel/control_panel_interior // Lift control panel.
 	var/doors_closing = 0								// Whether doors are in the process of closing
-	var/floor_departure_sound
-	var/floor_arrival_sound
 
 	var/tmp/moving_upwards
 	var/busy_state                                      // Used for controller processing.
@@ -40,11 +27,13 @@
 
 /datum/turbolift/proc/open_doors(var/datum/turbolift_floor/use_floor = current_floor)
 	for(var/obj/machinery/door/airlock/door in (use_floor ? (doors + use_floor.doors) : doors))
-		INVOKE_ASYNC(door, /obj/machinery/door/proc/open)
+		door.command("open")
+	return
 
 /datum/turbolift/proc/close_doors(var/datum/turbolift_floor/use_floor = current_floor)
 	for(var/obj/machinery/door/airlock/door in (use_floor ? (doors + use_floor.doors) : doors))
-		INVOKE_ASYNC(door, /obj/machinery/door/proc/close)
+		door.command("close")
+	return
 
 #define LIFT_MOVING    1
 #define LIFT_WAITING_A 2
@@ -62,8 +51,7 @@
 				next_process = world.time + move_delay
 		if(LIFT_WAITING_A)
 			var/area/turbolift/origin = locate(current_floor.area_ref)
-			if(origin.lift_announce_str)
-				control_panel_interior.visible_message("<b>The elevator</b> announces, \"[origin.lift_announce_str]\"")
+			control_panel_interior.visible_message("<b>The elevator</b> announces, \"[origin.lift_announce_str]\"")
 			next_process = world.time + floor_wait_delay
 			busy_state = LIFT_WAITING_B
 		if(LIFT_WAITING_B)
@@ -106,8 +94,7 @@
 
 	if(target_floor == current_floor)
 
-		if(origin.arrival_sound)
-			playsound(control_panel_interior.loc, origin.arrival_sound, 50, 1)
+		playsound(control_panel_interior.loc, origin.arrival_sound, 50, 1)
 		target_floor.arrived(src)
 		target_floor = null
 
@@ -127,9 +114,6 @@
 	if(!istype(origin) || !istype(destination) || (origin == destination))
 		return 0
 
-	if(floor_departure_sound)
-		playsound(control_panel_interior.loc, floor_departure_sound, 50, 1)
-
 	for(var/turf/T in destination)
 		for(var/atom/movable/AM in T)
 			if(istype(AM, /mob/living))
@@ -145,9 +129,6 @@
 
 	current_floor = next_floor
 	control_panel_interior.visible_message("The elevator [moving_upwards ? "rises" : "descends"] smoothly.")
-
-	if(floor_arrival_sound)
-		playsound(control_panel_interior.loc, floor_arrival_sound, 50, 1)
 
 	return 1
 

@@ -24,7 +24,9 @@
 		//environment_heat_capacity = loc:heat_capacity
 		var/turf/heat_turf = get_turf(src)
 		loc_temp = heat_turf.temperature
-
+	else if(istype(loc, /obj/machinery/atmospherics/unary/cryo_cell))
+		var/obj/machinery/atmospherics/unary/cryo_cell/cryo
+		loc_temp = cryo.air_contents.temperature
 	else
 		loc_temp = environment.temperature
 
@@ -131,8 +133,8 @@
 	if (src.eye_blurry > 0)
 		src.eye_blurry = 0
 
-	if (src.drugged > 0)
-		src.drugged = 0
+	if (src.druggy > 0)
+		src.druggy = 0
 
 	return 1
 

@@ -7,18 +7,6 @@
 /obj/item/clothing/accessory/wcoat/black
 	color = COLOR_GRAY15
 
-/obj/item/clothing/accessory/wcoat/armored
-	desc = "A classy waistcoat. This one seems suspiciously more durable."
-	color = COLOR_GRAY15
-	armor = list(
-		bullet = ARMOR_BALLISTIC_SMALL,
-		laser = ARMOR_LASER_SMALL,
-		melee = ARMOR_MELEE_SMALL,
-		energy = ARMOR_ENERGY_MINOR
-		)
-	body_parts_covered = SLOT_UPPER_BODY
-	origin_tech = "{'combat':2,'materials':3,'esoteric':2}"
-
 /obj/item/clothing/accessory/suspenders
 	name = "suspenders"
 	desc = "They suspend the illusion of the mime's play."
@@ -28,6 +16,45 @@
 	name = "suspenders"
 	desc = "They suspend the illusion of the mime's play."
 	icon_state = "suspenders_color"
+
+/obj/item/clothing/accessory/tunic
+	name = "researcher's tunic"
+	desc = "A fashionable tunic that EXO provides to their lab workers."
+	icon_state = "tunic"
+
+/obj/item/clothing/accessory/tunic/nanotrasen
+	name = "\improper NanoTrasen tunic"
+	desc = "A fashionable tunic that NanoTrasen provides to their lab workers."
+	icon_state = "tunic_nt"
+
+/obj/item/clothing/accessory/tunic/heph
+	name = "\improper Hephaestus Industries tunic"
+	desc = "A fashionable tunic that Hephaestus Industries provides to their lab workers."
+	icon_state = "tunic_heph"
+
+/obj/item/clothing/accessory/tunic/zeng
+	name = "\improper Zeng-Hu tunic"
+	desc = "A fashionable tunic that Zeng-Hu provides to their lab workers."
+	icon_state = "tunic_heph"
+
+/obj/item/clothing/accessory/tunic/exec
+	name = "executive tunic"
+	icon_state = "tunicblack"
+
+/obj/item/clothing/accessory/tunic/exec/nanotrasen
+	name = "\improper NanoTrasen executive tunic"
+	desc = "A fashionable tunic that NanoTrasen provides to their lab workers."
+	icon_state = "tunicblack_nt"
+
+/obj/item/clothing/accessory/tunic/exec/heph
+	name = "\improper Hephaestus Industries executive tunic"
+	desc = "A fashionable tunic that Hephaestus Industries provides to their lab workers."
+	icon_state = "tunicblack_heph"
+
+/obj/item/clothing/accessory/tunic/exec/zeng
+	name = "\improper Zeng-Hu executive tunic"
+	desc = "A fashionable tunic that Zeng-Hu provides to their lab workers."
+	icon_state = "tunicblack_zeng"
 
 /obj/item/clothing/accessory/dashiki
 	name = "black dashiki"
@@ -86,16 +113,16 @@
 
 /obj/item/clothing/accessory/toggleable
 	var/icon_closed
-
-/obj/item/clothing/accessory/toggleable/Initialize()
-	. = ..()
+/obj/item/clothing/accessory/toggleable/New()
 	if(!icon_closed)
 		icon_closed = icon_state
-/obj/item/clothing/accessory/toggleable/on_attached(obj/item/clothing/under/S, mob/user)
+	..()
+
+/obj/item/clothing/accessory/toggleable/on_attached(obj/item/clothing/under/S, mob/user as mob)
 	..()
 	has_suit.verbs += /obj/item/clothing/accessory/toggleable/verb/toggle
 
-/obj/item/clothing/accessory/toggleable/on_removed(mob/user)
+/obj/item/clothing/accessory/toggleable/on_removed(mob/user as mob)
 	if(has_suit)
 		has_suit.verbs -= /obj/item/clothing/accessory/toggleable/verb/toggle
 	..()
@@ -142,8 +169,8 @@
 	desc = "Cozy suit jacket."
 	icon_state = "tan_jacket"
 
-/obj/item/clothing/accessory/toggleable/tan_jacket/Initialize()
-	. = ..()
+/obj/item/clothing/accessory/toggleable/tan_jacket/New()
+	..()
 	do_toggle()
 
 /obj/item/clothing/accessory/toggleable/charcoal_jacket
@@ -166,11 +193,31 @@
 	desc = "Lucky suit jacket."
 	icon_state = "checkered_jacket"
 
+/obj/item/clothing/accessory/toggleable/corpjacket
+	name = "corporate suit jacket"
+	desc = "A jacket that the EXO has their executives wear."
+	icon_state = "jacket_tl"
+
+/obj/item/clothing/accessory/toggleable/corpjacket/nanotrasen
+	name = "\improper NanoTrasen suit jacket"
+	desc = "A jacket that NanoTrasen has their executives wear."
+	icon_state = "jacket_nt"
+
+/obj/item/clothing/accessory/toggleable/corpjacket/heph
+	name = "\improper Hephaestus Industries suit jacket"
+	desc = "A jacket that Hephaestus Industries has their executives wear."
+	icon_state = "jacket_heph"
+
+/obj/item/clothing/accessory/toggleable/corpjacket/zeng
+	name = "\improper Zeng-Hu suit jacket"
+	desc = "A jacket that Zeng-Hu has their executives wear."
+	icon_state = "jacket_zeng"
+
 /obj/item/clothing/accessory/toggleable/hawaii
 	name = "flower-pattern shirt"
 	desc = "You probably need some welder googles to look at this."
 	icon_state = "hawaii"
-	sprite_sheets = list(BODYTYPE_MONKEY = 'icons/mob/species/monkey/onmob_accessories_monkey.dmi')
+	sprite_sheets = list("Monkey" = 'icons/mob/species/monkey/onmob_accessories_monkey.dmi')
 
 /obj/item/clothing/accessory/toggleable/hawaii/red
 	icon_state = "hawaii2"
@@ -183,8 +230,8 @@
 	desc = "A stylish Chinese tunic suit jacket."
 	icon_state = "zhongshan"
 
-/obj/item/clothing/accessory/toggleable/hawaii/random/Initialize()
-	. = ..()
+/obj/item/clothing/accessory/toggleable/hawaii/random/New()
+	..()
 	if(prob(50))
 		icon_state = "hawaii2"
 		icon_closed = "hawaii2"
@@ -198,12 +245,12 @@
 	var/tucked = 0
 	var/buttoned = 0
 
-/obj/item/clothing/accessory/toggleable/flannel/on_attached(obj/item/clothing/under/S, mob/user)
+/obj/item/clothing/accessory/toggleable/flannel/on_attached(obj/item/clothing/under/S, mob/user as mob)
 	..()
 	has_suit.verbs += /obj/item/clothing/accessory/toggleable/flannel/verb/tuck
 	has_suit.verbs += /obj/item/clothing/accessory/toggleable/flannel/verb/roll_up_sleeves
 
-/obj/item/clothing/accessory/toggleable/flannel/on_removed(mob/user)
+/obj/item/clothing/accessory/toggleable/flannel/on_removed(mob/user as mob)
 	if(has_suit)
 		has_suit.verbs -= /obj/item/clothing/accessory/toggleable/flannel/verb/tuck
 		has_suit.verbs -= /obj/item/clothing/accessory/toggleable/flannel/verb/roll_up_sleeves
@@ -286,11 +333,11 @@
 	permeability_coefficient = 0.50
 
 	armor = list(laser = ARMOR_LASER_MINOR, energy = ARMOR_ENERGY_MINOR, bomb = ARMOR_BOMB_MINOR)
-	body_parts_covered = SLOT_LOWER_BODY | SLOT_LEGS
+	body_parts_covered = LOWER_TORSO | LEGS
 	slowdown = 0.5
 
-	heat_protection = SLOT_LOWER_BODY | SLOT_LEGS
-	cold_protection = SLOT_LOWER_BODY | SLOT_LEGS
+	heat_protection = LOWER_TORSO | LEGS
+	cold_protection = LOWER_TORSO | LEGS
 
 	max_heat_protection_temperature = FIRESUIT_MAX_HEAT_PROTECTION_TEMPERATURE
 	max_pressure_protection = FIRESUIT_MAX_PRESSURE

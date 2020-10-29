@@ -55,11 +55,6 @@
 	engage_string = "Cycle Visor Mode"
 	activate_string = "Enable Visor"
 	deactivate_string = "Disable Visor"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE
-	)
 
 	var/datum/rig_vision/vision
 	var/list/vision_modes = list(
@@ -91,7 +86,7 @@
 	name = "hardsuit meson scanner"
 	desc = "A layered, translucent visor system for a hardsuit."
 	icon_state = "meson"
-	origin_tech = "{'magnets':2,'engineering':5}"
+	origin_tech = list(TECH_MAGNET = 2, TECH_ENGINEERING = 5)
 	usable = 0
 
 	interface_name = "meson scanner"
@@ -117,26 +112,20 @@
 	name = "hardsuit night vision interface"
 	desc = "A multi input night vision system for a hardsuit."
 	icon_state = "night"
-	origin_tech = "{'magnets':6,'engineering':6}"
+	origin_tech = list(TECH_MAGNET = 6, TECH_ENGINEERING = 6)
 	usable = 0
 
 	interface_name = "night vision interface"
 	interface_desc = "An integrated night vision system."
 
 	vision_modes = list(/datum/rig_vision/nvg)
-	material = /decl/material/solid/plastic
-	matter = list(
-		/decl/material/solid/metal/steel = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/glass = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/metal/uranium = MATTER_AMOUNT_TRACE
-	)
 
 /obj/item/rig_module/vision/sechud
 
 	name = "hardsuit security hud"
 	desc = "A simple tactical information system for a hardsuit."
 	icon_state = "securityhud"
-	origin_tech = "{'magnets':3,'biotech':2,'engineering':5}"
+	origin_tech = list(TECH_MAGNET = 3, TECH_BIO = 2, TECH_ENGINEERING = 5)
 	usable = 0
 
 	interface_name = "security HUD"
@@ -149,7 +138,7 @@
 	name = "hardsuit medical hud"
 	desc = "A simple medical status indicator for a hardsuit."
 	icon_state = "healthhud"
-	origin_tech = "{'magnets':3,'biotech':2,'engineering':5}"
+	origin_tech = list(TECH_MAGNET = 3, TECH_BIO = 2, TECH_ENGINEERING = 5)
 	usable = 0
 
 	interface_name = "medical HUD"
@@ -172,7 +161,7 @@
 
 	// Don't cycle if this engage() is being called by activate().
 	if(starting_up)
-		to_chat(holder.wearer, "<font color='blue'>You activate your visual sensors.</font>")
+		to_chat(holder.wearer, "<span class='info'>You activate your visual sensors.</span>")
 		return 1
 
 	if(vision_modes.len > 1)
@@ -181,9 +170,9 @@
 			vision_index = 1
 		vision = vision_modes[vision_index]
 
-		to_chat(holder.wearer, "<font color='blue'>You cycle your sensors to <b>[vision.mode]</b> mode.</font>")
+		to_chat(holder.wearer, "<span class='info'>You cycle your sensors to <b>[vision.mode]</b> mode.</span>")
 	else
-		to_chat(holder.wearer, "<font color='blue'>Your sensors only have one mode.</font>")
+		to_chat(holder.wearer, "<span class='info'>Your sensors only have one mode.</span>")
 	return 1
 
 /obj/item/rig_module/vision/Initialize()

@@ -1,7 +1,7 @@
 /obj/machinery/body_scan_display
 	name = "Body Scan Display"
 	desc = "A wall-mounted display linked to a body scanner."
-	icon = 'icons/obj/modular_computers/modular_telescreen.dmi'
+	icon = 'icons/obj/modular_telescreen.dmi'
 	icon_state = "operating"
 	var/icon_state_unpowered = "telescreen"
 	anchored = TRUE
@@ -19,7 +19,7 @@
 	bodyscans += list(scan.Copy())
 	updateUsrDialog()
 
-/obj/machinery/body_scan_display/OnTopic(mob/user, href_list)
+/obj/machinery/body_scan_display/OnTopic(mob/user as mob, href_list)
 	if(href_list["view"])
 		var/selection = text2num(href_list["view"])
 		if(is_valid_index(selection, bodyscans))

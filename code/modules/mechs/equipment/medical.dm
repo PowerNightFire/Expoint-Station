@@ -6,7 +6,7 @@
 	restricted_software = list(MECH_SOFTWARE_MEDICAL)
 	equipment_delay = 30 //don't spam it on people pls
 	active_power_use = 0 //Usage doesn't really require power. We don't want people stuck inside
-	origin_tech = "{'programming':2,'biotech':3}"
+	origin_tech = list(TECH_DATA = 2, TECH_BIO = 3)
 	passive_power_use = 1.5 KILOWATTS
 	var/obj/machinery/sleeper/mounted/sleeper = null
 
@@ -30,7 +30,7 @@
 		sleeper.ui_interact(user)
 
 /obj/item/mech_equipment/sleeper/attackby(var/obj/item/I, var/mob/user)
-	if(istype(I, /obj/item/chems/glass))
+	if(istype(I, /obj/item/weapon/reagent_containers/glass))
 		sleeper.attackby(I, user)
 	else return ..()
 
@@ -52,17 +52,10 @@
 	anchored = 0
 	idle_power_usage = 0
 	active_power_usage = 0 //It'd be hard to handle, so for now all power is consumed by mech sleeper object
+	synth_modifier = 0
 	stasis_power = 0
 	interact_offline = TRUE
 	stat_immune = NOPOWER
-
-/obj/machinery/sleeper/mounted/standard/Initialize(mapload, d, populate_parts)
-	. = ..()
-	add_reagent_canister(null, new /obj/item/chems/chem_disp_cartridge/adrenaline()) 
-	add_reagent_canister(null, new /obj/item/chems/chem_disp_cartridge/sedatives())
-	add_reagent_canister(null, new /obj/item/chems/chem_disp_cartridge/painkillers())
-	add_reagent_canister(null, new /obj/item/chems/chem_disp_cartridge/antitoxins())
-	add_reagent_canister(null, new /obj/item/chems/chem_disp_cartridge/oxy_meds())
 
 /obj/machinery/sleeper/mounted/ui_interact(var/mob/user, var/ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = GLOB.mech_state)
 	. = ..()
@@ -75,7 +68,7 @@
 
 //You cannot modify these, it'd probably end with something in nullspace. In any case basic meds are plenty for an ambulance
 /obj/machinery/sleeper/mounted/attackby(var/obj/item/I, var/mob/user)
-	if(istype(I, /obj/item/chems/glass))
+	if(istype(I, /obj/item/weapon/reagent_containers/glass))
 		if(!user.unEquip(I, src))
 			return
 

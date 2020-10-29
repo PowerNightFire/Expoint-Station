@@ -3,9 +3,9 @@
 
 /decl/hierarchy/supply_pack/security/specialops
 	name = "Grenades - Special Ops supplies"
-	contains = list(/obj/item/storage/box/emps,
-					/obj/item/grenade/smokebomb = 3,
-					/obj/item/grenade/chem_grenade/incendiary)
+	contains = list(/obj/item/weapon/storage/box/emps,
+					/obj/item/weapon/grenade/smokebomb = 3,
+					/obj/item/weapon/grenade/chem_grenade/incendiary)
 	cost = 20
 	containername = "special ops crate"
 	hidden = 1
@@ -31,12 +31,12 @@
 /decl/hierarchy/supply_pack/security/tacticalarmor
 	name = "Armor - Tactical"
 	contains = list(/obj/item/clothing/under/tactical,
-					/obj/item/clothing/suit/armor/pcarrier/tactical,
+					/obj/item/clothing/suit/armor/pcarrier/tan/tactical,
 					/obj/item/clothing/head/helmet/tactical,
 					/obj/item/clothing/mask/balaclava/tactical,
 					/obj/item/clothing/glasses/tacgoggles,
-					/obj/item/storage/belt/holster/security/tactical,
-					/obj/item/clothing/shoes/jackboots/tactical,
+					/obj/item/weapon/storage/belt/holster/security/tactical,
+					/obj/item/clothing/shoes/tactical,
 					/obj/item/clothing/gloves/tactical)
 	cost = 45
 	containertype = /obj/structure/closet/crate/secure
@@ -52,13 +52,49 @@
 	containername = "arm and leg guards crate"
 	access = access_armory
 
+/decl/hierarchy/supply_pack/security/blueguards
+	name = "Armor - Arm and leg guards, blue"
+	contains = list(/obj/item/clothing/accessory/armguards/blue = 2,
+					/obj/item/clothing/accessory/legguards/blue = 2)
+	cost = 20
+	containertype = /obj/structure/closet/crate/secure
+	containername = "arm and leg guards crate"
+	access = access_armory
+
+/decl/hierarchy/supply_pack/security/greenguards
+	name = "Armor - Arm and leg guards, green"
+	contains = list(/obj/item/clothing/accessory/armguards/green = 2,
+					/obj/item/clothing/accessory/legguards/green = 2)
+	cost = 20
+	containertype = /obj/structure/closet/crate/secure
+	containername = "arm and leg guards crate"
+	access = access_armory
+
+/decl/hierarchy/supply_pack/security/navyguards
+	name = "Armor - Arm and leg guards, navy blue"
+	contains = list(/obj/item/clothing/accessory/armguards/navy = 2,
+					/obj/item/clothing/accessory/legguards/navy = 2)
+	cost = 20
+	containertype = /obj/structure/closet/crate/secure
+	containername = "arm and leg guards crate"
+	access = access_armory
+
+/decl/hierarchy/supply_pack/security/tanguards
+	name = "Armor - Arm and leg guards, tan"
+	contains = list(/obj/item/clothing/accessory/armguards/tan = 2,
+					/obj/item/clothing/accessory/legguards/tan = 2)
+	cost = 20
+	containertype = /obj/structure/closet/crate/secure
+	containername = "arm and leg guards crate"
+	access = access_armory
+
 /decl/hierarchy/supply_pack/security/riotarmor
 	name = "Armor - Riot gear"
-	contains = list(/obj/item/shield/riot = 4,
+	contains = list(/obj/item/weapon/shield/riot = 4,
 					/obj/item/clothing/head/helmet/riot = 4,
 					/obj/item/clothing/suit/armor/riot = 4,
-					/obj/item/storage/box/flashbangs,
-					/obj/item/storage/box/teargas)
+					/obj/item/weapon/storage/box/flashbangs,
+					/obj/item/weapon/storage/box/teargas)
 	cost = 80
 	containertype = /obj/structure/closet/crate/secure
 	containername = "riot armor crate"
@@ -84,10 +120,10 @@
 
 /decl/hierarchy/supply_pack/security/weapons
 	name = "Weapons - Security basic"
-	contains = list(/obj/item/flash = 4,
-					/obj/item/chems/spray/pepper = 4,
-					/obj/item/baton/loaded = 4,
-					/obj/item/gun/energy/taser = 4)
+	contains = list(/obj/item/device/flash = 4,
+					/obj/item/weapon/reagent_containers/spray/pepper = 4,
+					/obj/item/weapon/melee/baton/loaded = 4,
+					/obj/item/weapon/gun/energy/taser = 4)
 	cost = 50
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "weapons crate"
@@ -95,7 +131,7 @@
 
 /decl/hierarchy/supply_pack/security/egun
 	name = "Weapons - Energy sidearms"
-	contains = list(/obj/item/gun/energy/gun/secure = 4)
+	contains = list(/obj/item/weapon/gun/energy/gun/secure = 4)
 	cost = 40
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "energy sidearms crate"
@@ -104,15 +140,15 @@
 
 /decl/hierarchy/supply_pack/security/egun/shady
 	name = "Weapons - Energy sidearms (For disposal)"
-	contains = list(/obj/item/gun/energy/gun = 4)
+	contains = list(/obj/item/weapon/gun/energy/gun = 4)
 	cost = 60
 	contraband = 1
 	security_level = null
 
 /decl/hierarchy/supply_pack/security/ion
 	name = "Weapons - Electromagnetic"
-	contains = list(/obj/item/gun/energy/ionrifle = 2,
-					/obj/item/storage/box/emps)
+	contains = list(/obj/item/weapon/gun/energy/ionrifle = 2,
+					/obj/item/weapon/storage/box/emps)
 	cost = 50
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "electromagnetic weapons crate"
@@ -121,7 +157,7 @@
 
 /decl/hierarchy/supply_pack/security/shotgun
 	name = "Weapons - Shotgun"
-	contains = list(/obj/item/gun/projectile/shotgun/pump = 2)
+	contains = list(/obj/item/weapon/gun/projectile/shotgun/pump/combat = 2)
 	cost = 60
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "shotgun crate"
@@ -130,7 +166,7 @@
 
 /decl/hierarchy/supply_pack/security/flashbang
 	name = "Weapons - Flashbangs"
-	contains = list(/obj/item/storage/box/flashbangs = 2)
+	contains = list(/obj/item/weapon/storage/box/flashbangs = 2)
 	cost = 30
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "flashbang crate"
@@ -138,7 +174,7 @@
 
 /decl/hierarchy/supply_pack/security/teargas
 	name = "Weapons - Tear gas grenades"
-	contains = list(/obj/item/storage/box/teargas = 2)
+	contains = list(/obj/item/weapon/storage/box/teargas = 2)
 	cost = 30
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "tear gas grenades crate"
@@ -146,8 +182,8 @@
 
 /decl/hierarchy/supply_pack/security/shotgunammo
 	name = "Ammunition - Lethal shells"
-	contains = list(/obj/item/storage/box/ammo/shotgunammo = 2,
-					/obj/item/storage/box/ammo/shotgunshells = 2)
+	contains = list(/obj/item/weapon/storage/box/ammo/shotgunammo = 2,
+					/obj/item/weapon/storage/box/ammo/shotgunshells = 2)
 	cost = 60
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "lethal shotgun shells crate"
@@ -156,7 +192,7 @@
 
 /decl/hierarchy/supply_pack/security/shotgunbeanbag
 	name = "Ammunition - Beanbag shells"
-	contains = list(/obj/item/storage/box/ammo/beanbags = 3)
+	contains = list(/obj/item/weapon/storage/box/ammo/beanbags = 3)
 	cost = 30
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "beanbag shotgun shells crate"
@@ -164,7 +200,7 @@
 
 /decl/hierarchy/supply_pack/security/pdwammo
 	name = "Ammunition - SMG top mounted"
-	contains = list(/obj/item/ammo_magazine/smg = 4)
+	contains = list(/obj/item/ammo_magazine/smg_top = 4)
 	cost = 40
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "SMG ammunition crate"
@@ -173,7 +209,7 @@
 
 /decl/hierarchy/supply_pack/security/pdwammorubber
 	name = "Ammunition - SMG top mounted rubber"
-	contains = list(/obj/item/ammo_magazine/smg/rubber = 4)
+	contains = list(/obj/item/ammo_magazine/smg_top/rubber = 4)
 	cost = 30
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "SMG rubber ammunition crate"
@@ -181,7 +217,7 @@
 
 /decl/hierarchy/supply_pack/security/pdwammopractice
 	name = "Ammunition - SMG top mounted practice"
-	contains = list(/obj/item/ammo_magazine/smg/practice = 8)
+	contains = list(/obj/item/ammo_magazine/smg_top/practice = 8)
 	cost = 30
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "SMG practice ammunition crate"
@@ -189,7 +225,7 @@
 
 /decl/hierarchy/supply_pack/security/bullpupammo
 	name = "Ammunition - military rifle"
-	contains = list(/obj/item/ammo_magazine/rifle = 4)
+	contains = list(/obj/item/ammo_magazine/mil_rifle = 4)
 	cost = 60
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "military rifle ammunition crate"
@@ -198,7 +234,7 @@
 
 /decl/hierarchy/supply_pack/security/bullpupammopractice
 	name = "Ammunition - military rifle practice"
-	contains = list(/obj/item/ammo_magazine/rifle/practice = 8)
+	contains = list(/obj/item/ammo_magazine/mil_rifle/practice = 8)
 	cost = 30
 	containertype = /obj/structure/closet/crate/secure/weapon
 	containername = "military rifle practice ammunition crate"
@@ -206,29 +242,29 @@
 
 /decl/hierarchy/supply_pack/security/forensics //Not access-restricted so PIs can use it.
 	name = "Forensics - Auxiliary tools"
-	contains = list(/obj/item/forensics/sample_kit,
-					/obj/item/forensics/sample_kit/powder,
-					/obj/item/forensics/sample_kit/swabs = 3,
-					/obj/item/chems/spray/luminol)
+	contains = list(/obj/item/weapon/forensics/sample_kit,
+					/obj/item/weapon/forensics/sample_kit/powder,
+					/obj/item/weapon/storage/box/swabs = 3,
+					/obj/item/weapon/reagent_containers/spray/luminol)
 	cost = 30
 	containername = "auxiliary forensic tools crate"
 
 /decl/hierarchy/supply_pack/security/detectivegear
 	name = "Forensics - investigation equipment"
-	contains = list(/obj/item/storage/box/evidence = 2,
-					/obj/item/radio/headset/headset_sec,
+	contains = list(/obj/item/weapon/storage/box/evidence = 2,
+					/obj/item/device/radio/headset/headset_sec,
 					/obj/item/taperoll/police,
 					/obj/item/clothing/glasses/sunglasses,
-					/obj/item/camera,
-					/obj/item/folder/red,
-					/obj/item/folder/blue,
+					/obj/item/device/camera,
+					/obj/item/weapon/folder/red,
+					/obj/item/weapon/folder/blue,
 					/obj/item/clothing/gloves/forensic,
-					/obj/item/taperecorder,
-					/obj/item/scanner/spectrometer,
-					/obj/item/camera_film = 2,
-					/obj/item/storage/photo_album,
-					/obj/item/scanner/reagent,
-					/obj/item/storage/briefcase/crimekit = 2)
+					/obj/item/device/taperecorder,
+					/obj/item/device/scanner/spectrometer,
+					/obj/item/device/camera_film = 2,
+					/obj/item/weapon/storage/photo_album,
+					/obj/item/device/scanner/reagent,
+					/obj/item/weapon/storage/briefcase/crimekit = 2)
 	cost = 50
 	containertype = /obj/structure/closet/crate/secure
 	containername = "forensic equipment crate"
@@ -255,7 +291,7 @@
 	contains = list(/obj/item/clothing/head/bio_hood/security,
 					/obj/item/clothing/suit/bio_suit/security,
 					/obj/item/clothing/mask/gas,
-					/obj/item/tank/oxygen,
+					/obj/item/weapon/tank/oxygen,
 					/obj/item/clothing/gloves/latex)
 	cost = 30
 	containertype = /obj/structure/closet/crate/secure

@@ -12,10 +12,9 @@
 #define STATE_SEALED   3
 
 /obj/machinery/embedded_controller/radio/airlock/tin_can
-	name = "non-cycling shuttle airlock controller"
 	program = /datum/computer/file/embedded_program/airlock/tin_can
 	cycle_to_external_air = TRUE // Some kind of legacy var needed for proper init
-	base_type = /obj/machinery/embedded_controller/radio/airlock/tin_can
+	scrubber_assist = TRUE
 
 /obj/machinery/embedded_controller/radio/airlock/tin_can/ui_interact(mob/user, ui_key = "main", datum/nanoui/ui = null, force_open = 1, datum/nanoui/master_ui = null, datum/topic_state/state = GLOB.default_state)
 	var/list/data = list()
@@ -48,21 +47,24 @@
 	switch(command)
 		if("toggle_door_safety")
 			door_safety = !door_safety
-			toggleDoor(memory["exterior_status"], tag_exterior_door, door_safety)
+			if(!door_safety)
+				signalDoor(tag_exterior_door, "unlock")
 		if("evacuate_atmos")
 			if(state == STATE_EVACUATE)
 				return
 			state = STATE_EVACUATE
 			toggleDoor(memory["exterior_status"], tag_exterior_door, door_safety, "close")
-			signalPump(tag_pump_out_internal, 0)
-			signalPump(tag_pump_out_external, 1)
+			signalPump(tag_pump_out_internal, 1, 0, 0) // Interior pump, target is a vaccum
+			signalPump(tag_pump_out_external, 1, 1, 10000) // Exterior pump, target is infinite 
+			signalPump(tag_pump_out_scrubber, 1) // Get the pump to assist us in scrubbing the air out
 		if("fill_atmos")
 			if(state == STATE_FILL)
 				return
 			state = STATE_FILL
 			toggleDoor(memory["exterior_status"], tag_exterior_door, door_safety, "close")
-			signalPump(tag_pump_out_internal, 1)
-			signalPump(tag_pump_out_external, 0)
+			signalPump(tag_pump_out_internal, 1, 1, memory["external_sensor_pressure"]) // Interior pump, target is exterior pressure
+			signalPump(tag_pump_out_external, 1, 0, 0) // Exterior pump, target is zero, to intake
+			signalPump(tag_pump_out_scrubber, 0) // make sure the scrubber isn't fighting us
 		if("seal")
 			if(state == STATE_SEALED)
 				return
@@ -70,13 +72,17 @@
 			toggleDoor(memory["exterior_status"], tag_exterior_door, door_safety, "close")
 			signalPump(tag_pump_out_internal, 0)
 			signalPump(tag_pump_out_external, 0)
+			signalPump(tag_pump_out_scrubber, 0)
 		else
 			. = FALSE
 
 /datum/computer/file/embedded_program/airlock/tin_can/process()
 	if(door_safety)
-		var/safe_to_open = safe_to_open() // If safe, unlock; if not, close and lock
-		toggleDoor(memory["exterior_status"], tag_exterior_door, !safe_to_open, !safe_to_open ? "close" : null)
+		var/safe_to_open = safe_to_open()
+		if(safe_to_open && memory["exterior_status"]["lock"] == "locked")
+			signalDoor(tag_exterior_door, "unlock")
+		else if(!safe_to_open && memory["exterior_status"]["lock"] == "unlocked")
+			signalDoor(tag_exterior_door, "secure_close") // close and lock
 
 /datum/computer/file/embedded_program/airlock/tin_can/proc/safe_to_open()
 	. = TRUE

@@ -7,10 +7,10 @@
 	parent_organ = BP_HEAD
 	surface_accessible = TRUE
 	relative_size = 5
-	max_damage = 45
-	var/contaminant_guard = 0
-	var/eye_colour = COLOR_BLACK
+	var/phoron_guard = 0
+	var/list/eye_colour = list(0,0,0)
 	var/innate_flash_protection = FLASH_PROTECTION_NONE
+	max_damage = 45
 	var/eye_icon = 'icons/mob/human_races/species/default_eyes.dmi'
 	var/apply_eye_colour = TRUE
 	var/tmp/last_cached_eye_colour
@@ -20,7 +20,7 @@
 	var/darksight_tint
 
 /obj/item/organ/internal/eyes/proc/get_eye_cache_key()
-	last_cached_eye_colour = eye_colour
+	last_cached_eye_colour = rgb(eye_colour[1],eye_colour[2], eye_colour[3])
 	last_eye_cache_key = "[type]-[eye_icon]-[last_cached_eye_colour]"
 	return last_eye_cache_key
 
@@ -51,28 +51,35 @@
 	set src in usr
 	if (!owner || owner.incapacitated())
 		return
-	var/new_eyes = input("Please select eye color.", "Eye Color", owner.eye_colour) as color|null
-	if(new_eyes && do_after(owner, 10) && owner.change_eye_color(new_eyes))
-		update_colour()
-		// Finally, update the eye icon on the mob.
-		owner.regenerate_icons()
-		owner.visible_message(SPAN_NOTICE("\The [owner] changes their eye color."),SPAN_NOTICE("You change your eye color."),)
+	var/new_eyes = input("Please select eye color.", "Eye Color", rgb(owner.r_eyes, owner.g_eyes, owner.b_eyes)) as color|null
+	if(new_eyes)
+		var/r_eyes = hex2num(copytext(new_eyes, 2, 4))
+		var/g_eyes = hex2num(copytext(new_eyes, 4, 6))
+		var/b_eyes = hex2num(copytext(new_eyes, 6, 8))
+		if(do_after(owner, 10) && owner.change_eye_color(r_eyes, g_eyes, b_eyes))
+			update_colour()
+			// Finally, update the eye icon on the mob.
+			owner.regenerate_icons()
+			owner.visible_message(SPAN_NOTICE("\The [owner] changes their eye color."),SPAN_NOTICE("You change your eye color."),)
 
 /obj/item/organ/internal/eyes/replaced(var/mob/living/carbon/human/target)
 
 	// Apply our eye colour to the target.
 	if(istype(target) && eye_colour)
-		target.eye_colour = eye_colour
+		target.r_eyes = eye_colour[1]
+		target.g_eyes = eye_colour[2]
+		target.b_eyes = eye_colour[3]
 		target.update_eyes()
 	..()
 
 /obj/item/organ/internal/eyes/proc/update_colour()
 	if(!owner)
 		return
-	if(owner.chem_effects[CE_GLOWINGEYES])
-		eye_colour = "#75bdd6" // blue glow, hardcoded for now.
-	else
-		eye_colour = owner.eye_colour || COLOR_BLACK
+	eye_colour = list(
+		owner.r_eyes ? owner.r_eyes : 0,
+		owner.g_eyes ? owner.g_eyes : 0,
+		owner.b_eyes ? owner.b_eyes : 0
+		)
 
 /obj/item/organ/internal/eyes/take_internal_damage(amount, var/silent=0)
 	var/oldbroken = is_broken()
@@ -89,8 +96,8 @@
 	if(is_broken())
 		owner.eye_blind = 20
 
-/obj/item/organ/internal/eyes/Initialize()
-	. = ..()
+/obj/item/organ/internal/eyes/New()
+	..()
 	flash_mod = species.flash_mod
 	darksight_range = species.darksight_range
 	darksight_tint = species.darksight_tint
@@ -103,12 +110,13 @@
 
 /obj/item/organ/internal/eyes/robot
 	name = "optical sensor"
+	status = ORGAN_ROBOTIC
 
-/obj/item/organ/internal/eyes/robot/Initialize()
-	. = ..()
+/obj/item/organ/internal/eyes/robot/New()
+	..()
 	robotize()
 
-/obj/item/organ/internal/eyes/robotize(var/company, var/skip_prosthetics, var/keep_organs, var/apply_material = /decl/material/solid/metal/steel)
+/obj/item/organ/internal/eyes/robotize()
 	..()
 	name = "optical sensor"
 	icon = 'icons/obj/robot_component.dmi'
@@ -119,6 +127,7 @@
 	flash_mod = 1
 	darksight_range = 2
 	darksight_tint = DARKTINT_NONE
+	status = ORGAN_ROBOTIC
 
 /obj/item/organ/internal/eyes/get_mechanical_assisted_descriptor()
 	return "retinal overlayed [name]"

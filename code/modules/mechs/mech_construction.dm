@@ -60,7 +60,7 @@
 			pilot.client.screen -= module_to_forget
 
 /mob/living/exosuit/proc/install_system(var/obj/item/system, var/system_hardpoint, var/mob/user)
-	set waitfor = FALSE
+
 	if(hardpoints_locked || hardpoints[system_hardpoint])
 		return FALSE
 
@@ -93,7 +93,7 @@
 		ME.installed(src)
 		GLOB.destroyed_event.register(system, src, .proc/forget_module)
 
-
+	
 
 	system.forceMove(src)
 	hardpoints[system_hardpoint] = system
@@ -111,7 +111,7 @@
 	return 1
 
 /mob/living/exosuit/proc/remove_system(var/system_hardpoint, var/mob/user, var/force)
-	set waitfor = FALSE
+
 	if((hardpoints_locked && !force) || !hardpoints[system_hardpoint])
 		return 0
 

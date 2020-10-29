@@ -1,4 +1,4 @@
-/obj/item/teleportation_scroll
+/obj/item/weapon/teleportation_scroll
 	name = "scroll of teleportation"
 	desc = "A scroll for moving around."
 	icon = 'icons/obj/wizard.dmi'
@@ -8,9 +8,9 @@
 	item_state = "paper"
 	throw_speed = 4
 	throw_range = 20
-	origin_tech = "{'wormholes':4}"
+	origin_tech = list(TECH_BLUESPACE = 4)
 
-/obj/item/teleportation_scroll/attack_self(mob/user)
+/obj/item/weapon/teleportation_scroll/attack_self(mob/user as mob)
 	if((user.mind && !GLOB.wizards.is_antagonist(user.mind)))
 		to_chat(usr, "<span class='warning'>You stare at the scroll but cannot make sense of the markings!</span>")
 		return
@@ -26,7 +26,7 @@
 	onclose(user, "scroll")
 	return
 
-/obj/item/teleportation_scroll/Topic(href, href_list)
+/obj/item/weapon/teleportation_scroll/Topic(href, href_list)
 	if(..())
 		return 1
 	var/mob/living/carbon/human/H = usr
@@ -40,7 +40,7 @@
 	attack_self(H)
 	return
 
-/obj/item/teleportation_scroll/proc/teleportscroll(var/mob/user)
+/obj/item/weapon/teleportation_scroll/proc/teleportscroll(var/mob/user)
 	var/area/thearea = input(user, "Area to jump to", "BOOYEA") as null|anything in wizteleportlocs
 	thearea = thearea ? wizteleportlocs[thearea] : thearea
 

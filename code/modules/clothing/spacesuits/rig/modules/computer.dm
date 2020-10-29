@@ -42,24 +42,17 @@
 	interface_name = "integrated intelligence system"
 	interface_desc = "A socket that supports a range of artificial intelligence systems."
 
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE
-	)
-	origin_tech = "{'programming':6,'materials':5,'engineering':6}"
-
 	var/mob/integrated_ai // Direct reference to the actual mob held in the suit.
 	var/obj/item/ai_card  // Reference to the MMI, posibrain, inteliCard or pAI card previously holding the AI.
 	var/obj/item/ai_verbs/verb_holder
+	origin_tech = list(TECH_DATA = 6, TECH_MATERIAL = 5, TECH_ENGINEERING = 6)
 
 /mob
 	var/get_rig_stats = 0
 
 /obj/item/rig_module/ai_container/Process()
 	if(integrated_ai)
-		var/obj/item/rig/rig = get_rig()
+		var/obj/item/weapon/rig/rig = get_rig()
 		if(rig && rig.ai_override_enabled)
 			integrated_ai.get_rig_stats = 1
 		else
@@ -68,7 +61,7 @@
 /mob/living/Stat()
 	. = ..()
 	if(. && get_rig_stats)
-		var/obj/item/rig/rig = get_rig()
+		var/obj/item/weapon/rig/rig = get_rig()
 		if(rig)
 			SetupStat(rig)
 
@@ -89,14 +82,14 @@
 	else
 		target_ai = locate(/mob/living/silicon/ai) in input_device.contents
 
-	var/obj/item/aicard/card = ai_card
+	var/obj/item/weapon/aicard/card = ai_card
 
 	// Downloading from/loading to a terminal.
-	if(istype(input_device,/mob/living/silicon/ai) || istype(input_device,/obj/structure/aicore/deactivated))
+	if(istype(input_device,/mob/living/silicon/ai) || istype(input_device,/obj/structure/AIcore/deactivated))
 
 		// If we're stealing an AI, make sure we have a card for it.
 		if(!card)
-			card = new /obj/item/aicard(src)
+			card = new /obj/item/weapon/aicard(src)
 
 		// Terminal interaction only works with an inteliCarded AI.
 		if(!istype(card))
@@ -114,7 +107,7 @@
 		update_verb_holder()
 		return 1
 
-	if(istype(input_device,/obj/item/aicard))
+	if(istype(input_device,/obj/item/weapon/aicard))
 		// We are carding the AI in our suit.
 		if(integrated_ai)
 			integrated_ai.attackby(input_device,user)
@@ -130,7 +123,7 @@
 		return 1
 
 	// Okay, it wasn't a terminal being touched, check for all the simple insertions.
-	if(input_device.type in list(/obj/item/paicard, /obj/item/mmi, /obj/item/organ/internal/posibrain))
+	if(input_device.type in list(/obj/item/device/paicard, /obj/item/device/mmi, /obj/item/organ/internal/posibrain))
 		if(integrated_ai)
 			integrated_ai.attackby(input_device,user)
 			// If the transfer was successful, we can clear out our vars.
@@ -152,7 +145,7 @@
 
 	if(!target)
 		if(ai_card)
-			if(istype(ai_card,/obj/item/aicard))
+			if(istype(ai_card,/obj/item/weapon/aicard))
 				ai_card.ui_interact(H, state = GLOB.deep_inventory_state)
 			else
 				eject_ai(H)
@@ -171,7 +164,7 @@
 /obj/item/rig_module/ai_container/proc/eject_ai(var/mob/user)
 
 	if(ai_card)
-		if(istype(ai_card, /obj/item/aicard))
+		if(istype(ai_card, /obj/item/weapon/aicard))
 			if(integrated_ai && !integrated_ai.stat)
 				if(user)
 					to_chat(user, "<span class='danger'>You cannot eject your currently stored AI. Purge it manually.</span>")
@@ -201,13 +194,13 @@
 
 		if(ai_mob.key && ai_mob.client)
 
-			if(istype(ai, /obj/item/aicard))
+			if(istype(ai, /obj/item/weapon/aicard))
 
 				if(!ai_card)
-					ai_card = new /obj/item/aicard(src)
+					ai_card = new /obj/item/weapon/aicard(src)
 
-				var/obj/item/aicard/source_card = ai
-				var/obj/item/aicard/target_card = ai_card
+				var/obj/item/weapon/aicard/source_card = ai
+				var/obj/item/weapon/aicard/target_card = ai_card
 				if(istype(source_card) && istype(target_card))
 					if(target_card.grab_ai(ai_mob, user))
 						source_card.clear()
@@ -246,7 +239,11 @@
 
 	interface_name = "contact datajack"
 	interface_desc = "An induction-powered high-throughput datalink suitable for hacking encrypted networks."
-	var/list/stored_research = list()
+	var/list/stored_research
+
+/obj/item/rig_module/datajack/Initialize()
+	. =..()
+	stored_research = list()
 
 /obj/item/rig_module/datajack/engage(atom/target)
 
@@ -261,31 +258,60 @@
 
 /obj/item/rig_module/datajack/accepts_item(var/obj/item/input_device, var/mob/living/user)
 
-	if(istype(input_device,/obj/item/disk/tech_disk))
-		to_chat(user, SPAN_NOTICE("You slot the disk into \the [src]."))
-		var/obj/item/disk/tech_disk/disk = input_device
-		if(load_data(disk.stored_tech))
-			to_chat(user, SPAN_NOTICE("Download successful; disk erased."))
-			disk.stored_tech = null
+	if(istype(input_device,/obj/item/weapon/disk/tech_disk))
+		to_chat(user, "You slot the disk into [src].")
+		var/obj/item/weapon/disk/tech_disk/disk = input_device
+		if(disk.stored)
+			if(load_data(disk.stored))
+				to_chat(user, "<span class='info'>Download successful; disk erased.</span>")
+				disk.stored = null
+			else
+				to_chat(user, "<span class='warning'>The disk is corrupt. It is useless to you.</span>")
 		else
-			to_chat(user, SPAN_WARNING("\The [disk] contains nothing of use you."))
-		return TRUE
+			to_chat(user, "<span class='warning'>The disk is blank. It is useless to you.</span>")
+		return 1
 
-	if(istype(input_device, /obj/machinery/design_database))
-		var/obj/machinery/design_database/db = input_device
-		if(load_data(db.tech_levels))
-			to_chat(user, SPAN_NOTICE("Download successful; local repository updated from remote."))
+	// I fucking hate R&D code. This typecheck spam would be totally unnecessary in a sane setup.
+	else if(istype(input_device,/obj/machinery))
+		var/datum/research/incoming_files
+		if(istype(input_device,/obj/machinery/computer/rdconsole))
+			var/obj/machinery/computer/rdconsole/input_machine = input_device
+			incoming_files = input_machine.files
+		else if(istype(input_device,/obj/machinery/r_n_d/server))
+			var/obj/machinery/r_n_d/server/input_machine = input_device
+			incoming_files = input_machine.files
+
+		if(!incoming_files || !incoming_files.known_tech || !incoming_files.known_tech.len)
+			to_chat(user, "<span class='warning'>Memory failure. There is nothing accessible stored on this terminal.</span>")
 		else
-			to_chat(user, SPAN_WARNING("\The [db] has nothing of use to you in local storage."))
-		return TRUE
+			// Maybe consider a way to drop all your data into a target repo in the future.
+			if(load_data(incoming_files.known_tech))
+				to_chat(user, "<span class='info'>Download successful; local and remote repositories synchronized.</span>")
+			else
+				to_chat(user, "<span class='warning'>Scan complete. There is nothing useful stored on this terminal.</span>")
+		return 1
+	return 0
 
-	return FALSE
+/obj/item/rig_module/datajack/proc/load_data(var/incoming_data)
 
-/obj/item/rig_module/datajack/proc/load_data(var/list/incoming_data)
-	for(var/tech in incoming_data)
-		if(stored_research[tech] < incoming_data[tech])
-			stored_research[tech] = incoming_data[tech]
-			. = TRUE
+	if(islist(incoming_data))
+		for(var/entry in incoming_data)
+			load_data(entry)
+		return 1
+
+	if(istype(incoming_data, /datum/tech))
+		var/data_found
+		var/datum/tech/new_data = incoming_data
+		for(var/datum/tech/current_data in stored_research)
+			if(current_data.id == new_data.id)
+				data_found = 1
+				if(current_data.level < new_data.level)
+					current_data.level = new_data.level
+				break
+		if(!data_found)
+			stored_research += incoming_data
+		return 1
+	return 0
 
 /obj/item/rig_module/electrowarfare_suite
 
@@ -334,14 +360,7 @@
 	interface_name = "niling d-sink"
 	interface_desc = "Colloquially known as a power siphon, this module drains power through the suit hands into the suit battery."
 
-	origin_tech = "{'powerstorage':6,'engineering':6}"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE
-	)
-
+	origin_tech = list(TECH_POWER = 6, TECH_ENGINEERING = 6)
 	var/atom/interfaced_with // Currently draining power from this device.
 	var/total_power_drained = 0
 	var/drain_loc
@@ -443,9 +462,9 @@
 /obj/item/rig_module/power_sink/proc/drain_complete(var/mob/living/M)
 
 	if(!interfaced_with)
-		if(M) to_chat(M, "<font color='blue'><b>Total power drained:</b> [round(total_power_drained*CELLRATE)] Wh.</font>")
+		if(M) to_chat(M, "<span class='info'><b>Total power drained:</b> [round(total_power_drained*CELLRATE)] Wh.</span>")
 	else
-		if(M) to_chat(M, "<font color='blue'><b>Total power drained from [interfaced_with]:</b> [round(total_power_drained*CELLRATE)] Wh.</font>")
+		if(M) to_chat(M, "<span class='info'><b>Total power drained from [interfaced_with]:</b> [round(total_power_drained*CELLRATE)] Wh.</span>")
 		interfaced_with.drain_power(0,1,0) // Damage the victim.
 
 	drain_loc = null

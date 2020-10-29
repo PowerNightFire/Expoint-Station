@@ -31,7 +31,6 @@
 /datum/action/Destroy()
 	if(owner)
 		Remove(owner)
-	return ..()
 
 /datum/action/proc/SetTarget(var/atom/Target)
 	target = Target
@@ -55,6 +54,7 @@
 	T.actions.Remove(src)
 	T.update_action_buttons()
 	owner = null
+	return
 
 /datum/action/proc/Trigger()
 	if(!Checks())
@@ -118,7 +118,7 @@
 
 /obj/screen/movable/action_button
 	var/datum/action/owner
-	screen_loc = "LEFT,TOP"
+	screen_loc = "WEST,NORTH"
 
 /obj/screen/movable/action_button/Click(location,control,params)
 	var/list/modifiers = params2list(params)
@@ -200,7 +200,7 @@
 	var/coord_col_offset = AB_WEST_OFFSET+2*col
 	var/coord_row = "[-1 - row]"
 	var/coord_row_offset = AB_NORTH_OFFSET
-	return "LEFT[coord_col]:[coord_col_offset],TOP[coord_row]:[coord_row_offset]"
+	return "WEST[coord_col]:[coord_col_offset],NORTH[coord_row]:[coord_row_offset]"
 
 /datum/hud/proc/SetButtonCoords(var/obj/screen/button,var/number)
 	var/row = round((number-1)/AB_MAX_COLUMNS)

@@ -101,13 +101,16 @@ steam.start() -- spawns the effect
 	anchored = 1.0
 	mouse_opacity = 0
 
-/obj/effect/sparks/Initialize()
-	. = ..()
-	QDEL_IN(src, 5 SECONDS)
+/obj/effect/sparks/New()
+	..()
 	playsound(src.loc, "sparks", 100, 1)
 	var/turf/T = src.loc
 	if (istype(T, /turf))
 		T.hotspot_expose(1000,100)
+
+/obj/effect/sparks/Initialize()
+	. = ..()
+	QDEL_IN(src, 5 SECONDS)
 
 /obj/effect/sparks/Destroy()
 	var/turf/T = src.loc
@@ -120,11 +123,6 @@ steam.start() -- spawns the effect
 	var/turf/T = src.loc
 	if (istype(T, /turf))
 		T.hotspot_expose(1000,100)
-
-/proc/spark_at(turf/location)
-	var/datum/effect/effect/system/sparks = new /datum/effect/effect/system/spark_spread()
-	sparks.set_up(3, 0, location)
-	sparks.start()
 
 /datum/effect/effect/system/spark_spread
 
@@ -178,11 +176,11 @@ steam.start() -- spawns the effect
 	pixel_x = -32
 	pixel_y = -32
 
-/obj/effect/effect/smoke/Initialize()
-	. = ..()
+/obj/effect/effect/smoke/New()
+	..()
 	QDEL_IN(src, time_to_live)
 
-/obj/effect/effect/smoke/Crossed(mob/living/carbon/M)
+/obj/effect/effect/smoke/Crossed(mob/living/carbon/M as mob )
 	..()
 	if(istype(M))
 		affect(M)
@@ -210,10 +208,10 @@ steam.start() -- spawns the effect
 	icon = 'icons/effects/effects.dmi'
 	icon_state = "sparks"
 
-/obj/effect/effect/smoke/illumination/Initialize(mapload, var/lifetime=10, var/range=null, var/power=null, var/color=null)
+/obj/effect/effect/smoke/illumination/New(var/newloc, var/lifetime=10, var/range=null, var/power=null, var/color=null)
 	set_light(power, 0.1, range, 2, color)
 	time_to_live=lifetime
-	. = ..()
+	..()
 
 /////////////////////////////////////////////
 // Bad smoke
@@ -230,7 +228,7 @@ steam.start() -- spawns the effect
 /obj/effect/effect/smoke/bad/affect(var/mob/living/carbon/M)
 	if (!..())
 		return 0
-	M.drop_held_items()
+	M.unequip_item()
 	M.adjustOxyLoss(1)
 	if (M.coughedtime != 1)
 		M.coughedtime = 1
@@ -255,11 +253,11 @@ steam.start() -- spawns the effect
 	for(var/mob/living/carbon/M in get_turf(src))
 		affect(M)
 
-/obj/effect/effect/smoke/sleepy/affect(mob/living/carbon/M)
+/obj/effect/effect/smoke/sleepy/affect(mob/living/carbon/M as mob )
 	if (!..())
 		return 0
 
-	M.drop_held_items()
+	M.unequip_item()
 	M:sleeping += 1
 	if (M.coughedtime != 1)
 		M.coughedtime = 1

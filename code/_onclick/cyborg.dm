@@ -176,6 +176,6 @@
 	A.attack_robot(src)
 	return TRUE
 
-/atom/proc/attack_robot(mob/user)
+/atom/proc/attack_robot(mob/user as mob)
 	attack_ai(user)
 	return

@@ -109,16 +109,21 @@
 	//turfs += centerturf
 	return atoms
 
-/proc/get_dist_euclidian(atom/Loc1, atom/Loc2)
+/proc/trange(rad = 0, turf/centre = null) //alternative to range (ONLY processes turfs and thus less intensive)
+	if(!centre)
+		return
+
+	var/turf/x1y1 = locate(((centre.x-rad)<1 ? 1 : centre.x-rad),((centre.y-rad)<1 ? 1 : centre.y-rad),centre.z)
+	var/turf/x2y2 = locate(((centre.x+rad)>world.maxx ? world.maxx : centre.x+rad),((centre.y+rad)>world.maxy ? world.maxy : centre.y+rad),centre.z)
+	return block(x1y1,x2y2)
+
+/proc/get_dist_euclidian(atom/Loc1 as turf|mob|obj,atom/Loc2 as turf|mob|obj)
 	var/dx = Loc1.x - Loc2.x
 	var/dy = Loc1.y - Loc2.y
 
 	var/dist = sqrt(dx**2 + dy**2)
 
 	return dist
-
-/proc/get_dist_bounds(var/target, var/source) // Alternative to get_dist for multi-turf objects
-	return Ceiling(bounds_dist(target, source)/world.icon_size) + 1
 
 /proc/circlerangeturfs(center=usr,radius=3)
 	var/turf/centerturf = get_turf(center)
@@ -208,17 +213,17 @@
 	return hear
 
 
-/proc/get_mobs_in_radio_ranges(var/list/obj/item/radio/radios)
+/proc/get_mobs_in_radio_ranges(var/list/obj/item/device/radio/radios)
 
 	set background = 1
 
 	. = list()
 	// Returns a list of mobs who can hear any of the radios given in @radios
 	var/list/speaker_coverage = list()
-	for(var/obj/item/radio/R in radios)
+	for(var/obj/item/device/radio/R in radios)
 		if(R)
 			//Cyborg checks. Receiving message uses a bit of cyborg's charge.
-			var/obj/item/radio/borg/BR = R
+			var/obj/item/device/radio/borg/BR = R
 			if(istype(BR) && BR.myborg)
 				var/mob/living/silicon/robot/borg = BR.myborg
 				var/datum/robot_component/CO = borg.get_component("radio")
@@ -413,6 +418,22 @@ datum/projectile_data
 
 	return new /datum/projectile_data(src_x, src_y, time, distance, power_x, power_y, dest_x, dest_y)
 
+/proc/GetRedPart(const/hexa)
+	return hex2num(copytext(hexa,2,4))
+
+/proc/GetGreenPart(const/hexa)
+	return hex2num(copytext(hexa,4,6))
+
+/proc/GetBluePart(const/hexa)
+	return hex2num(copytext(hexa,6,8))
+
+/proc/GetHexColors(const/hexa)
+	return list(
+			GetRedPart(hexa),
+			GetGreenPart(hexa),
+			GetBluePart(hexa)
+		)
+
 /proc/MixColors(const/list/colors)
 	var/list/reds = list()
 	var/list/blues = list()
@@ -420,9 +441,9 @@ datum/projectile_data
 	var/list/weights = list()
 
 	for (var/i = 0, ++i <= colors.len)
-		reds.Add(HEX_RED(colors[i]))
-		blues.Add(HEX_BLUE(colors[i]))
-		greens.Add(HEX_GREEN(colors[i]))
+		reds.Add(GetRedPart(colors[i]))
+		blues.Add(GetBluePart(colors[i]))
+		greens.Add(GetGreenPart(colors[i]))
 		weights.Add(1)
 
 	var/r = mixOneColor(weights, reds)
@@ -528,7 +549,15 @@ datum/projectile_data
 /proc/round_is_spooky(var/spookiness_threshold = config.cult_ghostwriter_req_cultists)
 	return (GLOB.cult.current_antagonists.len > spookiness_threshold)
 
-/proc/window_flash(var/client_or_usr)
-	if (!client_or_usr)
-		return
-	winset(client_or_usr, "mainwindow", "flash=5")
+/proc/getviewsize(view)
+	var/viewX
+	var/viewY
+	if(isnum(view))
+		var/totalviewrange = 1 + 2 * view
+		viewX = totalviewrange
+		viewY = totalviewrange
+	else
+		var/list/viewrangelist = splittext(view,"x")
+		viewX = text2num(viewrangelist[1])
+		viewY = text2num(viewrangelist[2])
+	return list(viewX, viewY)

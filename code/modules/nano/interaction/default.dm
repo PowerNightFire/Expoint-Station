@@ -12,7 +12,7 @@ GLOBAL_DATUM_INIT(default_state, /datum/topic_state/default, new)
 /mob/observer/ghost/default_can_use_topic(var/src_object)
 	if(can_admin_interact())
 		return STATUS_INTERACTIVE							// Admins are more equal
-	if(!client || get_dist(src_object, src)	> get_effective_view(client))	// Preventing ghosts from having a million windows open by limiting to objects in range
+	if(!client || get_dist(src_object, src)	> client.view)	// Preventing ghosts from having a million windows open by limiting to objects in range
 		return STATUS_CLOSE
 	return STATUS_UPDATE									// Ghosts can view updates
 
@@ -28,7 +28,7 @@ GLOBAL_DATUM_INIT(default_state, /datum/topic_state/default, new)
 		return
 
 	// robots can interact with things they can see within their view range
-	if((src_object in view(src)) && get_dist(src_object, src) <= get_effective_view(client))
+	if((src_object in view(src)) && get_dist(src_object, src) <= src.client.view)
 		return STATUS_INTERACTIVE	// interactive (green visibility)
 	return STATUS_DISABLED			// no updates, completely disabled (red visibility)
 
@@ -45,7 +45,7 @@ GLOBAL_DATUM_INIT(default_state, /datum/topic_state/default, new)
 		return STATUS_CLOSE
 
 	// If an object is in view then we can interact with it
-	if(src_object in view(get_effective_view(client), src))
+	if(src_object in view(client.view, src))
 		return STATUS_INTERACTIVE
 
 	// If we're installed in a chassi, rather than transfered to an inteliCard or other container, then check if we have camera view
@@ -54,7 +54,7 @@ GLOBAL_DATUM_INIT(default_state, /datum/topic_state/default, new)
 		if(cameranet && !cameranet.is_turf_visible(get_turf(src_object)))
 			return STATUS_CLOSE
 		return STATUS_INTERACTIVE
-	else if(get_dist(src_object, src) <= get_effective_view(client))	// View does not return what one would expect while installed in an inteliCard
+	else if(get_dist(src_object, src) <= client.view)	// View does not return what one would expect while installed in an inteliCard
 		return STATUS_INTERACTIVE
 
 	return STATUS_CLOSE
@@ -67,8 +67,8 @@ GLOBAL_DATUM_INIT(default_state, /datum/topic_state/default, new)
 	if (!(src_object in view(4, src))) 	// If the src object is not visable, disable updates
 		return STATUS_CLOSE
 
-	var/dist = get_dist_bounds(src_object, src)
-	if (dist <= 1 || (src_object.loc == src)) // interactive (green visibility)
+	var/dist = get_dist(src_object, src)
+	if (dist <= 1) // interactive (green visibility)
 		// Checking adjacency even when distance is 0 because get_dist() doesn't include Z-level differences and
 		// the client might have its eye shifted up/down thus putting src_object in view.
 		return Adjacent(src_object) ? STATUS_INTERACTIVE : STATUS_UPDATE
@@ -93,5 +93,5 @@ GLOBAL_DATUM_INIT(default_state, /datum/topic_state/default, new)
 			. = min(., loc.contents_nano_distance(src_object, src))
 		else
 			. = min(., shared_living_nano_distance(src_object))
-		if(. == STATUS_UPDATE && is_telekinetic())
+		if(. == STATUS_UPDATE && (psi && !psi.suppressed && psi.get_rank(PSI_PSYCHOKINESIS) >= PSI_RANK_OPERANT))
 			return STATUS_INTERACTIVE

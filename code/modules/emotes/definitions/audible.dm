@@ -2,28 +2,27 @@
 	key = "burp"
 	emote_message_3p = "USER burps."
 	message_type = AUDIBLE_MESSAGE
+	var/emote_sound
 
-/decl/emote/audible/Initialize()
-	. = ..()
-	if(!emote_message_radio)
-		// Snips the 'USER' from 3p emote messages for radio.
-		emote_message_radio = copytext(emote_message_3p, 6)
+/decl/emote/audible/do_extra(var/atom/user)
+	if(emote_sound)
+		playsound(user.loc, emote_sound, 50, 0)
 
 /decl/emote/audible/deathgasp_alien
 	key = "deathgasp"
 	emote_message_3p = "USER lets out a waning guttural screech, green blood bubbling from its maw."
 
 /decl/emote/audible/whimper
-	key = "whimper"
+	key ="whimper"
 	emote_message_3p = "USER whimpers."
 
 /decl/emote/audible/gasp
-	key = "gasp"
+	key ="gasp"
 	emote_message_3p = "USER gasps."
 	conscious = 0
 
 /decl/emote/audible/scretch
-	key = "scretch"
+	key ="scretch"
 	emote_message_3p = "USER scretches."
 
 /decl/emote/audible/choke
@@ -32,11 +31,16 @@
 	conscious = 0
 
 /decl/emote/audible/gnarl
-	key = "gnarl"
+	key ="gnarl"
 	emote_message_3p = "USER gnarls and shows its teeth.."
 
+/decl/emote/audible/chirp
+	key ="chirp"
+	emote_message_3p = "USER chirps!"
+	emote_sound = 'sound/misc/nymphchirp.ogg'
+
 /decl/emote/audible/multichirp
-	key = "mchirp"
+	key ="mchirp"
 	emote_message_3p = "USER chirps a chorus of notes!"
 	emote_sound = 'sound/misc/multichirp.ogg'
 
@@ -149,8 +153,6 @@
 	emote_message_3p_target = "<span class='warning'>USER slaps TARGET across the face!</span>"
 	emote_message_3p = "USER slaps USER_SELF across the face!"
 	emote_sound = 'sound/effects/snap.ogg'
-	check_restraints = TRUE
-	check_range = 1
 
 /decl/emote/audible/bug_hiss
 	key ="hiss"
@@ -193,3 +195,14 @@
 	key ="hiss_"
 	emote_message_3p_target = "USER hisses softly at TARGET."
 	emote_message_3p = "USER hisses softly."
+	
+/decl/emote/audible/lizard_bellow
+	key = "bellow"
+	emote_message_3p_target = "USER bellows deeply at TARGET!"
+	emote_message_3p = "USER bellows!"
+	emote_sound = 'sound/voice/LizardBellow.ogg'
+
+/decl/emote/audible/lizard_squeal
+	key = "squeal"
+	emote_message_3p = "USER squeals."
+	emote_sound = 'sound/voice/LizardSqueal.ogg'

@@ -27,7 +27,7 @@
 	var/check_synth = 0 	//if active, will shoot at anything not an AI or cyborg
 	var/ailock = 0 	//Silicons cannot use this
 
-	initial_access = list(access_ai_upload)
+	req_access = list(access_ai_upload)
 
 /obj/machinery/turretid/stun
 	enabled = 1
@@ -86,11 +86,11 @@
 
 	return ..()
 
-/obj/machinery/turretid/attackby(obj/item/W, mob/user)
+/obj/machinery/turretid/attackby(obj/item/weapon/W, mob/user)
 	if(stat & BROKEN)
 		return
 
-	if(istype(W, /obj/item/card/id)||istype(W, /obj/item/modular_computer))
+	if(istype(W, /obj/item/weapon/card/id)||istype(W, /obj/item/modular_computer))
 		if(src.allowed(usr))
 			if(emagged)
 				to_chat(user, "<span class='notice'>The turret control is unresponsive.</span>")

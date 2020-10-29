@@ -39,8 +39,8 @@
 	var/last_range
 	var/last_power
 
-/obj/effect/fusion_em_field/Initialize(mapload, var/obj/machinery/power/fusion_core/new_owned_core)
-	. = ..()
+/obj/effect/fusion_em_field/New(loc, var/obj/machinery/power/fusion_core/new_owned_core)
+	..()
 
 	set_light(light_min_power, light_min_range / 10, light_min_range)
 	last_range = light_min_range
@@ -48,7 +48,7 @@
 
 	owned_core = new_owned_core
 	if(!owned_core)
-		return INITIALIZE_HINT_QDEL
+		qdel(src)
 
 	//create the gimmicky things to handle field collisions
 	var/obj/effect/fusion_particle_catcher/catcher
@@ -91,7 +91,7 @@
 	var/added_particles = FALSE
 	var/datum/gas_mixture/uptake_gas = owned_core.loc.return_air()
 	if(uptake_gas)
-		uptake_gas = uptake_gas.remove_by_flag(MAT_FLAG_FUSION_FUEL, rand(50,100), TRUE)
+		uptake_gas = uptake_gas.remove_by_flag(XGM_GAS_FUSION_FUEL, rand(50,100))
 	if(uptake_gas && uptake_gas.total_moles)
 		for(var/gasname in uptake_gas.gas)
 			if(uptake_gas.gas[gasname]*10 > reactants[gasname])
@@ -207,7 +207,6 @@
 	return plasma_temperature < 1000
 
 /obj/effect/fusion_em_field/proc/Rupture()
-	set waitfor = FALSE
 	visible_message("<span class='danger'>\The [src] shudders like a dying animal before flaring to eye-searing brightness and rupturing!</span>")
 	set_light(1, 0.1, 15, 2, "#ccccff")
 	empulse(get_turf(src), ceil(plasma_temperature/1000), ceil(plasma_temperature/300))
@@ -260,6 +259,8 @@
 	if(istype(T))
 		var/datum/gas_mixture/plasma
 		for(var/reactant in reactants)
+			if(!gas_data.name[reactant])
+				continue
 			if(!plasma)
 				plasma = new
 			plasma.adjust_gas(reactant, max(1,round(reactants[reactant]*0.1)), 0) // *0.1 to compensate for *10 when uptaking gas.
@@ -367,7 +368,7 @@
 			for(var/cur_s_react in possible_s_reacts)
 				if(possible_s_reacts[cur_s_react] < 1)
 					continue
-				var/decl/fusion_reaction/cur_reaction = SSmaterials.get_fusion_reaction(cur_p_react, cur_s_react)
+				var/decl/fusion_reaction/cur_reaction = get_fusion_reaction(cur_p_react, cur_s_react)
 				if(cur_reaction && plasma_temperature >= cur_reaction.minimum_energy_level)
 					LAZYDISTINCTADD(possible_reactions, cur_reaction)
 

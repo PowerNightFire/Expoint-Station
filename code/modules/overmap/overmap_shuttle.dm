@@ -26,17 +26,16 @@
 	if(!src.try_consume_fuel()) //insufficient fuel
 		for(var/area/A in shuttle_area)
 			for(var/mob/living/M in A)
-				M.show_message(SPAN_WARNING("You hear the shuttle engines sputter... perhaps it doesn't have enough fuel?"), AUDIBLE_MESSAGE,
-				SPAN_WARNING("The shuttle shakes but fails to take off."), VISIBLE_MESSAGE)
+				M.show_message("<spawn class='warning'>You hear the shuttle engines sputter... perhaps it doesn't have enough fuel?", AUDIBLE_MESSAGE,
+				"<spawn class='warning'>The shuttle shakes but fails to take off.", VISIBLE_MESSAGE)
 				return 0 //failure!
-	return 1 //sucess, continue with launch
+	return 1 //success, continue with launch
 
 /datum/shuttle/autodock/overmap/proc/can_go()
 	if(!next_location)
 		return FALSE
 	if(moving_status == SHUTTLE_INTRANSIT)
 		return FALSE //already going somewhere, current_location may be an intransit location instead of in a sector
-
 	return get_dist(waypoint_sector(current_location), waypoint_sector(next_location)) <= range
 
 /datum/shuttle/autodock/overmap/can_launch()
@@ -59,10 +58,7 @@
 
 /datum/shuttle/autodock/overmap/proc/set_destination(var/obj/effect/shuttle_landmark/A)
 	if(A != current_location)
-		if(next_location)
-			next_location.landmark_deselected(src)
 		next_location = A
-		next_location.landmark_selected(src)
 
 /datum/shuttle/autodock/overmap/proc/get_possible_destinations()
 	var/list/res = list()
@@ -83,26 +79,26 @@
 		return "None"
 	return "[waypoint_sector(next_location)] - [next_location]"
 
-/datum/shuttle/autodock/overmap/proc/try_consume_fuel() //returns 1 if sucessful, returns 0 if error (like insufficient fuel)
+/datum/shuttle/autodock/overmap/proc/try_consume_fuel() //returns 1 if successful, returns 0 if error (like insufficient fuel)
 	if(!fuel_consumption)
 		return 1 //shuttles with zero fuel consumption are magic and can always launch
 	if(!fuel_ports.len)
 		return 0 //Nowhere to get fuel from
-	var/list/obj/item/tank/fuel_tanks = list()
+	var/list/obj/item/weapon/tank/fuel_tanks = list()
 	for(var/obj/structure/FP in fuel_ports) //loop through fuel ports and assemble list of all fuel tanks
-		var/obj/item/tank/FT = locate() in FP
+		var/obj/item/weapon/tank/FT = locate() in FP
 		if(FT)
 			fuel_tanks += FT
 	if(!fuel_tanks.len)
 		return 0 //can't launch if you have no fuel TANKS in the ports
 	var/total_flammable_gas_moles = 0
-	for(var/obj/item/tank/FT in fuel_tanks)
+	for(var/obj/item/weapon/tank/FT in fuel_tanks)
 		total_flammable_gas_moles += FT.air_contents.get_by_flag(XGM_GAS_FUEL)
 	if(total_flammable_gas_moles < fuel_consumption) //not enough fuel
 		return 0
 	// We are going to succeed if we got to here, so start consuming that fuel
 	var/fuel_to_consume = fuel_consumption
-	for(var/obj/item/tank/FT in fuel_tanks) //loop through tanks, consume their fuel one by one
+	for(var/obj/item/weapon/tank/FT in fuel_tanks) //loop through tanks, consume their fuel one by one
 		var/fuel_available = FT.air_contents.get_by_flag(XGM_GAS_FUEL)
 		if(!fuel_available) // Didn't even have fuel.
 			continue
@@ -128,11 +124,11 @@
 
 /obj/structure/fuel_port/Initialize()
 	. = ..()
-	new /obj/item/tank/hydrogen(src)
+	new /obj/item/weapon/tank/hydrogen(src)
 
-/obj/structure/fuel_port/attack_hand(mob/user)
+/obj/structure/fuel_port/attack_hand(mob/user as mob)
 	if(!opened)
-		to_chat(user, SPAN_WARNING("The door is secured tightly. You'll need a crowbar to open it."))
+		to_chat(user, "<spawn class='notice'>The door is secured tightly. You'll need a crowbar to open it.")
 		return
 	else if(contents.len > 0)
 		user.put_in_hands(contents[1])
@@ -147,19 +143,19 @@
 	else
 		icon_state = icon_closed
 
-/obj/structure/fuel_port/attackby(obj/item/W, mob/user)
+/obj/structure/fuel_port/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isCrowbar(W))
 		if(opened)
-			to_chat(user, SPAN_NOTICE("You tightly shut \the [src] door."))
+			to_chat(user, "<spawn class='notice'>You tightly shut \the [src] door.")
 			playsound(src.loc, 'sound/effects/locker_close.ogg', 25, 0, -3)
 			opened = 0
 		else
-			to_chat(user, SPAN_NOTICE("You open up \the [src] door."))
+			to_chat(user, "<spawn class='notice'>You open up \the [src] door.")
 			playsound(src.loc, 'sound/effects/locker_open.ogg', 15, 1, -3)
 			opened = 1
-	else if(istype(W,/obj/item/tank))
+	else if(istype(W,/obj/item/weapon/tank))
 		if(!opened)
-			to_chat(user, SPAN_WARNING("\The [src] door is still closed!"))
+			to_chat(user, "<spawn class='warning'>\The [src] door is still closed!")
 			return
 		if(contents.len == 0)
 			user.unEquip(W, src)

@@ -19,28 +19,19 @@ GLOBAL_LIST_INIT(default_uplink_source_priority, list(
 	desc = NO_GUARANTEE_NO_EXTRA_COST_DESC("a PDA")
 
 /decl/uplink_source/pda/setup_uplink_source(var/mob/M, var/amount)
-
 	var/obj/item/modular_computer/pda/P = find_in_mob(M, /obj/item/modular_computer/pda)
-	if(!P)
-		return SETUP_FAILED
-
-	var/datum/extension/assembly/assembly = get_extension(P, /datum/extension/assembly)
-	if(!assembly)
-		return SETUP_FAILED
-
-	var/obj/item/stock_parts/computer/hard_drive/HDD = assembly.get_component(PART_HDD)
-	if(!HDD)
+	if(!P || !P.hard_drive)
 		return SETUP_FAILED
 
 	var/pda_pass = "[rand(100,999)] [pick(GLOB.greek_letters)]"
-	var/obj/item/uplink/T = new(P, M.mind, amount)
+	var/obj/item/device/uplink/T = new(P, M.mind, amount)
 	P.hidden_uplink = T
 	var/datum/computer_file/program/uplink/program = new(pda_pass)
-	if(!HDD.try_store_file(program))
-		HDD.remove_file(HDD.find_file_by_name(program.filename))	//Maybe it already has a fake copy.
-	if(!HDD.try_store_file(program))
+	if(!P.hard_drive.try_store_file(program))
+		P.hard_drive.remove_file(P.hard_drive.find_file_by_name(program.filename))	//Maybe it already has a fake copy.
+	if(!P.hard_drive.try_store_file(program))
 		return SETUP_FAILED	//Not enough space or other issues.
-	HDD.store_file(program)
+	P.hard_drive.store_file(program)
 	to_chat(M, "<span class='notice'>A portable object teleportation relay has been installed in your [P.name]. Simply enter the code \"[pda_pass]\" in TaxQuickly program to unlock its hidden features.</span>")
 	M.StoreMemory("<B>Uplink passcode:</B> [pda_pass] ([P.name]).", /decl/memory_options/system)
 
@@ -49,7 +40,7 @@ GLOBAL_LIST_INIT(default_uplink_source_priority, list(
 	desc = NO_GUARANTEE_NO_EXTRA_COST_DESC("a radio")
 
 /decl/uplink_source/radio/setup_uplink_source(var/mob/M, var/amount)
-	var/obj/item/radio/R = find_in_mob(M, /obj/item/radio)
+	var/obj/item/device/radio/R = find_in_mob(M, /obj/item/device/radio)
 	if(!R)
 		return SETUP_FAILED
 
@@ -63,7 +54,7 @@ GLOBAL_LIST_INIT(default_uplink_source_priority, list(
 			freq += 1
 
 	freq = freqlist[rand(1, freqlist.len)]
-	var/obj/item/uplink/T = new(R, M.mind, amount)
+	var/obj/item/device/uplink/T = new(R, M.mind, amount)
 	R.hidden_uplink = T
 	R.traitor_frequency = freq
 	to_chat(M, "<span class='notice'>A portable object teleportation relay has been installed in your [R.name]. Simply dial the frequency [format_frequency(freq)] to unlock its hidden features.</span>")
@@ -81,7 +72,7 @@ GLOBAL_LIST_INIT(default_uplink_source_priority, list(
 	if(!head)
 		return SETUP_FAILED
 
-	var/obj/item/implant/uplink/U = new(H, round(amount * 0.8))
+	var/obj/item/weapon/implant/uplink/U = new(H, round(amount * 0.8))
 	U.imp_in = H
 	U.implanted = TRUE
 	U.part = head
@@ -94,7 +85,7 @@ GLOBAL_LIST_INIT(default_uplink_source_priority, list(
 	desc = "Teleports an uplink unit to your location. Has 30% more TC."
 
 /decl/uplink_source/unit/setup_uplink_source(var/mob/M, var/amount)
-	var/obj/item/radio/uplink/U = new(M, M.mind, round(amount * 1.3))
+	var/obj/item/device/radio/uplink/U = new(M, M.mind, round(amount * 1.3))
 	put_on_mob(M, U, "\A [U]")
 
 /decl/uplink_source/telecrystals

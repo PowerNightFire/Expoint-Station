@@ -8,19 +8,17 @@
 	var/min_bruised_damage = 10       // Damage before considered bruised
 	var/damage_reduction = 0.5     //modifier for internal organ injury
 
-/obj/item/organ/internal/Initialize(mapload, datum/dna/given_dna)
+/obj/item/organ/internal/New(var/mob/living/carbon/holder)
 	if(max_damage)
 		min_bruised_damage = Floor(max_damage / 4)
-	. = ..()
-	if(iscarbon(loc))
-		var/mob/living/carbon/holder = loc
+	..()
+	if(istype(holder))
 		holder.internal_organs |= src
 
 		var/mob/living/carbon/human/H = holder
 		if(istype(H))
 			var/obj/item/organ/external/E = H.get_organ(parent_organ)
 			if(!E)
-				. = INITIALIZE_HINT_QDEL
 				CRASH("[src] spawned in [holder] without a parent organ: [parent_organ].")
 			E.internal_organs |= src
 
@@ -71,7 +69,7 @@
 		return 0 //organs don't work very well in the body when they aren't properly attached
 
 	// robotic organs emulate behavior of the equivalent flesh organ of the species
-	if(BP_IS_PROSTHETIC(src) || !species)
+	if(BP_IS_ROBOTIC(src) || !species)
 		species = target.species
 
 	..()
@@ -101,13 +99,13 @@
 /obj/item/organ/internal/is_usable()
 	return ..() && !is_broken()
 
-/obj/item/organ/internal/robotize(var/company, var/skip_prosthetics, var/keep_organs, var/apply_material = /decl/material/solid/metal/steel)
+/obj/item/organ/internal/robotize()
 	..()
 	min_bruised_damage += 5
 	min_broken_damage += 10
 
 /obj/item/organ/internal/proc/getToxLoss()
-	if(BP_IS_PROSTHETIC(src))
+	if(BP_IS_ROBOTIC(src))
 		return damage * 0.5
 	return damage
 
@@ -129,7 +127,7 @@ obj/item/organ/internal/take_general_damage(var/amount, var/silent = FALSE)
 	take_internal_damage(amount, silent)
 
 /obj/item/organ/internal/proc/take_internal_damage(amount, var/silent=0)
-	if(BP_IS_PROSTHETIC(src))
+	if(BP_IS_ROBOTIC(src))
 		damage = between(0, src.damage + (amount * 0.8), max_damage)
 	else
 		damage = between(0, src.damage + amount, max_damage)
@@ -159,12 +157,6 @@ obj/item/organ/internal/take_general_damage(var/amount, var/silent = FALSE)
 			. = "decaying [.]"
 		else
 			. = "necrotic [.]"
-	if(BP_IS_CRYSTAL(src))
-		. = "crystalline "
-	else if(BP_IS_ASSISTED(src))
-		. = "assisted "
-	else if(BP_IS_PROSTHETIC(src))
-		. = "mechanical "
 	. = "[.][name]"
 
 /obj/item/organ/internal/Process()
@@ -172,7 +164,7 @@ obj/item/organ/internal/take_general_damage(var/amount, var/silent = FALSE)
 	handle_regeneration()
 
 /obj/item/organ/internal/proc/handle_regeneration()
-	if(!damage || BP_IS_PROSTHETIC(src) || !owner || owner.chem_effects[CE_TOXIN] || owner.is_asystole())
+	if(!damage || BP_IS_ROBOTIC(src) || !owner || owner.chem_effects[CE_TOXIN] || owner.is_asystole())
 		return
 	if(damage < 0.1*max_damage)
 		heal_damage(0.1)
@@ -197,7 +189,7 @@ obj/item/organ/internal/take_general_damage(var/amount, var/silent = FALSE)
 		. += "[get_wound_severity(get_scarring_level())] scarring"
 
 /obj/item/organ/internal/emp_act(severity)
-	if(!BP_IS_PROSTHETIC(src))
+	if(!BP_IS_ROBOTIC(src))
 		return
 	switch (severity)
 		if (1)

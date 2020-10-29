@@ -4,10 +4,10 @@
 
 /obj/structure/closet/malf/suits/WillContain()
 	return list(
-		/obj/item/tank/jetpack/void,
+		/obj/item/weapon/tank/jetpack/void,
 		/obj/item/clothing/mask/breath,
 		/obj/item/clothing/head/helmet/space/void,
 		/obj/item/clothing/suit/space/void,
-		/obj/item/crowbar,
-		/obj/item/cell,
-		/obj/item/multitool)
+		/obj/item/weapon/crowbar,
+		/obj/item/weapon/cell,
+		/obj/item/device/multitool)

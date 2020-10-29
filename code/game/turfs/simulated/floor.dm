@@ -3,24 +3,26 @@
 	icon = 'icons/turf/flooring/plating.dmi'
 	icon_state = "plating"
 	permit_ao = TRUE
-	thermal_conductivity = 0.040
-	heat_capacity = 10000
-	explosion_resistance = 1
 
 	// Damage to flooring.
 	var/broken
 	var/burnt
+
 	// Plating data.
 	var/base_name = "plating"
 	var/base_desc = "The naked hull."
 	var/base_icon = 'icons/turf/flooring/plating.dmi'
 	var/base_icon_state = "plating"
 	var/base_color = COLOR_WHITE
+
 	// Flooring data.
 	var/flooring_override
 	var/initial_flooring
 	var/decl/flooring/flooring
 	var/mineral = DEFAULT_WALL_MATERIAL
+
+	thermal_conductivity = 0.040
+	heat_capacity = 10000
 	var/lava = 0
 
 /turf/simulated/floor/is_plating()
@@ -29,8 +31,8 @@
 /turf/simulated/floor/protects_atom(var/atom/A)
 	return (A.level <= 1 && !is_plating()) || ..()
 
-/turf/simulated/floor/Initialize(var/ml, var/floortype)
-	. = ..(ml)
+/turf/simulated/floor/New(var/newloc, var/floortype)
+	..(newloc)
 	if(!floortype && initial_flooring)
 		floortype = initial_flooring
 	if(floortype)
@@ -92,7 +94,7 @@
 	initial_gas = null
 
 /turf/simulated/floor/shuttle_ceiling/air
-	initial_gas = list(/decl/material/gas/oxygen = MOLES_O2STANDARD, /decl/material/gas/nitrogen = MOLES_N2STANDARD)
+	initial_gas = list(GAS_OXYGEN = MOLES_O2STANDARD, GAS_NITROGEN = MOLES_N2STANDARD)
 
 /turf/simulated/floor/is_floor()
 	return TRUE

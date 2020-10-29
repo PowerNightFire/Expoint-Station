@@ -9,10 +9,15 @@
 				break
 	return fluid_can_pass
 
+/turf/proc/add_fluid(var/amount, var/fluid)
+	if(!flooded)
+		var/obj/effect/fluid/F = locate() in src
+		if(!F) F = new(src)
+		SET_FLUID_DEPTH(F, F.fluid_amount + amount)
+
 /turf/proc/remove_fluid(var/amount = 0)
 	var/obj/effect/fluid/F = locate() in src
-	if(F)
-		F.reagents.remove_any(amount)
+	if(F) LOSE_FLUID(F, amount)
 
 /turf/return_fluid()
 	return (locate(/obj/effect/fluid) in contents)
@@ -29,18 +34,15 @@
 	return (flooded || (!absolute && check_fluid_depth(lying_mob ? FLUID_OVER_MOB_HEAD : FLUID_DEEP)))
 
 /turf/check_fluid_depth(var/min)
-	. = (get_fluid_depth() >= min)
+	..()
+	return (get_fluid_depth() >= min)
 
 /turf/get_fluid_depth()
+	..()
 	if(is_flooded(absolute=1))
 		return FLUID_MAX_DEPTH
 	var/obj/effect/fluid/F = return_fluid()
-	if(istype(F))
-		return F.reagents.total_volume
-	var/obj/structure/glass_tank/aquarium = locate() in contents
-	if(aquarium && aquarium.reagents && aquarium.reagents.total_volume)
-		return aquarium.reagents.total_volume * TANK_WATER_MULTIPLIER
-	return 0
+	return (istype(F) ? F.fluid_amount : 0 )
 
 /turf/ChangeTurf(var/turf/N, var/tell_universe=1, var/force_lighting_update = 0)
 	. = ..()
@@ -73,9 +75,10 @@
 
 	// Wake up ourself!
 	if(flooded)
-		ADD_ACTIVE_FLUID_SOURCE(src)
-		for(var/obj/effect/fluid/F in src)
-			qdel(F)
+		var/flooded_a_neighbor = 0
+		FLOOD_TURF_NEIGHBORS(src, TRUE)
+		if(flooded_a_neighbor)
+			ADD_ACTIVE_FLUID_SOURCE(src)
 	else
 		REMOVE_ACTIVE_FLUID_SOURCE(src)
 		for(var/obj/effect/fluid/F in src)

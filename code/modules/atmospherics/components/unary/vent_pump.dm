@@ -41,13 +41,11 @@
 
 	var/controlled = TRUE  //if we should register with an air alarm on spawn
 	build_icon_state = "uvent"
-	var/sound_id
-	var/datum/sound_token/sound_token
 
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc/buildable,
-		/obj/item/stock_parts/radio/receiver/buildable,
-		/obj/item/stock_parts/radio/transmitter/on_event/buildable,
+		/obj/item/weapon/stock_parts/power/apc,
+		/obj/item/weapon/stock_parts/radio/receiver,
+		/obj/item/weapon/stock_parts/radio/transmitter/on_event,
 	)
 	public_variables = list(
 		/decl/public_access/public_variable/input_toggle,
@@ -73,11 +71,8 @@
 	)
 
 	frame_type = /obj/item/pipe
-	construct_state = /decl/machine_construction/default/panel_closed/item_chassis
-	base_type = /obj/machinery/atmospherics/unary/vent_pump/buildable
-
-/obj/machinery/atmospherics/unary/vent_pump/buildable
-	uncreated_component_parts = null
+	construct_state = /decl/machine_construction/default/item_chassis
+	base_type = /obj/machinery/atmospherics/unary/vent_pump
 
 /obj/machinery/atmospherics/unary/vent_pump/on
 	use_power = POWER_USE_IDLE
@@ -104,19 +99,16 @@
 	. = ..()
 	air_contents.volume = ATMOS_DEFAULT_VOLUME_PUMP
 	icon = null
-	update_sound()
 
 /obj/machinery/atmospherics/unary/vent_pump/Destroy()
-	QDEL_NULL(sound_token)
 	var/area/A = get_area(src)
 	if(A)
-		GLOB.name_set_event.unregister(A, src, .proc/change_area_name)
 		A.air_vent_info -= id_tag
 		A.air_vent_names -= id_tag
 	. = ..()
 
 /obj/machinery/atmospherics/unary/vent_pump/high_volume
-	name = "large air vent"
+	name = "Large Air Vent"
 	power_channel = EQUIP
 	power_rating = 45000
 
@@ -195,15 +187,13 @@
 
 	//Figure out the target pressure difference
 	var/pressure_delta = get_pressure_delta(environment)
-	var/transfer_moles
-	//src.visible_message("DEBUG >>> [src]: pressure_delta = [pressure_delta]")
 
 	if((environment.temperature || air_contents.temperature) && pressure_delta > 0.5)
 		if(pump_direction) //internal -> external
-			transfer_moles = calculate_transfer_moles(air_contents, environment, pressure_delta)
+			var/transfer_moles = calculate_transfer_moles(air_contents, environment, pressure_delta)
 			power_draw = pump_gas(src, air_contents, environment, transfer_moles, power_rating)
 		else //external -> internal
-			transfer_moles = calculate_transfer_moles(environment, air_contents, pressure_delta, (network)? network.volume : 0)
+			var/transfer_moles = calculate_transfer_moles(environment, air_contents, pressure_delta, (network)? network.volume : 0)
 
 			//limit flow rate from turfs
 			transfer_moles = min(transfer_moles, environment.total_moles*air_contents.volume/environment.volume)	//group_multiplier gets divided out here
@@ -215,11 +205,12 @@
 		if(pump_direction && pressure_checks == PRESSURE_CHECK_EXTERNAL) //99% of all vents
 			hibernate = world.time + (rand(100,200))
 
-	if(network && (transfer_moles > 0))
-		network.update = 1
+
 	if (power_draw >= 0)
 		last_power_draw = power_draw
 		use_power_oneoff(power_draw)
+		if(network)
+			network.update = 1
 
 	return 1
 
@@ -245,22 +236,14 @@
 
 /obj/machinery/atmospherics/unary/vent_pump/Initialize()
 	if (!id_tag)
-		id_tag = "[sequential_id("obj/machinery")]"
+		id_tag = num2text(sequential_id("obj/machinery"))
 	if(controlled)
 		var/area/A = get_area(src)
 		if(A && !A.air_vent_names[id_tag])
 			var/new_name = "[A.name] Vent Pump #[A.air_vent_names.len+1]"
 			A.air_vent_names[id_tag] = new_name
 			SetName(new_name)
-			GLOB.name_set_event.register(A, src, .proc/change_area_name)
 	. = ..()
-
-/obj/machinery/atmospherics/unary/vent_pump/proc/change_area_name(var/area/A, var/old_area_name, var/new_area_name)
-	if(get_area(src) != A)
-		return
-	var/new_name = replacetext(A.air_vent_names[id_tag], old_area_name, new_area_name)
-	SetName(new_name)
-	A.air_vent_names[id_tag] = new_name
 
 /obj/machinery/atmospherics/unary/vent_pump/proc/purge()
 	pressure_checks &= ~PRESSURE_CHECK_EXTERNAL
@@ -278,7 +261,7 @@
 /obj/machinery/atmospherics/unary/vent_pump/attackby(obj/item/W, mob/user)
 	if(isWelder(W))
 
-		var/obj/item/weldingtool/WT = W
+		var/obj/item/weapon/weldingtool/WT = W
 
 		if(!WT.isOn())
 			to_chat(user, "<span class='notice'>The welding tool needs to be on to start this task.</span>")
@@ -309,13 +292,9 @@
 			"<span class='notice'>You [welded ? "weld \the [src] shut" : "unweld \the [src]"].</span>", \
 			"You hear welding.")
 		return 1
-	if(isMultitool(W))
-		var/datum/browser/written/popup = new(user, "Vent Configuration Utility", "[src] Configuration Panel", 600, 200)
-		popup.set_content(jointext(get_console_data(),"<br>"))
-		popup.open()
-		return TRUE
 
-	return ..()
+	else
+		..()
 
 /obj/machinery/atmospherics/unary/vent_pump/examine(mob/user, distance)
 	. = ..()
@@ -326,18 +305,37 @@
 	if(welded)
 		to_chat(user, "It seems welded shut.")
 
-/obj/machinery/atmospherics/unary/vent_pump/cannot_transition_to(state_path, mob/user)
-	if(state_path == /decl/machine_construction/default/deconstructed)
-		if(!(stat & NOPOWER) && use_power)
-			return SPAN_NOTICE("You cannot unwrench \the [src], turn it off first.")
+/obj/machinery/atmospherics/unary/vent_pump/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
+	if(isWrench(W))
+		if (!(stat & NOPOWER) && use_power)
+			to_chat(user, "<span class='warning'>You cannot unwrench \the [src], turn it off first.</span>")
+			return 1
 		var/turf/T = src.loc
 		if (node && node.level==1 && isturf(T) && !T.is_plating())
-			return SPAN_NOTICE("You must remove the plating first.")
+			to_chat(user, "<span class='warning'>You must remove the plating first.</span>")
+			return 1
 		var/datum/gas_mixture/int_air = return_air()
 		var/datum/gas_mixture/env_air = loc.return_air()
 		if ((int_air.return_pressure()-env_air.return_pressure()) > 2*ONE_ATMOSPHERE)
-			return SPAN_NOTICE("You cannot unwrench \the [src], it is too exerted due to internal pressure.")
-	return ..()
+			to_chat(user, "<span class='warning'>You cannot unwrench \the [src], it is too exerted due to internal pressure.</span>")
+			add_fingerprint(user)
+			return 1
+		playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
+		to_chat(user, "<span class='notice'>You begin to unfasten \the [src]...</span>")
+		if (do_after(user, 40, src))
+			user.visible_message( \
+				"<span class='notice'>\The [user] unfastens \the [src].</span>", \
+				"<span class='notice'>You have unfastened \the [src].</span>", \
+				"You hear a ratchet.")
+			new /obj/item/pipe(loc, src)
+			qdel(src)
+	if(isMultitool(W))
+		var/datum/browser/popup = new(user, "Vent Configuration Utility", "[src] Configuration Panel", 600, 200)
+		popup.set_content(jointext(get_console_data(),"<br>"))
+		popup.open()
+		return
+	else
+		return ..()
 
 /obj/machinery/atmospherics/unary/vent_pump/proc/get_console_data()
 	. = list()
@@ -424,7 +422,7 @@
 /decl/public_access/public_variable/pressure_bound/external/write_var(obj/machinery/atmospherics/unary/vent_pump/machine, new_value)
 	if(new_value == "default")
 		new_value = machine.external_pressure_bound_default
-	new_value = Clamp(new_value, 0, MAX_PUMP_PRESSURE)
+	new_value = Clamp(text2num(new_value), 0, MAX_PUMP_PRESSURE)
 	. = ..()
 	if(.)
 		machine.external_pressure_bound = new_value
@@ -469,11 +467,11 @@
 
 /decl/stock_part_preset/radio/receiver/vent_pump/tank
 	frequency = ATMOS_TANK_FREQ
-	filter = null
+	filter = RADIO_ATMOSIA
 
 /decl/stock_part_preset/radio/event_transmitter/vent_pump/tank
 	frequency = ATMOS_TANK_FREQ
-	filter = null
+	filter = RADIO_ATMOSIA
 
 /obj/machinery/atmospherics/unary/vent_pump/tank
 	controlled = FALSE
@@ -491,11 +489,10 @@
 
 /decl/stock_part_preset/radio/receiver/vent_pump/external_air
 	frequency = EXTERNAL_AIR_FREQ
-	filter = null
 
 /decl/stock_part_preset/radio/event_transmitter/vent_pump/external_air
 	frequency = EXTERNAL_AIR_FREQ
-	filter = null
+	filter = RADIO_AIRLOCK
 
 /obj/machinery/atmospherics/unary/vent_pump/high_volume/external_air
 	controlled = FALSE
@@ -506,11 +503,10 @@
 
 /decl/stock_part_preset/radio/receiver/vent_pump/shuttle
 	frequency = SHUTTLE_AIR_FREQ
-	filter = null
 
 /decl/stock_part_preset/radio/event_transmitter/vent_pump/shuttle
 	frequency = SHUTTLE_AIR_FREQ
-	filter = null
+	filter = RADIO_AIRLOCK
 
 /obj/machinery/atmospherics/unary/vent_pump/high_volume/shuttle
 	controlled = FALSE
@@ -529,13 +525,27 @@
 		/decl/stock_part_preset/radio/event_transmitter/vent_pump/shuttle/aux = 1
 	)
 
+/decl/stock_part_preset/radio/receiver/vent_pump/airlock
+	frequency = AIRLOCK_AIR_FREQ
+
+/decl/stock_part_preset/radio/event_transmitter/vent_pump/airlock
+	frequency = AIRLOCK_AIR_FREQ
+	filter = RADIO_AIRLOCK
+
+/obj/machinery/atmospherics/unary/vent_pump/high_volume/airlock
+	controlled = FALSE
+	stock_part_presets = list(
+		/decl/stock_part_preset/radio/receiver/vent_pump/airlock = 1,
+		/decl/stock_part_preset/radio/event_transmitter/vent_pump/airlock = 1
+	)
+
 /decl/stock_part_preset/radio/receiver/vent_pump/engine
 	frequency = ATMOS_ENGINE_FREQ
-	filter = null
+	filter = RADIO_ATMOSIA
 
 /decl/stock_part_preset/radio/event_transmitter/vent_pump/engine
 	frequency = ATMOS_ENGINE_FREQ
-	filter = null
+	filter = RADIO_ATMOSIA
 
 /obj/machinery/atmospherics/unary/vent_pump/engine
 	name = "Engine Core Vent"
@@ -550,19 +560,6 @@
 /obj/machinery/atmospherics/unary/vent_pump/engine/Initialize()
 	. = ..()
 	air_contents.volume = ATMOS_DEFAULT_VOLUME_PUMP + 500 //meant to match air injector
-	
-/obj/machinery/atmospherics/unary/vent_pump/power_change()
-	. = ..()
-	if(.)
-		update_sound()
-
-/obj/machinery/atmospherics/unary/vent_pump/proc/update_sound()
-	if(!sound_id)
-		sound_id = "[sequential_id("vent_z[z]")]"
-	if(can_pump())
-		sound_token = GLOB.sound_player.PlayLoopingSound(src, sound_id, 'sound/machines/vent_hum.ogg', 15, range = 7, falloff = 4)
-	else
-		QDEL_NULL(sound_token)
 
 #undef DEFAULT_PRESSURE_DELTA
 

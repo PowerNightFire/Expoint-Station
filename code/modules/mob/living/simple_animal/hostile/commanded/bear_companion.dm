@@ -12,13 +12,12 @@
 
 	density = 1
 
-	natural_weapon = /obj/item/natural_weapon/claws
+	attacktext = "swatted"
+	melee_damage_lower = 10
+	melee_damage_upper = 10
 	can_escape = TRUE
 
-	max_gas = list(
-		/decl/material/gas/chlorine = 2, 
-		/decl/material/gas/carbon_dioxide = 5
-	)
+	max_gas = list(GAS_PHORON = 2, GAS_CO2 = 5)
 
 	response_help = "pets"
 	response_harm = "hits"
@@ -31,7 +30,7 @@
 	if(.)
 		src.emote("roars in rage!")
 
-/mob/living/simple_animal/hostile/commanded/bear/attack_hand(mob/living/carbon/human/M)
+/mob/living/simple_animal/hostile/commanded/bear/attack_hand(mob/living/carbon/human/M as mob)
 	..()
 	if(M.a_intent == I_HURT)
 		src.emote("roars in rage!")

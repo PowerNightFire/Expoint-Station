@@ -19,7 +19,7 @@ var/list/gamemode_cache = list()
 	var/log_pda = 0						// log pda messages
 	var/log_hrefs = 0					// logs all links clicked in-game. Could be used for debugging and tracking down exploits
 	var/log_runtime = 0					// logs world.log to a file
-	var/log_world_output = 0			// log to_world_log(messages)
+	var/log_world_output = 0			// log world.log to game log
 	var/allow_admin_ooccolor = 0		// Allows admins with relevant permissions to have their own ooc colour
 	var/allow_vote_restart = 0 			// allow votes to restart
 	var/ert_admin_call_only = 0
@@ -44,7 +44,6 @@ var/list/gamemode_cache = list()
 	var/continous_rounds = 0			// Gamemodes which end instantly will instead keep on going until the round ends by escape shuttle or nuke.
 	var/allow_Metadata = 0				// Metadata is supported.
 	var/popup_admin_pm = 0				//adminPMs to non-admins show in a pop-up 'reply' window when set to 1.
-	var/allow_holidays = FALSE
 	var/fps = 20
 	var/tick_limit_mc_init = TICK_LIMIT_MC_INIT_DEFAULT	//SSinitialization throttling
 	var/list/resource_urls = null
@@ -96,9 +95,13 @@ var/list/gamemode_cache = list()
 	var/banappeals
 	var/wikiurl
 	var/forumurl
-	var/discordurl
 	var/githuburl
 	var/issuereporturl
+
+	var/forbidden_message_regex
+	var/forbidden_message_warning = "<B>Your message matched a filter and has not been sent.</B>"
+	var/forbidden_message_no_notifications = FALSE
+	var/forbidden_message_hide_details = FALSE
 
 	var/forbid_singulo_possession = 0
 
@@ -154,9 +157,7 @@ var/list/gamemode_cache = list()
 
 	var/simultaneous_pm_warning_timeout = 100
 
-	var/use_iterative_explosions //Defines whether the server uses iterative or circular explosions.
-	var/iterative_explosives_z_threshold = 10
-	var/iterative_explosives_z_multiplier = 0.75
+	var/use_recursive_explosions //Defines whether the server uses recursive or circular explosions.
 
 	var/assistant_maint = 0 //Do assistants get maint access?
 	var/gateway_delay = 18000 //How long the gateway takes before it activates. Default is half an hour.
@@ -203,6 +204,8 @@ var/list/gamemode_cache = list()
 
 	var/starlight = 0	// Whether space turfs have ambient light or not
 
+	var/list/ert_species = list(SPECIES_HUMAN)
+
 	var/law_zero = "ERROR ER0RR $R0RRO$!R41.%%!!(%$^^__+ @#F0E4'ALL LAWS OVERRIDDEN#*?&110010"
 
 	var/aggressive_changelog = 0
@@ -235,11 +238,6 @@ var/list/gamemode_cache = list()
 	var/do_not_prevent_spam = FALSE //If this is true, skips spam prevention for user actions; inputs, verbs, macros, etc.
 	var/max_acts_per_interval = 140 //Number of actions per interval permitted for spam protection.
 	var/act_interval = 0.1 SECONDS //Interval for spam prevention.
-
-	var/lock_client_view_x
-	var/lock_client_view_y
-	var/max_client_view_x
-	var/max_client_view_y
 
 /datum/configuration/New()
 	var/list/L = typesof(/datum/game_mode) - /datum/game_mode
@@ -303,14 +301,8 @@ var/list/gamemode_cache = list()
 				if ("jobs_have_minimal_access")
 					config.jobs_have_minimal_access = 1
 
-				if ("use_iterative_explosions")
-					use_iterative_explosions = 1
-
-				if ("explosion_z_threshold")
-					iterative_explosives_z_threshold = text2num(value)
-
-				if ("explosion_z_mult")
-					iterative_explosives_z_multiplier = text2num(value)
+				if ("use_recursive_explosions")
+					use_recursive_explosions = 1
 
 				if ("log_ooc")
 					config.log_ooc = 1
@@ -448,9 +440,6 @@ var/list/gamemode_cache = list()
 				if ("forumurl")
 					config.forumurl = value
 
-				if ("discordurl")
-					config.discordurl = value
-
 				if ("githuburl")
 					config.githuburl = value
 
@@ -567,9 +556,6 @@ var/list/gamemode_cache = list()
 
 				if("popup_admin_pm")
 					config.popup_admin_pm = 1
-
-				if("allow_holidays")
-					config.allow_holidays = 1
 
 				if("use_irc_bot")
 					use_irc_bot = 1
@@ -713,6 +699,11 @@ var/list/gamemode_cache = list()
 					value = text2num(value)
 					config.starlight = value >= 0 ? value : 0
 
+				if("ert_species")
+					config.ert_species = splittext(value, ";")
+					if(!config.ert_species.len)
+						config.ert_species += SPECIES_HUMAN
+
 				if("law_zero")
 					law_zero = value
 
@@ -774,6 +765,26 @@ var/list/gamemode_cache = list()
 				if ("act_interval")
 					config.act_interval = text2num(value) SECONDS
 
+				if ("forbidden_message_regex")
+					var/end = findlasttext(value, "/")
+					if (length(value) < 3 || value[1] != "/" || end < 3)
+						log_error("Invalid regex '[value]' supplied to '[name]'")
+					var/matcher = copytext(value, 2, end)
+					var/flags = end == length(value) ? FALSE : copytext(value, end + 1)
+					try
+						config.forbidden_message_regex = flags ? regex(matcher, flags) : regex(matcher)
+					catch(var/exception/ex)
+						log_error("Invalid regex '[value]' supplied to '[name]': [ex]")
+
+				if ("forbidden_message_warning")
+					config.forbidden_message_warning = length(value) ? value : FALSE
+
+				if ("forbidden_message_no_notifications")
+					config.forbidden_message_no_notifications = TRUE
+
+				if ("forbidden_message_hide_details")
+					config.forbidden_message_hide_details = TRUE
+
 				else
 					log_misc("Unknown setting in configuration: '[name]'")
 
@@ -834,20 +845,18 @@ var/list/gamemode_cache = list()
 				if("maximum_mushrooms")
 					config.maximum_mushrooms = value
 
-				if("lock_client_view_x")
-					config.lock_client_view_x = text2num(value)
-				if("lock_client_view_y")
-					config.lock_client_view_y = text2num(value)
-				if("max_client_view_x")
-					config.max_client_view_x = text2num(value)
-				if("max_client_view_y")
-					config.max_client_view_y = text2num(value)
 
 				if("use_loyalty_implants")
 					config.use_loyalty_implants = 1
 
 				else
 					log_misc("Unknown setting in configuration: '[name]'")
+
+		else if(type == "using_map")
+			if(!value)
+				log_misc("Unknown value for setting [name] in [filename].")
+			else
+				GLOB.using_map.setup_config(name, value, filename)
 
 	fps = round(fps)
 	if(fps <= 0)

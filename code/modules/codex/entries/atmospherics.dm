@@ -169,14 +169,14 @@
 /datum/codex_entry/atmos_power_pump
 	associated_paths = list(/obj/machinery/portable_atmospherics/powered/pump)
 	mechanics_text = "Invaluable for filling air in a room rapidly after a breach repair.  The internal gas container can be filled by \
-	connecting it to a connector port.  The pump can pump the air in (sucking) or out (blowing), at a specific target pressure.  The powercell inside can be \
+	connecting it to a connector port.  The pump can pump the air in (sucking) or out (blowing), at a specific target pressure.  The power cell inside can be \
 	replaced by using a screwdriver, and then adding a new cell.  A tank of gas can also be attached to the air pump."
 
 //Portable scrubbers
 /datum/codex_entry/atmos_power_scrubber
 	associated_paths = list(/obj/machinery/portable_atmospherics/powered/scrubber)
 	mechanics_text = "Filters the air, placing harmful gases into the internal gas container.  The container can be emptied by \
-	connecting it to a connector port.  The pump can pump the air in (sucking) or out (blowing), at a specific target pressure.  The powercell inside can be \
+	connecting it to a connector port.  The pump can pump the air in (sucking) or out (blowing), at a specific target pressure.  The power cell inside can be \
 	replaced by using a screwdriver, and then adding a new cell.  A tank of gas can also be attached to the scrubber. "
 
 //Meters
@@ -186,22 +186,22 @@
 
 //Pipe dispensers
 /datum/codex_entry/atmos_pipe_dispenser
-	associated_paths = list(/obj/machinery/fabricator/pipe)
+	associated_paths = list(/obj/machinery/pipedispenser)
 	mechanics_text = "This can be moved by using a wrench.  You will need to wrench it again when you want to use it.  You can put \
 	excess (atmospheric) pipes into the dispenser, as well.  The dispenser requires electricity to function."
 
 /datum/codex_entry/transfer_valve
-	associated_paths = list(/obj/item/transfer_valve)
+	associated_paths = list(/obj/item/device/transfer_valve)
 	mechanics_text = "This machine is used to merge the contents of two different gas tanks. Plug the tanks into the transfer, then open the valve to mix them together. You can also attach various assembly devices to trigger this process."
-	antag_text = "With a tank of hot hydrogen and cold oxygen, this benign little atmospheric device becomes an incredibly deadly bomb. You don't want to be anywhere near it when it goes off."
+	antag_text = "With a tank of hot phoron and cold oxygen, this benign little atmospheric device becomes an incredibly deadly bomb. You don't want to be anywhere near it when it goes off."
 
 /datum/codex_entry/gas_tank
-	associated_paths = list(/obj/item/tank)
+	associated_paths = list(/obj/item/weapon/tank)
 	mechanics_text = "These tanks are utilised to store any of the various types of gaseous substances. \
 	They can be attached to various portable atmospheric devices to be filled or emptied. <br>\
 	<br>\
 	Each tank is fitted with an emergency relief valve. This relief valve will open if the tank is pressurised to over ~3000kPa or heated to over 173?C. \
-	The valve itself will close after expending most or all of the contents into the air.<br>\
+	Normally the valve itself will close after expending most or all of the contents into the air, but can be forced open or closed with a screwdriver.<br>\
 	<br>\
 	Filling a tank such that experiences ~4000kPa of pressure will cause the tank to rupture, spilling out its contents and destroying the tank. \
 	Tanks filled over ~5000kPa will rupture rather violently, exploding with significant force."
@@ -210,7 +210,7 @@
 	Relatively easy to make, the single tank bomb requries no tank transfer valve, and is still a fairly formidable weapon that can be manufactured from any tank."
 
 /datum/codex_entry/gas_analyzer
-	associated_paths = list(/obj/item/scanner/gas)
+	associated_paths = list(/obj/item/device/scanner/gas)
 	mechanics_text = "A device that analyzes the gas contents of a tile or atmospherics devices. Has 3 modes: Default operates without \
 	additional output data; Moles and volume shows the moles per gas in the mixture and the total moles and volume; Gas \
 	traits and data describes the traits per gas, how it interacts with the world, and some of its property constants."

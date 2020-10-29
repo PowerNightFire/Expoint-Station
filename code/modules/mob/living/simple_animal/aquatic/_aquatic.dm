@@ -1,8 +1,10 @@
 /mob/living/simple_animal/aquatic
 	icon = 'icons/mob/simple_animal/aquatic.dmi'
 	turns_per_move = 5
+	attacktext = "bitten"
+	attack_sound = 'sound/weapons/bite.ogg'
 	speed = 4
-	mob_size = MOB_SIZE_SMALL
+	mob_size = MOB_SMALL
 	emote_see = list("glubs", "blubs", "bloops")
 
 	// They only really care if there's water around them or not.
@@ -10,15 +12,15 @@
 	min_gas = list()
 	minbodytemp = 0
 
-	meat_type = /obj/item/chems/food/snacks/fish
+	meat_type = /obj/item/weapon/reagent_containers/food/snacks/fish
 	meat_amount = 3
 	bone_amount = 5
 	skin_amount = 5
-	bone_material = /decl/material/solid/bone/fish
-	skin_material = /decl/material/solid/skin/fish
+	bone_material = MATERIAL_BONE_FISH
+	skin_material = MATERIAL_SKIN_FISH
 
-/mob/living/simple_animal/aquatic/Initialize()
-	. = ..()
+/mob/living/simple_animal/aquatic/New()
+	..()
 	default_pixel_x = rand(-12,12)
 	default_pixel_y = rand(-12,12)
 	pixel_x = default_pixel_x

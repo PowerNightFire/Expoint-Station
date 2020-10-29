@@ -125,7 +125,7 @@
 //////////////////////
 
 /obj/effect/meteor
-	name = "meteor"
+	name = "the concept of meteor"
 	desc = "You should probably run instead of gawking at this."
 	icon = 'icons/obj/meteor.dmi'
 	icon_state = "small"
@@ -137,7 +137,7 @@
 	pass_flags = PASS_FLAG_TABLE
 	var/heavy = 0
 	var/z_original
-	var/meteordrop = /obj/item/ore/iron
+	var/meteordrop = /obj/item/weapon/ore/iron
 	var/dropamt = 1
 	var/ismissile //missiles don't spin
 
@@ -146,8 +146,8 @@
 /obj/effect/meteor/proc/get_shield_damage()
 	return max(((max(hits, 2)) * (heavy + 1) * rand(30, 60)) / hitpwr , 0)
 
-/obj/effect/meteor/Initialize()
-	. = ..()
+/obj/effect/meteor/New()
+	..()
 	z_original = z
 
 /obj/effect/meteor/Initialize()
@@ -167,10 +167,10 @@
 /obj/effect/meteor/Destroy()
 	walk(src,0) //this cancels the walk_towards() proc
 	GLOB.meteor_list -= src
-	. = ..()
+	return ..()
 
-/obj/effect/meteor/Initialize()
-	. = ..()
+/obj/effect/meteor/New()
+	..()
 	if(!ismissile)
 		SpinAnimation()
 
@@ -187,11 +187,11 @@
 	//first bust whatever is in the turf
 	for(var/atom/A in T)
 		if(A != src && !A.CanPass(src, src.loc, 0.5, 0)) //only ram stuff that would actually block us
-			A.explosion_act(hitpwr)
+			A.ex_act(hitpwr)
 
 	//then, ram the turf if it still exists
 	if(T && !T.CanPass(src, src.loc, 0.5, 0))
-		T.explosion_act(hitpwr)
+		T.ex_act(hitpwr)
 
 //process getting 'hit' by colliding with a dense object
 //or randomly when ramming turfs
@@ -202,20 +202,19 @@
 		meteor_effect()
 		qdel(src)
 
-/obj/effect/meteor/explosion_act()
-	SHOULD_CALL_PARENT(FALSE)
+/obj/effect/meteor/ex_act()
 	return
 
-/obj/effect/meteor/attackby(obj/item/W, mob/user, params)
-	if(istype(W, /obj/item/pickaxe))
+/obj/effect/meteor/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
+	if(istype(W, /obj/item/weapon/pickaxe))
 		qdel(src)
 		return
 	..()
 
 /obj/effect/meteor/proc/make_debris()
-	if(meteordrop && dropamt)
-		for(var/throws = dropamt, throws > 0, throws--)
-			addtimer(CALLBACK(new meteordrop(get_turf(src)), /atom/movable/proc/throw_at, dest, 5, 10), 0)
+	for(var/throws = dropamt, throws > 0, throws--)
+		var/obj/item/O = new meteordrop(get_turf(src))
+		O.throw_at(dest, 5, 10)
 
 /obj/effect/meteor/proc/meteor_effect()
 	if(heavy)
@@ -224,7 +223,7 @@
 			if(!T || T.z != src.z)
 				continue
 			var/dist = get_dist(M.loc, src.loc)
-			shake_camera(M, (dist > 20 ? 0.5 SECONDS : 1 SECOND), (dist > 20 ? 1 : 3))
+			shake_camera(M, dist > 20 ? 3 : 5, dist > 20 ? 1 : 3)
 
 
 ///////////////////////
@@ -239,7 +238,7 @@
 	hits = 1
 	hitpwr = 3
 	dropamt = 1
-	meteordrop = /obj/item/ore/glass
+	meteordrop = /obj/item/weapon/ore/glass
 
 //Medium-sized
 /obj/effect/meteor/medium
@@ -268,7 +267,7 @@
 	icon_state = "flaming"
 	hits = 5
 	heavy = 1
-	meteordrop = /obj/item/ore/phosphorite
+	meteordrop = /obj/item/weapon/ore/phoron
 
 /obj/effect/meteor/flaming/meteor_effect()
 	..()
@@ -279,30 +278,31 @@
 	name = "glowing meteor"
 	icon_state = "glowing"
 	heavy = 1
-	meteordrop = /obj/item/ore/uranium
+	meteordrop = /obj/item/weapon/ore/uranium
 
 /obj/effect/meteor/irradiated/meteor_effect()
 	..()
 	explosion(src.loc, 0, 0, 4, 3, 0)
+	new /obj/effect/decal/cleanable/greenglow(get_turf(src))
 	SSradiation.radiate(src, 50)
 
 /obj/effect/meteor/golden
 	name = "golden meteor"
 	icon_state = "glowing"
 	desc = "Shiny! But also deadly."
-	meteordrop = /obj/item/ore/gold
+	meteordrop = /obj/item/weapon/ore/gold
 
 /obj/effect/meteor/silver
 	name = "silver meteor"
 	icon_state = "glowing_blue"
 	desc = "Shiny! But also deadly."
-	meteordrop = /obj/item/ore/silver
+	meteordrop = /obj/item/weapon/ore/silver
 
 /obj/effect/meteor/emp
 	name = "conducting meteor"
 	icon_state = "glowing_blue"
 	desc = "Hide your floppies!"
-	meteordrop = /obj/item/ore/osmium
+	meteordrop = /obj/item/weapon/ore/osmium
 	dropamt = 2
 
 /obj/effect/meteor/emp/meteor_effect()
@@ -322,7 +322,7 @@
 	hits = 10
 	hitpwr = 1
 	heavy = 1
-	meteordrop = /obj/item/ore/diamond	// Probably means why it penetrates the hull so easily before exploding.
+	meteordrop = /obj/item/weapon/ore/diamond	// Probably means why it penetrates the hull so easily before exploding.
 
 /obj/effect/meteor/tunguska/meteor_effect()
 	..()

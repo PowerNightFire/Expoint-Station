@@ -11,34 +11,30 @@
 
 /obj/item/stack
 	gender = PLURAL
-	origin_tech = "{'materials':1}"
-
+	origin_tech = list(TECH_MATERIAL = 1)
+	var/list/datum/stack_recipe/recipes
 	var/singular_name
 	var/plural_name
 	var/base_state
 	var/plural_icon_state
 	var/max_icon_state
 	var/amount = 1
-	var/list/initial_matter
-	var/matter_multiplier = 1
 	var/max_amount //also see stack recipes initialisation, param "max_res_amount" must be equal to this max_amount
-	var/stacktype  //determines whether different stack types can merge
-	var/build_type //used when directly applied to a turf
-	var/uses_charge
-	var/list/charge_costs
-	var/list/datum/matter_synth/synths
-	var/list/datum/stack_recipe/recipes
+	var/stacktype //determines whether different stack types can merge
+	var/build_type = null //used when directly applied to a turf
+	var/uses_charge = 0
+	var/list/charge_costs = null
+	var/list/datum/matter_synth/synths = null
 
-/obj/item/stack/Initialize(mapload, amount, material)
-
-	if(ispath(amount, /decl/material))
-		crash_with("Stack initialized with material ([amount]) instead of amount.")
-		material = amount
-	if (isnum(amount) && amount >= 1)
-		src.amount = amount
-	. = ..(mapload, material)
+/obj/item/stack/New(var/loc, var/amount=null)
 	if (!stacktype)
 		stacktype = type
+	if (amount >= 1)
+		src.amount = amount
+	..()
+
+/obj/item/stack/Initialize()
+	. = ..()
 	if(!plural_name)
 		plural_name = "[singular_name]s"
 
@@ -57,13 +53,10 @@
 		else
 			to_chat(user, "There is enough charge for [get_amount()].")
 
-/obj/item/stack/attack_self(mob/user)
+/obj/item/stack/attack_self(mob/user as mob)
 	list_recipes(user)
 
-/obj/item/stack/get_matter_amount_modifier()
-	. = amount * matter_multiplier
-
-/obj/item/stack/proc/list_recipes(mob/user, recipes_sublist)
+/obj/item/stack/proc/list_recipes(mob/user as mob, recipes_sublist)
 	if (!recipes)
 		return
 	if (!src || get_amount() <= 0)
@@ -143,9 +136,9 @@
 			to_chat(user, "<span class='warning'>You waste some [name] and fail to build \the [recipe.display_name()]!</span>")
 			return
 		var/atom/O = recipe.spawn_result(user, user.loc, produced)
-		if(!QDELETED(O)) // In case of stack merger.
-			O.add_fingerprint(user)
-			user.put_in_hands(O)
+		O.add_fingerprint(user)
+
+		user.put_in_hands(O)
 
 /obj/item/stack/Topic(href, href_list)
 	..()
@@ -183,14 +176,6 @@
 		return 0
 	return 1
 
-/obj/item/stack/create_matter()
-	..()
-	initial_matter = matter?.Copy()
-
-/obj/item/stack/proc/update_matter()
-	matter = initial_matter?.Copy()
-	create_matter()
-
 /obj/item/stack/proc/use(var/used)
 	if (!can_use(used))
 		return 0
@@ -200,7 +185,6 @@
 			qdel(src) //should be safe to qdel immediately since if someone is still using this stack it will persist for a little while longer
 		else
 			update_icon()
-			update_matter()
 		return 1
 	else
 		if(get_amount() < used)
@@ -217,8 +201,7 @@
 		else
 			amount += extra
 			update_icon()
-			update_matter()
-			return 1
+		return 1
 	else if(!synths || synths.len < uses_charge)
 		return 0
 	else
@@ -252,17 +235,19 @@
 	return 0
 
 //creates a new stack with the specified amount
-/obj/item/stack/proc/split(var/tamount, var/force=FALSE)
+/obj/item/stack/proc/split(var/tamount)
 	if (!amount)
-		return null
-	if(uses_charge && !force)
 		return null
 
 	var/transfer = max(min(tamount, src.amount, initial(max_amount)), 0)
 
 	var/orig_amount = src.amount
 	if (transfer && src.use(transfer))
-		var/obj/item/stack/newstack = new src.type(loc, transfer)
+		var/obj/item/stack/newstack
+		if(uses_charge)
+			newstack = new src.stacktype(loc, transfer)
+		else
+			newstack = new src.type(loc, transfer)
 		newstack.copy_from(src)
 		if (prob(transfer/orig_amount * 100))
 			transfer_fingerprints_to(newstack)
@@ -300,16 +285,18 @@
 
 /obj/item/stack/proc/add_to_stacks(mob/user, check_hands)
 	var/list/stacks = list()
-	if(check_hands && user)
-		for(var/obj/item/stack/item in user.get_held_items())
-			stacks |= item
-	for (var/obj/item/stack/item in user?.loc)
-		stacks |= item
+	if(check_hands)
+		if(isstack(user.l_hand))
+			stacks += user.l_hand
+		if(isstack(user.r_hand))
+			stacks += user.r_hand
+	for (var/obj/item/stack/item in user.loc)
+		stacks += item
 	for (var/obj/item/stack/item in stacks)
 		if (item==src)
 			continue
 		var/transfer = src.transfer_to(item)
-		if(user && transfer)
+		if (transfer)
 			to_chat(user, "<span class='notice'>You add a new [item.singular_name] to the stack. It now contains [item.amount] [item.singular_name]\s.</span>")
 		if(!amount)
 			break
@@ -319,8 +306,8 @@
 	if (amount < max_amount)
 		. = ceil(. * amount / max_amount)
 
-/obj/item/stack/attack_hand(mob/user)
-	if(user.is_holding_offhand(src))
+/obj/item/stack/attack_hand(mob/user as mob)
+	if (user.get_inactive_hand() == src)
 		var/N = input("How many stacks of [src] would you like to split off?", "Split stacks", 1) as num|null
 		if(N)
 			var/obj/item/stack/F = src.split(N)
@@ -335,7 +322,7 @@
 		..()
 	return
 
-/obj/item/stack/attackby(obj/item/W, mob/user)
+/obj/item/stack/attackby(obj/item/W as obj, mob/user as mob)
 	if (istype(W, /obj/item/stack))
 		var/obj/item/stack/S = W
 		src.transfer_to(S)
@@ -347,3 +334,67 @@
 				src.interact(usr)
 	else
 		return ..()
+
+/*
+ * Recipe datum
+ */
+/datum/stack_recipe
+	var/title = "ERROR"
+	var/result_type
+	var/req_amount = 1 //amount of material needed for this recipe
+	var/res_amount = 1 //amount of stuff that is produced in one batch (e.g. 4 for floor tiles)
+	var/max_res_amount = 1
+	var/time = 0
+	var/one_per_turf = 0
+	var/on_floor = 0
+	var/use_material
+	var/use_reinf_material
+	var/difficulty = 1 // higher difficulty requires higher skill level to make.
+	var/send_material_data = 0 //Whether the recipe will send the material name as an argument when creating product.
+	var/apply_material_name = 1 //Whether the recipe will prepend a material name to the title - 'steel clipboard' vs 'clipboard'
+
+/datum/stack_recipe/New(material/material, var/reinforce_material)
+	if(material)
+		use_material = material.name
+		difficulty += material.construction_difficulty
+	if(reinforce_material)
+		use_reinf_material = reinforce_material
+
+/datum/stack_recipe/proc/display_name()
+	if(!use_material || !apply_material_name)
+		return title
+	. = "[material_display_name(use_material)] [title]"
+	if(use_reinf_material)
+		. = "[material_display_name(use_reinf_material)]-reinforced [.]"
+
+/datum/stack_recipe/proc/spawn_result(mob/user, location, amount)
+	var/atom/O
+	if(send_material_data && use_material)
+		O = new result_type(location, use_material, use_reinf_material)
+	else
+		O = new result_type(location)
+	O.set_dir(user.dir)
+	return O
+
+/datum/stack_recipe/proc/can_make(mob/user)
+	if (one_per_turf && (locate(result_type) in user.loc))
+		to_chat(user, "<span class='warning'>There is another [display_name()] here!</span>")
+		return FALSE
+
+	var/turf/T = get_turf(user.loc)
+	if (on_floor && !T.is_floor())
+		to_chat(user, "<span class='warning'>\The [display_name()] must be constructed on the floor!</span>")
+		return FALSE
+
+	return TRUE
+
+/*
+ * Recipe list datum
+ */
+/datum/stack_recipe_list
+	var/title = "ERROR"
+	var/list/recipes = null
+
+/datum/stack_recipe_list/New(title, recipes)
+	src.title = title
+	src.recipes = recipes

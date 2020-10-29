@@ -6,10 +6,11 @@
 /turf/simulated/floor/holofloor
 	thermal_conductivity = 0
 
+// the new Diona Death Prevention Feature: gives an average amount of lumination
 /turf/simulated/floor/holofloor/get_lumcount(var/minlum = 0, var/maxlum = 1)
 	return 0.8
 
-/turf/simulated/floor/holofloor/attackby(obj/item/W, mob/user)
+/turf/simulated/floor/holofloor/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	return
 	// HOLOFLOOR DOES NOT GIVE A FUCK
 
@@ -88,8 +89,7 @@
 	name = "reinforced holofloor"
 	icon_state = "reinforced"
 
-/turf/simulated/floor/holofloor/space/Initialize()
-	. = ..()
+/turf/simulated/floor/holofloor/space/New()
 	icon_state = "[((x + y) ^ ~(x * y) + z) % 25]"
 
 /turf/simulated/floor/holofloor/beach
@@ -126,8 +126,8 @@
 	base_icon = 'icons/turf/flooring/asteroid.dmi'
 	initial_flooring = null
 
-/turf/simulated/floor/holofloor/desert/Initialize(var/ml)
-	. = ..()
+/turf/simulated/floor/holofloor/desert/New()
+	..()
 	if(prob(10))
 		overlays += "asteroid[rand(0,9)]"
 
@@ -141,12 +141,20 @@
 /obj/item/clothing/gloves/boxing/hologlove
 	name = "boxing gloves"
 	desc = "Because you really needed another excuse to punch your crewmates."
+	icon_state = "boxing"
+	item_state = "boxing"
 
 /obj/structure/window/holowindow/full
-	dir = NORTHEAST
+	dir = 5
 	icon_state = "window_full"
 
-/obj/structure/window/reinforced/holowindow/attackby(obj/item/W, mob/user)
+/obj/structure/window/holowindow/full/Destroy()
+	..()
+
+/obj/structure/window/reinforced/holowindow/Destroy()
+	..()
+
+/obj/structure/window/reinforced/holowindow/attackby(obj/item/W as obj, mob/user as mob)
 
 	if(!istype(W) || W.item_flags & ITEM_FLAG_NO_BLUDGEON) return
 
@@ -171,14 +179,18 @@
 	qdel(src)
 	return
 
-/obj/structure/window/reinforced/holowindow/disappearing
+/obj/structure/window/reinforced/holowindow/disappearing/Destroy()
+	..()
 
-/obj/machinery/door/window/holowindoor/attackby(obj/item/I, mob/user)
+/obj/machinery/door/window/holowindoor/Destroy()
+	..()
+
+/obj/machinery/door/window/holowindoor/attackby(obj/item/weapon/I as obj, mob/user as mob)
 
 	if (src.operating == 1)
 		return
 
-	if(src.density && istype(I, /obj/item) && !istype(I, /obj/item/card))
+	if(src.density && istype(I, /obj/item/weapon) && !istype(I, /obj/item/weapon/card))
 		var/aforce = I.force
 		playsound(src.loc, 'sound/effects/Glasshit.ogg', 75, 1)
 		visible_message("<span class='danger'>\The [src] was hit by \the [I].</span>")
@@ -208,19 +220,21 @@
 		visible_message("[src] fades away as it shatters!")
 	qdel(src)
 
-/obj/structure/bed/chair/holochair/attackby(obj/item/W, mob/user)
-	if(istype(W, /obj/item/wrench))
+/obj/structure/bed/chair/holochair/Destroy()
+	..()
+
+/obj/structure/bed/chair/holochair/attackby(obj/item/weapon/W as obj, mob/user as mob)
+	if(istype(W, /obj/item/weapon/wrench))
 		to_chat(user, ("<span class='notice'>It's a holochair, you can't dismantle it!</span>"))
 	return
 
-/obj/item/holo
+/obj/item/weapon/holo
 	damtype = PAIN
 	no_attack_log = 1
 
-/obj/item/holo/esword
+/obj/item/weapon/holo/esword
 	name = "holosword"
 	desc = "May the force be within you. Sorta."
-	icon = 'icons/obj/items/weapon/e_sword.dmi'
 	icon_state = "sword0"
 	force = 3.0
 	throw_speed = 1
@@ -232,13 +246,15 @@
 	var/active = 0
 	var/item_color
 
-/obj/item/holo/esword/green
-	item_color = "green"
+/obj/item/weapon/holo/esword/green
+	New()
+		item_color = "green"
 
-/obj/item/holo/esword/red
-	item_color = "red"
+/obj/item/weapon/holo/esword/red
+	New()
+		item_color = "red"
 
-/obj/item/holo/esword/handle_shield(mob/user, var/damage, atom/damage_source = null, mob/attacker = null, var/def_zone = null, var/attack_text = "the attack")
+/obj/item/weapon/holo/esword/handle_shield(mob/user, var/damage, atom/damage_source = null, mob/attacker = null, var/def_zone = null, var/attack_text = "the attack")
 	. = ..()
 	if(.)
 		var/datum/effect/effect/system/spark_spread/spark_system = new /datum/effect/effect/system/spark_spread()
@@ -246,14 +262,13 @@
 		spark_system.start()
 		playsound(user.loc, 'sound/weapons/blade1.ogg', 50, 1)
 
-/obj/item/holo/esword/get_parry_chance(mob/user)
+/obj/item/weapon/holo/esword/get_parry_chance(mob/user)
 	return active ? ..() : 0
 
-/obj/item/holo/esword/Initialize()
-	. = ..()
+/obj/item/weapon/holo/esword/New()
 	item_color = pick("red","blue","green","purple")
 
-/obj/item/holo/esword/attack_self(mob/living/user)
+/obj/item/weapon/holo/esword/attack_self(mob/living/user as mob)
 	active = !active
 	if (active)
 		force = 30
@@ -275,7 +290,7 @@
 
 //BASKETBALL OBJECTS
 
-/obj/item/beach_ball/holoball
+/obj/item/weapon/beach_ball/holoball
 	icon = 'icons/obj/basketball.dmi'
 	icon_state = "basketball"
 	name = "basketball"
@@ -308,7 +323,7 @@
 
 //VOLEYBALL OBJECTS
 
-/obj/item/beach_ball/holovolleyball
+/obj/item/weapon/beach_ball/holovolleyball
 	icon = 'icons/obj/basketball.dmi'
 	icon_state = "volleyball"
 	name = "voleyball"
@@ -325,7 +340,7 @@
 	anchored = 1
 	layer = TABLE_LAYER
 	throwpass = 1
-	dir = EAST
+	dir = 4
 
 /obj/structure/holonet/end
 	icon_state = "volleynet_end"
@@ -358,11 +373,15 @@
 	active_power_usage = 6
 	power_channel = ENVIRON
 
-/obj/machinery/readybutton/attack_ai(mob/user)
+/obj/machinery/readybutton/attack_ai(mob/user as mob)
 	to_chat(user, "The AI is not to interact with these devices!")
 	return
 
-/obj/machinery/readybutton/attackby(obj/item/W, mob/user)
+/obj/machinery/readybutton/New()
+	..()
+
+
+/obj/machinery/readybutton/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	to_chat(user, "The device is a solid button, there's nothing you can do with it!")
 
 /obj/machinery/readybutton/physical_attack_hand(mob/user)
@@ -424,19 +443,23 @@
 /mob/living/simple_animal/hostile/carp/holodeck/on_update_icon()
 	return
 
-/mob/living/simple_animal/hostile/carp/holodeck/Initialize()
-	. = ..()
+/mob/living/simple_animal/hostile/carp/holodeck/New()
+	..()
 	set_light(0.5, 0.1, 2) //hologram lighting
 
 /mob/living/simple_animal/hostile/carp/holodeck/proc/set_safety(var/safe)
 	if (safe)
 		faction = MOB_FACTION_NEUTRAL
-		natural_weapon.force = 0
+		melee_damage_lower = 0
+		melee_damage_upper = 0
 		environment_smash = 0
 		destroy_surroundings = 0
 	else
 		faction = "carp"
-		natural_weapon.force = initial(natural_weapon.force)
+		melee_damage_lower = initial(melee_damage_lower)
+		melee_damage_upper = initial(melee_damage_upper)
+		environment_smash = initial(environment_smash)
+		destroy_surroundings = initial(destroy_surroundings)
 
 /mob/living/simple_animal/hostile/carp/holodeck/gib()
 	death()

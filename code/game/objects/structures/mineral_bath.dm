@@ -14,7 +14,7 @@
 
 /obj/structure/adherent_bath/return_air()
 	var/datum/gas_mixture/venus = new(CELL_VOLUME, SYNTH_HEAT_LEVEL_1 - 10)
-	venus.adjust_multi(/decl/material/gas/chlorine, MOLES_N2STANDARD, /decl/material/gas/hydrogen, MOLES_O2STANDARD)
+	venus.adjust_multi(GAS_CHLORINE, MOLES_N2STANDARD, GAS_PHORON, MOLES_O2STANDARD)
 	return venus
 
 /obj/structure/adherent_bath/attackby(var/obj/item/thing, var/mob/user)
@@ -104,7 +104,7 @@
 		var/repaired_organ
 
 		// Replace limbs for crystalline species.
-		if(H.species.is_crystalline && prob(10))
+		if((H.species.name == SPECIES_ADHERENT || H.species.name == SPECIES_GOLEM) && prob(10))
 			for(var/limb_type in H.species.has_limbs)
 				var/obj/item/organ/external/E = H.organs_by_name[limb_type]
 				if(E && !E.is_usable() && !(E.limb_flags & ORGAN_FLAG_HEALS_OVERKILL))
@@ -135,9 +135,9 @@
 		if(!repaired_organ && prob(25))
 			for(var/thing in H.organs)
 				var/obj/item/organ/external/E = thing
-				if(BP_IS_PROSTHETIC(E))
+				if(BP_IS_ROBOTIC(E))
 					for(var/obj/implanted_object in E.implants)
-						if(!istype(implanted_object,/obj/item/implant) && !istype(implanted_object,/obj/item/organ/internal/augment) && prob(25))	// We don't want to remove REAL implants. Just shrapnel etc.
+						if(!istype(implanted_object,/obj/item/weapon/implant) && !istype(implanted_object,/obj/item/organ/internal/augment) && prob(25))	// We don't want to remove REAL implants. Just shrapnel etc.
 							E.implants -= implanted_object
 							to_chat(H, "<span class='notice'>The mineral-rich bath dissolves the [implanted_object.name].</span>")
 							qdel(implanted_object)

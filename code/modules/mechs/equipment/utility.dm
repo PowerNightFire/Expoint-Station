@@ -4,7 +4,7 @@
 	icon_state = "mech_clamp"
 	restricted_hardpoints = list(HARDPOINT_LEFT_HAND, HARDPOINT_RIGHT_HAND)
 	restricted_software = list(MECH_SOFTWARE_UTILITY)
-	origin_tech = "{'materials':2,'engineering':2}"
+	origin_tech = list(TECH_MATERIAL = 2, TECH_ENGINEERING = 2)
 	var/carrying_capacity = 5
 	var/list/obj/carrying = list()
 
@@ -199,7 +199,7 @@
 	var/l_max_bright = 0.9
 	var/l_inner_range = 1
 	var/l_outer_range = 6
-	origin_tech = "{'materials':1,'engineering':1}"
+	origin_tech = list(TECH_MATERIAL = 1, TECH_ENGINEERING = 1)
 
 /obj/item/mech_equipment/light/attack_self(var/mob/user)
 	. = ..()
@@ -234,7 +234,7 @@
 	var/mode = CATAPULT_SINGLE
 	var/atom/movable/locked
 	equipment_delay = 30 //Stunlocks are not ideal
-	origin_tech = "{'materials':4,'engineering':4,'magnets':4}"
+	origin_tech = list(TECH_MATERIAL = 4, TECH_ENGINEERING = 4, TECH_MAGNET = 4)
 	require_adjacent = FALSE
 
 /obj/item/mech_equipment/catapult/get_hardpoint_maptext()
@@ -275,7 +275,7 @@
 						log_and_message_admins("used [src] to throw [locked] at [target].", user, owner.loc)
 						locked = null
 
-						var/obj/item/cell/C = owner.get_cell()
+						var/obj/item/weapon/cell/C = owner.get_cell()
 						if(istype(C))
 							C.use(active_power_use * CELLRATE)
 
@@ -296,7 +296,7 @@
 
 
 				log_and_message_admins("used [src]'s area throw on [target].", user, owner.loc)
-				var/obj/item/cell/C = owner.get_cell()
+				var/obj/item/weapon/cell/C = owner.get_cell()
 				if(istype(C))
 					C.use(active_power_use * CELLRATE * 2) //bit more expensive to throw all
 
@@ -306,17 +306,16 @@
 #undef CATAPULT_AREA
 
 
-/obj/item/drill_head
+/obj/item/weapon/material/drill_head
+	var/durability = 0
 	name = "drill head"
 	desc = "A replaceable drill head usually used in exosuit drills."
-	icon = 'icons/obj/items/tool/drill_head.dmi'
 	icon_state = "drill_head"
-	var/durability = 0
 
-/obj/item/drill_head/proc/get_durability_percentage()
+/obj/item/weapon/material/drill_head/proc/get_durability_percentage()
 	return (durability * 100) / (2 * material.integrity)
 
-/obj/item/drill_head/examine(mob/user, distance)
+/obj/item/weapon/material/drill_head/examine(mob/user, distance)
 	. = ..()
 	var/percentage = get_durability_percentage()
 	var/descriptor = "looks close to breaking"
@@ -331,7 +330,7 @@
 
 	to_chat(user, "It [descriptor].")
 
-/obj/item/drill_head/Initialize()
+/obj/item/weapon/material/drill_head/Initialize()
 	. = ..()
 	durability = 2 * material.integrity
 
@@ -344,12 +343,14 @@
 	equipment_delay = 10
 
 	//Drill can have a head
-	var/obj/item/drill_head/drill_head
-	origin_tech = "{'materials':2,'engineering':2}"
+	var/obj/item/weapon/material/drill_head/drill_head
+	origin_tech = list(TECH_MATERIAL = 2, TECH_ENGINEERING = 2)
+
+
 
 /obj/item/mech_equipment/drill/Initialize()
 	. = ..()
-	drill_head = new /obj/item/drill_head(src, /decl/material/solid/metal/steel) //You start with a basic steel head
+	drill_head = new /obj/item/weapon/material/drill_head(src, "steel")//You start with a basic steel head
 
 /obj/item/mech_equipment/drill/attack_self(var/mob/user)
 	. = ..()
@@ -363,9 +364,9 @@
 		return "Integrity: [round(drill_head.get_durability_percentage())]%"
 	return
 
-/obj/item/mech_equipment/drill/attackby(obj/item/W, mob/user)
-	if(istype(W,/obj/item/drill_head))
-		var/obj/item/drill_head/DH = W
+/obj/item/mech_equipment/drill/attackby(obj/item/weapon/W, mob/user)
+	if(istype(W,/obj/item/weapon/material/drill_head))
+		var/obj/item/weapon/material/drill_head/DH = W
 		if(!user.unEquip(DH))
 			return
 		if(drill_head)
@@ -385,8 +386,8 @@
 			var/obj/target_obj = target
 			if(target_obj.unacidable)
 				return
-		if(istype(target,/obj/item/drill_head))
-			var/obj/item/drill_head/DH = target
+		if(istype(target,/obj/item/weapon/material/drill_head))
+			var/obj/item/weapon/material/drill_head/DH = target
 			if(drill_head)
 				owner.visible_message(SPAN_NOTICE("\The [owner] detaches the [drill_head] mounted on the [src]."))
 				drill_head.forceMove(owner.loc)
@@ -400,7 +401,7 @@
 			to_chat(user, SPAN_WARNING("Your drill doesn't have a head!"))
 			return
 
-		var/obj/item/cell/C = owner.get_cell()
+		var/obj/item/weapon/cell/C = owner.get_cell()
 		if(istype(C))
 			C.use(active_power_use * CELLRATE)
 		owner.visible_message("<span class='danger'>\The [owner] starts to drill \the [target]</span>", "<span class='warning'>You hear a large drill.</span>")
@@ -417,26 +418,25 @@
 					drill_head.shatter()
 					drill_head = null
 					return
-
-				if(istype(target, /turf/simulated/wall/natural))
-					for(var/turf/simulated/wall/natural/M in range(target,1))
-						if(get_dir(owner,M)&owner.dir)
-							M.dismantle_wall()
-							drill_head.durability -= 1
-				else if(istype(target, /turf/simulated/wall))
+				if(istype(target, /turf/simulated/wall))
 					var/turf/simulated/wall/W = target
 					if(max(W.material.hardness, W.reinf_material ? W.reinf_material.hardness : 0) > drill_head.material.hardness)
 						to_chat(user, "<span class='warning'>\The [target] is too hard to drill through with this drill head.</span>")
-					target.explosion_act(2)
+					target.ex_act(2)
 					drill_head.durability -= 1
 					log_and_message_admins("used [src] on the wall [W].", user, owner.loc)
+				else if(istype(target, /turf/simulated/mineral))
+					for(var/turf/simulated/mineral/M in range(target,1))
+						if(get_dir(owner,M)&owner.dir)
+							M.GetDrilled()
+							drill_head.durability -= 1
 				else if(istype(target, /turf/simulated/floor/asteroid))
 					for(var/turf/simulated/floor/asteroid/M in range(target,1))
 						if(get_dir(owner,M)&owner.dir)
 							M.gets_dug()
 							drill_head.durability -= 1
 				else if(target.loc == T)
-					target.explosion_act(2)
+					target.ex_act(2)
 					drill_head.durability -= 1
 					log_and_message_admins("[src] used to drill [target].", user, owner.loc)
 
@@ -450,7 +450,7 @@
 							continue
 						var/obj/structure/ore_box/ore_box = locate(/obj/structure/ore_box) in I //clamps work, but anythin that contains an ore crate internally is valid
 						if(ore_box)
-							for(var/obj/item/ore/ore in range(T,1))
+							for(var/obj/item/weapon/ore/ore in range(T,1))
 								if(get_dir(owner,ore)&owner.dir)
 									ore.Move(ore_box)
 
@@ -467,12 +467,13 @@
 	name = "mounted plasma cutter"
 	desc = "An industrial plasma cutter mounted onto the chassis of the mech. "
 	icon_state = "railauto" //TODO: Make a new sprite that doesn't get sec called on you.
-	holding_type = /obj/item/gun/energy/plasmacutter/mounted/mech
+	holding_type = /obj/item/weapon/gun/energy/plasmacutter/mounted/mech
 	restricted_hardpoints = list(HARDPOINT_LEFT_HAND, HARDPOINT_RIGHT_HAND, HARDPOINT_LEFT_SHOULDER, HARDPOINT_RIGHT_SHOULDER)
 	restricted_software = list(MECH_SOFTWARE_UTILITY)
-	origin_tech = "{'materials':4,'exoticmatter':4,'engineering':6,'combat':3}"
-	material = /decl/material/solid/metal/steel
+	origin_tech = list(TECH_MATERIAL = 4, TECH_PHORON = 4, TECH_ENGINEERING = 6, TECH_COMBAT = 3)
 
-/obj/item/gun/energy/plasmacutter/mounted/mech
+/obj/item/weapon/gun/energy/plasmacutter/mounted/mech
 	use_external_power = TRUE
 	has_safety = FALSE
+
+

@@ -13,25 +13,26 @@
 
 	var/mob/my_mob = null // The mob that possesses this hud object.
 
-/obj/screen/movable/ability_master/Initialize(mapload, owner)
-	. = ..()
+/obj/screen/movable/ability_master/New(newloc,owner)
 	if(owner)
 		my_mob = owner
 		update_abilities(0, owner)
 	else
-		. = INITIALIZE_HINT_QDEL
-		CRASH("ERROR: ability_master's Initialize() was not given an owner argument.  This is a bug.")
+		CRASH("ERROR: ability_master's New() was not given an owner argument.  This is a bug.")
+	..()
 
 /obj/screen/movable/ability_master/Destroy()
 	. = ..()
-	remove_all_abilities() //Get rid of the ability objects.
+	//Get rid of the ability objects.
+	remove_all_abilities()
 	ability_objects.Cut()
-	if(my_mob)             // After that, remove ourselves from the mob seeing us, so we can qdel cleanly.
+
+	// After that, remove ourselves from the mob seeing us, so we can qdel cleanly.
+	if(my_mob)
 		my_mob.ability_master = null
 		if(my_mob.client && my_mob.client.screen)
 			my_mob.client.screen -= src
 		my_mob = null
-
 /obj/screen/movable/ability_master/MouseDrop()
 	if(showing)
 		return
@@ -62,6 +63,26 @@
 	update_icon()
 
 /obj/screen/movable/ability_master/proc/open_ability_master()
+	var/list/screen_loc_xy = splittext(screen_loc,",")
+
+	//Create list of X offsets
+	var/list/screen_loc_X = splittext(screen_loc_xy[1],":")
+	var/x_position = decode_screen_X(screen_loc_X[1], my_mob)
+	var/x_pix = screen_loc_X[2]
+
+	//Create list of Y offsets
+	var/list/screen_loc_Y = splittext(screen_loc_xy[2],":")
+	var/y_position = decode_screen_Y(screen_loc_Y[1], my_mob)
+	var/y_pix = screen_loc_Y[2]
+
+	for(var/i = 1; i <= ability_objects.len; i++)
+		var/obj/screen/ability/A = ability_objects[i]
+		var/xpos = x_position + (x_position < 8 ? 1 : -1)*(i%7)
+		var/ypos = y_position + (y_position < 8 ? round(i/7) : -round(i/7))
+		A.screen_loc = "[encode_screen_X(xpos, my_mob)]:[x_pix],[encode_screen_Y(ypos, my_mob)]:[y_pix]"
+		if(my_mob && my_mob.client)
+			my_mob.client.screen += A
+//			A.handle_icon_updates = 1
 
 /obj/screen/movable/ability_master/proc/update_abilities(forced = 0, mob/user)
 	update_icon()
@@ -170,7 +191,7 @@
 /obj/screen/ability/on_update_icon()
 	overlays.Cut()
 	icon_state = "[background_base_state]_spell_base"
-	
+
 	overlays += ability_icon_state
 
 /obj/screen/ability/Click()

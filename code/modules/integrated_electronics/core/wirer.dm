@@ -3,7 +3,7 @@
 #define UNWIRE		"unwire"
 #define UNWIRING	"unwiring"
 
-/obj/item/integrated_electronics/wirer
+/obj/item/device/integrated_electronics/wirer
 	name = "circuit wirer"
 	desc = "It's a small wiring tool, with a wire roll, electric soldering iron, wire cutter, and more in one package. \
 	The wires used are generally useful for small electronics, such as circuitboards and breadboards, as opposed to larger wires \
@@ -14,17 +14,12 @@
 	w_class = ITEM_SIZE_SMALL
 	var/datum/integrated_io/selected_io = null
 	var/mode = WIRE
-	material = /decl/material/solid/metal/aluminium
-	matter = list(
-		/decl/material/solid/metal/steel = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/glass = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE
-	)
+	matter = list(MATERIAL_ALUMINIUM = 1500, MATERIAL_STEEL = 1000, MATERIAL_GLASS = 500, MATERIAL_PLASTIC = 500)
 
-/obj/item/integrated_electronics/wirer/on_update_icon()
+/obj/item/device/integrated_electronics/wirer/on_update_icon()
 	icon_state = "wirer-[mode]"
 
-/obj/item/integrated_electronics/wirer/proc/wire(var/datum/integrated_io/io, mob/user)
+/obj/item/device/integrated_electronics/wirer/proc/wire(var/datum/integrated_io/io, mob/user)
 	if(!io.holder.assembly)
 		to_chat(user, "<span class='warning'>\The [io.holder] needs to be secured inside an assembly first.</span>")
 		return
@@ -82,7 +77,7 @@
 				to_chat(user, "<span class='warning'>\The [selected_io.holder]'s [selected_io.name] and \the [io.holder]'s \
 				[io.name] are not connected.</span>")
 
-/obj/item/integrated_electronics/wirer/proc/select_io(datum/integrated_io/io)
+/obj/item/device/integrated_electronics/wirer/proc/select_io(datum/integrated_io/io)
 	if(selected_io)
 		unselect_io(selected_io)
 	selected_io = io
@@ -93,7 +88,7 @@
 		if(WIRE)
 			mode = WIRING
 
-/obj/item/integrated_electronics/wirer/proc/unselect_io(datum/integrated_io/io)
+/obj/item/device/integrated_electronics/wirer/proc/unselect_io(datum/integrated_io/io)
 	if(selected_io != io)
 		return
 	GLOB.destroyed_event.unregister(selected_io, src)
@@ -104,7 +99,7 @@
 		if(WIRING)
 			mode = WIRE
 
-/obj/item/integrated_electronics/wirer/attack_self(mob/user)
+/obj/item/device/integrated_electronics/wirer/attack_self(mob/user)
 	switch(mode)
 		if(WIRE)
 			mode = UNWIRE

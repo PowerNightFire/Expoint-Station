@@ -1,77 +1,46 @@
 /*
  * Defines the helmets, gloves and shoes for rigs.
  */
-/mob/proc/check_rig_status(check_offline)
-	return 0
-
-/mob/living/carbon/human/check_rig_status(check_offline)
-	var/obj/item/rig/rig = back
-	if(!istype(rig) || rig.canremove)
-		return 0 //not wearing a rig control unit or it's offline or unsealed
-	if(check_offline)
-		return !rig.offline
-	return 1
 
 /obj/item/clothing/head/helmet/space/rig
 	name = "helmet"
-	icon_state = "helmet"
 	item_flags = ITEM_FLAG_THICKMATERIAL
 	flags_inv = 		 HIDEEARS|HIDEEYES|HIDEFACE|BLOCKHAIR
-	body_parts_covered = SLOT_HEAD|SLOT_FACE|SLOT_EYES
-	heat_protection =    SLOT_HEAD|SLOT_FACE|SLOT_EYES
-	cold_protection =    SLOT_HEAD|SLOT_FACE|SLOT_EYES
+	body_parts_covered = HEAD|FACE|EYES
+	heat_protection =    HEAD|FACE|EYES
+	cold_protection =    HEAD|FACE|EYES
 	brightness_on = 0.5
-	bodytype_restricted = null
-	on_mob_use_spritesheets = TRUE
-
-/obj/item/clothing/head/helmet/space/rig/experimental_mob_overlay(var/mob/user_mob, var/slot, var/bodypart)
-	var/image/I = ..()
-	if(user_mob?.check_rig_status())
-		I.icon_state += "_sealed"
-	return I
+	sprite_sheets = list(
+		SPECIES_SKRELL = 'icons/mob/species/skrell/onmob_head_skrell.dmi',
+		SPECIES_UNATHI = 'icons/mob/species/unathi/onmob_head_helmet_unathi.dmi',
+		)
+	species_restricted = null
 
 /obj/item/clothing/gloves/rig
 	name = "gauntlets"
-	icon_state = "gloves"
 	item_flags = ITEM_FLAG_THICKMATERIAL | ITEM_FLAG_AIRTIGHT
-	body_parts_covered = SLOT_HANDS
-	heat_protection =    SLOT_HANDS
-	cold_protection =    SLOT_HANDS
-	bodytype_restricted = null
+	body_parts_covered = HANDS
+	heat_protection =    HANDS
+	cold_protection =    HANDS
+	species_restricted = null
 	gender = PLURAL
-	on_mob_use_spritesheets = TRUE
-
-/obj/item/clothing/gloves/rig/experimental_mob_overlay(var/mob/user_mob, var/slot, var/bodypart)
-	var/image/I = ..()
-	if(user_mob?.check_rig_status())
-		I.icon_state += "_sealed"
-	return I
 
 /obj/item/clothing/shoes/magboots/rig
 	name = "boots"
-	icon_state = "boots"
 	item_flags = ITEM_FLAG_THICKMATERIAL | ITEM_FLAG_AIRTIGHT
-	body_parts_covered = SLOT_FEET
-	cold_protection = SLOT_FEET
-	heat_protection = SLOT_FEET
-	bodytype_restricted = null
+	body_parts_covered = FEET
+	cold_protection = FEET
+	heat_protection = FEET
+	species_restricted = null
 	gender = PLURAL
-	on_mob_use_spritesheets = TRUE
-
-/obj/item/clothing/shoes/magboots/rig/experimental_mob_overlay(var/mob/user_mob, var/slot, var/bodypart)
-	var/image/I = ..()
-	if(user_mob?.check_rig_status())
-		I.icon_state += "_sealed"
-	return I
+	icon_base = null
 
 /obj/item/clothing/suit/space/rig
 	name = "chestpiece"
-	icon_state = "chest"
-	on_mob_use_spritesheets = TRUE
-	allowed = list(/obj/item/flashlight,/obj/item/tank,/obj/item/suit_cooling_unit)
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_ARMS
-	heat_protection =    SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_ARMS
-	cold_protection =    SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_ARMS
+	allowed = list(/obj/item/device/flashlight,/obj/item/weapon/tank,/obj/item/device/suit_cooling_unit)
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS|ARMS
+	heat_protection =    UPPER_TORSO|LOWER_TORSO|LEGS|ARMS
+	cold_protection =    UPPER_TORSO|LOWER_TORSO|LEGS|ARMS
 	// HIDEJUMPSUIT no longer needed, see "hides_uniform" and "update_component_sealed()" in rig.dm
 	flags_inv =          HIDETAIL
 	item_flags =         ITEM_FLAG_THICKMATERIAL | ITEM_FLAG_AIRTIGHT
@@ -79,13 +48,10 @@
 	breach_threshold = 38
 	resilience = 0.2
 	can_breach = 1
+	sprite_sheets = list(
+		SPECIES_UNATHI = 'icons/mob/species/unathi/onmob_suit_unathi.dmi',
+		)
 	var/list/supporting_limbs = list() //If not-null, automatically splints breaks. Checked when removing the suit.
-
-/obj/item/clothing/suit/space/rig/experimental_mob_overlay(var/mob/user_mob, var/slot, var/bodypart)
-	var/image/I = ..()
-	if(user_mob?.check_rig_status())
-		I.icon_state += "_sealed"
-	return I
 
 /obj/item/clothing/suit/space/rig/equipped(mob/M)
 	check_limb_support(M)
@@ -99,7 +65,10 @@
 /obj/item/clothing/suit/space/rig/proc/can_support(var/mob/living/carbon/human/user)
 	if(user.wear_suit != src)
 		return 0 //not wearing the suit
-	return user.check_rig_status(1)
+	var/obj/item/weapon/rig/rig = user.back
+	if(!istype(rig) || rig.offline || rig.canremove)
+		return 0 //not wearing a rig control unit or it's offline or unsealed
+	return 1
 
 /obj/item/clothing/suit/space/rig/proc/check_limb_support(var/mob/living/carbon/human/user)
 
@@ -136,7 +105,7 @@
 	if(!istype(H) || !H.back)
 		return 0
 
-	var/obj/item/rig/suit = H.back
+	var/obj/item/weapon/rig/suit = H.back
 	if(!suit || !istype(suit) || !suit.installed_modules.len)
 		return 0
 
@@ -150,33 +119,33 @@
 
 /obj/item/clothing/head/lightrig
 	name = "mask"
-	body_parts_covered = SLOT_HEAD|SLOT_FACE|SLOT_EYES
-	heat_protection =    SLOT_HEAD|SLOT_FACE|SLOT_EYES
-	cold_protection =    SLOT_HEAD|SLOT_FACE|SLOT_EYES
+	body_parts_covered = HEAD|FACE|EYES
+	heat_protection =    HEAD|FACE|EYES
+	cold_protection =    HEAD|FACE|EYES
 	item_flags =         ITEM_FLAG_THICKMATERIAL|ITEM_FLAG_AIRTIGHT
 
 /obj/item/clothing/suit/lightrig
 	name = "suit"
-	allowed = list(/obj/item/flashlight)
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_ARMS
-	heat_protection =    SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_ARMS
-	cold_protection =    SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_ARMS
+	allowed = list(/obj/item/device/flashlight)
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS|ARMS
+	heat_protection =    UPPER_TORSO|LOWER_TORSO|LEGS|ARMS
+	cold_protection =    UPPER_TORSO|LOWER_TORSO|LEGS|ARMS
 	flags_inv =          HIDEJUMPSUIT
 	item_flags =         ITEM_FLAG_THICKMATERIAL
 
 /obj/item/clothing/shoes/lightrig
 	name = "boots"
-	body_parts_covered = SLOT_FEET
-	cold_protection = SLOT_FEET
-	heat_protection = SLOT_FEET
-	bodytype_restricted = null
+	body_parts_covered = FEET
+	cold_protection = FEET
+	heat_protection = FEET
+	species_restricted = null
 	gender = PLURAL
 
 /obj/item/clothing/gloves/lightrig
 	name = "gloves"
 	item_flags = ITEM_FLAG_THICKMATERIAL
-	body_parts_covered = SLOT_HANDS
-	heat_protection =    SLOT_HANDS
-	cold_protection =    SLOT_HANDS
-	bodytype_restricted = null
+	body_parts_covered = HANDS
+	heat_protection =    HANDS
+	cold_protection =    HANDS
+	species_restricted = null
 	gender = PLURAL

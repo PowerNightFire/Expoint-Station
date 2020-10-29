@@ -31,8 +31,8 @@
 /area/map_template/oldpod)
 "ag" = (
 /obj/structure/shuttle/engine/heater{
-	icon_state = "heater";
-	dir = 1
+	dir = 1;
+	icon_state = "heater"
 	},
 /obj/effect/wallframe_spawn/reinforced/hull,
 /turf/simulated/floor/plating,
@@ -92,7 +92,8 @@
 /area/map_template/oldpod)
 "ao" = (
 /obj/structure/bed/chair/shuttle{
-	dir = 8
+	dir = 8;
+	icon_state = "shuttle_chair_preview"
 	},
 /obj/structure/window/reinforced{
 	dir = 4
@@ -102,7 +103,8 @@
 /area/map_template/oldpod)
 "ap" = (
 /obj/structure/bed/chair/shuttle{
-	dir = 4
+	dir = 4;
+	icon_state = "shuttle_chair_preview"
 	},
 /obj/structure/window/reinforced{
 	dir = 8
@@ -178,7 +180,7 @@
 /obj/item/frame/air_alarm,
 /obj/effect/decal/cleanable/dirt,
 /obj/effect/decal/cleanable/dirt,
-/obj/item/stock_parts/circuitboard/air_alarm,
+/obj/item/weapon/airalarm_electronics,
 /turf/simulated/floor/tiled/monotile,
 /area/map_template/oldpod)
 "az" = (
@@ -224,7 +226,7 @@
 /obj/random/tech_supply,
 /obj/random/tech_supply,
 /obj/random/tech_supply,
-/obj/item/pickaxe,
+/obj/item/weapon/pickaxe,
 /obj/effect/decal/cleanable/dirt,
 /turf/simulated/floor/tiled/monotile,
 /area/map_template/oldpod)
@@ -254,8 +256,8 @@
 	},
 /obj/item/frame/apc,
 /obj/effect/decal/cleanable/dirt,
-/obj/item/cell/crap/empty,
-/obj/item/stock_parts/circuitboard/apc,
+/obj/item/weapon/cell/crap/empty,
+/obj/item/weapon/module/power_control,
 /turf/simulated/floor/tiled/monotile,
 /area/map_template/oldpod)
 "aI" = (
@@ -271,7 +273,7 @@
 /area/map_template/oldpod)
 "aJ" = (
 /obj/effect/landmark/corpse/pirate,
-/obj/item/gun/energy/captain,
+/obj/item/weapon/gun/energy/retro,
 /obj/effect/decal/cleanable/dirt,
 /obj/effect/decal/cleanable/dirt,
 /turf/simulated/floor/tiled/monotile,
@@ -292,8 +294,8 @@
 /area/map_template/oldpod)
 "aM" = (
 /obj/effect/landmark/corpse/scientist,
-/obj/item/baton/cattleprod,
-/obj/item/shard,
+/obj/item/weapon/melee/baton/cattleprod,
+/obj/item/weapon/material/shard,
 /obj/effect/decal/cleanable/blood,
 /obj/effect/decal/cleanable/dirt,
 /turf/simulated/floor/tiled/monotile,
@@ -306,10 +308,10 @@
 /obj/item/stack/material/rods,
 /obj/item/stack/material/rods,
 /obj/item/stack/material/rods,
-/obj/item/shard,
-/obj/item/shard,
-/obj/item/shard,
-/obj/item/shard,
+/obj/item/weapon/material/shard,
+/obj/item/weapon/material/shard,
+/obj/item/weapon/material/shard,
+/obj/item/weapon/material/shard,
 /turf/simulated/floor/plating,
 /area/map_template/oldpod)
 "aO" = (
@@ -325,8 +327,8 @@
 	dir = 8
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 5
+	dir = 5;
+	icon_state = "warning"
 	},
 /obj/machinery/power/smes/buildable/power_shuttle,
 /turf/simulated/floor/plating,
@@ -337,8 +339,8 @@
 /area/map_template/oldpod)
 "aR" = (
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 9
+	dir = 9;
+	icon_state = "warning"
 	},
 /obj/structure/window/reinforced{
 	dir = 8
@@ -349,7 +351,7 @@
 /obj/structure/table/standard{
 	name = "plastic table frame"
 	},
-/obj/item/storage/firstaid/surgery,
+/obj/item/weapon/storage/firstaid/surgery,
 /obj/effect/decal/cleanable/dirt,
 /turf/simulated/floor/tiled/white/monotile,
 /area/map_template/oldpod)
@@ -364,18 +366,18 @@
 /area/map_template/oldpod)
 "aT" = (
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 5
+	dir = 5;
+	icon_state = "warning"
 	},
 /obj/structure/window/reinforced{
 	dir = 1
 	},
 /obj/structure/closet/crate/freezer/rations,
 /obj/effect/decal/cleanable/dirt,
-/obj/item/gun/projectile/zipgun,
-/obj/item/gun/projectile/zipgun,
-/obj/item/gun/projectile/zipgun,
-/obj/item/gun/projectile/zipgun,
+/obj/item/weapon/gun/projectile/pirate,
+/obj/item/weapon/gun/projectile/pirate,
+/obj/item/weapon/gun/projectile/pirate,
+/obj/item/weapon/gun/projectile/pirate,
 /turf/simulated/floor/tiled/white/monotile,
 /area/map_template/oldpod)
 "aU" = (
@@ -396,8 +398,8 @@
 /area/map_template/oldpod)
 "aW" = (
 /obj/machinery/power/terminal{
-	icon_state = "term";
-	dir = 1
+	dir = 1;
+	icon_state = "term"
 	},
 /obj/structure/cable/cyan{
 	d2 = 2;
@@ -407,7 +409,7 @@
 	dir = 4
 	},
 /obj/structure/closet/crate,
-/obj/item/tank/oxygen,
+/obj/item/weapon/tank/oxygen,
 /turf/simulated/floor/plating,
 /area/map_template/oldpod)
 "aX" = (
@@ -431,7 +433,7 @@
 /turf/simulated/floor/tiled/white/monotile,
 /area/map_template/oldpod)
 "aZ" = (
-/obj/machinery/sleeper/standard{
+/obj/machinery/sleeper{
 	dir = 8
 	},
 /obj/effect/floor_decal/industrial/warning{
@@ -471,8 +473,8 @@
 /area/map_template/oldpod)
 "be" = (
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 10
+	dir = 10;
+	icon_state = "warning"
 	},
 /obj/structure/window/reinforced{
 	dir = 8
@@ -493,12 +495,12 @@
 /turf/simulated/floor/tiled/white/monotile,
 /area/map_template/oldpod)
 "bg" = (
-/obj/machinery/sleeper/standard{
+/obj/machinery/sleeper{
 	dir = 8
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 6
+	dir = 6;
+	icon_state = "warning"
 	},
 /obj/effect/decal/cleanable/dirt,
 /obj/effect/decal/cleanable/dirt,

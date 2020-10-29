@@ -1,13 +1,14 @@
 #! /bin/bash
 
-[[ -z $DME ]] && DME=nebula # DME file/BYOND project to compile and run
-[[ -z $PORT ]] && PORT=9001 # Port to run Dream Daemon on
-[[ -z $GIT ]] && GIT=true # true, false, or any valid command; return value decides whether git is called to update the code
+[[ -z $DME ]] && DME=baystation12 # DME file/BYOND project to compile and run
+[[ -z $PORT ]] && PORT=5000 # Port to run Dream Daemon on
+[[ -z $GIT ]] && GIT=false # true, false, or any valid command; return value decides whether git is called to update the code
 [[ -z $REPO ]] && REPO=upstream # Repo to fetch and pull from when updating
 [[ -z $BRANCH ]] && BRANCH=dev # Branch to pull when updating
 [[ -z $GITDIR ]] && GITDIR=. # Directory of code or git repo, relative to $SERVERDIR
 [[ -z $EXTRA_DM_SH_ARGS ]] && EXTRA_DM_SH_ARGS="" # Extra args to pass to dm.sh
 [[ -z $SERVERDIR ]] && SERVERDIR=../ # Location of the server, relative to the directory this script is called with a pwd of
+[[ -z $GULP_PATH ]] && GULP_PATH=gulp # Location of gulp executable
 
 cd $SERVERDIR
 
@@ -27,7 +28,7 @@ exec 5>&1 # duplicate fd 5 to fd 1 (stdout); this allows us to echo the log duri
 
 [[ -e stopserver ]] && rm stopserver
 while [[ ! -e stopserver ]]; do
-	MAP="$(cat use_map || echo "example")"
+	MAP="$(cat use_map || echo "torch")"
 
 	# Any part of the update process can set this to immediately halt all further updating and kill the script
 	# This is NOT for trivial errors; only set this if the error is such that the server should NOT be started
@@ -54,6 +55,17 @@ while [[ ! -e stopserver ]]; do
 		echo "Compilation failed; saving log to 'data/logs/compile_failure_$d.txt'!"
 		echo $DMoutput >> "data/logs/compile_failure_$d.txt"
 		UPDATE_FAIL=1 # this is probably fatal
+	else
+		echo "Compilation successful; running gulp..."
+		cd "$GITDIR/tgui"
+		Goutput="$($GULP_PATH | tee /dev/fd/5)"
+		Gret=$?
+		cd - # from $GITDIR/tgui
+		if [[ $Gret != 0 ]]; then # tgui might be borked but it shouldn't totally break stuff, so no UPDATE_FAIL here
+			d="$(date '+%X %x')"
+			echo "Gulp failed; saving log to 'data/logs/compile_failure_$d.txt'!"
+			echo $Goutput >> "data/logs/compile_failure_$d.txt"
+		fi
 	fi
 
 	[[ $UPDATE_FAIL != 0 ]] && exit $UPDATE_FAIL
@@ -64,6 +76,8 @@ while [[ ! -e stopserver ]]; do
 		cp "$GITDIR/$DME.rsc" .
 		cp -r "$GITDIR/nano" .
 		[[ ! -e btime.so && -e "$GITDIR/btime.so" ]] && cp "$GITDIR/btime.so" .
+		[[ ! -e tgui/assets ]] && mkdir -p tgui/assets
+		cp -r "$GITDIR/tgui/assets" ./tgui
 		[[ ! -e .git/logs ]] && mkdir -p .git/logs
 		cp "$GITDIR/.git/HEAD" ./.git/HEAD
 		cp "$GITDIR/.git/logs/HEAD" ./.git/logs/HEAD

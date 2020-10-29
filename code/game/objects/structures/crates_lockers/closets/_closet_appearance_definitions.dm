@@ -1,6 +1,6 @@
 /obj/structure/closet/debug/Initialize(var/maploading, var/newappearance)
 	closet_appearance = newappearance
-	. = ..(maploading)
+	. = ..()
 
 /decl/closet_appearance
 	var/color = COLOR_GRAY40
@@ -451,11 +451,25 @@
 	)
 
 /decl/closet_appearance/secure_closet/rd
+	color = COLOR_BOTTLE_GREEN
+	decals = list(
+		"lower_holes"
+	)
 	extra_decals = list(
-		"stripe_vertical_mid_full" = COLOR_CLOSET_GOLD,
+		"stripe_vertical_mid_full" = COLOR_GOLD,
 		"stripe_vertical_left_full" = COLOR_PURPLE,
 		"stripe_vertical_right_full" = COLOR_PURPLE,
-		"research" = COLOR_CLOSET_GOLD
+		"research" = COLOR_GOLD
+	)
+
+/decl/closet_appearance/secure_closet/corporate
+	color = COLOR_GREEN_GRAY
+	decals = list(
+		"lower_holes"
+	)
+	extra_decals = list(
+		"stripe_vertical_mid_full" = COLOR_GRAY80,
+		"research" = COLOR_OFF_WHITE
 	)
 
 /decl/closet_appearance/secure_closet/hydroponics

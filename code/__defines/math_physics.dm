@@ -5,8 +5,6 @@
 #define ONE_ATMOSPHERE             101.325 // kPa.
 #define IDEAL_GAS_ENTROPY_CONSTANT 1164    // (mol^3 * s^3) / (kg^3 * L).
 
-#define GRAVITY_CONSTANT			9.80665 // m/s^2
-
 // Radiation constants.
 #define STEFAN_BOLTZMANN_CONSTANT    5.6704e-8 // W/(m^2*K^4).
 #define COSMIC_RADIATION_TEMPERATURE 3.15      // K.
@@ -34,3 +32,10 @@
 
 #define SIMPLE_SIGN(X) ((X) < 0 ? -1 : 1)
 #define SIGN(X)        ((X) ? SIMPLE_SIGN(X) : 0)
+
+// Determines the exchange ratio of reagents being converted to gas and vice versa.
+#define REAGENT_GAS_EXCHANGE_FACTOR 10
+
+//where a unit turf is 1 on a side, its diagonal is sqrt(2)
+#define UNIT_DIAGONAL      1.41421356237
+#define HALF_UNIT_DIAGONAL 0.70710678118

@@ -56,7 +56,7 @@
 	..() //initial flash
 
 	//residual illumination
-	new /obj/effect/effect/smoke/illumination(loc, rand(190,240), 8, 1, light_colour) //same lighting power as flare
+	new /obj/effect/effect/smoke/illumination(src.loc, rand(190,240), range=8, power=1, color=light_colour) //same lighting power as flare
 
 	var/turf/TO = get_turf(src)
 	var/area/AO = TO.loc
@@ -64,24 +64,8 @@
 		//Everyone saw that!
 		for(var/mob/living/mob in GLOB.living_mob_list_)
 			var/turf/T = get_turf(mob)
-			var/area/A1 = T.loc
 			if(T && (T != TO) && (TO.z == T.z) && !mob.blinded)
-				var/visible = FALSE
-				if(A1 && (A1.area_flags & AREA_FLAG_EXTERNAL))
-					visible = TRUE
-				else
-					var/dir = get_dir(T,TO)
-					var/turf/pos = T
-					for (var/j in 0 to 5)
-						pos = get_step(pos, dir)
-						if(pos.opacity)
-							break
-						A1 = pos.loc
-						if(A1 && (A1.area_flags & AREA_FLAG_EXTERNAL))
-							visible = TRUE
-							break
-				if(visible)
-					to_chat(mob, SPAN_NOTICE("You see a bright light to \the [dir2text(get_dir(T,TO))]"))
+				to_chat(mob, SPAN_NOTICE("You see a bright light to \the [dir2text(get_dir(T,TO))]"))
 			CHECK_TICK
 				
 /obj/item/projectile/energy/electrode	//has more pain than a beam because it's harder to hit 
@@ -137,8 +121,8 @@
 	damage_type = TOX
 	weaken = 5
 
-/obj/item/projectile/energy/radiation
-	name = "radiation bolt"
+/obj/item/projectile/energy/phoron
+	name = "phoron bolt"
 	icon_state = "energy"
 	fire_sound = 'sound/effects/stealthoff.ogg'
 	damage = 20

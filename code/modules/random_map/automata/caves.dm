@@ -1,20 +1,60 @@
+GLOBAL_LIST_INIT(weighted_minerals_sparse, \
+	list(                   \
+		MATERIAL_PITCHBLENDE =  8, \
+		MATERIAL_PLATINUM =     8, \
+		MATERIAL_HEMATITE =    35, \
+		MATERIAL_GRAPHITE =    35, \
+		MATERIAL_DIAMOND =      5, \
+		MATERIAL_GOLD =         8, \
+		MATERIAL_SILVER =       8, \
+		MATERIAL_PHORON =      10, \
+		MATERIAL_QUARTZ =       3, \
+		MATERIAL_PYRITE =       3, \
+		MATERIAL_SPODUMENE =    3, \
+		MATERIAL_CINNABAR =     3, \
+		MATERIAL_PHOSPHORITE =  3, \
+		MATERIAL_ROCK_SALT =    3, \
+		MATERIAL_POTASH =       3, \
+		MATERIAL_BAUXITE =      3, \
+		MATERIAL_RUTILE = 		3
+	))
+
+GLOBAL_LIST_INIT(weighted_minerals_rich, \
+	list(                   \
+		MATERIAL_PITCHBLENDE = 10, \
+		MATERIAL_PLATINUM =    10, \
+		MATERIAL_HEMATITE =    20, \
+		MATERIAL_GRAPHITE =    20, \
+		MATERIAL_DIAMOND =      5, \
+		MATERIAL_GOLD =        10, \
+		MATERIAL_SILVER =      10, \
+		MATERIAL_PHORON =      20, \
+		MATERIAL_QUARTZ =       1, \
+		MATERIAL_PYRITE =       1, \
+		MATERIAL_SPODUMENE =    1, \
+		MATERIAL_CINNABAR =     1, \
+		MATERIAL_PHOSPHORITE =  1, \
+		MATERIAL_ROCK_SALT =    1, \
+		MATERIAL_POTASH =       1, \
+		MATERIAL_BAUXITE =      1, \
+		MATERIAL_RUTILE = 		1
+	))
+
 /datum/random_map/automata/cave_system
 	iterations = 5
 	descriptor = "moon caves"
-	wall_type =  /turf/simulated/wall/natural
+	wall_type =  /turf/simulated/mineral
 	floor_type = /turf/simulated/floor/asteroid
 	target_turf_type = /turf/unsimulated/mask
 
-	var/mineral_turf = /turf/simulated/wall/natural/random
+	var/mineral_turf = /turf/simulated/mineral/random
 	var/list/ore_turfs = list()
 	var/list/minerals_sparse
 	var/list/minerals_rich
 
 /datum/random_map/automata/cave_system/New()
-	if(!minerals_sparse) 
-		minerals_sparse = SSmaterials.weighted_minerals_sparse
-	if(!minerals_rich)   
-		minerals_rich =   SSmaterials.weighted_minerals_rich
+	if(!minerals_sparse) minerals_sparse = GLOB.weighted_minerals_sparse
+	if(!minerals_rich)   minerals_rich =   GLOB.weighted_minerals_rich
 	..()
 
 /datum/random_map/automata/cave_system/get_appropriate_path(var/value)

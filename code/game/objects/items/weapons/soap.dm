@@ -1,8 +1,8 @@
-/obj/item/soap
+/obj/item/weapon/soap
 	name = "soap"
 	desc = "A cheap bar of soap. Doesn't smell."
 	gender = PLURAL
-	icon = 'icons/obj/items/soap.dmi'
+	icon = 'icons/obj/soap.dmi'
 	icon_state = "soap"
 	atom_flags = ATOM_FLAG_OPEN_CONTAINER
 	w_class = ITEM_SIZE_SMALL
@@ -18,10 +18,13 @@
 	var/decal_name
 	var/list/decals = list("diamond", "heart", "circle", "triangle", "")
 
-/obj/item/soap/Initialize()
-	. = ..()
+/obj/item/weapon/soap/New()
+	..()
 	create_reagents(30)
 	wet()
+
+/obj/item/weapon/soap/Initialize()
+	. = ..()
 	var/shape = pick(valid_shapes)
 	var/scent = pick(valid_scents)
 	var/smelly = pick(scent_intensity)
@@ -31,14 +34,16 @@
 	desc = "\A [shape] bar of soap. It smells [smelly] of [scent]."
 	update_icon()
 
-/obj/item/soap/proc/wet()
-	reagents.add_reagent(/decl/material/liquid/cleaner, 15)
+/obj/item/weapon/soap/proc/wet()
+	reagents.add_reagent(/datum/reagent/space_cleaner, 15)
 
-/obj/item/soap/Crossed(var/mob/living/AM)
-	if(istype(AM))
+/obj/item/weapon/soap/Crossed(var/mob/living/AM)
+	if (istype(AM))
+		if(AM.pulledby)
+			return
 		AM.slip("the [src.name]",3)
 
-/obj/item/soap/afterattack(atom/target, mob/user, proximity)
+/obj/item/weapon/soap/afterattack(atom/target, mob/user as mob, proximity)
 	if(!proximity) return
 	//I couldn't feasibly  fix the overlay bugs caused by cleaning items we are wearing.
 	//So this is a workaround. This also makes more sense from an IC standpoint. ~Carn
@@ -78,7 +83,7 @@
 		user.update_personal_goal(/datum/goal/clean, 1)
 
 //attack_as_weapon
-/obj/item/soap/attack(mob/living/target, mob/living/user, var/target_zone)
+/obj/item/weapon/soap/attack(mob/living/target, mob/living/user, var/target_zone)
 	if(target && user && ishuman(target) && ishuman(user) && !target.stat && !user.stat && user.zone_sel &&user.zone_sel.selecting == BP_MOUTH)
 		user.visible_message("<span class='danger'>\The [user] washes \the [target]'s mouth out with soap!</span>")
 		if(reagents)
@@ -87,19 +92,19 @@
 		return
 	..()
 
-/obj/item/soap/attackby(var/obj/item/I, var/mob/user)
-	if(istype(I, /obj/item/key))
+/obj/item/weapon/soap/attackby(var/obj/item/I, var/mob/user)
+	if(istype(I, /obj/item/weapon/key))
 		if(!key_data)
 			to_chat(user, "<span class='notice'>You imprint \the [I] into \the [src].</span>")
-			var/obj/item/key/K = I
+			var/obj/item/weapon/key/K = I
 			key_data = K.key_data
 			update_icon()
 		return
 	..()
 
-/obj/item/soap/on_update_icon()
+/obj/item/weapon/soap/on_update_icon()
 	overlays.Cut()
 	if(key_data)
-		overlays += image(icon, icon_state = "soap_key_overlay")
+		overlays += image('icons/obj/items.dmi', icon_state = "soap_key_overlay")
 	else if(decal_name)
 		overlays +=	overlay_image(icon, "decal-[decal_name]")

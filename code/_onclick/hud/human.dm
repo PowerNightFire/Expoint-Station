@@ -1,9 +1,14 @@
 /mob/living/carbon/human
 	hud_type = /datum/hud/human
 
-/datum/hud/human/FinalizeInstantiation(var/ui_style='icons/mob/screen/white.dmi', var/ui_color = "#ffffff", var/ui_alpha = 255)
+/datum/hud/human/FinalizeInstantiation(var/ui_style='icons/mob/screen1_White.dmi', var/ui_color = "#ffffff", var/ui_alpha = 255)
 	var/mob/living/carbon/human/target = mymob
-	var/datum/hud_data/hud_data = istype(target) ? target.species.hud : new()
+	var/datum/hud_data/hud_data
+	if(!istype(target))
+		hud_data = new()
+	else
+		hud_data = target.species.hud
+
 	if(hud_data.icon)
 		ui_style = hud_data.icon
 
@@ -54,9 +59,11 @@
 
 	// Draw the attack intent dialogue.
 	if(hud_data.has_a_intent)
+
 		using = new /obj/screen/intent()
 		src.adding += using
 		action_intent = using
+
 		hud_elements |= using
 
 	if(hud_data.has_m_intent)
@@ -91,6 +98,33 @@
 		using.alpha = ui_alpha
 		src.adding += using
 
+		inv_box = new /obj/screen/inventory()
+		inv_box.SetName("r_hand")
+		inv_box.icon = ui_style
+		inv_box.icon_state = "r_hand_inactive"
+		if(mymob && !mymob.hand)	//This being 0 or null means the right hand is in use
+			inv_box.icon_state = "r_hand_active"
+		inv_box.screen_loc = ui_rhand
+		inv_box.slot_id = slot_r_hand
+		inv_box.color = ui_color
+		inv_box.alpha = ui_alpha
+
+		src.r_hand_hud_object = inv_box
+		src.adding += inv_box
+
+		inv_box = new /obj/screen/inventory()
+		inv_box.SetName("l_hand")
+		inv_box.icon = ui_style
+		inv_box.icon_state = "l_hand_inactive"
+		if(mymob && mymob.hand)	//This being 1 means the left hand is in use
+			inv_box.icon_state = "l_hand_active"
+		inv_box.screen_loc = ui_lhand
+		inv_box.slot_id = slot_l_hand
+		inv_box.color = ui_color
+		inv_box.alpha = ui_alpha
+		src.l_hand_hud_object = inv_box
+		src.adding += inv_box
+
 		using = new /obj/screen/inventory()
 		using.SetName("hand")
 		using.icon = ui_style
@@ -108,8 +142,6 @@
 		using.color = ui_color
 		using.alpha = ui_alpha
 		src.adding += using
-
-		rebuild_hands(skip_client_update = TRUE)
 
 	if(hud_data.has_resist)
 		using = new /obj/screen()
@@ -131,6 +163,14 @@
 		mymob.throw_icon.alpha = ui_alpha
 		src.hotkeybuttons += mymob.throw_icon
 		hud_elements |= mymob.throw_icon
+
+		mymob.pullin = new /obj/screen()
+		mymob.pullin.icon = ui_style
+		mymob.pullin.icon_state = "pull0"
+		mymob.pullin.SetName("pull")
+		mymob.pullin.screen_loc = ui_pull_resist
+		src.hotkeybuttons += mymob.pullin
+		hud_elements |= mymob.pullin
 
 	if(hud_data.has_internals)
 		mymob.internals = new /obj/screen()
@@ -209,14 +249,6 @@
 		mymob.hydration_icon.screen_loc = ui_nutrition_small
 		hud_elements |= mymob.hydration_icon
 
-	if(hud_data.has_up_hint)
-		mymob.up_hint = new /obj/screen()
-		mymob.up_hint.icon = ui_style
-		mymob.up_hint.icon_state = "uphint0"
-		mymob.up_hint.SetName("up hint")
-		mymob.up_hint.screen_loc = ui_up_hint
-		hud_elements |= mymob.up_hint
-
 	mymob.pain = new /obj/screen/fullscreen/pain( null )
 	hud_elements |= mymob.pain
 
@@ -251,10 +283,8 @@
 	mymob.radio_use_icon.alpha = ui_alpha
 
 	mymob.client.screen = list()
-	if(length(hand_hud_objects))
-		mymob.client.screen += hand_hud_objects
-	if(length(hud_elements))
-		mymob.client.screen += hud_elements
+
+	mymob.client.screen += hud_elements
 	mymob.client.screen += src.adding + src.hotkeybuttons
 	inventory_shown = 0
 

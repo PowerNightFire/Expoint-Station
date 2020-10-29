@@ -1,42 +1,45 @@
-/obj/item/book/tome
+/obj/item/weapon/book/tome
 	name = "arcane tome"
-	icon = 'icons/obj/items/tome.dmi'
+	icon = 'icons/obj/weapons.dmi'
 	icon_state = "tome"
 	throw_speed = 1
 	throw_range = 5
-	w_class = ITEM_SIZE_SMALL
+	w_class = 2
 	unique = 1
 	carved = 2 // Don't carve it
 
-/obj/item/book/tome/attack_self(var/mob/user)
+/obj/item/weapon/book/tome/attack_self(var/mob/user)
 	if(!iscultist(user))
 		to_chat(user, "\The [src] seems full of illegible scribbles. Is this a joke?")
 	else
 		to_chat(user, "Hold \the [src] in your hand while drawing a rune to use it.")
 
-/obj/item/book/tome/examine(mob/user)
+/obj/item/weapon/book/tome/examine(mob/user)
 	. = ..()
 	if(!iscultist(user))
 		to_chat(user, "An old, dusty tome with frayed edges and a sinister looking cover.")
 	else
 		to_chat(user, "The scriptures of Nar-Sie, The One Who Sees, The Geometer of Blood. Contains the details of every ritual his followers could think of. Most of these are useless, though.")
 
-/obj/item/book/tome/afterattack(var/atom/A, var/mob/user, var/proximity)
+/obj/item/weapon/book/tome/afterattack(var/atom/A, var/mob/user, var/proximity)
 	if(!proximity || !iscultist(user))
 		return
-	if(A.reagents && A.reagents.has_reagent(/decl/material/liquid/water))
-		to_chat(user, SPAN_NOTICE("You desecrate \the [A]."))
-		LAZYSET(A.reagents.reagent_data, /decl/material/liquid/water, list("holy" = FALSE))
+	if(A.reagents && A.reagents.has_reagent(/datum/reagent/water/holywater))
+		to_chat(user, "<span class='notice'>You unbless \the [A].</span>")
+		var/holy2water = A.reagents.get_reagent_amount(/datum/reagent/water/holywater)
+		A.reagents.del_reagent(/datum/reagent/water/holywater)
+		A.reagents.add_reagent(/datum/reagent/water, holy2water)
 
 /mob/proc/make_rune(var/rune, var/cost = 5, var/tome_required = 0)
+	var/has_tome = 0
 	var/has_robes = 0
 	var/cult_ground = 0
-
-	var/has_tome = locate(/obj/item/book/tome) in get_held_items()
-	if(tome_required && mob_needs_tome() && !has_tome)
+	if(istype(get_active_hand(), /obj/item/weapon/book/tome) || istype(get_inactive_hand(), /obj/item/weapon/book/tome))
+		has_tome = 1
+	else if(tome_required && mob_needs_tome())
 		to_chat(src, "<span class='warning'>This rune is too complex to draw by memory, you need to have a tome in your hand to draw it.</span>")
 		return
-	if(istype(get_equipped_item(slot_head_str), /obj/item/clothing/head/culthood) && istype(get_equipped_item(slot_wear_suit_str), /obj/item/clothing/suit/cultrobes) && istype(get_equipped_item(slot_shoes_str), /obj/item/clothing/shoes/cult))
+	if(istype(get_equipped_item(slot_head), /obj/item/clothing/head/culthood) && istype(get_equipped_item(slot_wear_suit), /obj/item/clothing/suit/cultrobes) && istype(get_equipped_item(slot_shoes), /obj/item/clothing/shoes/cult))
 		has_robes = 1
 	var/turf/T = get_turf(src)
 	if(T.holy)
@@ -97,7 +100,7 @@
 	return 0
 
 /mob/living/carbon/human/make_rune(var/rune, var/cost, var/tome_required)
-	if(should_have_organ(BP_HEART) && vessel && vessel.total_volume < species.blood_volume * 0.7)
+	if(should_have_organ(BP_HEART) && vessel && !vessel.has_reagent(/datum/reagent/blood, species.blood_volume * 0.7))
 		to_chat(src, "<span class='danger'>You are too weak to draw runes.</span>")
 		return
 	..()
@@ -107,7 +110,7 @@
 
 /mob/living/carbon/human/remove_blood_simple(var/blood)
 	if(should_have_organ(BP_HEART))
-		vessel.remove_any(blood)
+		vessel.remove_reagent(/datum/reagent/blood, blood)
 
 /mob/proc/get_blood_name()
 	return "blood"

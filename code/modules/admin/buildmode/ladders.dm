@@ -21,7 +21,9 @@
 	if(ladder_upper && ladder_lower)
 		to_chat(user, "<span class='notice'>Ladder locations set, building ladders.</span>")
 		Log("Created a ladder between '[log_info_line(ladder_upper)]' and '[log_info_line(ladder_lower)]'.")
-		new /obj/structure/ladder(ladder_upper)
-		new /obj/structure/ladder(ladder_lower)
+		var/obj/structure/ladder/upper = new /obj/structure/ladder(ladder_upper)
+		var/obj/structure/ladder/lower = new /obj/structure/ladder/up(ladder_lower)
+		upper.target_down = lower
+		lower.target_up = upper
 		ladder_upper = null
 		ladder_lower = null

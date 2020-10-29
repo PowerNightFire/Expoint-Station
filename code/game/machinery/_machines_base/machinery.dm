@@ -78,13 +78,11 @@ Class Procs:
 
 /obj/machinery
 	name = "machinery"
-	w_class = ITEM_SIZE_STRUCTURE
+	icon = 'icons/obj/stationobjs.dmi'
+	w_class = ITEM_SIZE_NO_CONTAINER
 	layer = STRUCTURE_LAYER // Layer under items
-	throw_speed = 1
-	throw_range = 5
 
 	var/stat = 0
-	var/waterproof = TRUE
 	var/reason_broken = 0
 	var/stat_immune = NOSCREEN | NOINPUT // The machine will never set stat to these flags.
 	var/emagged = 0
@@ -98,9 +96,9 @@ Class Procs:
 	var/active_power_usage = 0
 	var/power_channel = EQUIP //EQUIP, ENVIRON or LIGHT
 	var/power_init_complete = FALSE // Helps with bookkeeping when initializing atoms. Don't modify.
-	var/list/component_parts           //List of component instances. Expected type: /obj/item/stock_parts
-	var/list/uncreated_component_parts = list(/obj/item/stock_parts/power/apc) //List of component paths which have delayed init. Indeces = number of components.
-	var/list/maximum_component_parts = list(/obj/item/stock_parts = 10)         //null - no max. list(type part = number max).
+	var/list/component_parts           //List of component instances. Expected type: /obj/item/weapon/stock_parts
+	var/list/uncreated_component_parts = list(/obj/item/weapon/stock_parts/power/apc) //List of component paths which have delayed init. Indeces = number of components.
+	var/list/maximum_component_parts = list(/obj/item/weapon/stock_parts = 10)         //null - no max. list(type part = number max).
 	var/uid
 	var/panel_open = 0
 	var/global/gl_uid = 1
@@ -112,12 +110,10 @@ Class Procs:
 	var/base_type           // For mapped buildable types, set this to be the base type actually buildable.
 	var/id_tag              // This generic variable is to be used by mappers to give related machines a string key. In principle used by radio stock parts.
 	var/frame_type = /obj/machinery/constructable_frame/machine_frame/deconstruct // what is created when the machine is dismantled.
-	var/required_interaction_dexterity = DEXTERITY_KEYBOARDS
 
-	var/list/processing_parts // Component parts queued for processing by the machine. Expected type: /obj/item/stock_parts
+	var/list/processing_parts // Component parts queued for processing by the machine. Expected type: /obj/item/weapon/stock_parts
 	var/processing_flags         // What is being processed
-
-	var/list/initial_access		// Used to setup network locks on machinery at populate_parts.
+	var/silicon_restriction = FALSE // FALSE or one of the STATUS_* flags. If set, will force the given status flag if a silicon tries to access the machine.
 
 /obj/machinery/Initialize(mapload, d=0, populate_parts = TRUE)
 	. = ..()
@@ -140,10 +136,9 @@ Class Procs:
 	. = ..()
 
 /obj/machinery/proc/ProcessAll(var/wait)
-	SHOULD_NOT_SLEEP(TRUE)
 	if(processing_flags & MACHINERY_PROCESS_COMPONENTS)
 		for(var/thing in processing_parts)
-			var/obj/item/stock_parts/part = thing
+			var/obj/item/weapon/stock_parts/part = thing
 			if(part.machine_process(src) == PROCESS_KILL)
 				part.stop_processing()
 
@@ -152,6 +147,32 @@ Class Procs:
 
 /obj/machinery/Process()
 	return PROCESS_KILL // Only process if you need to.
+
+/obj/machinery/emp_act(severity)
+	if(use_power && stat == 0)
+		use_power_oneoff(7500/severity)
+
+		var/obj/effect/overlay/pulse2 = new /obj/effect/overlay(loc)
+		pulse2.icon = 'icons/effects/effects.dmi'
+		pulse2.icon_state = "empdisable"
+		pulse2.SetName("emp sparks")
+		pulse2.anchored = 1
+		pulse2.set_dir(pick(GLOB.cardinal))
+
+		spawn(10)
+			qdel(pulse2)
+	..()
+
+/obj/machinery/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			qdel(src)
+		if(2.0)
+			if (prob(50))
+				qdel(src)
+		if(3.0)
+			if (prob(25))
+				qdel(src)
 
 /obj/machinery/proc/set_broken(new_state, cause = MACHINE_BROKEN_GENERIC)
 	if(stat_immune & BROKEN)
@@ -185,8 +206,8 @@ Class Procs:
 /obj/machinery/proc/is_broken(var/additional_flags = 0)
 	return (stat & (BROKEN|additional_flags))
 
-/obj/machinery/proc/is_unpowered(var/additional_flags = 0)
-	return (stat & (NOPOWER|additional_flags))
+/obj/machinery/proc/is_powered(var/additional_flags = 0)
+	return !(stat & (NOPOWER|additional_flags))
 
 /obj/machinery/proc/operable(var/additional_flags = 0)
 	return !inoperable(additional_flags)
@@ -202,6 +223,11 @@ Class Procs:
 		return STATUS_CLOSE
 
 	if(user.direct_machine_interface(src))
+		if (silicon_restriction && issilicon(user))
+			if (silicon_restriction == STATUS_CLOSE)
+				to_chat(user, SPAN_WARNING("Remote AI systems detected. Firewall protections forbid remote AI access."))
+			return silicon_restriction
+
 		return ..()
 
 	if(stat & NOSCREEN)
@@ -221,7 +247,7 @@ Class Procs:
 	return TRUE
 
 /obj/machinery/CanUseTopicPhysical(var/mob/user)
-	if((stat & BROKEN) && (reason_broken & MACHINE_BROKEN_GENERIC))
+	if(stat & BROKEN)
 		return STATUS_CLOSE
 
 	return GLOB.physical_state.can_use_topic(nano_host(), user)
@@ -235,7 +261,7 @@ Class Procs:
 
 /obj/machinery/Topic(href, href_list, datum/topic_state/state)
 	if(href_list["mechanics_text"] && construct_state) // This is an OOC examine thing handled via Topic; specifically bypass all checks, but do nothing other than message to chat.
-		var/list/info = get_tool_manipulation_info()
+		var/list/info = construct_state.mechanics_info()
 		if(info)
 			to_chat(usr, jointext(info, "<br>"))
 			return TOPIC_HANDLED
@@ -243,9 +269,6 @@ Class Procs:
 	. = ..()
 	if(. == TOPIC_REFRESH)
 		updateUsrDialog() // Update legacy UIs to the extent possible.
-
-/obj/machinery/proc/get_tool_manipulation_info()
-	return construct_state?.mechanics_info()
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -270,7 +293,8 @@ Class Procs:
 		return
 	if(!CanPhysicallyInteract(user))
 		return FALSE // The interactions below all assume physical access to the machine. If this is not the case, we let the machine take further action.
-	if(!user.check_dexterity(required_interaction_dexterity))
+	if(!user.IsAdvancedToolUser())
+		to_chat(user, "<span class='warning'>You don't have the dexterity to do this!</span>")
 		return TRUE
 	if(ishuman(user))
 		var/mob/living/carbon/human/H = user
@@ -305,13 +329,14 @@ Class Procs:
 	set_noinput(TRUE)
 	set_noscreen(TRUE)
 	for(var/thing in component_parts)
-		var/obj/item/stock_parts/part = thing
+		var/obj/item/weapon/stock_parts/part = thing
 		part.on_refresh(src)
-	var/list/missing = missing_parts(TRUE)
+	var/list/missing = missing_parts()
 	set_broken(!!missing, MACHINE_BROKEN_NO_PARTS)
 
 /obj/machinery/proc/state(var/msg)
-	audible_message(SPAN_NOTICE("[html_icon(src)] [msg]"), null, 2)
+	for(var/mob/O in hearers(src, null))
+		O.show_message("[icon2html(src, O)] <span class = 'notice'>[msg]</span>", 2)
 
 /obj/machinery/proc/ping(text=null)
 	if (!text)
@@ -341,32 +366,24 @@ Class Procs:
 	return 0
 
 /obj/machinery/proc/dismantle()
-	var/obj/item/stock_parts/circuitboard/circuit = get_component_of_type(/obj/item/stock_parts/circuitboard)
+	playsound(loc, 'sound/items/Crowbar.ogg', 50, 1)
+	var/obj/item/weapon/stock_parts/circuitboard/circuit = get_component_of_type(/obj/item/weapon/stock_parts/circuitboard)
 	if(circuit)
 		circuit.deconstruct(src)
-
-	var/obj/frame
-	if(ispath(frame_type, /obj/item/pipe) || ispath(frame_type, /obj/structure/disposalconstruct))
-		frame = new frame_type(get_turf(src), src)
-	else if(frame_type)
-		frame = new frame_type(get_turf(src), dir)
-
-	var/list/expelled_components = list()
+	if(ispath(frame_type, /obj/item/pipe))
+		new frame_type(get_turf(src), src)
+	else
+		new frame_type(get_turf(src), dir)
 	for(var/I in component_parts)
-		expelled_components += uninstall_component(I, refresh_parts = FALSE)
+		uninstall_component(I, refresh_parts = FALSE)
 	while(LAZYLEN(uncreated_component_parts))
 		var/path = uncreated_component_parts[1]
-		expelled_components += uninstall_component(path, refresh_parts = FALSE)
-	if(frame)
-		var/datum/extension/parts_stash/stash = get_extension(frame, /datum/extension/parts_stash)
-		if(stash)
-			stash.stash(expelled_components)
-
+		uninstall_component(path, refresh_parts = FALSE)
 	for(var/obj/O in src)
 		O.dropInto(loc)
 
 	qdel(src)
-	return frame
+	return 1
 
 /obj/machinery/InsertedContents()
 	return (contents - component_parts)
@@ -388,19 +405,14 @@ Class Procs:
 /obj/machinery/proc/display_parts(mob/user)
 	to_chat(user, "<span class='notice'>Following parts detected in the machine:</span>")
 	for(var/obj/item/C in component_parts)
-		var/line = "<span class='notice'>	[C.name]</span>"
-		if(!C.health)
-			line = "<span class='warning'>	[C.name] (destroyed)</span>"
-		else if(C.health < 0.75 * C.max_health)
-			line = "<span class='notice'>	[C.name] (damaged)</span>"
-		to_chat(user, line)
+		to_chat(user, "<span class='notice'>	[C.name]</span>")
 	for(var/path in uncreated_component_parts)
 		var/obj/item/thing = path
 		to_chat(user, "<span class='notice'>	[initial(thing.name)] ([uncreated_component_parts[path] || 1])</span>")
 
 /obj/machinery/examine(mob/user)
 	. = ..()
-	if(component_parts && (hasHUD(user, HUD_SCIENCE) || (construct_state && construct_state.visible_components)))
+	if(component_parts && hasHUD(user, HUD_SCIENCE))
 		display_parts(user)
 	if(stat & NOSCREEN)
 		to_chat(user, "It is missing a screen, making it hard to interact with.")
@@ -419,10 +431,10 @@ Class Procs:
 		to_chat(user, "\The [src] is missing [english_list(parts)], rendering it inoperable.")
 
 // This is really pretty crap and should be overridden for specific machines.
-/obj/machinery/fluid_act(var/datum/reagents/fluids)
+/obj/machinery/water_act(var/depth)
 	..()
-	if(!(stat & (NOPOWER|BROKEN)) && !waterproof && (fluids.total_volume > FLUID_DEEP))
-		explosion_act(3)
+	if(!(stat & (NOPOWER|BROKEN)) && !waterproof && (depth > FLUID_DEEP))
+		ex_act(3)
 
 /obj/machinery/Move()
 	. = ..()
@@ -430,28 +442,6 @@ Class Procs:
 		fluid_update()
 
 /obj/machinery/get_cell()
-	var/obj/item/stock_parts/power/battery/battery = get_component_of_type(/obj/item/stock_parts/power/battery)
+	var/obj/item/weapon/stock_parts/power/battery/battery = get_component_of_type(/obj/item/weapon/stock_parts/power/battery)
 	if(battery)
 		return battery.get_cell()
-
-/obj/machinery/building_cost()
-	. = ..()
-	var/list/component_types = types_of_component(/obj/item/stock_parts)
-	for(var/path in component_types)
-		var/obj/item/stock_parts/part = get_component_of_type(path)
-		var/list/part_costs = part.building_cost()
-		for(var/key in part_costs)
-			.[key] += part_costs[key] * component_types[path]
-
-/obj/machinery/emag_act(remaining_charges, mob/user, emag_source)
-	. = ..()
-	for(var/obj/item/stock_parts/access_lock/lock in get_all_components_of_type(/obj/item/stock_parts/access_lock))
-		. = max(., lock.emag_act())
-
-/obj/machinery/proc/on_user_login(var/mob/M)
-	return
-
-/obj/machinery/get_req_access()
-	. = ..() || list()
-	for(var/obj/item/stock_parts/network_lock/lock in get_all_components_of_type(/obj/item/stock_parts/network_lock))
-		.+= lock.get_req_access()

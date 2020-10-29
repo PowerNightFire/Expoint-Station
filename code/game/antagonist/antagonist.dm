@@ -37,7 +37,7 @@
 	var/initial_spawn_req = 1               // Gamemode using this template won't start without this # candidates.
 	var/initial_spawn_target = 3            // Gamemode will attempt to spawn this many antags.
 	var/announced                           // Has an announcement been sent?
-	var/spawn_announcement                  // When the datum spawn proc is called, does it announce to the world?
+	var/spawn_announcement                  // When the datum spawn proc is called, does it announce to the world? (ie. borers)
 	var/spawn_announcement_title            // Report title.
 	var/spawn_announcement_sound            // Report sound clip.
 	var/spawn_announcement_delay            // Time between initial spawn and round announcement.
@@ -51,10 +51,10 @@
 	var/flags = 0                           // Various runtime options.
 	var/show_objectives_on_creation = 1     // Whether or not objectives are shown when a player is added to this antag datum
 	var/datum/antag_skill_setter/skill_setter = /datum/antag_skill_setter/generic // Used to set up skills.
-	var/decl/language/required_language
+	var/datum/language/required_language = null
 
 	// Used for setting appearance.
-	var/list/valid_species
+	var/list/valid_species =       list(SPECIES_UNATHI,SPECIES_SKRELL,SPECIES_HUMAN,SPECIES_VOX)
 	var/min_player_age = 14
 
 	// Runtime vars.
@@ -67,11 +67,11 @@
 	var/list/starting_locations =  list()   // Spawn points.
 	var/list/global_objectives =   list()   // Universal objectives if any.
 	var/list/candidates =          list()   // Potential candidates.
-	var/list/faction_members =     list()   // Semi-antags (in-round revs, loyalists)
+	var/list/faction_members =     list()   // Semi-antags (in-round revs, borer thralls)
 
 	// ID card stuff.
 	var/default_access = list()
-	var/id_type = /obj/item/card/id
+	var/id_type = /obj/item/weapon/card/id
 
 	var/antag_text = "You are an antagonist! Within the rules, \
 		try to act as an opposing force to the crew. Further RP and try to make sure \

@@ -19,7 +19,7 @@
 	var/state = 0
 	var/gibs_ready = 0
 	var/obj/crayon
-	var/obj/item/chems/pill/detergent/detergent
+	var/obj/item/weapon/reagent_containers/pill/detergent/detergent
 	obj_flags = OBJ_FLAG_ANCHORABLE
 	clicksound = "button"
 	clickvol = 40
@@ -86,6 +86,12 @@
 					addtimer(CALLBACK(C, /obj/item/clothing/proc/change_smell), detergent.smell_clean_time, TIMER_UNIQUE | TIMER_OVERRIDE)
 	QDEL_NULL(detergent)
 
+	//Tanning!
+	for(var/obj/item/stack/hairlesshide/HH in contents)
+		var/obj/item/stack/wetleather/WL = new(src)
+		WL.amount = HH.amount
+		qdel(HH)
+
 	update_use_power(POWER_USE_IDLE)
 	if(locate(/mob/living) in src)
 		gibs_ready = 1
@@ -118,19 +124,19 @@
 /obj/machinery/washing_machine/components_are_accessible(path)
 	return !(state & WASHER_STATE_RUNNING) && ..()
 
-/obj/machinery/washing_machine/attackby(obj/item/W, mob/user)
+/obj/machinery/washing_machine/attackby(obj/item/weapon/W, mob/user)
 	if(!(state & WASHER_STATE_CLOSED))
-		if(!crayon && istype(W,/obj/item/pen/crayon))
+		if(!crayon && istype(W,/obj/item/weapon/pen/crayon))
 			if(!user.unEquip(W, src))
 				return
 			crayon = W
 			return TRUE
-		if(!detergent && istype(W,/obj/item/chems/pill/detergent))
+		if(!detergent && istype(W,/obj/item/weapon/reagent_containers/pill/detergent))
 			if(!user.unEquip(W, src))
 				return
 			detergent = W
 			return TRUE
-	if(istype(W, /obj/item/holder)) // Mob holder
+	if(istype(W, /obj/item/weapon/holder)) // Mob holder
 		for(var/mob/living/doggy in W)
 			doggy.forceMove(src)
 		qdel(W)
@@ -138,13 +144,14 @@
 		update_icon()
 		return TRUE
 
-	else if(istype(W,/obj/item/clothing/under)  || \
+	else if(istype(W,/obj/item/stack/hairlesshide) || \
+		istype(W,/obj/item/clothing/under)  || \
 		istype(W,/obj/item/clothing/mask)   || \
 		istype(W,/obj/item/clothing/head)   || \
 		istype(W,/obj/item/clothing/gloves) || \
 		istype(W,/obj/item/clothing/shoes)  || \
 		istype(W,/obj/item/clothing/suit)   || \
-		istype(W,/obj/item/bedsheet) || \
+		istype(W,/obj/item/weapon/bedsheet) || \
 		istype(W,/obj/item/underwear/))
 
 		//YES, it's hardcoded... saves a var/can_be_washed for every single clothing item.
@@ -152,6 +159,9 @@
 			to_chat(user, "This item does not fit.")
 			return
 		if ( istype(W,/obj/item/clothing/suit/syndicatefake ) )
+			to_chat(user, "This item does not fit.")
+			return
+		if ( istype(W,/obj/item/clothing/suit/cyborg_suit ) )
 			to_chat(user, "This item does not fit.")
 			return
 		if ( istype(W,/obj/item/clothing/suit/bomb_suit ) )
@@ -167,6 +177,9 @@
 			to_chat(user, "This item does not fit.")
 			return
 		if ( istype(W,/obj/item/clothing/mask/smokable/cigarette ) )
+			to_chat(user, "This item does not fit.")
+			return
+		if ( istype(W,/obj/item/clothing/head/syndicatefake ) )
 			to_chat(user, "This item does not fit.")
 			return
 		if ( istype(W,/obj/item/clothing/head/helmet ) )

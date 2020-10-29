@@ -34,7 +34,7 @@
 	random = FALSE
 	var/list/supplies = list("1" = 0, "2" = 0, "3" = 0, "4" = 0, "5" = 0, "6" = 0) //engine,hull,electronics,food,fuel
 	var/list/supply_cost = list("1" = 1000, "2" = 950, "3" = 1100, "4" = 75, "5" = 100)
-	var/list/supply_name = list("1" = "engine parts", "2" = "hull parts", "3" = "electronic parts", "4" = "food", "5" = "fuel", "6" = "cash")
+	var/list/supply_name = list("1" = "engine parts", "2" = "hull parts", "3" = "electronic parts", "4" = "food", "5" = "fuel", "6" = "thalers")
 	var/list/settlers = list()
 	var/num_traitors = 0
 	var/list/events = list(ORION_TRAIL_RAIDERS		= 3,
@@ -156,7 +156,7 @@
 			dat = "<center><h1>[event_title]</h1>[event_desc]<br><br>Distance to next port: [distance]<br><b>[event_info]</b><br></center><br>[event_actions]"
 		if(ORION_VIEW_SUPPLIES)
 			dat  = "<center><h1>Supplies</h1>View your supplies or buy more when at a spaceport.</center><BR>"
-			dat += "<center>You have [supplies["6"]] cash.</center>"
+			dat += "<center>You have [supplies["6"]] [GLOB.using_map.local_currency_name].</center>"
 			for(var/i=1; i<6; i++)
 				var/amm = (i>3?10:1)
 				dat += "[supplies["[i]"]] [supply_name["[i]"]][event==ORION_TRAIL_SPACEPORT ? ", <a href='?src=\ref[src];buy=[i]'>buy [amm] for [supply_cost["[i]"]]T</a>" : ""]<BR>"
@@ -463,21 +463,21 @@
 /obj/machinery/computer/arcade/orion_trail/proc/win()
 	src.visible_message("\The [src] plays a triumpant tune, stating 'CONGRATULATIONS, YOU HAVE MADE IT TO ORION.'")
 	if(emagged)
-		new /obj/item/orion_ship(src.loc)
+		new /obj/item/weapon/orion_ship(src.loc)
 		log_and_message_admins("made it to Orion on an emagged machine and got an explosive toy ship.")
 	else
 		prizevend()
 	event = null
 	src.updateUsrDialog()
 
-/obj/item/orion_ship
+/obj/item/weapon/orion_ship
 	name = "model settler ship"
 	desc = "A model spaceship, it looks like those used back in the day when travelling to Orion! It even has a miniature FX-293 reactor, which was renowned for its instability and tendency to explode..."
 	icon = 'icons/obj/toy.dmi'
 	icon_state = "ship"
 	w_class = ITEM_SIZE_SMALL
 	var/active = 0 //if the ship is on
-/obj/item/orion_ship/examine(mob/user)
+/obj/item/weapon/orion_ship/examine(mob/user)
 	. = ..()
 	if(!(in_range(user, src)))
 		return
@@ -485,7 +485,7 @@
 		to_chat(user, "<span class='notice'>There's a little switch on the bottom. It's flipped down.</span>")
 	else
 		to_chat(user, "<span class='notice'>There's a little switch on the bottom. It's flipped up.</span>")
-/obj/item/orion_ship/attack_self(mob/user)
+/obj/item/weapon/orion_ship/attack_self(mob/user)
 	if(active)
 		return
 	log_and_message_admins("primed an explosive Orion ship for detonation.", user)

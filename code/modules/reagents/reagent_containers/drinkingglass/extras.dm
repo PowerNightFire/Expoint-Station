@@ -1,8 +1,8 @@
-/obj/item/chems/food/drinks/glass2/attackby(obj/item/I, mob/user)
+/obj/item/weapon/reagent_containers/food/drinks/glass2/attackby(obj/item/I as obj, mob/user as mob)
 	if(extras.len >= 2) return ..() // max 2 extras, one on each side of the drink
 
-	if(istype(I, /obj/item/glass_extra))
-		var/obj/item/glass_extra/GE = I
+	if(istype(I, /obj/item/weapon/glass_extra))
+		var/obj/item/weapon/glass_extra/GE = I
 		if(can_add_extra(GE))
 			extras += GE
 			if(!user.unEquip(GE, src))
@@ -11,11 +11,11 @@
 			update_icon()
 		else
 			to_chat(user, "<span class=warning>There's no space to put \the [GE] on \the [src]!</span>")
-	else if(istype(I, /obj/item/chems/food/snacks/fruit_slice))
+	else if(istype(I, /obj/item/weapon/reagent_containers/food/snacks/fruit_slice))
 		if(!rim_pos)
 			to_chat(user, "<span class=warning>There's no space to put \the [I] on \the [src]!</span>")
 			return
-		var/obj/item/chems/food/snacks/fruit_slice/FS = I
+		var/obj/item/weapon/reagent_containers/food/snacks/fruit_slice/FS = I
 		extras += FS
 		if(!user.unEquip(FS, src))
 			return
@@ -26,8 +26,8 @@
 	else
 		return ..()
 
-/obj/item/chems/food/drinks/glass2/attack_hand(mob/user)
-	if(!user.is_holding_offhand(src))
+/obj/item/weapon/reagent_containers/food/drinks/glass2/attack_hand(mob/user as mob)
+	if(src != user.get_inactive_hand())
 		return ..()
 
 	if(!extras.len)
@@ -46,7 +46,7 @@
 
 	update_icon()
 
-/obj/item/glass_extra
+/obj/item/weapon/glass_extra
 	name = "generic glass addition"
 	desc = "This goes on a glass."
 	var/glass_addition
@@ -54,7 +54,7 @@
 	w_class = ITEM_SIZE_TINY
 	icon = 'icons/obj/drink_glasses/extras.dmi'
 
-/obj/item/glass_extra/stick
+/obj/item/weapon/glass_extra/stick
 	name = "stick"
 	desc = "This goes in a glass."
 	glass_addition = "stick"
@@ -62,12 +62,12 @@
 	icon_state = "stick"
 	color = COLOR_BLACK
 	
-/obj/item/glass_extra/stick/Initialize()
+/obj/item/weapon/glass_extra/stick/Initialize()
 	. = ..()
 	if(prob(50))
 		color = get_random_colour(0,50,150)
 
-/obj/item/glass_extra/straw
+/obj/item/weapon/glass_extra/straw
 	name = "straw"
 	desc = "This goes in a glass."
 	glass_addition = "straw"

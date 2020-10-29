@@ -29,32 +29,32 @@
 //Icon stuff
 
 	var/static/list/eye_overlays
-	var/icontype          //Persistent icontype tracking allows for cleaner icon updates
-	var/module_sprites[0] //Used to store the associations between sprite names and sprite index.
-	var/icon_selected = 1 //If icon selection has been completed yet
+	var/icontype 				//Persistent icontype tracking allows for cleaner icon updates
+	var/module_sprites[0] 		//Used to store the associations between sprite names and sprite index.
+	var/icon_selected = 1		//If icon selection has been completed yet
+	var/icon_selection_tries = 0//Remaining attempts to select icon before a selection is forced
 
 //Hud stuff
 
 	var/obj/screen/inv1 = null
 	var/obj/screen/inv2 = null
 	var/obj/screen/inv3 = null
-	var/obj/screen/robot_drop_grab/ui_drop_grab
 
 	var/shown_robot_modules = 0 //Used to determine whether they have the module menu shown or not
 	var/obj/screen/robot_modules_background
 
 //3 Modules can be activated at any one time.
-	var/obj/item/robot_module/module = null
+	var/obj/item/weapon/robot_module/module = null
 	var/obj/item/module_active
 	var/obj/item/module_state_1
 	var/obj/item/module_state_2
 	var/obj/item/module_state_3
 
-	silicon_camera = /obj/item/camera/siliconcam/robot_camera
-	silicon_radio = /obj/item/radio/borg
+	silicon_camera = /obj/item/device/camera/siliconcam/robot_camera
+	silicon_radio = /obj/item/device/radio/borg
 
 	var/mob/living/silicon/ai/connected_ai = null
-	var/obj/item/cell/cell = /obj/item/cell/high
+	var/obj/item/weapon/cell/cell = /obj/item/weapon/cell/high
 	var/obj/machinery/camera/camera = null
 
 	var/cell_emp_mult = 2.5
@@ -62,7 +62,9 @@
 	// Components are basically robot organs.
 	var/list/components = list()
 
-	var/obj/item/mmi/mmi = null
+	var/obj/item/device/mmi/mmi = null
+
+	var/obj/item/weapon/stock_parts/matter_bin/storage = null
 
 	var/opened = 0
 	var/emagged = 0
@@ -80,7 +82,7 @@
 	var/lower_mod = 0
 	var/jetpack = 0
 	var/datum/effect/effect/system/ion_trail_follow/ion_trail = null
-	var/datum/effect/effect/system/spark_spread/spark_system
+	var/datum/effect/effect/system/spark_spread/spark_system//So they can initialize sparks whenever/N
 	var/jeton = 0
 	var/killswitch = 0
 	var/killswitch_time = 60
@@ -106,9 +108,8 @@
 	spark_system.set_up(5, 0, src)
 	spark_system.attach(src)
 
-	add_language(/decl/language/binary, 1)
-	add_language(/decl/language/machine, 1)
-	add_language(/decl/language/human/common, 1)
+	add_language(LANGUAGE_ROBOT_GLOBAL, 1)
+	add_language(LANGUAGE_EAL, 1)
 
 	wires = new(src)
 
@@ -160,9 +161,8 @@
 	if(!module || !module.synths)
 		return
 	var/mult = 1
-	for(var/obj/item/stock_parts/matter_bin/storage in stock_parts)
-		if(storage.is_functional())
-			mult += storage.rating
+	if(storage)
+		mult += storage.rating
 	for(var/datum/matter_synth/M in module.synths)
 		M.set_multiplier(mult)
 
@@ -301,8 +301,6 @@
 	recalculate_synth_capacities()
 	if(module)
 		notify_ai(ROBOT_NOTIFICATION_NEW_MODULE, module.name)
-		if(!get_crewmember_record(name) && !module.hide_on_manifest)
-			CreateModularRecord(src, /datum/computer_file/report/crew_record/synth)
 
 /mob/living/silicon/robot/get_cell()
 	return cell
@@ -313,7 +311,7 @@
 
 	if(istype(mmi, /obj/item/organ/internal/posibrain))
 		braintype = "Robot"
-	else if(istype(mmi, /obj/item/mmi/digital/robot))
+	else if(istype(mmi, /obj/item/device/mmi/digital/robot))
 		braintype = "Drone"
 	else
 		braintype = "Cyborg"
@@ -440,7 +438,7 @@
 // this function displays jetpack pressure in the stat panel
 /mob/living/silicon/robot/proc/show_jetpack_pressure()
 	// if you have a jetpack, show the internal tank pressure
-	var/obj/item/tank/jetpack/current_jetpack = installed_jetpack()
+	var/obj/item/weapon/tank/jetpack/current_jetpack = installed_jetpack()
 	if (current_jetpack)
 		stat("Internal Atmosphere Info", current_jetpack.name)
 		stat("Tank Pressure", current_jetpack.air_contents.return_pressure())
@@ -449,7 +447,7 @@
 // this function returns the robots jetpack, if one is installed
 /mob/living/silicon/robot/proc/installed_jetpack()
 	if(module)
-		return (locate(/obj/item/tank/jetpack) in module.equipment)
+		return (locate(/obj/item/weapon/tank/jetpack) in module.equipment)
 	return 0
 
 
@@ -479,14 +477,14 @@
 
 /mob/living/silicon/robot/bullet_act(var/obj/item/projectile/Proj)
 	..(Proj)
-	if(prob(75) && Proj.damage > 0) 
-		spark_system.start()
+	if(prob(75) && Proj.damage > 0) spark_system.start()
 	return 2
 
-/mob/living/silicon/robot/attackby(obj/item/W, mob/user)
+/mob/living/silicon/robot/attackby(obj/item/weapon/W as obj, mob/user as mob)
 
-	if(istype(W, /obj/item/inducer) || istype(W, /obj/item/handcuffs))
-		return TRUE
+	if(istype(W, /obj/item/inducer)) return // inducer.dm afterattack handles this
+	if (istype(W, /obj/item/weapon/handcuffs)) // fuck i don't even know why isrobot() in handcuff code isn't working so this will have to do
+		return
 
 	if(opened) // Are they trying to insert something?
 		for(var/V in components)
@@ -506,9 +504,6 @@
 
 				to_chat(usr, "<span class='notice'>You install the [W.name].</span>")
 				return
-		// If the robot is having something inserted which will remain inside it, self-inserting must be handled before exiting to avoid logic errors. Use the handle_selfinsert proc.
-		if(try_stock_parts_install(W, user))
-			return
 
 	if(isWelder(W) && user.a_intent != I_HURT)
 		if (src == user)
@@ -518,7 +513,7 @@
 		if (!getBruteLoss())
 			to_chat(user, "Nothing to fix here!")
 			return
-		var/obj/item/weldingtool/WT = W
+		var/obj/item/weapon/weldingtool/WT = W
 		if (WT.remove_fuel(0))
 			user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 			adjustBruteLoss(-30)
@@ -569,28 +564,23 @@
 					var/datum/robot_component/C = components[V]
 					if(C.installed == 1 || C.installed == -1)
 						removable_components += V
-				removable_components |= stock_parts
-				var/remove = input(user, "Which component do you want to pry out?", "Remove Component") as null|anything in removable_components
-				if(!remove || !opened || !(remove in (stock_parts|components)) || !Adjacent(user))
-					return
-				var/obj/item/removed_item
-				if(istype(components[remove], /datum/robot_component))
-					var/datum/robot_component/C = components[remove]
-					var/obj/item/robot_parts/robot_component/I = C.wrapped
-					if(istype(I))
-						I.brute = C.brute_damage
-						I.burn = C.electronics_damage
 
-					removed_item = I
-					if(C.installed == 1)
-						C.uninstall()
-					C.installed = 0
-				else if(istype(remove, /obj/item/stock_parts))
-					stock_parts -= remove
-					removed_item = remove
-				if(removed_item)
-					to_chat(user, SPAN_NOTICE("You remove \the [removed_item]."))
-					removed_item.forceMove(loc)
+				var/remove = input(user, "Which component do you want to pry out?", "Remove Component") as null|anything in removable_components
+				if(!remove)
+					return
+				var/datum/robot_component/C = components[remove]
+				var/obj/item/robot_parts/robot_component/I = C.wrapped
+				to_chat(user, "You remove \the [I].")
+				if(istype(I))
+					I.brute = C.brute_damage
+					I.burn = C.electronics_damage
+
+				I.forceMove(loc)
+
+				if(C.installed == 1)
+					C.uninstall()
+				C.installed = 0
+
 		else
 			if(locked)
 				to_chat(user, "The cover is locked and cannot be opened.")
@@ -601,7 +591,21 @@
 					opened = 1
 					update_icon()
 
-	else if (istype(W, /obj/item/cell) && opened)	// trying to put a cell inside
+	// If the robot is having something inserted which will remain inside it, self-inserting must be handled before exiting to avoid logic errors. Use the handle_selfinsert proc.
+	else if (istype(W, /obj/item/weapon/stock_parts/matter_bin) && opened) // Installing/swapping a matter bin
+		if(!user.unEquip(W, src))
+			return
+		if(storage)
+			to_chat(user, "You replace \the [storage] with \the [W]")
+			storage.dropInto(loc)
+			storage = null
+		else
+			to_chat(user, "You install \the [W]")
+		storage = W
+		handle_selfinsert(W, user)
+		recalculate_synth_capacities()
+
+	else if (istype(W, /obj/item/weapon/cell) && opened)	// trying to put a cell inside
 		var/datum/robot_component/C = components["power cell"]
 		if(wiresexposed)
 			to_chat(user, "Close the panel first.")
@@ -630,19 +634,19 @@
 		to_chat(user, "The wires have been [wiresexposed ? "exposed" : "unexposed"].")
 		update_icon()
 
-	else if(istype(W, /obj/item/screwdriver) && opened && cell)	// radio
+	else if(istype(W, /obj/item/weapon/screwdriver) && opened && cell)	// radio
 		if(silicon_radio)
 			silicon_radio.attackby(W,user)//Push it to the radio to let it handle everything
 		else
 			to_chat(user, "Unable to locate a radio.")
 		update_icon()
 
-	else if(istype(W, /obj/item/encryptionkey/) && opened)
+	else if(istype(W, /obj/item/device/encryptionkey/) && opened)
 		if(silicon_radio)//sanityyyyyy
 			silicon_radio.attackby(W,user)//GTFO, you have your own procs
 		else
 			to_chat(user, "Unable to locate a radio.")
-	else if (istype(W, /obj/item/card/id)||istype(W, /obj/item/modular_computer)||istype(W, /obj/item/card/robot))			// trying to unlock the interface with an ID card
+	else if (istype(W, /obj/item/weapon/card/id)||istype(W, /obj/item/modular_computer)||istype(W, /obj/item/weapon/card/robot))			// trying to unlock the interface with an ID card
 		if(emagged)//still allow them to open the cover
 			to_chat(user, "The interface seems slightly damaged")
 		if(opened)
@@ -654,7 +658,7 @@
 				update_icon()
 			else
 				to_chat(user, "<span class='warning'>Access denied.</span>")
-	else if(istype(W, /obj/item/borg/upgrade))
+	else if(istype(W, /obj/item/borg/upgrade/))
 		var/obj/item/borg/upgrade/U = W
 		if(!opened)
 			to_chat(usr, "You must access the borgs internals!")
@@ -672,13 +676,13 @@
 				to_chat(usr, "Upgrade error!")
 
 	else
-		if(!(istype(W, /obj/item/robotanalyzer) || istype(W, /obj/item/scanner/health)) && W.force && user.a_intent != I_HELP)
+		if( !(istype(W, /obj/item/device/robotanalyzer) || istype(W, /obj/item/device/scanner/health)) )
 			spark_system.start()
 		return ..()
 
 /mob/living/silicon/robot/proc/handle_selfinsert(obj/item/W, mob/user)
-	if ((user == src) && istype(get_active_hand(),/obj/item/gripper))
-		var/obj/item/gripper/H = get_active_hand()
+	if ((user == src) && istype(get_active_hand(),/obj/item/weapon/gripper))
+		var/obj/item/weapon/gripper/H = get_active_hand()
 		if (W.loc == H) //if this triggers something has gone very wrong, and it's safest to abort
 			return
 		else if (H.wrapped == W)
@@ -689,10 +693,7 @@
 	add_fingerprint(user)
 
 	if(istype(user,/mob/living/carbon/human))
-
 		var/mob/living/carbon/human/H = user
-		if(H.a_intent == I_GRAB)
-			return ..()
 		if(H.species.can_shred(H))
 			attack_generic(H, rand(30,50), "slashed")
 			return
@@ -861,7 +862,8 @@
 	return ..()
 
 /mob/living/silicon/robot/proc/radio_menu()
-	silicon_radio.interact(src)//Just use the radio's Topic() instead of bullshit special-snowflake code
+	if (silicon_radio)
+		silicon_radio.interact(src)//Just use the radio's Topic() instead of bullshit special-snowflake code
 
 
 /mob/living/silicon/robot/Move(a, b, flag)
@@ -869,7 +871,7 @@
 	. = ..()
 
 	if(module)
-		if(module.type == /obj/item/robot_module/janitor)
+		if(module.type == /obj/item/weapon/robot_module/janitor)
 			var/turf/tile = loc
 			if(isturf(tile))
 				tile.clean_blood()
@@ -952,32 +954,31 @@
 
 	return
 
-/mob/living/silicon/robot/proc/choose_icon(list/module_sprites)
+/mob/living/silicon/robot/proc/choose_icon(var/triesleft, var/list/module_sprites)
 	set waitfor = 0
-	if(!LAZYLEN(module_sprites))
+	if(!module_sprites.len)
 		to_chat(src, "Something is badly wrong with the sprite selection. Harass a coder.")
-		CRASH("Can't setup robot icon for [src] ([src.client]). Module: [module?.name]")
+		return
 
-	icon_selected = FALSE
+	icon_selected = 0
+	src.icon_selection_tries = triesleft
 	if(module_sprites.len == 1 || !client)
 		if(!(icontype in module_sprites))
 			icontype = module_sprites[1]
 	else
-		var/list/options = list()
-		for(var/i in module_sprites)
-			var/image/radial_button = image(icon = src.icon, icon_state = module_sprites[i])
-			radial_button.overlays.Add(image(icon = src.icon, icon_state = "eyes-[module_sprites[i]]"))
-			radial_button.name = i
-			options[i] = radial_button
-		icontype = show_radial_menu(src, src, options, radius = 42, tooltips = TRUE)
-
-	if(!icontype)
-		return
-
+		icontype = input("Select an icon! [triesleft ? "You have [triesleft] more chance\s." : "This is your last try."]", "Robot Icon", icontype, null) in module_sprites
 	icon_state = module_sprites[icontype]
 	update_icon()
 
+	if (module_sprites.len > 1 && triesleft >= 1 && client)
+		icon_selection_tries--
+		var/choice = input("Look at your icon - is this what you want?") in list("Yes","No")
+		if(choice=="No")
+			choose_icon(icon_selection_tries, module_sprites)
+			return
+
 	icon_selected = TRUE
+	icon_selection_tries = 0
 	to_chat(src, "Your icon has been set. You now require a module reset to change it.")
 
 /mob/living/silicon/robot/proc/sensor_mode() //Medical/Security HUD controller for borgs
@@ -1084,9 +1085,9 @@
 					sleep(5)
 					to_chat(src, "<span class='danger'>LAW SYNCHRONISATION ERROR</span>")
 					sleep(5)
-					to_chat(src, "<span class='danger'>Would you like to send a report to the vendor? Y/N</span>")
+					to_chat(src, "<span class='danger'>Would you like to send a report to NanoTraSoft? Y/N</span>")
 					sleep(10)
-					to_chat(src, "<span class='danger'>> N</span>")
+					to_chat(src, SPAN_DANGER(" N"))
 					sleep(20)
 					to_chat(src, "<span class='danger'>ERRORERRORERROR</span>")
 					to_chat(src, "<b>Obey these laws:</b>")
@@ -1112,11 +1113,3 @@
 	var/obj/item/robot_parts/robot_suit/C = new dismantle_type(loc)
 	C.dismantled_from(src)
 	qdel(src)
-
-/mob/living/silicon/robot/try_stock_parts_install(obj/item/stock_parts/W, mob/user)
-	if(!opened)
-		return
-	. = ..()
-	if(.)
-		handle_selfinsert(W, user)
-		recalculate_synth_capacities()

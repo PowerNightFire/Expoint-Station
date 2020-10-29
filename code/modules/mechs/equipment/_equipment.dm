@@ -4,11 +4,7 @@
 	name = "exosuit hardpoint system"
 	icon = 'icons/mecha/mech_equipment.dmi'
 	icon_state = ""
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/plastic = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/metal/osmium = MATTER_AMOUNT_TRACE
-	)
+	matter = list(MATERIAL_STEEL = 10000, MATERIAL_PLASTIC = 5000, MATERIAL_OSMIUM = 500)
 	force = 10
 
 	var/list/restricted_hardpoints
@@ -50,9 +46,9 @@
 /obj/item/mech_equipment/examine(mob/user, distance)
 	. = ..()
 	if(user.skill_check(SKILL_DEVICES, SKILL_BASIC))
-		if(restricted_software.len)
+		if(length(restricted_software))
 			to_chat(user, SPAN_SUBTLE("It seems it would require [english_list(restricted_software)] to be used."))
-		if(restricted_hardpoints.len)
+		if(length(restricted_hardpoints))
 			to_chat(user, SPAN_SUBTLE("You figure it could be mounted in the [english_list(restricted_hardpoints)]."))
 
 /obj/item/mech_equipment/proc/installed(var/mob/living/exosuit/_owner)
@@ -93,8 +89,7 @@
 	if(holding) //It'd be strange for this to be called with this var unset
 		GLOB.destroyed_event.unregister(holding, src, .proc/forget_holding)
 		holding = null
-		if(!QDELETED(src))
-			qdel(src)
+		qdel(src)
 
 /obj/item/mech_equipment/mounted_system/Initialize()
 	. = ..()

@@ -1,4 +1,5 @@
 /obj/structure/fitness
+	icon = 'icons/obj/stationobjs.dmi'
 	anchored = 1
 	var/being_used = 0
 
@@ -6,7 +7,6 @@
 	name = "punching bag"
 	desc = "A punching bag."
 	icon_state = "punchingbag"
-	icon = 'icons/obj/structures/punching_bag.dmi'
 	density = 1
 	var/list/hit_message = list("hit", "punch", "kick", "robust")
 
@@ -23,6 +23,7 @@
 			flick("[icon_state]_hit", src)
 			playsound(src.loc, 'sound/effects/woodhit.ogg', 25, 1, -1)
 			user.do_attack_animation(src)
+			user.update_personal_goal(/datum/goal/punchingbag, 1)
 			if(!synth)
 				user.adjust_nutrition(-(5 * DEFAULT_HUNGER_FACTOR))
 				user.adjust_hydration(-(5 * DEFAULT_THIRST_FACTOR))
@@ -32,13 +33,12 @@
 	name = "weightlifting machine"
 	desc = "A machine used to lift weights."
 	icon_state = "weightlifter"
-	icon = 'icons/obj/structures/weightlifter.dmi'
 	var/weight = 1
 	var/max_weight = 5
 	var/list/success_message = list("with great effort", "straining hard", "without any trouble", "with ease")
 	var/list/fail_message = list(", lifting them part of the way and then letting them drop", ", unable to even budge them")
 
-/obj/structure/fitness/weightlifter/attackby(obj/item/W, mob/user)
+/obj/structure/fitness/weightlifter/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isWrench(W))
 		playsound(src.loc, 'sound/items/Deconstruct.ogg', 75, 1)
 		weight = (weight % max_weight) + 1
@@ -83,6 +83,7 @@
 					user.adjust_hydration(-(adj_weight * DEFAULT_THIRST_FACTOR))
 				message = success_message[min(1 + round(skill - weight), fail_message.len)]
 				user.visible_message("<span class='notice'>\The [user] lift\s the weights [message].</span>", "<span class='notice'>You lift the weights [message].</span>")
+				user.update_personal_goal(/datum/goal/weights, 1)
 			being_used = 0
 		else
 			to_chat(user, "<span class='notice'>Against your previous judgement, perhaps working out is not for you.</span>")

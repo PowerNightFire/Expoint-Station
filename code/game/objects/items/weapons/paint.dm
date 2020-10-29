@@ -3,22 +3,22 @@
 
 var/global/list/cached_icons = list()
 
-/obj/item/chems/glass/paint
+/obj/item/weapon/reagent_containers/glass/paint
 	desc = "It's a paint bucket."
 	name = "paint bucket"
-	icon = 'icons/obj/items/paint_bucket.dmi'
+	icon = 'icons/obj/items.dmi'
 	icon_state = "paintbucket"
 	item_state = "paintcan"
-	material = /decl/material/solid/metal/aluminium
+	matter = list(MATERIAL_ALUMINIUM = 200)
 	w_class = ITEM_SIZE_NORMAL
 	amount_per_transfer_from_this = 10
-	possible_transfer_amounts = @"[10,20,30,60]"
+	possible_transfer_amounts = "10;20;30;60"
 	volume = 60
 	unacidable = 0
 	atom_flags = ATOM_FLAG_OPEN_CONTAINER
-	var/pigment
+	var/paint_hex = "#fe191a"
 
-/obj/item/chems/glass/paint/afterattack(turf/simulated/target, mob/user, proximity)
+/obj/item/weapon/reagent_containers/glass/paint/afterattack(turf/simulated/target, mob/user, proximity)
 	if(!proximity) return
 	if(istype(target) && reagents.total_volume > 5)
 		user.visible_message("<span class='warning'>\The [target] has been splashed with something by [user]!</span>")
@@ -26,50 +26,50 @@ var/global/list/cached_icons = list()
 	else
 		return ..()
 
-/obj/item/chems/glass/paint/Initialize()
+/obj/item/weapon/reagent_containers/glass/paint/Initialize()
 	. = ..()
-	reagents.add_reagent(/decl/material/liquid/narcotics, reagents.maximum_volume-10)
-	if(pigment)
-		reagents.add_reagent(pigment, reagents.maximum_volume-10)
+	if(paint_hex && length(paint_hex) > 0)
+		reagents.add_reagent(/datum/reagent/paint, volume, paint_hex)
+		update_icon()
 
-/obj/item/chems/glass/paint/on_update_icon()
+/obj/item/weapon/reagent_containers/glass/paint/on_update_icon()
 	overlays.Cut()
 	if(reagents.total_volume)
 		var/image/filling = image('icons/obj/reagentfillings.dmi', src, "paintbucket")
 		filling.color = reagents.get_color()
 		overlays += filling
 
-/obj/item/chems/glass/paint/red
+/obj/item/weapon/reagent_containers/glass/paint/red
 	name = "red paint bucket"
-	pigment = /decl/material/pigment/red
+	paint_hex = "#fe191a"
 
-/obj/item/chems/glass/paint/yellow
+/obj/item/weapon/reagent_containers/glass/paint/yellow
 	name = "yellow paint bucket"
-	pigment = /decl/material/pigment/yellow
+	paint_hex = "#fdfe7d"
 
-/obj/item/chems/glass/paint/green
+/obj/item/weapon/reagent_containers/glass/paint/green
 	name = "green paint bucket"
-	pigment = /decl/material/pigment/green
+	paint_hex = "#18a31a"
 
-/obj/item/chems/glass/paint/blue
+/obj/item/weapon/reagent_containers/glass/paint/blue
 	name = "blue paint bucket"
-	pigment = /decl/material/pigment/blue
+	paint_hex = "#247cff"
 
-/obj/item/chems/glass/paint/purple
+/obj/item/weapon/reagent_containers/glass/paint/purple
 	name = "purple paint bucket"
-	pigment = /decl/material/pigment/purple
+	paint_hex = "#cc0099"
 
-/obj/item/chems/glass/paint/black
+/obj/item/weapon/reagent_containers/glass/paint/black
 	name = "black paint bucket"
-	pigment = /decl/material/pigment/black
+	paint_hex = "#333333"
 
-/obj/item/chems/glass/paint/white
+/obj/item/weapon/reagent_containers/glass/paint/white
 	name = "white paint bucket"
-	pigment = /decl/material/pigment/white
+	paint_hex = "#f0f8ff"
 
-/obj/item/chems/glass/paint/random
+/obj/item/weapon/reagent_containers/glass/paint/random
 	name = "odd paint bucket"
 
-/obj/item/chems/glass/paint/random/Initialize()
-	pigment = pick(subtypesof(/decl/material/pigment))
-	. = ..()
+/obj/item/weapon/reagent_containers/glass/paint/random/New()
+	paint_hex = rgb(rand(1,255),rand(1,255),rand(1,255))
+	..()

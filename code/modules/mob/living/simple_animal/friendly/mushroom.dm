@@ -4,7 +4,7 @@
 	icon_state = "mushroom"
 	icon_living = "mushroom"
 	icon_dead = "mushroom_dead"
-	mob_size = MOB_SIZE_SMALL
+	mob_size = MOB_SMALL
 	speak_chance = 0
 	turns_per_move = 1
 	maxHealth = 5
@@ -15,7 +15,7 @@
 	harm_intent_damage = 5
 	pass_flags = PASS_FLAG_TABLE
 
-	meat_type = /obj/item/chems/food/snacks/hugemushroomslice
+	meat_type = /obj/item/weapon/reagent_containers/food/snacks/hugemushroomslice
 	bone_material = null
 	bone_amount =   0
 	skin_material = null 
@@ -26,8 +26,8 @@
 	var/min_explode_time = 1200
 	var/global/total_mushrooms = 0
 
-/mob/living/simple_animal/mushroom/Initialize()
-	. = ..()
+/mob/living/simple_animal/mushroom/New()
+	..()
 	harvest_time = world.time
 	total_mushrooms++
 

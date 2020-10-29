@@ -34,7 +34,7 @@
 				shuttle_status = "Standing-by at \the [shuttle.get_location_name()]."
 
 		if(WAIT_LAUNCH, FORCE_LAUNCH)
-			shuttle_status = "Shuttle has recieved command and will depart shortly."
+			shuttle_status = "Shuttle has received command and will depart shortly."
 		if(WAIT_ARRIVE)
 			shuttle_status = "Proceeding to \the [shuttle.get_destination_name()]."
 		if(WAIT_FINISH)
@@ -49,7 +49,6 @@
 		"can_launch" = shuttle.can_launch(),
 		"can_cancel" = shuttle.can_cancel(),
 		"can_force" = shuttle.can_force(),
-		"timeleft" = max(round((shuttle.arrive_time - world.time) / 10, 1), 0),
 		"docking_codes" = shuttle.docking_codes
 	)
 
@@ -118,8 +117,7 @@
 /obj/machinery/computer/shuttle_control/bullet_act(var/obj/item/projectile/Proj)
 	visible_message("\The [Proj] ricochets off \the [src]!")
 
-/obj/machinery/computer/shuttle_control/explosion_act()
-	SHOULD_CALL_PARENT(FALSE)
+/obj/machinery/computer/shuttle_control/ex_act()
 	return
 
 /obj/machinery/computer/shuttle_control/emp_act()

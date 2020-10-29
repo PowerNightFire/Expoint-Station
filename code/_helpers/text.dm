@@ -146,7 +146,7 @@
 			if(48 to 57)	//0-9
 				dat += ascii2text(ascii_char)
 				last_was_space = 0
-			if(32)			//space
+			if(32, 46)	//space or .
 				if(last_was_space)
 					continue
 				dat += "."		//We turn these into ., but avoid repeats or . at start.
@@ -352,7 +352,7 @@ proc/TextPreview(var/string,var/len=40)
 /proc/create_text_tag(var/tagname, var/tagdesc = tagname, var/client/C = null)
 	if(!(C && C.get_preference_value(/datum/client_preference/chat_tags) == GLOB.PREF_SHOW))
 		return tagdesc
-	return "<IMG src='\ref['./icons/chattags.dmi']' class='text_tag' iconstate='[tagname]'" + (tagdesc ? " alt='[tagdesc]'" : "") + ">"
+	return icon2html(icon('./icons/chattags.dmi', tagname), world, realsize=TRUE, class="text_tag")
 
 /proc/contains_az09(var/input)
 	for(var/i=1, i<=length(input), i++)
@@ -421,6 +421,17 @@ proc/TextPreview(var/string,var/len=40)
 	t = replacetext(t, "\[/grid\]", "</td></tr></table>")
 	t = replacetext(t, "\[row\]", "</td><tr>")
 	t = replacetext(t, "\[cell\]", "<td>")
+	t = replacetext(t, "\[logo\]", "<img src = exologo.png>")
+	t = replacetext(t, "\[bluelogo\]", "<img src = bluentlogo.png>")
+	t = replacetext(t, "\[solcrest\]", "<img src = sollogo.png>")
+	t = replacetext(t, "\[torchltd\]", "<img src = exologo.png>")
+	t = replacetext(t, "\[iccgseal\]", "<img src = terralogo.png>")
+	t = replacetext(t, "\[ntlogo\]", "<img src = ntlogo.png>")
+	t = replacetext(t, "\[daislogo\]", "<img src = daislogo.png>")
+	t = replacetext(t, "\[eclogo\]", "<img src = eclogo.png>")
+	t = replacetext(t, "\[xynlogo\]", "<img src = xynlogo.png>")
+	t = replacetext(t, "\[fleetlogo\]", "<img src = fleetlogo.png>")
+	t = replacetext(t, "\[sfplogo\]", "<img src = sfplogo.png>")
 	t = replacetext(t, "\[editorbr\]", "")
 	return t
 
@@ -468,6 +479,15 @@ proc/TextPreview(var/string,var/len=40)
 	t = replacetext(t, "</table>", "\[/grid\]")
 	t = replacetext(t, "<tr>", "\[row\]")
 	t = replacetext(t, "<td>", "\[cell\]")
+	t = replacetext(t, "<img src = ntlogo.png>", "\[ntlogo\]")
+	t = replacetext(t, "<img src = bluentlogo.png>", "\[bluelogo\]")
+	t = replacetext(t, "<img src = sollogo.png>", "\[solcrest\]")
+	t = replacetext(t, "<img src = terralogo.png>", "\[iccgseal\]")
+	t = replacetext(t, "<img src = exologo.png>", "\[logo\]")
+	t = replacetext(t, "<img src = eclogo.png>", "\[eclogo\]")
+	t = replacetext(t, "<img src = daislogo.png>", "\[daislogo\]")
+	t = replacetext(t, "<img src = xynlogo.png>", "\[xynlogo\]")
+	t = replacetext(t, "<img src = sfplogo.png>", "\[sfplogo\]")
 	t = replacetext(t, "<span class=\"paper_field\"></span>", "\[field\]")
 	t = replacetext(t, "<span class=\"redacted\">R E D A C T E D</span>", "\[redacted\]")
 	t = strip_html_properly(t)
@@ -558,10 +578,6 @@ proc/TextPreview(var/string,var/len=40)
 	text = replacetext(text, "&", "")
 	return text
 
-// Switch to use copytext_char() when 513 is in
-var/list/fullstop_alternatives = list(".", "!", "?")
-#define APPEND_FULLSTOP_IF_NEEDED(TXT) ((copytext(TXT, -1, 0) in global.fullstop_alternatives) ? TXT : "[TXT].")
-
-/proc/make_rainbow(var/msg)
-	for(var/i = 1 to length(msg))
-		. += "<font color='[get_random_colour(1)]'>[copytext(msg, i, i+1)]</font>"
+/proc/text2num_or_default(text, default)
+	var/result = text2num(text)
+	return "[result]" == text ? result : default

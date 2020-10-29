@@ -28,7 +28,12 @@
 	completion_message = "Ahh, that was just what you needed."
 
 /datum/goal/achievement/specific_object/food/New()
-	possible_objects = subtypesof(/obj/item/chems/food/snacks)
+	possible_objects = subtypesof(/obj/item/weapon/reagent_containers/food/snacks)
+	blacklisted_objects = list(
+		/obj/item/weapon/reagent_containers/food/snacks/meat/corgi,
+		/obj/item/weapon/reagent_containers/food/snacks/meat/human,
+		/obj/item/weapon/reagent_containers/food/snacks/meat/monkey
+	)
 	..()
 
 /datum/goal/achievement/specific_object/food/update_strings()
@@ -40,12 +45,12 @@
 	completion_message = "Ahh, that hit the spot!"
 
 /datum/goal/achievement/specific_object/drink/New()
-	possible_objects = subtypesof(/decl/material/liquid/drink)
+	possible_objects = subtypesof(/datum/reagent/drink)
 	..()
 
 /datum/goal/achievement/specific_object/drink/update_strings()
 	..()
-	var/decl/material/liquid/drink = object_path
+	var/datum/reagent/drink = object_path
 	description = "You could really do with a nice [initial(drink.name)]."
 
 /datum/goal/achievement/specific_object/pet

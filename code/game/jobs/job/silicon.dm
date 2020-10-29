@@ -1,6 +1,6 @@
 /datum/job/ai
 	title = "AI"
-	department_refs = list(DEPT_MISC)
+	department_flag = MSC
 
 	total_positions = 0 // Not used for AI, see is_position_available below and modules/mob/living/silicon/ai/latejoin.dm
 	spawn_positions = 1
@@ -15,8 +15,29 @@
 	hud_icon = "hudblank"
 	skill_points = 0
 	no_skill_buffs = TRUE
-	guestbanned = 1	
-	not_random_selectable = 1
+	min_skill = list(
+		SKILL_BUREAUCRACY   = SKILL_EXPERT,
+		SKILL_FINANCE       = SKILL_EXPERT,
+		SKILL_EVA           = SKILL_EXPERT,
+		SKILL_MECH          = SKILL_EXPERT,
+		SKILL_PILOT         = SKILL_EXPERT,
+		SKILL_HAULING       = SKILL_NONE,
+		SKILL_COMPUTER      = SKILL_PROF,
+		SKILL_BOTANY        = SKILL_EXPERT,
+		SKILL_COOKING       = SKILL_EXPERT,
+		SKILL_COMBAT        = SKILL_EXPERT,
+		SKILL_WEAPONS       = SKILL_EXPERT,
+		SKILL_FORENSICS     = SKILL_EXPERT,
+		SKILL_CONSTRUCTION  = SKILL_EXPERT,
+		SKILL_ELECTRICAL    = SKILL_EXPERT,
+		SKILL_ATMOS         = SKILL_EXPERT,
+		SKILL_ENGINES       = SKILL_EXPERT,
+		SKILL_DEVICES       = SKILL_EXPERT,
+		SKILL_SCIENCE       = SKILL_EXPERT,
+		SKILL_MEDICAL       = SKILL_EXPERT,
+		SKILL_ANATOMY       = SKILL_EXPERT,
+		SKILL_CHEMISTRY     = SKILL_EXPERT
+	)
 
 /datum/job/ai/equip(var/mob/living/carbon/human/H)
 	if(!H)	return 0
@@ -30,7 +51,7 @@
 
 /datum/job/cyborg
 	title = "Robot"
-	department_refs = list(DEPT_MISC)
+	department_flag = MSC
 	total_positions = 2
 	spawn_positions = 2
 	supervisors = "your laws and the AI"
@@ -43,12 +64,9 @@
 	hud_icon = "hudblank"
 	skill_points = 0
 	no_skill_buffs = TRUE
-	guestbanned = 1	
-	not_random_selectable = 1
 
 /datum/job/cyborg/handle_variant_join(var/mob/living/carbon/human/H, var/alt_title)
-	if(H)
-		return H.Robotize(SSrobots.get_mob_type_by_title(alt_title || title))
+	return H && H.Robotize(SSrobots.get_mob_type_by_title(alt_title || title))
 
 /datum/job/cyborg/equip(var/mob/living/carbon/human/H)
 	return !!H

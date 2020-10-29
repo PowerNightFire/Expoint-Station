@@ -1,10 +1,10 @@
 // Light rigs are not space-capable, but don't suffer excessive slowdown or sight issues when depowered.
-/obj/item/rig/light
+/obj/item/weapon/rig/light
 	name = "light suit control module"
 	desc = "A lighter, less armoured rig suit."
+	icon_state = "ninja_rig"
 	suit_type = "light suit"
-	icon = 'icons/clothing/spacesuit/rig/stealth.dmi'
-	allowed = list(/obj/item/gun,/obj/item/ammo_magazine,/obj/item/ammo_casing,/obj/item/baton,/obj/item/handcuffs,/obj/item/tank,/obj/item/suit_cooling_unit,/obj/item/cell)
+	allowed = list(/obj/item/weapon/gun,/obj/item/ammo_magazine,/obj/item/ammo_casing,/obj/item/weapon/melee/baton,/obj/item/weapon/handcuffs,/obj/item/weapon/tank,/obj/item/device/suit_cooling_unit,/obj/item/weapon/cell)
 	armor = list(
 		melee = ARMOR_MELEE_KNIVES,
 		bullet = ARMOR_BALLISTIC_PISTOL,
@@ -39,11 +39,11 @@
 /obj/item/clothing/head/helmet/space/rig/light
 	name = "hood"
 
-/obj/item/rig/light/hacker
+/obj/item/weapon/rig/light/hacker
 	name = "cybersuit control module"
 	suit_type = "cyber"
 	desc = "An advanced powered armour suit with many cyberwarfare enhancements. Comes with built-in insulated gloves for safely tampering with electronics."
-	icon = 'icons/clothing/spacesuit/rig/hacker.dmi'
+	icon_state = "hacker_rig"
 
 	req_access = list(access_syndicate)
 
@@ -82,11 +82,11 @@
 	item_flags = ITEM_FLAG_THICKMATERIAL | ITEM_FLAG_NOCUFFS
 
 
-/obj/item/rig/light/ninja
+/obj/item/weapon/rig/light/ninja
 	name = "ominous suit control module"
 	desc = "A unique, vaccum-proof suit of nano-enhanced armor designed specifically for assassins."
 	suit_type = "ominous"
-	icon = 'icons/clothing/spacesuit/rig/ninja.dmi'
+	icon_state = "ninja_rig"
 	armor = list(
 		melee = ARMOR_MELEE_KNIVES,
 		bullet = ARMOR_BALLISTIC_PISTOL,
@@ -101,7 +101,7 @@
 	aimove_power_usage = 50
 	chest_type = /obj/item/clothing/suit/space/rig/light/ninja
 	glove_type = /obj/item/clothing/gloves/rig/light/ninja
-	cell_type =  /obj/item/cell/hyper
+	cell_type =  /obj/item/weapon/cell/hyper
 
 	req_access = list(access_syndicate)
 
@@ -121,7 +121,7 @@
 		/obj/item/rig_module/cooling_unit
 		)
 
-/obj/item/rig/light/ninja/verb/rename_suit()
+/obj/item/weapon/rig/light/ninja/verb/rename_suit()
 	set name = "Name Ninja Suit"
 	set desc = "Rename your black voidsuit."
 	set category = "Object"
@@ -133,12 +133,12 @@
 		if(!findtext(input, "the", 1, 4))
 			input = "\improper [input]"
 		SetName(input)
-		to_chat(M, "Suit naming succesful!")
-		verbs -= /obj/item/rig/light/ninja/verb/rename_suit
+		to_chat(M, "Suit naming successful!")
+		verbs -= /obj/item/weapon/rig/light/ninja/verb/rename_suit
 		return 1
 
 
-/obj/item/rig/light/ninja/verb/rewrite_suit_desc()
+/obj/item/weapon/rig/light/ninja/verb/rewrite_suit_desc()
 	set name = "Describe Ninja suit"
 	set desc = "Give your voidsuit a custom description."
 	set category = "Object"
@@ -148,8 +148,8 @@
 	var/input = sanitizeSafe(input("Please describe your voidsuit in 128 letters or less.", "write description"), MAX_DESC_LEN)
 	if(src && input && !M.incapacitated() && in_range(M,src))
 		desc = input
-		to_chat(M, "Suit description succesful!")
-		verbs -= /obj/item/rig/light/ninja/verb/rename_suit
+		to_chat(M, "Suit description successful!")
+		verbs -= /obj/item/weapon/rig/light/ninja/verb/rename_suit
 		return 1
 
 /obj/item/clothing/gloves/rig/light/ninja
@@ -160,11 +160,11 @@
 /obj/item/clothing/suit/space/rig/light/ninja
 	breach_threshold = 38 //comparable to regular hardsuits
 
-/obj/item/rig/light/stealth
+/obj/item/weapon/rig/light/stealth
 	name = "stealth suit control module"
 	suit_type = "stealth"
 	desc = "A highly advanced and expensive suit designed for covert operations."
-	icon = 'icons/clothing/spacesuit/rig/stealth.dmi'
+	icon_state = "stealth_rig"
 
 	req_access = list(access_syndicate)
 

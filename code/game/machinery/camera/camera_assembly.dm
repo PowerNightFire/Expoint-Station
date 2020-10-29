@@ -1,4 +1,4 @@
-/obj/item/camera_assembly
+/obj/item/weapon/camera_assembly
 	name = "camera assembly"
 	desc = "A pre-fabricated security camera kit, ready to be assembled and mounted to a surface."
 	icon = 'icons/obj/monitors.dmi'
@@ -6,11 +6,10 @@
 	w_class = ITEM_SIZE_SMALL
 	anchored = 0
 
-	material = /decl/material/solid/metal/aluminium
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
+	matter = list(MATERIAL_ALUMINIUM = 700, MATERIAL_GLASS = 300)
 
 	//	Motion, EMP-Proof, X-Ray
-	var/list/obj/item/possible_upgrades = list(/obj/item/assembly/prox_sensor, /obj/item/stack/material/osmium, /obj/item/stock_parts/scanning_module)
+	var/list/obj/item/possible_upgrades = list(/obj/item/device/assembly/prox_sensor, /obj/item/stack/material/osmium, /obj/item/weapon/stock_parts/scanning_module)
 	var/list/upgrades = list()
 	var/camera_name
 	var/camera_network
@@ -24,7 +23,7 @@
 				4 = Screwdriver panel closed and is fully built (you cannot attach upgrades)
 	*/
 
-/obj/item/camera_assembly/attackby(obj/item/W, mob/living/user)
+/obj/item/weapon/camera_assembly/attackby(obj/item/W as obj, mob/living/user as mob)
 
 	switch(state)
 
@@ -109,7 +108,7 @@
 				for(var/i = 5; i >= 0; i -= 1)
 					var/direct = input(user, "Direction?", "Assembling Camera", null) in list("LEAVE IT", "NORTH", "EAST", "SOUTH", "WEST" )
 					if(direct != "LEAVE IT")
-						C.set_dir(text2dir(direct))
+						C.dir = text2dir(direct)
 					if(i != 0)
 						var/confirm = alert(user, "Is this what you want? Chances Remaining: [i]", "Confirmation", "Yes", "No")
 						if(confirm == "Yes")
@@ -143,17 +142,17 @@
 
 	..()
 
-/obj/item/camera_assembly/on_update_icon()
+/obj/item/weapon/camera_assembly/on_update_icon()
 	if(anchored)
 		icon_state = "camera1"
 	else
 		icon_state = "cameracase"
 
-/obj/item/camera_assembly/attack_hand(mob/user)
+/obj/item/weapon/camera_assembly/attack_hand(mob/user as mob)
 	if(!anchored)
 		..()
 
-/obj/item/camera_assembly/proc/weld(var/obj/item/weldingtool/WT, var/mob/user)
+/obj/item/weapon/camera_assembly/proc/weld(var/obj/item/weapon/weldingtool/WT, var/mob/user)
 
 	if(busy)
 		return 0

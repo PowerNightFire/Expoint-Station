@@ -1,38 +1,36 @@
-/obj/item/gun
+GLOBAL_LIST_INIT(secure_weapons, list())
+
+/obj/item/weapon/gun
 	var/list/authorized_modes = list(ALWAYS_AUTHORIZED) // index of this list should line up with firemodes, unincluded firemodes at the end will use default
 	var/default_mode_authorization = UNAUTHORIZED
 	var/registered_owner
-	var/standby
 
-/obj/item/gun/Initialize()
+/obj/item/weapon/gun/Initialize()
 	if(is_secure_gun())
+		GLOB.secure_weapons |= src
 		if(!authorized_modes)
 			authorized_modes = list()
 
 		for(var/i = authorized_modes.len + 1 to firemodes.len)
 			authorized_modes.Add(default_mode_authorization)
-		
-		set_extension(src, /datum/extension/network_device/lazy)
-		verbs |= /obj/item/gun/proc/network_setup
 
 	. = ..()
 
-/obj/item/gun/Destroy()
-	GLOB.registered_weapons -= src
+/obj/item/weapon/gun/Destroy()
+	GLOB.secure_weapons -= src
 	. = ..()
 
-/obj/item/gun/examine(mob/user, distance)
+/obj/item/weapon/gun/examine(mob/user, distance)
 	. = ..()
 	if(distance <= 0 && is_secure_gun())
 		to_chat(user, "The registration screen shows, \"" + (registered_owner ? "[registered_owner]" : "unregistered") + "\"")
 
-/obj/item/gun/attackby(obj/item/W, mob/user)
-	if(istype(W, /obj/item/card/id) && is_secure_gun())
+/obj/item/weapon/gun/attackby(obj/item/weapon/W as obj, mob/user as mob)
+	if(istype(W, /obj/item/weapon/card/id) && is_secure_gun())
 		user.visible_message("[user] swipes an ID through \the [src].", range = 3)
 		if(!registered_owner)
-			var/obj/item/card/id/id = W
-			GLOB.registered_weapons += src
-			verbs += /obj/item/gun/proc/reset_registration
+			var/obj/item/weapon/card/id/id = W
+			verbs += /obj/item/weapon/gun/proc/reset_registration
 			registered_owner = id.registered_name
 			to_chat(user, SPAN_NOTICE("\The [src] chimes quietly as it registers to \"[registered_owner]\"."))
 		else
@@ -40,22 +38,22 @@
 	else
 		..()
 
-/obj/item/gun/emag_act(var/charges, var/mob/user)
+/obj/item/weapon/gun/emag_act(var/charges, var/mob/user)
 	if(!charges)
 		return NO_EMAG_ACT
 
 	if(is_secure_gun())
 		registered_owner = null
-		GLOB.registered_weapons -= src
-		verbs -= /obj/item/gun/proc/reset_registration
+		verbs -= /obj/item/weapon/gun/proc/reset_registration
 		req_access.Cut()
+		GLOB.secure_weapons -= src
 		to_chat(user, SPAN_NOTICE("\The [src]'s authorization chip fries, giving you full access."))
 		return 1
 
 	return ..()
 
 
-/obj/item/gun/proc/reset_registration()
+/obj/item/weapon/gun/proc/reset_registration()
 	set name = "Reset Registration"
 	set category = "Object"
 	set src in usr
@@ -71,11 +69,10 @@
 
 	to_chat(usr, SPAN_NOTICE("\The [src] chimes quietly as its registration resets."))
 	registered_owner = null
-	GLOB.registered_weapons -= src
-	verbs -= /obj/item/gun/proc/reset_registration
+	verbs -= /obj/item/weapon/gun/proc/reset_registration
 
 
-/obj/item/gun/proc/authorize(var/mode, var/authorized, var/by)
+/obj/item/weapon/gun/proc/authorize(var/mode, var/authorized, var/by)
 	if(mode < 1 || mode > authorized_modes.len || authorized_modes[mode] == authorized)
 		return FALSE
 
@@ -90,14 +87,14 @@
 
 	return TRUE
 
-/obj/item/gun/proc/is_secure_gun()
+/obj/item/weapon/gun/proc/is_secure_gun()
 	return length(req_access)
 
-/obj/item/gun/proc/free_fire()
+/obj/item/weapon/gun/proc/free_fire()
 	var/decl/security_state/security_state = decls_repository.get_decl(GLOB.using_map.security_state)
 	return security_state.current_security_level_is_same_or_higher_than(security_state.high_security_level)
 
-/obj/item/gun/special_check()
+/obj/item/weapon/gun/special_check()
 	if(is_secure_gun() && !free_fire() && (!authorized_modes[sel_mode] || !registered_owner))
 		audible_message(SPAN_WARNING("\The [src] buzzes, refusing to fire."), hearing_distance = 3)
 		playsound(loc, 'sound/machines/buzz-sigh.ogg', 10, 0)
@@ -105,7 +102,7 @@
 
 	. = ..()
 
-/obj/item/gun/get_next_firemode()
+/obj/item/weapon/gun/get_next_firemode()
 	if(!is_secure_gun())
 		return ..()
 	. = sel_mode
@@ -116,19 +113,3 @@
 		if(. == sel_mode) // just in case all modes are unauthorized
 			return null
 	while (!authorized_modes[.] && !free_fire())
-
-/obj/item/gun/proc/get_network()
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	if(D)
-		return D.get_network()
-
-/obj/item/gun/proc/network_setup()
-	set name = "Setup Secure Gun Network"
-	set category = "Object"
-	set src in usr
-
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	if(D)
-		D.ui_interact(usr)
-	else
-		to_chat(usr, SPAN_WARNING("\The [src] is not network capable."))

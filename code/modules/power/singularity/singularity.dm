@@ -24,20 +24,21 @@
 	var/consume_range = 0 //How many tiles out do we eat.
 	var/event_chance = 15 //Prob for event each tick.
 	var/target = null //Its target. Moves towards the target if it has one.
-	var/last_failed_movement = 0 //Will not move in the same dir if it couldnt before, will help with the getting stuck on fields thing.
+	var/last_failed_movement = 0 //Will not move in the same dir if it couldn't before, will help with the getting stuck on fields thing.
 	var/last_warning
 
 	var/chained = 0//Adminbus chain-grab
 
-/obj/singularity/Initialize(mapload, var/starting_energy = 50, var/temp = 0)
-	. = ..(mapload)
-
+/obj/singularity/New(loc, var/starting_energy = 50, var/temp = 0)
 	//CARN: admin-alert for chuckle-fuckery.
 	admin_investigate_setup()
 	energy = starting_energy
 
 	if (temp)
-		QDEL_IN(src, temp)
+		spawn (temp)
+			qdel(src)
+
+	..()
 	START_PROCESSING(SSobj, src)
 	for(var/obj/machinery/power/singularity_beacon/singubeacon in SSmachines.machinery)
 		if(singubeacon.active)
@@ -48,12 +49,11 @@
 	STOP_PROCESSING(SSobj, src)
 	. = ..()
 
-/obj/singularity/attack_hand(mob/user)
+/obj/singularity/attack_hand(mob/user as mob)
 	consume(user)
 	return 1
 
-/obj/singularity/explosion_act(severity)
-	SHOULD_CALL_PARENT(FALSE)
+/obj/singularity/ex_act(severity)
 	if(current_size == STAGE_SUPER)//IT'S UNSTOPPABLE
 		return
 	switch(severity)
@@ -210,7 +210,7 @@
 			pixel_y = -128
 			grav_pull = 10
 			consume_range = 4
-			dissipate = 0 //It cant go smaller due to e loss.
+			dissipate = 0 //It can't go smaller due to e loss.
 			overlays.Cut()
 			if(chained)
 				overlays = list("chain_s9")
@@ -228,7 +228,7 @@
 			pixel_y = -160
 			grav_pull = 16
 			consume_range = 5
-			dissipate = 0 //It cant go smaller due to e loss
+			dissipate = 0 //It can't go smaller due to e loss
 			event_chance = 25 //Events will fire off more often.
 			if(chained)
 				overlays = list("chain_s9")
@@ -277,50 +277,41 @@
 		else if(dist <= consume_range)
 			consume(X)
 
+	//for (var/turf/T in trange(grav_pull, src)) //TODO: Create a similar trange for orange to prevent snowflake of self check.
+	//	consume(T)
+
 	return
 
 /obj/singularity/proc/consume(const/atom/A)
 	src.energy += A.singularity_act(src, current_size)
 	return
 
-/obj/singularity/proc/move(force_move_direction = 0)
+/obj/singularity/proc/move(var/force_move = 0)
 	if(!move_self)
-		return FALSE
+		return 0
 
 	var/movement_dir = pick(GLOB.alldirs - last_failed_movement)
 
-	if(force_move_direction)
-		movement_dir = force_move_direction
+	if(force_move)
+		movement_dir = force_move
 
 	if(target && prob(60))
 		movement_dir = get_dir(src,target) //moves to a singulo beacon, if there is one
-	else
-		var/location
-		if(prob(16))
-			location = GetAbove(src)
-			if (location)
-				src.Move(location, UP)
-				return TRUE
-		else if(prob(16))
-			location = GetBelow(src)
-			if (location)
-				src.Move(location, DOWN)
-				return TRUE
 
 	if(current_size >= 9)//The superlarge one does not care about things in its way
 		spawn(0)
 			step(src, movement_dir)
 		spawn(1)
 			step(src, movement_dir)
-		return TRUE
+		return 1
 	else if(check_turfs_in(movement_dir))
 		last_failed_movement = 0 // Reset this because we moved
 		spawn(0)
 			step(src, movement_dir)
-		return TRUE
+		return 1
 	else
 		last_failed_movement = movement_dir
-	return FALSE
+	return 0
 
 /obj/singularity/proc/check_turfs_in(var/direction = 0, var/step = 0)
 	if(!direction)
@@ -452,10 +443,10 @@
 /obj/singularity/proc/smwave()
 	for(var/mob/living/M in view(10, src.loc))
 		if(prob(67))
-			to_chat(M, "<span class=\"warning\">You hear an uneartly ringing, then what sounds like a shrilling kettle as you are washed with a wave of heat.</span>")
+			to_chat(M, "<span class=\"warning\">You hear an unearthly ringing, then what sounds like a shrilling kettle as you are washed with a wave of heat.</span>")
 			to_chat(M, "<span class=\"notice\">Miraculously, it fails to kill you.</span>")
 		else
-			to_chat(M, "<span class=\"danger\">You hear an uneartly ringing, then what sounds like a shrilling kettle as you are washed with a wave of heat.</span>")
+			to_chat(M, "<span class=\"danger\">You hear an unearthly ringing, then what sounds like a shrilling kettle as you are washed with a wave of heat.</span>")
 			to_chat(M, "<span class=\"danger\">You don't even have a moment to react as you are reduced to ashes by the intense radiation.</span>")
 			M.dust()
 	SSradiation.radiate(src, rand(energy))

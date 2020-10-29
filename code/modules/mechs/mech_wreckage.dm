@@ -8,8 +8,7 @@
 	icon = 'icons/mecha/mech_part_items.dmi'
 	var/prepared
 
-/obj/structure/mech_wreckage/Initialize(mapload, var/mob/living/exosuit/exosuit, var/gibbed)
-	. = ..(mapload)
+/obj/structure/mech_wreckage/New(var/newloc, var/mob/living/exosuit/exosuit, var/gibbed)
 	if(exosuit)
 		name = "wreckage of \the [exosuit.name]"
 		if(!gibbed)
@@ -22,11 +21,10 @@
 					if(exosuit.remove_system(hardpoint))
 						thing.forceMove(src)
 
-/obj/structure/mech_wreckage/powerloader/Initialize(mapload)
-	var/mob/living/exosuit/premade/powerloader/new_mech = new(loc)
-	. = ..(mapload, new_mech, FALSE)
-	if(!QDELETED(new_mech))
-		qdel(new_mech)
+	..()
+
+/obj/structure/mech_wreckage/powerloader/New(var/newloc)
+	..(newloc, new /mob/living/exosuit/premade/powerloader(newloc), FALSE)
 
 /obj/structure/mech_wreckage/attack_hand(var/mob/user)
 	if(contents.len)
@@ -42,12 +40,12 @@
 
 	var/cutting
 	if(isWelder(W))
-		var/obj/item/weldingtool/WT = W
+		var/obj/item/weapon/weldingtool/WT = W
 		if(WT.isOn())
 			cutting = TRUE
 		else
-			to_chat(user, SPAN_WARNING("Turn \the [WT] on, first."))
-	else if(istype(W, /obj/item/gun/energy/plasmacutter))
+			to_chat(user, SPAN_WARNING("Turn the torch on, first."))
+	else if(istype(W, /obj/item/weapon/gun/energy/plasmacutter))
 		cutting = TRUE
 
 	if(cutting)

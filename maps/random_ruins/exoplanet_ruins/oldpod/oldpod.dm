@@ -1,5 +1,3 @@
-#include "../../../../mods/corporate/_corporate.dme"
-
 /datum/map_template/ruin/exoplanet/oldpod
 	name = "old pod"
 	id = "oldpod"

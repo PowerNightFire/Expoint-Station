@@ -1,61 +1,54 @@
 /obj/structure/grille
 	name = "grille"
-	desc = "A flimsy lattice of rods, with screws to secure it to the floor."
-	icon = 'icons/obj/structures/grille.dmi'
+	desc = "A flimsy lattice of metal rods, with screws to secure it to the floor."
+	icon = 'icons/obj/grille.dmi'
 	icon_state = "grille"
+	color = COLOR_STEEL
 	density = 1
 	anchored = 1
 	obj_flags = OBJ_FLAG_CONDUCTIBLE
 	layer = BELOW_OBJ_LAYER
 	explosion_resistance = 1
 	rad_resistance_modifier = 0.1
-	color = COLOR_STEEL
-	material = /decl/material/solid/metal/steel
-	handle_generic_blending = TRUE
-	material_alteration = MAT_FLAG_ALTERATION_COLOR | MAT_FLAG_ALTERATION_NAME
-	maxhealth = 20
-
+	var/init_material = MATERIAL_STEEL
+	var/health = 10
 	var/destroyed = 0
-	var/list/connections
-	var/list/other_connections
-	
-/obj/structure/grille/clear_connections()
-	connections = null
-	other_connections = null
 
-/obj/structure/grille/get_material_health_modifier()
-	. = (1/15)
+	blend_objects = list(/obj/machinery/door, /turf/simulated/wall) // Objects which to blend with
+	noblend_objects = list(/obj/machinery/door/window)
 
-/obj/structure/grille/set_connections(dirs, other_dirs)
-	connections = dirs_to_corner_states(dirs)
-	other_connections = dirs_to_corner_states(other_dirs)
+/obj/structure/grille/get_material()
+	return material
 
-/obj/structure/grille/update_material_desc(override_desc)
-	if(material)
-		desc = "A lattice of [material.solid_name] rods, with screws to secure it to the floor."
-	else
-		..()
-
-/obj/structure/grille/Initialize()
+/obj/structure/grille/Initialize(mapload, var/new_material)
 	. = ..()
+	if(!new_material)
+		new_material = init_material
+	material = SSmaterials.get_material_by_name(new_material)
 	if(!istype(material))
-		. = INITIALIZE_HINT_QDEL
-	if(. != INITIALIZE_HINT_QDEL)
-		. = INITIALIZE_HINT_LATELOAD
+		..()
+		return INITIALIZE_HINT_QDEL
 
-/obj/structure/grille/LateInitialize()
-	..()
+	name = "[material.display_name] grille"
+	desc = "A lattice of [material.display_name] rods, with screws to secure it to the floor."
+	color =  material.icon_colour
+	health = max(1, round(material.integrity/15))
 	update_connections(1)
 	update_icon()
 
-/obj/structure/grille/explosion_act(severity)
-	..()
-	if(!QDELETED(src))
-		physically_destroyed()
+/obj/structure/grille/Destroy()
+	var/turf/location = loc
+	. = ..()
+	for(var/obj/structure/grille/G in orange(1, location))
+		G.update_connections()
+		G.queue_icon_update()
+
+/obj/structure/grille/ex_act(severity)
+	qdel(src)
 
 /obj/structure/grille/on_update_icon()
-	..()
 	var/on_frame = is_on_frame()
+
 	overlays.Cut()
 	if(destroyed)
 		if(on_frame)
@@ -67,25 +60,23 @@
 		icon_state = ""
 		if(on_frame)
 			for(var/i = 1 to 4)
-				var/conn = connections ? connections[i] : "0"
-				if(other_connections && other_connections[i] != "0")
-					I = image(icon, "grille_other_onframe[conn]", dir = 1<<(i-1))
+				if(other_connections[i] != "0")
+					I = image(icon, "grille_other_onframe[connections[i]]", dir = 1<<(i-1))
 				else
-					I = image(icon, "grille_onframe[conn]", dir = 1<<(i-1))
+					I = image(icon, "grille_onframe[connections[i]]", dir = 1<<(i-1))
 				overlays += I
 		else
 			for(var/i = 1 to 4)
-				var/conn = connections ? connections[i] : "0"
-				if(other_connections && other_connections[i] != "0")
-					I = image(icon, "grille_other[conn]", dir = 1<<(i-1))
+				if(other_connections[i] != "0")
+					I = image(icon, "grille_other[connections[i]]", dir = 1<<(i-1))
 				else
-					I = image(icon, "grille[conn]", dir = 1<<(i-1))
+					I = image(icon, "grille[connections[i]]", dir = 1<<(i-1))
 				overlays += I
 
 /obj/structure/grille/Bumped(atom/user)
 	if(ismob(user)) shock(user, 70)
 
-/obj/structure/grille/attack_hand(mob/user)
+/obj/structure/grille/attack_hand(mob/user as mob)
 
 	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 	playsound(loc, 'sound/effects/grillehit.ogg', 80, 1)
@@ -106,7 +97,7 @@
 		damage_dealt += 5
 	else
 		damage_dealt += 1
-	
+
 	attack_generic(user,damage_dealt,attack_message)
 
 /obj/structure/grille/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
@@ -152,27 +143,18 @@
 
 	take_damage(damage*0.2)
 
-/obj/structure/grille/proc/cut_grille()
-	playsound(loc, 'sound/items/Wirecutter.ogg', 100, 1)
-	if(destroyed)
-		qdel(src)
-	else
-		set_density(0)
-		new /obj/item/stack/material/rods(get_turf(src), 1, material.type)
-		destroyed = TRUE
-		update_icon()
-
-/obj/structure/grille/attackby(obj/item/W, mob/user)
+/obj/structure/grille/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isWirecutter(W))
-		if(!material.conductive || !shock(user, 100))
-			cut_grille()
-
+		if(!shock(user, 100))
+			playsound(loc, 'sound/items/Wirecutter.ogg', 100, 1)
+			new /obj/item/stack/material/rods(get_turf(src), destroyed ? 1 : 2)
+			qdel(src)
 	else if((isScrewdriver(W)) && (istype(loc, /turf/simulated) || anchored))
 		if(!shock(user, 90))
 			playsound(loc, 'sound/items/Screwdriver.ogg', 100, 1)
 			anchored = !anchored
-			user.visible_message(SPAN_NOTICE("[user] [anchored ? "fastens" : "unfastens"] the grille."), \
-								 SPAN_NOTICE("You have [anchored ? "fastened the grille to" : "unfastened the grill from"] the floor."))
+			user.visible_message("<span class='notice'>[user] [anchored ? "fastens" : "unfastens"] the grille.</span>", \
+								 "<span class='notice'>You have [anchored ? "fastened the grille to" : "unfastened the grill from"] the floor.</span>")
 			update_connections(1)
 			update_icon()
 			return
@@ -206,19 +188,29 @@
 				take_damage(W.force * 0.1)
 	..()
 
-/obj/structure/grille/physically_destroyed()
-	SHOULD_CALL_PARENT(FALSE)
-	if(!destroyed)
-		visible_message(SPAN_DANGER("\The [src] falls to pieces!"))
-	cut_grille()
-	. = TRUE
+/obj/structure/grille/proc/healthcheck()
+	if(health <= 0)
+		if(!destroyed)
+			set_density(0)
+			destroyed = 1
+			visible_message("<span class='notice'>\The [src] falls to pieces!</span>")
+			update_icon()
+			new /obj/item/stack/material/rods(get_turf(src), 1, material.name)
+
+		else
+			if(health <= -6)
+				new /obj/item/stack/material/rods(get_turf(src), 1, material.name)
+				qdel(src)
+				return
+	return
 
 // shock user with probability prb (if all connections & power are working)
 // returns 1 if shocked, 0 otherwise
-/obj/structure/grille/proc/shock(mob/user, prb)
+
+/obj/structure/grille/proc/shock(mob/user as mob, prb)
 	if(!anchored || destroyed)		// anchored/destroyed grilles are never connected
 		return 0
-	if(!(material.conductive))
+	if(material && !material.conductive)
 		return 0
 	if(!prob(prb))
 		return 0
@@ -245,6 +237,10 @@
 			take_damage(1)
 	..()
 
+/obj/structure/grille/take_damage(damage)
+	health -= damage
+	healthcheck()
+
 // Used in mapping to avoid
 /obj/structure/grille/broken
 	destroyed = 1
@@ -258,7 +254,7 @@
 /obj/structure/grille/cult
 	name = "cult grille"
 	desc = "A matrice built out of an unknown material, with some sort of force field blocking air around it."
-	material = /decl/material/solid/stone/cult
+	init_material = MATERIAL_CULT
 
 /obj/structure/grille/cult/CanPass(atom/movable/mover, turf/target, height = 1.5, air_group = 0)
 	if(air_group)
@@ -273,13 +269,16 @@
 	if(ST.in_use)
 		return
 	if(ST.get_amount() < 2)
-		to_chat(user, SPAN_WARNING("You need at least two rods to do this."))
+		to_chat(user, "<span class='warning'>You need at least two rods to do this.</span>")
 		return
-	user.visible_message(SPAN_NOTICE("\The [user] begins assembling a [ST.material.solid_name] grille."))
-	if(do_after(user, 1 SECOND, ST) && ST.use(2))
-		var/obj/structure/grille/F = new(loc, ST.material.type)
-		user.visible_message(SPAN_NOTICE("\The [user] finishes building \a [F]."))
-		F.add_fingerprint(user)
-
-/obj/structure/grille/create_dismantled_products(var/turf/T)
-	new /obj/item/stack/material/rods(get_turf(src), (destroyed ? 1 : 2), material.type)
+	to_chat(user, "<span class='notice'>Assembling grille...</span>")
+	ST.in_use = 1
+	if (!do_after(user, 10))
+		ST.in_use = 0
+		return
+	if(!ST.use(2))
+		return
+	var/obj/structure/grille/F = new /obj/structure/grille(loc, ST.material.name)
+	to_chat(user, "<span class='notice'>You assemble a grille</span>")
+	ST.in_use = 0
+	F.add_fingerprint(user)

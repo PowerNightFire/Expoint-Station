@@ -100,13 +100,9 @@
 	air.volume = volume
 
 /datum/pipeline/proc/network_expand(datum/pipe_network/new_network, obj/machinery/atmospherics/pipe/reference)
-	if(new_network.line_members.Find(src))
-		return
 
-	if(network == new_network) // Should be caught by the above check in all reasonable cases, so we crash and try to clean up as best we can.
-		crash_with("pipeline - pipenet reference mismatch.")
-	else
-		qdel(network)
+	if(new_network.line_members.Find(src))
+		return 0
 
 	new_network.line_members += src
 
@@ -118,10 +114,13 @@
 			if(!istype(result,/obj/machinery/atmospherics/pipe) && (result!=reference))
 				result.network_expand(new_network, edge)
 
+
+	return 1
+
 /datum/pipeline/proc/return_network(obj/machinery/atmospherics/reference)
 	if(!network)
-		var/datum/pipe_network/new_network = new
-		new_network.build_network(src, null)
+		network = new /datum/pipe_network()
+		network.build_network(src, null)
 			//technically passing these parameters should not be allowed
 			//however pipe_network.build_network(..) and pipeline.network_extend(...)
 			//		were setup to properly handle this case

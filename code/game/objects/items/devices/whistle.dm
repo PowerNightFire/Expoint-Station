@@ -1,7 +1,6 @@
-/obj/item/hailer
+/obj/item/device/hailer
 	name = "hailer"
 	desc = "Used by obese officers to save their breath for running."
-	icon = 'icons/obj/items/device/hailer.dmi'
 	icon_state = "voice0"
 	item_state = "flashbang"	//looks exactly like a flash (and nothing like a flashbang)
 	w_class = ITEM_SIZE_TINY
@@ -11,7 +10,7 @@
 	var/spamcheck = 0
 	var/insults
 
-/obj/item/hailer/verb/set_message()
+/obj/item/device/hailer/verb/set_message()
 	set name = "Set Hailer Message"
 	set category = "Object"
 	set desc = "Alter the message shouted by your hailer."
@@ -28,7 +27,7 @@
 
 	to_chat(usr, "You configure the hailer to shout \"[use_message]\".")
 
-/obj/item/hailer/attack_self(mob/living/carbon/user)
+/obj/item/device/hailer/attack_self(mob/living/carbon/user as mob)
 	if (spamcheck)
 		return
 
@@ -42,7 +41,7 @@
 	spawn(20)
 		spamcheck = 0
 
-/obj/item/hailer/emag_act(var/remaining_charges, var/mob/user)
+/obj/item/device/hailer/emag_act(var/remaining_charges, var/mob/user)
 	if(isnull(insults))
 		to_chat(user, "<span class='danger'>You overload \the [src]'s voice synthesizer.</span>")
 		insults = rand(1, 3)//to prevent dickflooding

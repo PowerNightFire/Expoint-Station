@@ -42,8 +42,33 @@
 		/decl/emote/audible/gnarl
 		)
 
+/mob/living/carbon/alien/diona
+	default_emotes = list(
+		/decl/emote/visible,
+		/decl/emote/visible/scratch,
+		/decl/emote/visible/drool,
+		/decl/emote/visible/nod,
+		/decl/emote/visible/sway,
+		/decl/emote/visible/sulk,
+		/decl/emote/visible/twitch,
+		/decl/emote/visible/dance,
+		/decl/emote/visible/roll,
+		/decl/emote/visible/shake,
+		/decl/emote/visible/jump,
+		/decl/emote/visible/shiver,
+		/decl/emote/visible/collapse,
+		/decl/emote/audible/hiss,
+		/decl/emote/audible,
+		/decl/emote/audible/scretch,
+		/decl/emote/audible/choke,
+		/decl/emote/audible/gnarl,
+		/decl/emote/audible/bug_hiss,
+		/decl/emote/audible/bug_chitter,
+		/decl/emote/audible/chirp
+		)
+
 /mob/living/carbon/brain/can_emote()
-	return (istype(container, /obj/item/mmi) && ..())
+	return (istype(container, /obj/item/device/mmi) && ..())
 
 /mob/living/carbon/brain
 	default_emotes = list(
@@ -164,6 +189,13 @@
 		/decl/emote/audible/synth/security,
 		/decl/emote/audible/synth/security/halt
 		)
+
+/mob/living/silicon/robot/flying/ascent
+	default_emotes = list(
+		/decl/emote/audible/ascent_purr,
+		/decl/emote/audible/ascent_hiss,
+		/decl/emote/audible/ascent_snarl
+	)
 
 /mob/living/carbon/slime
 	default_emotes = list(

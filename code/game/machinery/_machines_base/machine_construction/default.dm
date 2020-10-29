@@ -10,8 +10,6 @@
 
 /decl/machine_construction/default/panel_closed
 	down_state = /decl/machine_construction/default/panel_open
-	visible_components = FALSE
-	locked = TRUE
 
 /decl/machine_construction/default/panel_closed/state_is_valid(obj/machinery/machine)
 	return !machine.panel_open
@@ -31,10 +29,7 @@
 		to_chat(user, SPAN_NOTICE("You open the maintenance hatch of \the [machine]."))
 		machine.update_icon()
 		return
-	if(istype(I, /obj/item/storage/part_replacer))
-		var/obj/item/storage/part_replacer/replacer = I
-		if(replacer.remote_interaction)
-			machine.part_replacement(user, replacer)
+	if(istype(I, /obj/item/weapon/storage/part_replacer))
 		machine.display_parts(user)
 		return TRUE
 
@@ -65,8 +60,6 @@
 		return
 	if(isCrowbar(I))
 		TRANSFER_STATE(down_state)
-		playsound(get_turf(machine), 'sound/items/Crowbar.ogg', 50, 1)
-		machine.visible_message(SPAN_NOTICE("\The [user] deconstructs \the [machine]."))
 		machine.dismantle()
 		return
 	if(isScrewdriver(I))
@@ -77,7 +70,7 @@
 		machine.update_icon()
 		return
 
-	if(istype(I, /obj/item/storage/part_replacer))
+	if(istype(I, /obj/item/weapon/storage/part_replacer))
 		return machine.part_replacement(user, I)
 
 	if(isWrench(I))
@@ -96,12 +89,3 @@
 
 // Not implemented fully as the machine will qdel on transition to this. Path needed for checks.
 /decl/machine_construction/default/deconstructed
-
-// door variants, just use different boards
-/decl/machine_construction/default/panel_closed/door
-	needs_board = "door"
-	down_state = /decl/machine_construction/default/panel_open/door
-
-/decl/machine_construction/default/panel_open/door
-	needs_board = "door"
-	up_state = /decl/machine_construction/default/panel_closed/door

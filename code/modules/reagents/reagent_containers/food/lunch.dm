@@ -1,75 +1,108 @@
 var/list/lunchables_lunches_ = list(
-									/obj/item/chems/food/snacks/sandwich,
-									/obj/item/chems/food/snacks/slice/meatbread/filled,
-									/obj/item/chems/food/snacks/slice/tofubread/filled,
-									/obj/item/chems/food/snacks/slice/creamcheesebread/filled,
-									/obj/item/chems/food/snacks/slice/margherita/filled,
-									/obj/item/chems/food/snacks/slice/meatpizza/filled,
-									/obj/item/chems/food/snacks/slice/mushroompizza/filled,
-									/obj/item/chems/food/snacks/slice/vegetablepizza/filled,
-									/obj/item/chems/food/snacks/tastybread,
-									/obj/item/chems/food/snacks/liquidfood,
-									/obj/item/chems/food/snacks/jellysandwich/cherry,
-									/obj/item/chems/food/snacks/tossedsalad
+									/obj/item/weapon/reagent_containers/food/snacks/sandwich,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/meatbread/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/tofubread/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/creamcheesebread/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/margherita/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/meatpizza/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/mushroompizza/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/vegetablepizza/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/tastybread,
+									/obj/item/weapon/reagent_containers/food/snacks/liquidfood,
+									/obj/item/weapon/reagent_containers/food/snacks/jellysandwich/cherry,
+									/obj/item/weapon/reagent_containers/food/snacks/tossedsalad,
+									/obj/item/weapon/reagent_containers/food/snacks/vegetablesoup,
+									/obj/item/weapon/reagent_containers/food/snacks/plainsteak
 								  )
 
 var/list/lunchables_snacks_ = list(
-									/obj/item/chems/food/snacks/donut/jelly,
-									/obj/item/chems/food/snacks/donut/cherryjelly,
-									/obj/item/chems/food/snacks/muffin,
-									/obj/item/chems/food/snacks/popcorn,
-									/obj/item/chems/food/snacks/sosjerky,
-									/obj/item/chems/food/snacks/no_raisin,
-									/obj/item/chems/food/snacks/spacetwinkie,
-									/obj/item/chems/food/snacks/cheesiehonkers,
-									/obj/item/chems/food/snacks/poppypretzel,
-									/obj/item/chems/food/snacks/carrotfries,
-									/obj/item/chems/food/snacks/candiedapple,
-									/obj/item/chems/food/snacks/applepie,
-									/obj/item/chems/food/snacks/cherrypie,
-									/obj/item/chems/food/snacks/plumphelmetbiscuit,
-									/obj/item/chems/food/snacks/appletart,
-									/obj/item/chems/food/snacks/slice/carrotcake/filled,
-									/obj/item/chems/food/snacks/slice/cheesecake/filled,
-									/obj/item/chems/food/snacks/slice/plaincake/filled,
-									/obj/item/chems/food/snacks/slice/orangecake/filled,
-									/obj/item/chems/food/snacks/slice/limecake/filled,
-									/obj/item/chems/food/snacks/slice/lemoncake/filled,
-									/obj/item/chems/food/snacks/slice/chocolatecake/filled,
-									/obj/item/chems/food/snacks/slice/birthdaycake/filled,
-									/obj/item/chems/food/snacks/watermelonslice,
-									/obj/item/chems/food/snacks/slice/applecake/filled,
-									/obj/item/chems/food/snacks/slice/pumpkinpie/filled
+									/obj/item/weapon/reagent_containers/food/snacks/donut/jelly,
+									/obj/item/weapon/reagent_containers/food/snacks/donut/cherryjelly,
+									/obj/item/weapon/reagent_containers/food/snacks/muffin,
+									/obj/item/weapon/reagent_containers/food/snacks/popcorn,
+									/obj/item/weapon/reagent_containers/food/snacks/sosjerky,
+									/obj/item/weapon/reagent_containers/food/snacks/no_raisin,
+									/obj/item/weapon/reagent_containers/food/snacks/spacetwinkie,
+									/obj/item/weapon/reagent_containers/food/snacks/cheesiehonkers,
+									/obj/item/weapon/reagent_containers/food/snacks/poppypretzel,
+									/obj/item/weapon/reagent_containers/food/snacks/carrotfries,
+									/obj/item/weapon/reagent_containers/food/snacks/candiedapple,
+									/obj/item/weapon/reagent_containers/food/snacks/applepie,
+									/obj/item/weapon/reagent_containers/food/snacks/cherrypie,
+									/obj/item/weapon/reagent_containers/food/snacks/plumphelmetbiscuit,
+									/obj/item/weapon/reagent_containers/food/snacks/appletart,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/carrotcake/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/cheesecake/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/plaincake/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/orangecake/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/limecake/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/lemoncake/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/chocolatecake/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/birthdaycake/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/watermelonslice,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/applecake/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/slice/pumpkinpie/filled,
+									/obj/item/weapon/reagent_containers/food/snacks/skrellsnacks,
+									/obj/item/weapon/reagent_containers/food/snacks/venus,
+									/obj/item/weapon/reagent_containers/food/snacks/lunacake,
+									/obj/item/weapon/reagent_containers/food/snacks/mars
 								   )
 
 var/list/lunchables_drinks_ = list(
-									/obj/item/chems/food/drinks/cans/cola,
-									/obj/item/chems/food/drinks/cans/waterbottle,
-									/obj/item/chems/food/drinks/cans/space_mountain_wind,
-									/obj/item/chems/food/drinks/cans/dr_gibb,
-									/obj/item/chems/food/drinks/cans/starkist,
-									/obj/item/chems/food/drinks/cans/space_up,
-									/obj/item/chems/food/drinks/cans/lemon_lime,
-									/obj/item/chems/food/drinks/cans/iced_tea,
-									/obj/item/chems/food/drinks/cans/grape_juice,
-									/obj/item/chems/food/drinks/cans/tonic,
-									/obj/item/chems/food/drinks/cans/sodawater
+									/obj/item/weapon/reagent_containers/food/drinks/cans/cola,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/cola_apple,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/cola_orange,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/cola_grape,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/cola_lemonlime,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/cola_strawberry,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/cola_diet,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/vanillacola,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/cherrycola,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/orangecola,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/coffeecola,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/waterbottle,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/space_mountain_wind,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/dr_gibb,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/ionbru,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/space_up,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/lemon_lime,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/iced_tea,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/grape_juice,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/tonic,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/sodawater,
+									/obj/item/weapon/reagent_containers/food/drinks/cans/rootbeer
 								   )
 
 // This default list is a bit different, it contains items we don't want
 var/list/lunchables_drink_reagents_ = list(
-											/decl/material/liquid/drink/dry_ramen,
-											/decl/material/liquid/drink/hell_ramen,
-											/decl/material/liquid/drink/hot_ramen,
-											/decl/material/liquid/drink/mutagencola
+											/datum/reagent/drink,
+											/datum/reagent/drink/nothing,
+											/datum/reagent/drink/doctor_delight,
+											/datum/reagent/drink/dry_ramen,
+											/datum/reagent/drink/hell_ramen,
+											/datum/reagent/drink/hot_ramen,
+											/datum/reagent/drink/nuka_cola
 										)
 
 // This default list is a bit different, it contains items we don't want
 var/list/lunchables_ethanol_reagents_ = list(
-												/decl/material/liquid/ethanol/coffee,
-												/decl/material/liquid/ethanol/hooch,
-												/decl/material/liquid/ethanol/thirteenloko,
-												/decl/material/liquid/ethanol/pwine
+												/datum/reagent/ethanol,
+												/datum/reagent/ethanol/bilk,
+												/datum/reagent/ethanol/acid_spit,
+												/datum/reagent/ethanol/atomicbomb,
+												/datum/reagent/ethanol/beepsky_smash,
+												/datum/reagent/ethanol/coffee,
+												/datum/reagent/ethanol/hippies_delight,
+												/datum/reagent/ethanol/hooch,
+												/datum/reagent/ethanol/thirteenloko,
+												/datum/reagent/ethanol/manhattan_proj,
+												/datum/reagent/ethanol/neurotoxin,
+												/datum/reagent/ethanol/pwine,
+												/datum/reagent/ethanol/threemileisland,
+												/datum/reagent/ethanol/toxins_special,
+												/datum/reagent/ethanol/alien/qokkloa,
+												/datum/reagent/ethanol/alien/qokkhrona,
+												/datum/reagent/ethanol/iridast
 											)
 
 /proc/lunchables_lunches()
@@ -89,12 +122,12 @@ var/list/lunchables_ethanol_reagents_ = list(
 
 /proc/lunchables_drink_reagents()
 	if(!(lunchables_drink_reagents_[lunchables_drink_reagents_[1]]))
-		lunchables_drink_reagents_ = init_lunchable_reagent_list(lunchables_drink_reagents_, /decl/material/liquid/drink)
+		lunchables_drink_reagents_ = init_lunchable_reagent_list(lunchables_drink_reagents_, /datum/reagent/drink)
 	return lunchables_drink_reagents_
 
 /proc/lunchables_ethanol_reagents()
 	if(!(lunchables_ethanol_reagents_[lunchables_ethanol_reagents_[1]]))
-		lunchables_ethanol_reagents_ = init_lunchable_reagent_list(lunchables_ethanol_reagents_, /decl/material/liquid/ethanol)
+		lunchables_ethanol_reagents_ = init_lunchable_reagent_list(lunchables_ethanol_reagents_, /datum/reagent/ethanol)
 	return lunchables_ethanol_reagents_
 
 /proc/init_lunchable_list(var/list/lunches)
@@ -109,6 +142,6 @@ var/list/lunchables_ethanol_reagents_ = list(
 	for(var/reagent_type in subtypesof(reagent_types))
 		if(reagent_type in banned_reagents)
 			continue
-		var/decl/material/reagent = reagent_type
+		var/datum/reagent/reagent = reagent_type
 		.[initial(reagent.name)] = reagent_type
 	return sortAssoc(.)

@@ -1,9 +1,8 @@
 // Powersink - used to drain station power
 
-/obj/item/powersink
+/obj/item/device/powersink
 	name = "power sink"
 	desc = "A nulling power sink which drains energy from electrical systems."
-	icon = 'icons/obj/items/device/powersink.dmi'
 	icon_state = "powersink0"
 	item_state = "electronic"
 	w_class = ITEM_SIZE_LARGE
@@ -12,15 +11,14 @@
 	throw_speed = 1
 	throw_range = 2
 
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/slag = MATTER_AMOUNT_REINFORCEMENT)
+	matter = list(MATERIAL_STEEL = 750,MATERIAL_WASTE = 750)
 
-	origin_tech = "{'powerstorage':3,'esoteric':5}"
-	var/drain_rate = 1500000		// amount of power to drain per tick
-	var/apc_drain_rate = 5000 		// Max. amount drained from single APC. In Watts.
+	origin_tech = list(TECH_POWER = 3, TECH_ESOTERIC = 5)
+	var/drain_rate = 15000000		// amount of power to drain per tick
+	var/apc_drain_rate = 10000 		// Max. amount drained from single APC. In Watts.
 	var/dissipation_rate = 20000	// Passive dissipation of drained power. In Watts.
 	var/power_drained = 0 			// Amount of power drained.
-	var/max_power = 5e9				// Detonation point.
+	var/max_power = 5e10				// Detonation point.
 	var/mode = 0					// 0 = off, 1=clamped (off), 2=operating
 	var/datum/powernet/PN			// Our powernet
 
@@ -30,10 +28,10 @@
 
 	var/obj/structure/cable/attached		// the attached cable
 
-/obj/item/powersink/on_update_icon()
+/obj/item/device/powersink/on_update_icon()
 	icon_state = "powersink[mode == OPERATING]"
 
-/obj/item/powersink/proc/set_mode(value)
+/obj/item/device/powersink/proc/set_mode(value)
 	if(value == mode)
 		return
 	switch(value)
@@ -60,12 +58,12 @@
 	update_icon()
 	set_light(0)
 
-/obj/item/powersink/Destroy()
+/obj/item/device/powersink/Destroy()
 	if(mode == 2)
 		STOP_PROCESSING_POWER_OBJECT(src)
 	. = ..()
 
-/obj/item/powersink/attackby(var/obj/item/I, var/mob/user)
+/obj/item/device/powersink/attackby(var/obj/item/I, var/mob/user)
 	if(isScrewdriver(I))
 		if(mode == DISCONNECTED)
 			var/turf/T = loc
@@ -90,10 +88,10 @@
 	else
 		return ..()
 
-/obj/item/powersink/attack_ai()
+/obj/item/device/powersink/attack_ai()
 	return
 
-/obj/item/powersink/attack_hand(var/mob/user)
+/obj/item/device/powersink/attack_hand(var/mob/user)
 	. = ..()
 	if(.)
 		return
@@ -117,7 +115,7 @@
 				"<span class='italics'>You hear a click.</span>")
 			set_mode(CLAMPED_OFF)
 
-/obj/item/powersink/pwr_drain()
+/obj/item/device/powersink/pwr_drain()
 	if(!attached)
 		set_mode(DISCONNECTED)
 		return

@@ -36,9 +36,6 @@
 	var/mob/living/original	//TODO: remove.not used in any meaningful way ~Carn. First I'll need to tweak the way silicon-mobs handle minds.
 	var/active = 0
 
-	var/list/known_connections //list of known (RNG) relations between people
-	var/gen_relations_info
-
 	var/assigned_role
 	var/special_role
 
@@ -75,7 +72,7 @@
 
 /datum/mind/proc/transfer_to(mob/living/new_character)
 	if(!istype(new_character))
-		to_world_log("## DEBUG: transfer_to(): Some idiot has tried to transfer_to() a non mob/living mob. Please inform Carn")
+		to_world_log("## DEBUG: transfer_to(): Some idiot has tried to transfer_to() a non mob/living mob. Please inform Carn.")
 	if(current)					//remove ourself from our old body's mind variable
 		if(changeling)
 			current.remove_changeling_powers()
@@ -197,6 +194,14 @@
 		return TRUE
 
 	if(!is_admin) return
+
+	if(current && isliving(current))
+		if(href_list["set_psi_faculty"] && href_list["set_psi_faculty_rank"])
+			current.set_psi_rank(href_list["set_psi_faculty"], text2num(href_list["set_psi_faculty_rank"]))
+			log_and_message_admins("set [key_name(current)]'s [href_list["set_psi_faculty"]] faculty to [text2num(href_list["set_psi_faculty_rank"])].")
+			var/datum/admins/admin = GLOB.admins[usr.key]
+			if(istype(admin)) admin.show_player_panel(current)
+			return TRUE
 
 	if(href_list["add_antagonist"])
 		var/datum/antagonist/antag = GLOB.all_antag_types_[href_list["add_antagonist"]]
@@ -387,7 +392,7 @@
 
 		switch(href_list["implant"])
 			if("remove")
-				for(var/obj/item/implant/loyalty/I in H.contents)
+				for(var/obj/item/weapon/implant/loyalty/I in H.contents)
 					for(var/obj/item/organ/external/organs in H.organs)
 						if(I in organs.implants)
 							qdel(I)
@@ -448,7 +453,7 @@
 				take_uplink()
 			if("crystals")
 				if (usr.client.holder.rights & R_FUN)
-					var/obj/item/uplink/suplink = find_syndicate_uplink()
+					var/obj/item/device/uplink/suplink = find_syndicate_uplink()
 					if(!suplink)
 						to_chat(usr, "<span class='warning'>Failed to find an uplink.</span>")
 						return
@@ -473,7 +478,7 @@
 	return null
 
 /datum/mind/proc/take_uplink()
-	var/obj/item/uplink/H = find_syndicate_uplink()
+	var/obj/item/device/uplink/H = find_syndicate_uplink()
 	if(H)
 		qdel(H)
 

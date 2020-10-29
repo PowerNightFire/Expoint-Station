@@ -1,7 +1,7 @@
 /obj/structure/plasticflaps //HOW DO YOU CALL THOSE THINGS ANYWAY
-	name = "plastic flaps"
+	name = "\improper plastic flaps"
 	desc = "Completely impassable - or are they?"
-	icon = 'icons/obj/structures/plastic_flaps.dmi'
+	icon = 'icons/obj/stationobjs.dmi' //Change this.
 	icon_state = "plasticflaps"
 	density = 0
 	anchored = 1
@@ -16,7 +16,7 @@
 		/mob/living/simple_animal/mouse,
 		/mob/living/silicon/robot/drone
 		)
-	var/airtight = FALSE
+	var/airtight = 0
 
 /obj/structure/plasticflaps/CanPass(atom/A, turf/T)
 	if(istype(A) && A.checkpass(PASS_FLAG_GLASS))
@@ -52,28 +52,32 @@
 		user.visible_message("<span class='warning'>\The [user] adjusts \the [src], [airtight ? "preventing" : "allowing"] air flow.</span>")
 	else ..()
 
-/obj/structure/plasticflaps/explosion_act(severity)
-	..()
-	if(!QDELETED(src) && (severity == 1 || (severity == 2 && prob(50)) || (severity == 3 && prob(5))))
-		physically_destroyed(src)
-
-/obj/structure/plasticflaps/Initialize()
-	. = ..()
-	if(airtight)
-		become_airtight()
+/obj/structure/plasticflaps/ex_act(severity)
+	switch(severity)
+		if (1)
+			qdel(src)
+		if (2)
+			if (prob(50))
+				qdel(src)
+		if (3)
+			if (prob(5))
+				qdel(src)
 
 /obj/structure/plasticflaps/Destroy() //lazy hack to set the turf to allow air to pass if it's a simulated floor
-	if(airtight)
-		clear_airtight()
+	clear_airtight()
 	. = ..()
 
 /obj/structure/plasticflaps/proc/become_airtight()
-	atmos_canpass = CANPASS_NEVER
-	update_nearby_tiles()
+	var/turf/T = get_turf(loc)
+	if(T)
+		T.blocks_air = 1
 
 /obj/structure/plasticflaps/proc/clear_airtight()
-	atmos_canpass = CANPASS_ALWAYS
-	update_nearby_tiles()
+	var/turf/T = get_turf(loc)
+	if(T)
+		if(istype(T, /turf/simulated/floor))
+			T.blocks_air = 0
+
 
 /obj/structure/plasticflaps/airtight // airtight defaults to on 
-	airtight = TRUE
+	airtight = 1

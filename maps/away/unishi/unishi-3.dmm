@@ -17,7 +17,7 @@
 /turf/simulated/floor,
 /area/unishi/bridge)
 "ae" = (
-/turf/simulated/floor/airless,
+/turf/simulated/floor/reinforced/airless,
 /area/unishi/bridge)
 "af" = (
 /obj/effect/wingrille_spawn/reinforced/full,
@@ -95,7 +95,7 @@
 "au" = (
 /obj/structure/bed/padded,
 /obj/structure/curtain/open/bed,
-/obj/item/bedsheet/brown,
+/obj/item/weapon/bedsheet/brown,
 /turf/simulated/floor/tiled,
 /area/unishi/bridge)
 "av" = (
@@ -141,7 +141,7 @@
 /area/unishi/bridge)
 "aC" = (
 /obj/machinery/shipsensors,
-/turf/simulated/floor/airless,
+/turf/simulated/floor/reinforced/airless,
 /area/unishi/bridge)
 "aD" = (
 /turf/simulated/wall/titanium,
@@ -213,7 +213,7 @@
 /turf/simulated/floor,
 /area/unishi/bridge)
 "aR" = (
-/turf/simulated/wall,
+/turf/simulated/wall/r_titanium,
 /area/unishi/bridge)
 "aS" = (
 /obj/machinery/door/airlock/command,
@@ -226,7 +226,7 @@
 	icon_state = "1-2"
 	},
 /turf/simulated/floor/tiled,
-/area/unishi/living)
+/area/unishi/bridge)
 "aT" = (
 /obj/structure/largecrate,
 /turf/simulated/floor,
@@ -243,8 +243,10 @@
 /area/unishi/bridge)
 "aW" = (
 /obj/structure/table/rack,
-/obj/item/gun/energy/laser,
-/obj/item/gun/energy/laser,
+/obj/item/weapon/gun/energy/laser,
+/obj/item/weapon/gun/energy/laser,
+/obj/item/weapon/gun/energy/stunrevolver,
+/obj/item/weapon/gun/energy/stunrevolver,
 /obj/item/clothing/suit/armor/pcarrier/blue,
 /obj/item/clothing/suit/armor/pcarrier/tan,
 /obj/item/clothing/suit/armor/pcarrier/tan,
@@ -311,8 +313,7 @@
 /turf/simulated/wall,
 /area/unishi/living)
 "bg" = (
-/obj/structure/sign/warning/secure_area/armory,
-/turf/simulated/wall,
+/turf/simulated/wall/r_titanium,
 /area/unishi/living)
 "bh" = (
 /obj/machinery/door/firedoor,
@@ -329,7 +330,7 @@
 /obj/structure/sign/directions/bridge{
 	dir = 1
 	},
-/turf/simulated/wall,
+/turf/simulated/wall/titanium,
 /area/unishi/living)
 "bj" = (
 /obj/structure/closet/crate/med_crate/trauma,
@@ -345,7 +346,7 @@
 /area/unishi/living)
 "bm" = (
 /obj/structure/table/standard,
-/obj/item/towel,
+/obj/item/weapon/towel,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "bn" = (
@@ -361,8 +362,8 @@
 "bo" = (
 /obj/structure/railing/mapped,
 /obj/structure/railing/mapped{
-	icon_state = "railing0";
-	dir = 8
+	dir = 8;
+	icon_state = "railing0"
 	},
 /turf/simulated/open,
 /area/unishi/living)
@@ -420,7 +421,7 @@
 /area/unishi/living)
 "bw" = (
 /obj/structure/bed/padded,
-/obj/item/bedsheet/blue,
+/obj/item/weapon/bedsheet/blue,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "bx" = (
@@ -456,11 +457,11 @@
 /area/unishi/living)
 "bC" = (
 /obj/structure/closet,
-/obj/item/ammo_magazine/speedloader,
-/obj/item/ammo_magazine/speedloader,
-/obj/item/ammo_magazine/speedloader,
-/obj/item/gun/projectile/revolver,
-/obj/item/handcuffs,
+/obj/item/ammo_magazine/speedloader/magnum,
+/obj/item/ammo_magazine/speedloader/magnum,
+/obj/item/ammo_magazine/speedloader/magnum,
+/obj/item/weapon/gun/projectile/revolver,
+/obj/item/weapon/handcuffs,
 /obj/machinery/light/small{
 	dir = 8
 	},
@@ -517,8 +518,8 @@
 	dir = 6
 	},
 /obj/effect/floor_decal/corner/brown{
-	icon_state = "corner_white";
-	dir = 8
+	dir = 8;
+	icon_state = "corner_white"
 	},
 /turf/simulated/floor/tiled,
 /area/unishi/living)
@@ -576,8 +577,8 @@
 /turf/simulated/floor/tiled/white/monotile,
 /area/unishi/living)
 "bP" = (
-/obj/item/stool/padded,
-/obj/item/storage/box/lights/bulbs,
+/obj/item/weapon/stool/padded,
+/obj/item/weapon/storage/box/lights/bulbs,
 /turf/simulated/floor,
 /area/unishi/living)
 "bQ" = (
@@ -586,13 +587,13 @@
 /area/unishi/med)
 "bR" = (
 /obj/structure/table/reinforced,
-/obj/item/storage/firstaid/surgery,
-/obj/item/tank/anesthetic,
+/obj/item/weapon/storage/firstaid/surgery,
+/obj/item/weapon/tank/anesthetic,
 /obj/item/clothing/mask/breath/anesthetic,
 /obj/structure/window/reinforced{
 	dir = 4
 	},
-/obj/item/scalpel/laser1,
+/obj/item/weapon/scalpel/laser1,
 /turf/simulated/floor/tiled/white,
 /area/unishi/med)
 "bS" = (
@@ -602,7 +603,8 @@
 /obj/structure/closet/secure_closet/medical1{
 	req_access = newlist()
 	},
-/obj/item/defibrillator/loaded,
+/obj/item/weapon/defibrillator/loaded,
+/obj/item/clothing/accessory/stethoscope,
 /turf/simulated/floor/tiled/white,
 /area/unishi/med)
 "bT" = (
@@ -610,7 +612,7 @@
 /obj/item/bodybag,
 /obj/item/bodybag,
 /obj/item/roller,
-/obj/item/storage/chewables/candy/medicallollis,
+/obj/item/weapon/storage/chewables/candy/medicallollis,
 /obj/machinery/light{
 	dir = 4
 	},
@@ -658,7 +660,7 @@
 /obj/structure/table/standard,
 /obj/item/bodybag/cryobag,
 /obj/item/modular_computer/laptop/preset/custom_loadout/advanced,
-/obj/item/book/manual/medical_diagnostics_manual,
+/obj/item/weapon/book/manual/medical_diagnostics_manual,
 /turf/simulated/floor/tiled/white,
 /area/unishi/med)
 "cd" = (
@@ -689,8 +691,8 @@
 	dir = 4
 	},
 /obj/structure/cable{
-	icon_state = "0-4";
-	d2 = 4
+	d2 = 4;
+	icon_state = "0-4"
 	},
 /turf/simulated/floor,
 /area/unishi/bridge)
@@ -756,8 +758,8 @@
 /area/unishi/living)
 "cm" = (
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
 /turf/simulated/floor/tiled,
 /area/unishi/living)
@@ -778,7 +780,7 @@
 "cp" = (
 /obj/structure/bed/padded,
 /obj/structure/curtain/medical,
-/obj/item/bedsheet/medical,
+/obj/item/weapon/bedsheet/medical,
 /turf/simulated/floor/tiled/white,
 /area/unishi/med)
 "cq" = (
@@ -794,8 +796,8 @@
 	req_access = newlist()
 	},
 /obj/structure/cable{
-	icon_state = "0-2";
-	d2 = 2
+	d2 = 2;
+	icon_state = "0-2"
 	},
 /turf/simulated/floor/wood,
 /area/unishi/lounge)
@@ -806,8 +808,8 @@
 	icon_state = "1-8"
 	},
 /obj/machinery/bodyscanner{
-	icon_state = "body_scanner_0";
-	dir = 4
+	dir = 4;
+	icon_state = "body_scanner_0"
 	},
 /turf/simulated/floor/tiled/white,
 /area/unishi/med)
@@ -873,8 +875,8 @@
 /obj/structure/iv_drip,
 /obj/random/medical/lite,
 /obj/structure/cable{
-	icon_state = "0-4";
-	d2 = 4
+	d2 = 4;
+	icon_state = "0-4"
 	},
 /obj/machinery/power/apc{
 	dir = 2;
@@ -884,8 +886,8 @@
 	req_access = newlist()
 	},
 /obj/machinery/body_scanconsole{
-	icon_state = "body_scannerconsole";
-	dir = 4
+	dir = 4;
+	icon_state = "body_scannerconsole"
 	},
 /turf/simulated/floor/tiled/white,
 /area/unishi/med)
@@ -916,7 +918,7 @@
 "cA" = (
 /obj/effect/wingrille_spawn/reinforced,
 /turf/simulated/floor,
-/area/space)
+/area/unishi/lounge)
 "cB" = (
 /obj/effect/wingrille_spawn/reinforced,
 /turf/simulated/floor,
@@ -924,8 +926,8 @@
 "cC" = (
 /obj/structure/bed/chair/padded/brown,
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 1
+	dir = 1;
+	icon_state = "tube1"
 	},
 /obj/effect/floor_decal/corner/brown{
 	dir = 9
@@ -958,9 +960,9 @@
 /area/unishi/lounge)
 "cH" = (
 /obj/structure/table/woodentable,
-/obj/item/cell/crap,
-/obj/item/stock_parts/circuitboard/gyrotron_control,
-/obj/item/paper_bin,
+/obj/item/weapon/cell/crap,
+/obj/item/weapon/stock_parts/circuitboard/gyrotron_control,
+/obj/item/weapon/paper_bin,
 /obj/machinery/light/small{
 	dir = 8
 	},
@@ -982,17 +984,17 @@
 /area/unishi/living)
 "cK" = (
 /obj/structure/table/woodentable,
-/obj/item/dice,
-/obj/item/deck/cards,
-/obj/item/pen/fancy,
+/obj/item/weapon/dice,
+/obj/item/weapon/deck/cards,
+/obj/item/weapon/pen/fancy,
 /obj/random/tech_supply,
 /turf/simulated/floor/wood,
 /area/unishi/lounge)
 "cL" = (
 /obj/structure/table/woodentable,
-/obj/item/board,
-/obj/item/book/manual/mass_spectrometry,
-/obj/item/book/manual/stasis,
+/obj/item/weapon/board,
+/obj/item/weapon/book/manual/mass_spectrometry,
+/obj/item/weapon/book/manual/stasis,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "cM" = (
@@ -1000,8 +1002,8 @@
 /obj/machinery/atmospherics/unary/vent_scrubber/on{
 	dir = 4
 	},
-/obj/item/cell/crap,
-/obj/item/newspaper,
+/obj/item/weapon/cell/crap,
+/obj/item/weapon/newspaper,
 /obj/random/tech_supply,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
@@ -1090,7 +1092,7 @@
 "cY" = (
 /obj/structure/table/woodentable,
 /obj/item/trash/raisins,
-/obj/item/book/manual/nuclear,
+/obj/item/weapon/book/manual/nuclear,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "cZ" = (
@@ -1141,7 +1143,7 @@
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "dd" = (
-/obj/item/stool/bar/padded,
+/obj/item/weapon/stool/bar/padded,
 /obj/structure/cable{
 	d1 = 4;
 	d2 = 8;
@@ -1186,8 +1188,8 @@
 	icon_state = "0-8"
 	},
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
 /turf/simulated/floor/tiled,
 /area/unishi/kitchen)
@@ -1203,15 +1205,15 @@
 "dk" = (
 /obj/structure/hygiene/shower,
 /obj/structure/curtain/open/shower,
-/obj/item/soap,
+/obj/item/weapon/soap,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "dl" = (
 /obj/structure/table/standard,
-/obj/item/storage/laundry_basket,
-/obj/item/chems/pill/detergent,
-/obj/item/chems/pill/detergent,
-/obj/item/storage/chewables/candy/gum,
+/obj/item/weapon/storage/laundry_basket,
+/obj/item/weapon/reagent_containers/pill/detergent,
+/obj/item/weapon/reagent_containers/pill/detergent,
+/obj/item/weapon/storage/chewables/candy/gum,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "dm" = (
@@ -1224,7 +1226,7 @@
 /area/unishi/kitchen)
 "do" = (
 /obj/structure/table/marble,
-/obj/item/book/manual/chef_recipes,
+/obj/item/weapon/book/manual/chef_recipes,
 /turf/simulated/floor/tiled,
 /area/unishi/kitchen)
 "dp" = (
@@ -1232,7 +1234,7 @@
 	dir = 8;
 	pixel_x = -15
 	},
-/obj/item/storage/mirror{
+/obj/item/weapon/storage/mirror{
 	pixel_x = -28
 	},
 /obj/machinery/atmospherics/unary/vent_scrubber/on{
@@ -1283,7 +1285,7 @@
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "du" = (
-/obj/item/chems/pill/detergent,
+/obj/item/weapon/reagent_containers/pill/detergent,
 /obj/machinery/atmospherics/pipe/simple/hidden/supply{
 	dir = 4
 	},
@@ -1300,8 +1302,8 @@
 	dir = 4
 	},
 /obj/machinery/door/airlock/civilian{
-	icon_state = "closed";
-	dir = 8
+	dir = 8;
+	icon_state = "closed"
 	},
 /turf/simulated/floor/tiled,
 /area/unishi/kitchen)
@@ -1322,10 +1324,10 @@
 /turf/simulated/floor/tiled,
 /area/unishi/kitchen)
 "dy" = (
-/obj/item/mop,
+/obj/item/weapon/mop,
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
 /obj/structure/closet/crate/bin,
 /turf/simulated/floor/tiled,
@@ -1339,8 +1341,8 @@
 /area/unishi/kitchen)
 "dB" = (
 /obj/structure/closet/secure_closet/personal/cabinet,
-/obj/item/storage/box/emps,
-/obj/item/storage/box/smokes,
+/obj/item/weapon/storage/box/emps,
+/obj/item/weapon/storage/box/smokes,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "dC" = (
@@ -1351,14 +1353,14 @@
 /area/unishi/living)
 "dD" = (
 /obj/structure/table/woodentable,
-/obj/item/cane/concealed,
+/obj/item/weapon/cane/concealed,
 /obj/item/clothing/suit/radiation,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "dE" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
 /obj/machinery/atmospherics/pipe/simple/hidden/scrubbers,
-/obj/item/caution,
+/obj/item/weapon/caution,
 /obj/structure/cable{
 	d1 = 1;
 	d2 = 2;
@@ -1383,14 +1385,14 @@
 "dI" = (
 /obj/structure/closet/crate/freezer/rations,
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
 /turf/simulated/floor/tiled/freezer,
 /area/unishi/kitchen)
 "dJ" = (
 /obj/structure/bed/padded,
-/obj/item/bedsheet/brown,
+/obj/item/weapon/bedsheet/brown,
 /obj/item/toy/plushie/kitten,
 /obj/machinery/light/small,
 /turf/simulated/floor/tiled,
@@ -1407,11 +1409,11 @@
 /area/unishi/living)
 "dL" = (
 /obj/structure/bed/padded,
-/obj/item/bedsheet/green,
-/obj/item/gun/projectile/pistol/holdout,
-/obj/item/storage/secure/briefcase,
-/obj/item/card/emag_broken,
-/obj/item/plastique,
+/obj/item/weapon/bedsheet/green,
+/obj/item/weapon/gun/projectile/pistol/holdout,
+/obj/item/weapon/storage/secure/briefcase,
+/obj/item/weapon/card/emag_broken,
+/obj/item/weapon/plastique,
 /obj/item/ammo_casing/pistol/used,
 /obj/item/ammo_casing/pistol/used,
 /obj/item/ammo_casing/pistol/used,
@@ -1453,8 +1455,8 @@
 	icon_state = "1-2"
 	},
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
 /turf/simulated/floor/tiled,
 /area/unishi/living)
@@ -1499,20 +1501,20 @@
 /obj/structure/bed/padded,
 /obj/structure/curtain/open/bed,
 /obj/machinery/atmospherics/unary/vent_pump/on,
-/obj/item/bedsheet/purple,
+/obj/item/weapon/bedsheet/purple,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "dW" = (
 /obj/structure/bed/padded,
 /obj/structure/curtain/open/bed,
-/obj/item/bedsheet/green,
+/obj/item/weapon/bedsheet/green,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "dX" = (
 /obj/structure/bed/padded,
 /obj/structure/curtain/open/bed,
 /obj/machinery/atmospherics/unary/vent_pump/on,
-/obj/item/bedsheet/yellow,
+/obj/item/weapon/bedsheet/yellow,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "dY" = (
@@ -1531,8 +1533,8 @@
 /area/unishi/living)
 "eb" = (
 /obj/structure/table/woodentable,
-/obj/item/contraband/poster,
-/obj/item/haircomb/random,
+/obj/item/weapon/contraband/poster,
+/obj/item/weapon/haircomb/random,
 /obj/random/advdevice,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
@@ -1552,11 +1554,11 @@
 /area/unishi/living)
 "ee" = (
 /obj/structure/bed/padded,
-/obj/item/bedsheet/orange,
+/obj/item/weapon/bedsheet/orange,
 /obj/machinery/light/small,
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 8
+	dir = 8;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled,
 /area/unishi/living)
@@ -1588,8 +1590,8 @@
 	dir = 4
 	},
 /obj/machinery/door/airlock/civilian{
-	icon_state = "closed";
-	dir = 8
+	dir = 8;
+	icon_state = "closed"
 	},
 /turf/simulated/floor/tiled,
 /area/unishi/living)
@@ -1628,7 +1630,7 @@
 /obj/machinery/atmospherics/unary/vent_pump/on{
 	dir = 4
 	},
-/obj/item/bedsheet/orange,
+/obj/item/weapon/bedsheet/orange,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "eo" = (
@@ -1669,21 +1671,21 @@
 	dir = 4
 	},
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "es" = (
 /obj/structure/bed/padded,
 /obj/structure/curtain/open/bed,
-/obj/item/bedsheet/orange,
+/obj/item/weapon/bedsheet/orange,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
 "et" = (
 /obj/structure/bed/padded,
 /obj/structure/curtain/open/bed,
-/obj/item/bedsheet/purple,
+/obj/item/weapon/bedsheet/purple,
 /obj/machinery/light/small,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
@@ -1694,7 +1696,7 @@
 	dir = 1;
 	level = 2
 	},
-/obj/item/bedsheet/orange,
+/obj/item/weapon/bedsheet/orange,
 /obj/machinery/light/small,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
@@ -1726,7 +1728,7 @@
 /area/unishi/living)
 "eA" = (
 /obj/structure/bed/padded,
-/obj/item/bedsheet/rd,
+/obj/item/weapon/bedsheet/rd,
 /turf/simulated/floor/wood,
 /area/unishi/living)
 "eB" = (
@@ -1810,18 +1812,18 @@
 /area/unishi/living)
 "eJ" = (
 /obj/structure/table/woodentable,
-/obj/item/haircomb/brush,
-/obj/item/lipstick/black,
-/obj/item/lipstick/green,
-/obj/item/lipstick/violet,
+/obj/item/weapon/haircomb/brush,
+/obj/item/weapon/lipstick/black,
+/obj/item/weapon/lipstick/jade,
+/obj/item/weapon/lipstick/purple,
 /obj/random/drinkbottle,
 /turf/simulated/floor/wood,
 /area/unishi/living)
 "eK" = (
 /obj/structure/bed/chair/office,
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
 /turf/simulated/floor/wood,
 /area/unishi/living)
@@ -1870,7 +1872,7 @@
 /area/unishi/living)
 "eS" = (
 /obj/structure/table/woodentable,
-/obj/item/pen/fancy,
+/obj/item/weapon/pen/fancy,
 /obj/random/drinkbottle,
 /turf/simulated/floor/wood,
 /area/unishi/living)
@@ -1886,7 +1888,7 @@
 /area/unishi/living)
 "eV" = (
 /obj/structure/table/woodentable,
-/obj/item/paper_bin,
+/obj/item/weapon/paper_bin,
 /turf/simulated/floor/wood,
 /area/unishi/living)
 "eW" = (
@@ -1916,16 +1918,16 @@
 /obj/machinery/atmospherics/unary/vent_scrubber/on{
 	dir = 1
 	},
-/obj/item/cash/c1000,
-/obj/item/cash/c1000,
-/obj/item/cash/c1000,
-/obj/item/cash/c1000,
-/obj/item/cash/c1000,
-/obj/item/cash/c1000,
-/obj/item/cash/c1000,
-/obj/item/cash/c200,
-/obj/item/cash/c200,
-/obj/item/grenade/supermatter,
+/obj/item/weapon/spacecash/bundle/c1000,
+/obj/item/weapon/spacecash/bundle/c1000,
+/obj/item/weapon/spacecash/bundle/c1000,
+/obj/item/weapon/spacecash/bundle/c1000,
+/obj/item/weapon/spacecash/bundle/c1000,
+/obj/item/weapon/spacecash/bundle/c1000,
+/obj/item/weapon/spacecash/bundle/c1000,
+/obj/item/weapon/spacecash/bundle/c200,
+/obj/item/weapon/spacecash/bundle/c200,
+/obj/item/weapon/grenade/supermatter,
 /turf/simulated/floor/wood,
 /area/unishi/living)
 "eZ" = (
@@ -1933,18 +1935,18 @@
 /obj/machinery/atmospherics/unary/vent_scrubber/on{
 	dir = 1
 	},
-/obj/item/cash/c200,
-/obj/item/cash/c200,
-/obj/item/cash/c500,
-/obj/item/cash/c500,
-/obj/item/pen/reagent/sleepy,
+/obj/item/weapon/spacecash/bundle/c200,
+/obj/item/weapon/spacecash/bundle/c200,
+/obj/item/weapon/spacecash/bundle/c500,
+/obj/item/weapon/spacecash/bundle/c500,
+/obj/item/weapon/pen/reagent/sleepy,
 /obj/random/hardsuit,
 /turf/simulated/floor/wood,
 /area/unishi/living)
 "fa" = (
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
 /turf/simulated/floor/wood,
 /area/unishi/living)
@@ -1958,7 +1960,7 @@
 /area/unishi/living)
 "fd" = (
 /obj/structure/table/reinforced,
-/obj/item/chems/food/drinks/bottle/premiumwine,
+/obj/item/weapon/reagent_containers/food/drinks/bottle/premiumwine,
 /obj/machinery/light{
 	dir = 1
 	},
@@ -1997,11 +1999,18 @@
 	dir = 4
 	},
 /obj/structure/cable{
-	icon_state = "0-4";
-	d2 = 4
+	d2 = 4;
+	icon_state = "0-4"
 	},
 /turf/simulated/floor/tiled,
 /area/unishi/living)
+"fh" = (
+/obj/structure/sign/warning/secure_area/armory,
+/turf/simulated/wall/r_titanium,
+/area/unishi/living)
+"fi" = (
+/turf/simulated/floor/reinforced/airless,
+/area/space)
 "gj" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
 /obj/machinery/atmospherics/pipe/simple/hidden/scrubbers,
@@ -2049,7 +2058,7 @@
 "vn" = (
 /obj/structure/bed/padded,
 /obj/structure/curtain/open/bed,
-/obj/item/bedsheet/orange,
+/obj/item/weapon/bedsheet/orange,
 /obj/random/clothing,
 /turf/simulated/floor/tiled,
 /area/unishi/living)
@@ -6389,7 +6398,20 @@ aa
 aa
 aa
 aa
-ae
+fi
+fi
+fi
+fi
+fi
+fi
+be
+be
+be
+aP
+aP
+aP
+aP
+aP
 aO
 aO
 aO
@@ -6403,26 +6425,13 @@ aP
 aP
 aP
 aP
-aO
-aO
-aO
-aO
-aO
-be
-be
-be
-be
-be
-be
-be
-be
-be
-be
-be
-be
-be
-be
-be
+aP
+aP
+aP
+aP
+aP
+aP
+aP
 aP
 aP
 aP
@@ -6492,10 +6501,10 @@ aa
 aC
 ae
 ae
-aP
-aP
-aP
-aP
+aD
+aD
+aD
+aD
 be
 be
 bC
@@ -6601,7 +6610,7 @@ bj
 be
 bw
 bp
-bM
+bN
 bQ
 bZ
 cn
@@ -6693,8 +6702,8 @@ af
 as
 as
 as
-aD
-aD
+as
+as
 aL
 aQ
 aV
@@ -6703,7 +6712,7 @@ bk
 be
 bx
 bD
-bM
+bN
 bR
 ca
 ch
@@ -6798,11 +6807,11 @@ aw
 as
 aE
 aJ
-aD
-aD
+aR
+aR
+bg
 be
 be
-bf
 bf
 bE
 bN
@@ -6900,9 +6909,9 @@ ax
 as
 aF
 aK
-aD
+aR
 aW
-bf
+bg
 bl
 bq
 by
@@ -7004,7 +7013,7 @@ aG
 cg
 aR
 aX
-bg
+fh
 bm
 bp
 bp
@@ -7206,7 +7215,7 @@ aA
 as
 as
 aN
-aR
+aD
 aZ
 bi
 bo
@@ -7310,7 +7319,7 @@ aH
 aJ
 aD
 ba
-bf
+be
 XA
 bs
 bz
@@ -7509,20 +7518,20 @@ af
 as
 as
 as
-aD
-aD
+as
+as
 aJ
 aT
 bb
-aR
-aR
+be
+bf
 bu
 bA
 bK
-be
-bW
-bW
-bW
+bf
+bV
+bV
+bV
 cy
 cz
 cz
@@ -7615,26 +7624,26 @@ aD
 aD
 aD
 aD
-aR
-aR
-aJ
+aD
+be
+bv
 Um
 bB
 bv
 bv
 bX
 ce
-bW
-bW
+bV
+bV
 cG
 cK
 cG
-aP
-aP
-aP
-aP
-aP
-aP
+dA
+dA
+dA
+dA
+dA
+dA
 dA
 dI
 dP
@@ -7716,10 +7725,10 @@ aa
 ae
 ae
 ae
-aP
-aP
-aP
-aP
+aD
+aD
+be
+be
 be
 be
 bL
@@ -7727,7 +7736,7 @@ bP
 bY
 cf
 co
-aP
+bW
 cA
 cA
 cA
@@ -7736,19 +7745,19 @@ aP
 aP
 aP
 aP
-aP
-aP
-aP
-aP
-aP
-aP
-aP
-aP
-aP
-aP
-aP
-aP
-aP
+dA
+dA
+dA
+dA
+be
+be
+be
+be
+be
+be
+be
+be
+be
 aP
 aP
 aP
@@ -7817,19 +7826,19 @@ aa
 aa
 aa
 aa
-aO
-aO
-aO
-aO
-aO
-aO
-aP
-aP
-aP
-aP
-aP
-aP
-aP
+fi
+fi
+fi
+fi
+fi
+fi
+be
+be
+be
+be
+be
+be
+be
 aO
 aO
 aO

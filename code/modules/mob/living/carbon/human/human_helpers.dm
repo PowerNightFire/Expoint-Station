@@ -58,7 +58,7 @@
 			process_glasses(glasses)
 		if(istype(src.wear_mask, /obj/item/clothing/mask))
 			add_clothing_protection(wear_mask)
-		if(istype(back,/obj/item/rig))
+		if(istype(back,/obj/item/weapon/rig))
 			process_rig(back)
 
 /mob/living/carbon/human/proc/process_glasses(var/obj/item/clothing/glasses/G)
@@ -80,7 +80,7 @@
 			add_clothing_protection(G)
 			G.process_hud(src)
 
-/mob/living/carbon/human/proc/process_rig(var/obj/item/rig/O)
+/mob/living/carbon/human/proc/process_rig(var/obj/item/weapon/rig/O)
 	if(O.visor && O.visor.active && O.visor.vision && O.visor.vision.glasses && (!O.helmet || (head && O.helmet == head)))
 		process_glasses(O.visor.vision.glasses)
 
@@ -103,8 +103,8 @@
 	var/search_pda = 1
 
 	for(var/A in searching)
-		if(search_id && istype(A,/obj/item/card/id))
-			var/obj/item/card/id/ID = A
+		if(search_id && istype(A,/obj/item/weapon/card/id))
+			var/obj/item/weapon/card/id/ID = A
 			if(ID.registered_name == old_name)
 				ID.registered_name = new_name
 				search_id = 0
@@ -174,7 +174,7 @@
 	next_sonar_ping += 10 SECONDS
 	var/heard_something = FALSE
 	to_chat(src, "<span class='notice'>You take a moment to listen in to your environment...</span>")
-	for(var/mob/living/L in range(get_effective_view(client), src))
+	for(var/mob/living/L in range(client.view, src))
 		var/turf/T = get_turf(L)
 		if(!T || L == src || L.stat == DEAD || is_below_sound_pressure(T))
 			continue
@@ -184,14 +184,14 @@
 		ping_image.layer = BEAM_PROJECTILE_LAYER
 		ping_image.pixel_x = (T.x - src.x) * WORLD_ICON_SIZE
 		ping_image.pixel_y = (T.y - src.y) * WORLD_ICON_SIZE
-		show_image(src, ping_image)
+		image_to(src, ping_image)
 		spawn(8)
 			qdel(ping_image)
 		var/feedback = list("<span class='notice'>There are noises of movement ")
 		var/direction = get_dir(src, L)
 		if(direction)
 			feedback += "towards the [dir2text(direction)], "
-			switch(get_dist(src, L) / get_effective_view(client))
+			switch(get_dist(src, L) / client.view)
 				if(0 to 0.2)
 					feedback += "very close by."
 				if(0.2 to 0.4)
@@ -218,7 +218,7 @@
 		..()
 
 /mob/living/carbon/human/proc/has_headset_in_ears()
-	return istype(get_equipped_item(slot_l_ear_str), /obj/item/radio/headset) || istype(get_equipped_item(slot_r_ear_str), /obj/item/radio/headset)
+	return istype(get_equipped_item(slot_l_ear), /obj/item/device/radio/headset) || istype(get_equipped_item(slot_r_ear), /obj/item/device/radio/headset)
 
 /mob/living/carbon/human/welding_eyecheck()
 	var/obj/item/organ/internal/eyes/E = src.internal_organs_by_name[species.vision_organ]
@@ -256,6 +256,17 @@
 			disabilities |= NEARSIGHTED
 			spawn(100)
 				disabilities &= ~NEARSIGHTED
+
+/mob/living/carbon/human/proc/make_grab(var/mob/living/carbon/human/attacker, var/mob/living/carbon/human/victim, var/grab_tag)
+	var/obj/item/grab/G
+	if(!grab_tag)
+		G = new attacker.current_grab_type(attacker, victim)
+	else
+		var/obj/item/grab/given_grab_type = all_grabobjects[grab_tag]
+		G = new given_grab_type(attacker, victim)
+	if(QDELETED(G))
+		return 0
+	return 1
 
 /mob/living/carbon/human
 	var/list/cloaking_sources

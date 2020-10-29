@@ -7,21 +7,24 @@
 
 /mob/living/exosuit/Move()
 	. = ..()
-	if(.)
-		if(!istype(loc, /turf/space))
-			playsound(src.loc, mech_step_sound, 40, 1)
+	if(. && !istype(loc, /turf/space))
+		playsound(src.loc, mech_step_sound, 40, 1)
 
-		var/turf/B = GetAbove(src)
+//Override this and space move once a way to travel vertically is in 
+///mob/living/exosuit/can_ztravel()
+//	if(Allow_Spacemove()) //Handle here 
+	// 	return 1
 
-		for(var/thing in pilots)
-			var/mob/pilot = thing
-			if(pilot.up_hint)
-				pilot.up_hint.icon_state = "uphint[(B ? B.is_open() : 0)]"
+	// for(var/turf/simulated/T in trange(1,src))
+	// 	if(T.density)
+	// 		return 1
+
 
 /mob/living/exosuit/can_fall(var/anchor_bypass = FALSE, var/turf/location_override = src.loc)
 	//mechs are always anchored, so falling should always ignore it
 	if(..(TRUE, location_override))
 		return !(can_overcome_gravity())
+
 
 /datum/movement_handler/mob/exosuit
 	expected_host_type = /mob/living/exosuit
@@ -45,7 +48,7 @@
 		to_chat(mover, SPAN_WARNING("Maintenance protocols are in effect."))
 		next_move = world.time + 3 // Just to stop them from getting spammed with messages.
 		return MOVEMENT_STOP
-	var/obj/item/cell/C = exosuit.get_cell()
+	var/obj/item/weapon/cell/C = exosuit.get_cell()
 	if(!C || !C.check_charge(exosuit.legs.power_use * CELLRATE))
 		to_chat(mover, SPAN_WARNING("The power indicator flashes briefly."))
 		next_move = world.time + 3 //On fast exosuits this got annoying fast
@@ -84,42 +87,33 @@
 	expected_host_type = /mob/living/exosuit
 
 // Space movement
+/datum/movement_handler/mob/space/exosuit/DoMove(var/direction, var/mob/mover)
+
+	if(!mob.check_solid_ground())
+		mob.anchored = FALSE
+		var/allowmove = mob.Allow_Spacemove(0)
+		if(!allowmove)
+			return MOVEMENT_HANDLED
+		else if(allowmove == -1 && mob.handle_spaceslipping()) //Check to see if we slipped
+			return MOVEMENT_HANDLED
+		else
+			mob.inertia_dir = 0 //If not then we can reset inertia and move
+	else mob.anchored = TRUE
+
 /datum/movement_handler/mob/space/exosuit/MayMove(var/mob/mover, var/is_external)
 	if((mover != host) && is_external)
 		return MOVEMENT_PROCEED
 
-	if(!mob.has_gravity())
-		allow_move = mob.Process_Spacemove(1)
-		if(!allow_move)
+	if(!mob.check_solid_ground())
+		if(!mob.Allow_Spacemove(0))
 			return MOVEMENT_STOP
-
 	return MOVEMENT_PROCEED
-
-/mob/living/exosuit/Check_Shoegrip()//mechs are always magbooting
-	return TRUE
-
-/mob/living/exosuit/Process_Spacemove()
-	if(has_gravity() || throwing || !isturf(loc) || length(grabbed_by) || check_space_footing() || locate(/obj/structure/lattice) in range(1, get_turf(src)))
-		anchored = 1
-		return 1
-
-	anchored = 0
-	return 0
-
-/mob/living/exosuit/check_space_footing()//mechs can't push off things to move around in space, they stick to hull or float away
-	for(var/thing in RANGE_TURFS(src, 1))
-		var/turf/T = thing
-		if(T.density || T.is_wall() || T.is_floor())
-			return T
-
-/mob/living/exosuit/space_do_move()
-	return 1
 
 /mob/living/exosuit/lost_in_space()
 	for(var/atom/movable/AM in contents)
 		if(!AM.lost_in_space())
 			return FALSE
-	return !pilots.len
+	return !length(pilots)
 
 /mob/living/exosuit/fall_damage()
 	return 100 //Exosuits are big and heavy

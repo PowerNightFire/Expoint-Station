@@ -24,8 +24,7 @@
 	movement_range = 15
 	energy = 15
 
-/obj/effect/accelerated_particle/Initialize(mapload, dir = 2)
-	. = ..(mapload)
+/obj/effect/accelerated_particle/New(loc, dir = 2)
 	set_dir(dir)
 	if(movement_range > 20)
 		movement_range = 20
@@ -56,8 +55,7 @@
 	if(ismob(A))
 		Bump(A)
 
-/obj/effect/accelerated_particle/explosion_act(severity)
-	SHOULD_CALL_PARENT(FALSE)
+/obj/effect/accelerated_particle/ex_act(severity)
 	qdel(src)
 
 /obj/effect/accelerated_particle/proc/toxmob(var/mob/living/M)

@@ -35,7 +35,7 @@ Thus, the two variables affect pump operation are set in New():
 	build_icon_state = "pump"
 
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc/buildable
+		/obj/item/weapon/stock_parts/power/apc
 	)
 	public_variables = list(
 		/decl/public_access/public_variable/input_toggle,
@@ -45,7 +45,7 @@ Thus, the two variables affect pump operation are set in New():
 	)
 	public_methods = list(
 		/decl/public_access/public_method/toggle_power,
-		/decl/public_access/public_method/toggle_input_toggle
+		/decl/public_access/public_method/refresh	
 	)
 	stock_part_presets = list(
 		/decl/stock_part_preset/radio/receiver/pump = 1,
@@ -53,11 +53,8 @@ Thus, the two variables affect pump operation are set in New():
 	)
 
 	frame_type = /obj/item/pipe
-	construct_state = /decl/machine_construction/default/panel_closed/item_chassis
-	base_type = /obj/machinery/atmospherics/binary/pump/buildable
-
-/obj/machinery/atmospherics/binary/pump/buildable
-	uncreated_component_parts = null
+	construct_state = /decl/machine_construction/default/item_chassis
+	base_type = /obj/machinery/atmospherics/binary/pump
 
 /obj/machinery/atmospherics/binary/pump/Initialize()
 	. = ..()
@@ -105,16 +102,15 @@ Thus, the two variables affect pump operation are set in New():
 		var/transfer_moles = calculate_transfer_moles(air1, air2, pressure_delta, (network2)? network2.volume : 0)
 		power_draw = pump_gas(src, air1, air2, transfer_moles, power_rating)
 
-		if(transfer_moles > 0)
-			if(network1)
-				network1.update = 1
-
-			if(network2)
-				network2.update = 1
-
 	if (power_draw >= 0)
 		last_power_draw = power_draw
 		use_power_oneoff(power_draw)
+
+		if(network1)
+			network1.update = 1
+
+		if(network2)
+			network2.update = 1
 
 	return 1
 
@@ -180,6 +176,10 @@ Thus, the two variables affect pump operation are set in New():
 	if(state_path == /decl/machine_construction/default/deconstructed)
 		if (!(stat & NOPOWER) && use_power)
 			return SPAN_WARNING("You cannot take this [src] apart, turn it off first.")
+		var/datum/gas_mixture/int_air = return_air()
+		var/datum/gas_mixture/env_air = loc.return_air()
+		if ((int_air.return_pressure()-env_air.return_pressure()) > 2*ONE_ATMOSPHERE)
+			return SPAN_WARNING("You cannot take this [src] apart, it too exerted due to internal pressure.")
 	return ..()
 
 /decl/public_access/public_variable/pump_target_output
@@ -201,6 +201,7 @@ Thus, the two variables affect pump operation are set in New():
 
 /decl/stock_part_preset/radio/event_transmitter/pump
 	frequency = PUMP_FREQ
+	filter = RADIO_ATMOSIA
 	event = /decl/public_access/public_variable/input_toggle
 	transmit_on_event = list(
 		"device" = /decl/public_access/public_variable/identifier,
@@ -210,9 +211,10 @@ Thus, the two variables affect pump operation are set in New():
 
 /decl/stock_part_preset/radio/receiver/pump
 	frequency = PUMP_FREQ
+	filter = RADIO_ATMOSIA
 	receive_and_call = list(
 		"power_toggle" = /decl/public_access/public_method/toggle_power,
-		"status" = /decl/public_access/public_method/toggle_input_toggle
+		"status" = /decl/public_access/public_method/refresh
 	)
 	receive_and_write = list(
 		"set_power" = /decl/public_access/public_variable/use_power,

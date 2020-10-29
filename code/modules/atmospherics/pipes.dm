@@ -7,6 +7,7 @@
 	var/volume = 0
 	var/leaking = 0		// Do not set directly, use set_leaking(TRUE/FALSE)
 	use_power = POWER_USE_OFF
+	uncreated_component_parts = null // No apc connection
 
 	var/maximum_pressure = 210 * ONE_ATMOSPHERE
 	var/fatigue_pressure = 170 * ONE_ATMOSPHERE
@@ -21,11 +22,6 @@
 	build_icon_state = "simple"
 	build_icon = 'icons/obj/pipe-item.dmi'
 	pipe_class = PIPE_CLASS_BINARY
-	atom_flags = ATOM_FLAG_CAN_BE_PAINTED
-
-	frame_type = /obj/item/pipe
-	uncreated_component_parts = null // No apc connection
-	construct_state = /decl/machine_construction/pipe
 
 /obj/machinery/atmospherics/pipe/drain_power()
 	return -1
@@ -104,38 +100,49 @@
 	if(air_temporary)
 		loc.assume_air(air_temporary)
 
-	if(in_stasis)
-		var/obj/machinery/clamp/C = locate() in get_turf(src)
-		if(C.target == src)
-			C.open()
-			C.removal()
 	. = ..()
 
-/obj/machinery/atmospherics/pipe/deconstruction_pressure_check()
-	var/datum/gas_mixture/int_air = return_air()
-	var/datum/gas_mixture/env_air = loc.return_air()
+/obj/machinery/atmospherics/pipe/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
+	if (istype(src, /obj/machinery/atmospherics/unary/tank))
+		return ..()
+	if (istype(src, /obj/machinery/atmospherics/pipe/vent))
+		return ..()
 
-	if ((int_air.return_pressure()-env_air.return_pressure()) > 2*ONE_ATMOSPHERE)
-		return FALSE
-	return TRUE
+	if(istype(W,/obj/item/device/pipe_painter))
+		return 0
 
-/obj/machinery/atmospherics/pipe/cannot_transition_to(state_path, mob/user)
-	if(state_path == /decl/machine_construction/default/deconstructed)
-		var/turf/T = get_turf(src)
+	if(isWrench(W))
+		var/turf/T = src.loc
 		if (level==1 && isturf(T) && !T.is_plating())
-			return SPAN_WARNING("You must remove the plating first.")
-	return ..()
+			to_chat(user, "<span class='warning'>You must remove the plating first.</span>")
+			return 1
 
-/obj/machinery/atmospherics/pipe/dismantle()
-	for (var/obj/machinery/meter/meter in get_turf(src))
-		if (meter.target == src)
-			meter.dismantle()
-	..()
+		var/datum/gas_mixture/int_air = return_air()
+		var/datum/gas_mixture/env_air = loc.return_air()
 
-/obj/machinery/atmospherics/get_color()
-	return pipe_color
+		if ((int_air.return_pressure()-env_air.return_pressure()) > 2*ONE_ATMOSPHERE)
+			to_chat(user, "<span class='warning'>You cannot unwrench \the [src], it is too exerted due to internal pressure.</span>")
+			add_fingerprint(user)
+			return 1
 
-/obj/machinery/atmospherics/set_color(new_color)
+		playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
+		to_chat(user, "<span class='notice'>You begin to unfasten \the [src]...</span>")
+
+		if (do_after(user, 40, src))
+			user.visible_message("<span class='notice'>\The [user] unfastens \the [src].</span>", "<span class='notice'>You have unfastened \the [src].</span>", "You hear a ratchet.")
+
+			new /obj/item/pipe(loc, src)
+
+			for (var/obj/machinery/meter/meter in T)
+				if (meter.target == src)
+					meter.dismantle()
+			qdel(src)
+
+/obj/machinery/atmospherics/proc/change_color(var/new_color)
+	//only pass valid pipe colors please ~otherwise your pipe will turn invisible
+	if(!pipe_color_check(new_color))
+		return
+
 	pipe_color = new_color
 	update_icon()
 
@@ -188,9 +195,6 @@
 /obj/machinery/atmospherics/pipe/simple/Process()
 	if(!parent) //This should cut back on the overhead calling build_network thousands of times per cycle
 		..()
-	else if(parent.air.compare(loc.return_air()) || in_stasis)
-		update_sound(0)
-		. = PROCESS_KILL
 	else if(leaking)
 		parent.mingle_with_turf(loc, volume)
 		var/air = parent.air && parent.air.return_pressure()
@@ -242,16 +246,13 @@
 /obj/machinery/atmospherics/pipe/simple/pipeline_expansion()
 	return list(node1, node2)
 
-/obj/machinery/atmospherics/pipe/simple/set_color(new_color)
+/obj/machinery/atmospherics/pipe/simple/change_color(var/new_color)
 	..()
 	//for updating connected atmos device pipes (i.e. vents, manifolds, etc)
 	if(node1)
 		node1.update_underlays()
 	if(node2)
 		node2.update_underlays()
-
-/obj/machinery/atmospherics/pipe/proc/try_leak()
-	set_leaking(!in_stasis && !(node1 && node2))
 
 /obj/machinery/atmospherics/pipe/simple/on_update_icon(var/safety = 0)
 	if(!atmos_initalized)
@@ -272,9 +273,10 @@
 		qdel(src)
 	else if(node1 && node2)
 		overlays += icon_manager.get_atmos_icon("pipe", , pipe_color, "[pipe_icon]intact[icon_connect_type]")
+		set_leaking(FALSE)
 	else
 		overlays += icon_manager.get_atmos_icon("pipe", , pipe_color, "[pipe_icon]exposed[node1?1:0][node2?1:0][icon_connect_type]")
-	try_leak()
+		set_leaking(TRUE)
 
 /obj/machinery/atmospherics/pipe/simple/update_underlays()
 	return
@@ -464,6 +466,7 @@
 	if(node3)
 		node3.disconnect(src)
 		node3 = null
+
 	. = ..()
 
 /obj/machinery/atmospherics/pipe/manifold/disconnect(obj/machinery/atmospherics/reference)
@@ -486,7 +489,7 @@
 
 	..()
 
-/obj/machinery/atmospherics/pipe/manifold/set_color(new_color)
+/obj/machinery/atmospherics/pipe/manifold/change_color(var/new_color)
 	..()
 	//for updating connected atmos device pipes (i.e. vents, manifolds, etc)
 	if(node1)
@@ -496,16 +499,13 @@
 	if(node3)
 		node3.update_underlays()
 
-/obj/machinery/atmospherics/pipe/manifold/try_leak()
-	set_leaking(!in_stasis && !(node1 && node2 && node3))
-
 /obj/machinery/atmospherics/pipe/manifold/on_update_icon(var/safety = 0)
 	if(!atmos_initalized)
 		return
 	if(!check_icon_cache())
 		return
 
-	try_leak()
+	set_leaking(!(node1 && node2 && node3))
 	alpha = 255
 
 	if(!node1 && !node2 && !node3)
@@ -749,7 +749,7 @@
 
 	..()
 
-/obj/machinery/atmospherics/pipe/manifold4w/set_color(new_color)
+/obj/machinery/atmospherics/pipe/manifold4w/change_color(var/new_color)
 	..()
 	//for updating connected atmos device pipes (i.e. vents, manifolds, etc)
 	if(node1)
@@ -761,16 +761,13 @@
 	if(node4)
 		node4.update_underlays()
 
-/obj/machinery/atmospherics/pipe/manifold4w/try_leak()
-	set_leaking(!in_stasis && !(node1 && node2 && node3 && node4))
-
 /obj/machinery/atmospherics/pipe/manifold4w/on_update_icon(var/safety = 0)
 	if(!atmos_initalized)
 		return
 	if(!check_icon_cache())
 		return
 
-	try_leak()
+	set_leaking(!(node1 && node2 && node3 && node4))
 	alpha = 255
 
 	if(!node1 && !node2 && !node3 && !node4)
@@ -991,7 +988,7 @@
 
 	..()
 
-/obj/machinery/atmospherics/pipe/cap/set_color(new_color)
+/obj/machinery/atmospherics/pipe/cap/change_color(var/new_color)
 	..()
 	//for updating connected atmos device pipes (i.e. vents, manifolds, etc)
 	if(node)

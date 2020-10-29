@@ -26,7 +26,7 @@
 //transfer_moles - Limits the amount of moles to transfer. The actual amount of gas moved may also be limited by available_power, if given.
 //available_power - the maximum amount of power that may be used when moving gas. If null then the transfer is not limited by power.
 /proc/pump_gas(var/obj/machinery/M, var/datum/gas_mixture/source, var/datum/gas_mixture/sink, var/transfer_moles = null, var/available_power = null)
-	if (source.total_moles < MINIMUM_MOLES_TO_PUMP) //if we cant transfer enough gas just stop to avoid further processing
+	if (source.total_moles < MINIMUM_MOLES_TO_PUMP) //if we can't transfer enough gas just stop to avoid further processing
 		return -1
 
 	if (isnull(transfer_moles))
@@ -39,7 +39,7 @@
 	if (!isnull(available_power) && specific_power > 0)
 		transfer_moles = min(transfer_moles, available_power / specific_power)
 
-	if (transfer_moles < MINIMUM_MOLES_TO_PUMP) //if we cant transfer enough gas just stop to avoid further processing
+	if (transfer_moles < MINIMUM_MOLES_TO_PUMP) //if we can't transfer enough gas just stop to avoid further processing
 		return -1
 
 	//Update flow rate meter
@@ -69,7 +69,7 @@
 
 //Gas 'pumping' proc for the case where the gas flow is passive and driven entirely by pressure differences (but still one-way).
 /proc/pump_gas_passive(var/obj/machinery/M, var/datum/gas_mixture/source, var/datum/gas_mixture/sink, var/transfer_moles = null)
-	if (source.total_moles < MINIMUM_MOLES_TO_PUMP) //if we cant transfer enough gas just stop to avoid further processing
+	if (source.total_moles < MINIMUM_MOLES_TO_PUMP) //if we can't transfer enough gas just stop to avoid further processing
 		return -1
 
 	if (isnull(transfer_moles))
@@ -336,12 +336,12 @@
 	var/total_input_moles = 0		//for flow rate calculation
 	var/list/source_specific_power = list()
 	for (var/datum/gas_mixture/source in mix_sources)
-		var/mix_ratio = mix_sources[source]
-		if (!mix_ratio)
-			continue	//this gas is not being mixed in
 		if (source.total_moles < MINIMUM_MOLES_TO_FILTER)
 			return -1	//either mix at the set ratios or mix no gas at all
 
+		var/mix_ratio = mix_sources[source]
+		if (!mix_ratio)
+			continue	//this gas is not being mixed in
 
 		//mixing rate is limited by the source with the least amount of available gas
 		var/this_mixing_moles = source.total_moles/mix_ratio
@@ -460,7 +460,7 @@
 // - Is between 80 and 120kPa
 // - Has between 17% and 30% oxygen
 // - Has temperature between -10C and 50C
-// - Has no or only minimal chlorine or N2O
+// - Has no or only minimal phoron or N2O
 /proc/get_atmosphere_issues(datum/gas_mixture/atmosphere, var/returntext = 0)
 	var/list/status = list()
 	if(!atmosphere)
@@ -475,19 +475,18 @@
 	if((pressure > 120) || (pressure < 80))
 		status.Add("Pressure too [pressure > 120 ? "high" : "low"].")
 
-	// TODO: generalize to check for -all- unsafe gasses.
 	// Gas concentration checks
 	var/oxygen = 0
-	var/chlorine = 0
+	var/phoron = 0
 	var/carbondioxide = 0
 	var/nitrousoxide = 0
 	var/hydrogen = 0
 	if(atmosphere.total_moles) // Division by zero prevention
-		oxygen = (atmosphere.gas[/decl/material/gas/oxygen] / atmosphere.total_moles) * 100 // Percentage of the gas
-		chlorine = (atmosphere.gas[/decl/material/gas/chlorine] / atmosphere.total_moles) * 100
-		carbondioxide = (atmosphere.gas[/decl/material/gas/carbon_dioxide] / atmosphere.total_moles) * 100
-		nitrousoxide = (atmosphere.gas[/decl/material/gas/nitrous_oxide] / atmosphere.total_moles) * 100
-		hydrogen = (atmosphere.gas[/decl/material/gas/hydrogen] / atmosphere.total_moles) * 100
+		oxygen = (atmosphere.gas[GAS_OXYGEN] / atmosphere.total_moles) * 100 // Percentage of the gas
+		phoron = (atmosphere.gas[GAS_PHORON] / atmosphere.total_moles) * 100
+		carbondioxide = (atmosphere.gas[GAS_CO2] / atmosphere.total_moles) * 100
+		nitrousoxide = (atmosphere.gas[GAS_N2O] / atmosphere.total_moles) * 100
+		hydrogen = (atmosphere.gas[GAS_HYDROGEN] / atmosphere.total_moles) * 100
 
 	if(!oxygen)
 		status.Add("No oxygen.")
@@ -496,8 +495,8 @@
 
 
 
-	if(chlorine > 0.1)		// Toxic even in small amounts.
-		status.Add("Chlorine contamination.")
+	if(phoron > 0.1)		// Toxic even in small amounts.
+		status.Add("Phoron contamination.")
 	if(nitrousoxide > 0.1)	// Probably slightly less dangerous but still.
 		status.Add("N2O contamination.")
 	if(hydrogen > 2.5)	// Not too dangerous, but flammable.

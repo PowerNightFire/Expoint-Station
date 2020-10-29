@@ -148,7 +148,7 @@
 
 	var/default
 
-	var/direction
+	var/dir
 
 	if(!O.may_edit_var(usr, objectvar))
 		return
@@ -158,7 +158,7 @@
 	else if(isnum(variable))
 		to_chat(usr, "Variable appears to be <b>NUM</b>.")
 		default = "num"
-		direction = TRUE
+		dir = 1
 
 	else if(istext(variable))
 		to_chat(usr, "Variable appears to be <b>TEXT</b>.")
@@ -170,7 +170,7 @@
 
 	else if(isicon(variable))
 		to_chat(usr, "Variable appears to be <b>ICON</b>.")
-		variable = "[html_icon(variable)]"
+		variable = "\icon[variable]"
 		default = "icon"
 
 	else if(istype(variable,/atom) || istype(variable,/datum))
@@ -190,10 +190,29 @@
 		default = "file"
 
 	to_chat(usr, "Variable contains: [variable]")
-	if(direction)
-		direction = dir2text(variable)
-		if(direction != "unknown")
-			to_chat(usr, "If a direction, direction is: [direction]")
+	if(dir)
+		switch(variable)
+			if(1)
+				dir = "NORTH"
+			if(2)
+				dir = "SOUTH"
+			if(4)
+				dir = "EAST"
+			if(8)
+				dir = "WEST"
+			if(5)
+				dir = "NORTHEAST"
+			if(6)
+				dir = "SOUTHEAST"
+			if(9)
+				dir = "NORTHWEST"
+			if(10)
+				dir = "SOUTHWEST"
+			else
+				dir = null
+
+		if(dir)
+			to_chat(usr, "If a direction, direction is: [dir]")
 	var/class = "text"
 	var/list/class_input = list("text","num","type","reference","mob reference", "icon","file","list","edit referenced object","restore to default")
 
@@ -347,7 +366,7 @@
 
 			else if(isicon(var_value))
 				to_chat(usr, "Variable appears to be <b>ICON</b>.")
-				var_value = "[html_icon(var_value)]"
+				var_value = "\icon[var_value]"
 				class = "icon"
 
 			else if(istype(var_value,/atom) || istype(var_value,/datum))
@@ -383,14 +402,14 @@
 
 	if(!autodetect_class)
 
-		var/direction
+		var/dir
 		var/default
 		if(isnull(var_value))
 			to_chat(usr, "Unable to determine variable type.")
 		else if(isnum(var_value))
 			to_chat(usr, "Variable appears to be <b>NUM</b>.")
 			default = "num"
-			direction = TRUE
+			dir = 1
 
 		else if(istext(var_value))
 			to_chat(usr, "Variable appears to be <b>TEXT</b>.")
@@ -402,7 +421,7 @@
 
 		else if(isicon(var_value))
 			to_chat(usr, "Variable appears to be <b>ICON</b>.")
-			var_value = "[html_icon(var_value)]"
+			var_value = "\icon[var_value]"
 			default = "icon"
 
 		else if(istype(var_value,/atom) || istype(var_value,/datum))
@@ -422,10 +441,28 @@
 			default = "file"
 
 		to_chat(usr, "Variable contains: [var_value]")
-		if(direction)
-			direction = dir2text(var_value)
-			if(direction != "unknown")
-				to_chat(usr, "If a direction, direction is: [direction]")
+		if(dir)
+			switch(var_value)
+				if(1)
+					dir = "NORTH"
+				if(2)
+					dir = "SOUTH"
+				if(4)
+					dir = "EAST"
+				if(8)
+					dir = "WEST"
+				if(5)
+					dir = "NORTHEAST"
+				if(6)
+					dir = "SOUTHEAST"
+				if(9)
+					dir = "NORTHWEST"
+				if(10)
+					dir = "SOUTHWEST"
+				else
+					dir = null
+			if(dir)
+				to_chat(usr, "If a direction, direction is: [dir]")
 		var/list/class_input = list("text","num","type","reference","mob reference", "icon","file","list","json","color","edit referenced object","restore to default")
 		if(src.holder)
 			var/datum/marked_datum = holder.marked_datum()
@@ -511,7 +548,7 @@
 		if("json")
 			var/json_str = input("JSON string", "JSON", json_encode(O.get_variable_value(variable))) as null | message
 			try
-				var_value = cached_json_decode(json_str)
+				var_value = json_decode(json_str)
 			catch
 				return
 

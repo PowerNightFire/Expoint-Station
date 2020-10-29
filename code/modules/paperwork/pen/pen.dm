@@ -1,15 +1,15 @@
-/obj/item/pen
+/obj/item/weapon/pen
 	desc = "It's a normal black ink pen."
 	name = "pen"
 	icon = 'icons/obj/bureaucracy.dmi'
 	icon_state = "pen"
 	item_state = "pen"
-	slot_flags = SLOT_LOWER_BODY | SLOT_EARS
+	slot_flags = SLOT_BELT | SLOT_EARS
 	throwforce = 0
 	w_class = ITEM_SIZE_TINY
 	throw_speed = 7
 	throw_range = 15
-	material = /decl/material/solid/plastic
+	matter = list(MATERIAL_PLASTIC = 10)
 	var/colour = "black"	//what colour the ink is!
 	var/color_description = "black ink"
 
@@ -17,33 +17,33 @@
 	var/iscrayon = FALSE
 	var/isfancy = FALSE
 
-/obj/item/pen/blue
+/obj/item/weapon/pen/blue
 	name = "blue pen"
 	desc = "It's a normal blue ink pen."
 	icon_state = "pen_blue"
 	colour = "blue"
 	color_description = "blue ink"
 
-/obj/item/pen/red
+/obj/item/weapon/pen/red
 	name = "red pen"
 	desc = "It's a normal red ink pen."
 	icon_state = "pen_red"
 	colour = "red"
 	color_description = "red ink"
 
-/obj/item/pen/green
+/obj/item/weapon/pen/green
 	name = "green pen"
 	desc = "It's a normal green ink pen."
 	icon_state = "pen_green"
 	colour = "green"
 
-/obj/item/pen/invisible
+/obj/item/weapon/pen/invisible
 	desc = "It's an invisble pen marker."
 	icon_state = "pen"
 	colour = "white"
 	color_description = "transluscent ink"
 
-/obj/item/pen/attack(atom/A, mob/user, target_zone)
+/obj/item/weapon/pen/attack(atom/A, mob/user, target_zone)
 	if(ismob(A))
 		var/mob/M = A
 		if(ishuman(A) && user.a_intent == I_HELP && target_zone == BP_HEAD)
@@ -58,5 +58,5 @@
 		var/obj/item/organ/external/head/head = A
 		head.write_on(user, color_description)
 
-/obj/item/pen/proc/toggle()
+/obj/item/weapon/pen/proc/toggle()
 	return

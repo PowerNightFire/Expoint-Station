@@ -13,7 +13,7 @@ env:
 jobs:
     include:
     - name: "DreamChecker"
-      env: SPACEMAN_DMM_VERSION=suite-1.5
+      env: SPACEMAN_DMM_VERSION=suite-1.4
       cache:
         directories: $HOME/spaceman_dmm/$SPACEMAN_DMM_VERSION
       install:
@@ -24,14 +24,12 @@ jobs:
       env: TEST=CODE
     - name: "Map - Example"
       env: TEST=MAP MAP_PATH=example
-    - name: "Map - Tradeship"
-      env: TEST=MAP MAP_PATH=tradeship
+    - name: "Map - Torch"
+      env: TEST=MAP MAP_PATH=torch
+    - name: "Map - Bearcat"
+      env: TEST=MAP MAP_PATH=bearcat
     - name: "Map - Away Sites"
       env: TEST=MAP MAP_PATH=away_sites_testing
-    - name: "Map - Modpacks"
-      env: TEST=MAP MAP_PATH=modpack_testing
-    - name: "Map - Ministation"
-      env: TEST=MAP MAP_PATH=ministation
 
 cache:
   directories:
@@ -43,7 +41,8 @@ addons:
       - libc6-i386
       - libgcc1:i386
       - libstdc++6:i386
-      - libyaml-dev
+      - python
+      - python-pip
       - uchardet
 
 script:

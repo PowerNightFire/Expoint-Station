@@ -1,6 +1,6 @@
 // The base receiver. Can write vars or trigger procs on signal received.
 
-/obj/item/stock_parts/radio/receiver
+/obj/item/weapon/stock_parts/radio/receiver
 	name = "radio receiver"
 	desc = "A radio receiver designed for use with machines."
 	icon_state = "subspace_amplifier"
@@ -8,22 +8,19 @@
 	var/list/receive_and_write
 	var/list/receive_and_call
 
-/obj/item/stock_parts/radio/receiver/on_install(obj/machinery/machine)
+/obj/item/weapon/stock_parts/radio/receiver/on_install(obj/machinery/machine)
 	. = ..()
 	sanitize_events(machine, receive_and_write)
 	sanitize_events(machine, receive_and_call)
 
-/obj/item/stock_parts/radio/receiver/is_valid_event(obj/machinery/machine, decl/public_access/variable)
+/obj/item/weapon/stock_parts/radio/receiver/is_valid_event(obj/machinery/machine, decl/public_access/variable)
 	if(istype(variable, /decl/public_access/public_method))
 		return LAZYACCESS(machine.public_methods, variable.type)
 	if(..())
 		var/decl/public_access/public_variable/thing = variable
 		return thing.can_write
 
-/obj/item/stock_parts/radio/receiver/get_receive_filter()
-	return filter || id_tag || RADIO_DEFAULT
-
-/obj/item/stock_parts/radio/receiver/receive_signal(datum/signal/signal, receive_method, receive_param)
+/obj/item/weapon/stock_parts/radio/receiver/receive_signal(datum/signal/signal, receive_method, receive_param)
 	if(!id_tag)
 		return
 	if(!(status & PART_STAT_INSTALLED))
@@ -45,6 +42,6 @@
 			var/decl/public_access/public_method/method = receive_and_call[thing]
 			method.perform(machine, signal.data[thing])
 
-/obj/item/stock_parts/radio/receiver/buildable
+/obj/item/weapon/stock_parts/radio/receiver/buildable
 	part_flags = PART_FLAG_HAND_REMOVE
-	material = /decl/material/solid/metal/steel
+	matter = list(MATERIAL_STEEL = 400)

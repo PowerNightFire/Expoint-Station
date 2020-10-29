@@ -1,9 +1,9 @@
 //BS12 Explosive
-/obj/item/implant/explosive
+/obj/item/weapon/implant/explosive
 	name = "explosive implant"
 	desc = "A military grade micro bio-explosive. Highly dangerous."
 	icon_state = "implant_evil"
-	origin_tech = "{'materials':1,'biotech':2,'esoteric':3}"
+	origin_tech = list(TECH_MATERIAL = 1, TECH_BIO = 2, TECH_ESOTERIC = 3)
 	hidden = 1
 	var/elevel
 	var/phrase
@@ -12,7 +12,7 @@
 	var/datum/radio_frequency/radio_connection
 	var/warning_message = "Tampering detected. Tampering detected."
 
-/obj/item/implant/explosive/get_data()
+/obj/item/weapon/implant/explosive/get_data()
 	. = {"
 	<b>Implant Specifications:</b><BR>
 	<b>Name:</b> Robust Corp RX-78 Intimidation Class Implant<BR>
@@ -46,12 +46,12 @@
 		<A href='byond://?src=\ref[src];msg=1'>[warning_message ? warning_message : "NONE SET"]</A>
 		"}
 
-/obj/item/implant/explosive/Initialize()
+/obj/item/weapon/implant/explosive/Initialize()
 	. = ..()
 	GLOB.listening_objects += src
 	set_frequency(frequency)
 
-/obj/item/implant/explosive/Topic(href, href_list)
+/obj/item/weapon/implant/explosive/Topic(href, href_list)
 	..()
 	if (href_list["freq"])
 		var/new_frequency = frequency + text2num(href_list["freq"])
@@ -82,34 +82,34 @@
 			phrase = sanitize_phrase(talk)
 		interact(usr)
 
-/obj/item/implant/explosive/receive_signal(datum/signal/signal)
+/obj/item/weapon/implant/explosive/receive_signal(datum/signal/signal)
 	if(signal && signal.encryption == code)
 		activate()
 
-/obj/item/implant/explosive/proc/set_frequency(new_frequency)
+/obj/item/weapon/implant/explosive/proc/set_frequency(new_frequency)
 	radio_controller.remove_object(src, frequency)
 	frequency = new_frequency
 	radio_connection = radio_controller.add_object(src, frequency, RADIO_CHAT)
 
-/obj/item/implant/explosive/hear_talk(mob/M, msg)
+/obj/item/weapon/implant/explosive/hear_talk(mob/M as mob, msg)
 	hear(msg)
 
-/obj/item/implant/explosive/hear(var/msg)
+/obj/item/weapon/implant/explosive/hear(var/msg)
 	if(!phrase)
 		return
 	if(findtext(sanitize_phrase(msg),phrase))
 		activate()
 		qdel(src)
 
-/obj/item/implant/explosive/exposed()
+/obj/item/weapon/implant/explosive/exposed()
 	if(warning_message)
 		GLOB.global_headset.autosay(warning_message, "Anti Tampering System")
 
-/obj/item/implant/explosive/proc/sanitize_phrase(phrase)
+/obj/item/weapon/implant/explosive/proc/sanitize_phrase(phrase)
 	var/list/replacechars = list("'" = "","\"" = "",">" = "","<" = "","(" = "",")" = "")
 	return replace_characters(phrase, replacechars)
 
-/obj/item/implant/explosive/activate()
+/obj/item/weapon/implant/explosive/activate()
 	if (malfunction)
 		return
 
@@ -146,7 +146,7 @@
 				imp_in.gib()
 	qdel(src)
 
-/obj/item/implant/explosive/implanted(mob/target)
+/obj/item/weapon/implant/explosive/implanted(mob/target)
 	if(!elevel)
 		elevel = alert("What sort of explosion would you prefer?", "Implant Intent", "Localized Limb", "Destroy Body", "Full Explosion")
 	if(!phrase)
@@ -159,17 +159,15 @@
 	to_chat(usr, memo)
 	return TRUE
 
-/obj/item/implant/explosive/Destroy()
+/obj/item/weapon/implant/explosive/Destroy()
 	removed()
-	radio_controller.remove_object(src, frequency)
-	radio_connection = null
 	GLOB.listening_objects -= src
 	return ..()
 
-/obj/item/implanter/explosive
+/obj/item/weapon/implanter/explosive
 	name = "implanter (E)"
-	imp = /obj/item/implant/explosive
+	imp = /obj/item/weapon/implant/explosive
 
-/obj/item/implantcase/explosive
+/obj/item/weapon/implantcase/explosive
 	name = "glass case - 'explosive'"
-	imp = /obj/item/implant/explosive
+	imp = /obj/item/weapon/implant/explosive

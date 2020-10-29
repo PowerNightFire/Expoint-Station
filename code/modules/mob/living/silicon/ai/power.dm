@@ -2,9 +2,8 @@
 
 // This is the main power restoration sequence. Only one sequence per AI can exist.
 /mob/living/silicon/ai/proc/handle_power_failure()
-	set waitfor = FALSE
 	// Power restoration routine already running in other spawn(). Don't start it again.
-	if(aiRestorePowerRoutine != AI_RESTOREPOWER_STARTING)
+	if(aiRestorePowerRoutine != 1)
 		return
 
 	to_chat(src, "<span class='danger'>Main power lost. System switched to internal capacitor. Beginning diagnostics.</span>")
@@ -74,7 +73,7 @@
 					aiRestorePowerRoutine = AI_RESTOREPOWER_FAILED
 					continue
 				// APC's cell is removed and/or below 1% charge. This prevents the AI from briefly regaining power as we force the APC on, only to lose it again next tick due to 0% cell charge.
-				var/obj/item/cell/cell = theAPC.get_cell()
+				var/obj/item/weapon/cell/cell = theAPC.get_cell()
 				if(cell && cell.percent() < 1)
 					to_chat(src, "<span class='danger'>APC internal power reserves are critical. Unable to restore main power.</span>")
 					aiRestorePowerRoutine = AI_RESTOREPOWER_FAILED
@@ -91,7 +90,7 @@
 		return 1
 	if(istype(src.loc,/obj/item))
 		return 1
-	if(admin_powered)
+	if(APU_power || admin_powered)
 		return 1
 	if(respect_override && power_override_active)
 		return 1
@@ -113,7 +112,7 @@
 	if(admin_powered)
 		return 0
 
-	if(istype(loc, /obj/item/aicard))
+	if(istype(loc, /obj/item/weapon/aicard))
 		return 0
 
 	if(self_shutdown)
@@ -198,10 +197,10 @@
 	var/mob/living/silicon/ai/powered_ai = null
 	invisibility = 100
 
-/obj/machinery/ai_powersupply/Initialize()
-	. = ..()
-	powered_ai = loc
+/obj/machinery/ai_powersupply/New(var/mob/living/silicon/ai/ai=null)
+	powered_ai = ai
 	powered_ai.psupply = src
+	..()
 
 /obj/machinery/ai_powersupply/Destroy()
 	. = ..()
@@ -212,7 +211,7 @@
 
 /obj/machinery/ai_powersupply/proc/get_power_state()
 	// Dead, powered by APU, admin power, or inside an item (inteliCard/IIS). No power usage.
-	if(!powered_ai.stat == DEAD || powered_ai.admin_powered || istype(powered_ai.loc, /obj/item/))
+	if(!powered_ai.stat == DEAD || powered_ai.APU_power || powered_ai.admin_powered || istype(powered_ai.loc, /obj/item/))
 		return 0
 	// Normal power usage.
 	return 2

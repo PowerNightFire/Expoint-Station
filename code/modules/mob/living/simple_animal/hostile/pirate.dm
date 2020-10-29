@@ -14,11 +14,16 @@
 	maxHealth = 100
 	health = 100
 	can_escape = TRUE
-	
-	natural_weapon = /obj/item/energy_blade/sword/pirate/activated
+
+	harm_intent_damage = 5
+	melee_damage_lower = 30
+	melee_damage_upper = 30
+	attacktext = "slashed"
+	attack_sound = 'sound/weapons/bladeslice.ogg'
+
 	unsuitable_atmos_damage = 15
 	var/corpse = /obj/effect/landmark/corpse/pirate
-	var/weapon1 = /obj/item/energy_blade/sword/pirate
+	var/weapon1 = /obj/item/weapon/melee/energy/sword/pirate
 
 	faction = "pirate"
 
@@ -32,7 +37,7 @@
 	rapid = 1
 	projectiletype = /obj/item/projectile/beam
 	corpse = /obj/effect/landmark/corpse/pirate/ranged
-	weapon1 = /obj/item/gun/energy/laser
+	weapon1 = /obj/item/weapon/gun/energy/laser
 
 
 /mob/living/simple_animal/hostile/pirate/death(gibbed, deathmessage, show_dead_message)

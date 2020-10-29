@@ -1,10 +1,5 @@
 mob/proc/flash_pain(var/target)
 	if(pain)
-		var/matrix/M
-		if(client && max(client.last_view_x_dim, client.last_view_y_dim) > 7)
-			M = matrix()
-			M.Scale(ceil(client.last_view_x_dim/7), ceil(client.last_view_y_dim/7))
-		pain.transform = M
 		animate(pain, alpha = target, time = 15, easing = ELASTIC_EASING)
 		animate(pain, alpha = 0, time = 20)
 
@@ -15,9 +10,8 @@ mob/var/next_pain_time = 0
 // power decides how much painkillers will stop the message
 // force means it ignores anti-spam timer
 mob/living/carbon/proc/custom_pain(var/message, var/power, var/force, var/obj/item/organ/external/affecting, var/nohalloss)
-	set waitfor = FALSE
 	if(!message || stat || !can_feel_pain() || chem_effects[CE_PAINKILLER] > power)
-		return
+		return 0
 
 	power -= chem_effects[CE_PAINKILLER]/2	//Take the edge off.
 
@@ -49,7 +43,7 @@ mob/living/carbon/proc/custom_pain(var/message, var/power, var/force, var/obj/it
 				emote(force_emote)
 	next_pain_time = world.time + (100-power)
 
-/mob/living/carbon/human/proc/handle_pain()
+mob/living/carbon/human/proc/handle_pain()
 	if(stat)
 		return
 	if(!can_feel_pain())
@@ -70,7 +64,7 @@ mob/living/carbon/proc/custom_pain(var/message, var/power, var/force, var/obj/it
 		if(maxdam > 10 && paralysis)
 			paralysis = max(0, paralysis - round(maxdam/10))
 		if(maxdam > 50 && prob(maxdam / 5))
-			drop_held_items()
+			unequip_item()
 		var/burning = damaged_organ.burn_dam > damaged_organ.brute_dam
 		var/msg
 		switch(maxdam)
@@ -83,7 +77,7 @@ mob/living/carbon/proc/custom_pain(var/message, var/power, var/force, var/obj/it
 		custom_pain(msg, maxdam, prob(10), damaged_organ, TRUE)
 	// Damage to internal organs hurts a lot.
 	for(var/obj/item/organ/internal/I in internal_organs)
-		if(prob(1) && !((I.status & ORGAN_DEAD) || BP_IS_PROSTHETIC(I)) && I.damage > 5)
+		if(prob(1) && !((I.status & ORGAN_DEAD) || BP_IS_ROBOTIC(I)) && I.damage > 5)
 			var/obj/item/organ/external/parent = get_organ(I.parent_organ)
 			var/pain = 10
 			var/message = "You feel a dull pain in your [parent.name]"

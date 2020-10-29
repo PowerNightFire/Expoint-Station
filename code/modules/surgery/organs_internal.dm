@@ -14,11 +14,10 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/internal/fix_organ
 	name = "Repair internal organ"
-	description = "This procedure is used to repair damage to the internal organs of a patient."
 	allowed_tools = list(
 		/obj/item/stack/medical/advanced/bruise_pack = 100,
 		/obj/item/stack/medical/bruise_pack = 40,
-		/obj/item/tape_roll = 20
+		/obj/item/weapon/tape_roll = 20
 	)
 	min_duration = 70
 	max_duration = 90
@@ -42,7 +41,7 @@
 	user.visible_message("[user] starts treating damage within \the [target]'s [affected.name] with [tool_name].", \
 	"You start treating damage within \the [target]'s [affected.name] with [tool_name]." )
 	for(var/obj/item/organ/internal/I in affected.internal_organs)
-		if(I && I.damage > 0 && !BP_IS_PROSTHETIC(I) && (!I.status & ORGAN_DEAD || I.can_recover()) && (I.surface_accessible || affected.how_open() >= (affected.encased ? SURGERY_ENCASED : SURGERY_RETRACTED)))
+		if(I && I.damage > 0 && !BP_IS_ROBOTIC(I) && (!I.status & ORGAN_DEAD || I.can_recover()) && (I.surface_accessible || affected.how_open() >= (affected.encased ? SURGERY_ENCASED : SURGERY_RETRACTED)))
 			user.visible_message("[user] starts treating damage to [target]'s [I.name] with [tool_name].", \
 			"You start treating damage to [target]'s [I.name] with [tool_name]." )
 	target.custom_pain("The pain in your [affected.name] is living hell!",100,affecting = affected)
@@ -56,7 +55,7 @@
 		tool_name = "the bandaid"
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
 	for(var/obj/item/organ/internal/I in affected.internal_organs)
-		if(I && I.damage > 0 && !BP_IS_PROSTHETIC(I) && (I.surface_accessible || affected.how_open() >= (affected.encased ? SURGERY_ENCASED : SURGERY_RETRACTED)))
+		if(I && I.damage > 0 && !BP_IS_ROBOTIC(I) && (I.surface_accessible || affected.how_open() >= (affected.encased ? SURGERY_ENCASED : SURGERY_RETRACTED)))
 			if(I.status & ORGAN_DEAD && I.can_recover())
 				user.visible_message("<span class='notice'>\The [user] treats damage to [target]'s [I.name] with [tool_name], though it needs to be recovered further.</span>", \
 				"<span class='notice'>You treat damage to [target]'s [I.name] with [tool_name], though it needs to be recovered further.</span>" )
@@ -79,7 +78,7 @@
 		target.adjustToxLoss(10)
 		affected.take_external_damage(dam_amt, 0, (DAM_SHARP|DAM_EDGE), used_weapon = tool)
 	for(var/obj/item/organ/internal/I in affected.internal_organs)
-		if(I && I.damage > 0 && !BP_IS_PROSTHETIC(I) && (I.surface_accessible || affected.how_open() >= (affected.encased ? SURGERY_ENCASED : SURGERY_RETRACTED)))
+		if(I && I.damage > 0 && !BP_IS_ROBOTIC(I) && (I.surface_accessible || affected.how_open() >= (affected.encased ? SURGERY_ENCASED : SURGERY_RETRACTED)))
 			I.take_internal_damage(dam_amt)
 
 //////////////////////////////////////////////////////////////////
@@ -87,10 +86,9 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/internal/detatch_organ
 	name = "Detach organ"
-	description = "This procedure detaches an internal organ for removal."
 	allowed_tools = list(
-		/obj/item/scalpel = 100,
-		/obj/item/shard = 50
+		/obj/item/weapon/scalpel = 100,
+		/obj/item/weapon/material/shard = 50
 	)
 	min_duration = 90
 	max_duration = 110
@@ -101,15 +99,15 @@
 	for(var/organ in target.internal_organs_by_name)
 		var/obj/item/organ/I = target.internal_organs_by_name[organ]
 		if(I && !(I.status & ORGAN_CUT_AWAY) && I.parent_organ == target_zone)
-			var/image/radial_button = image(icon = I.icon, icon_state = I.icon_state)
-			radial_button.name = "Detach \the [I.name]"
-			LAZYSET(attached_organs, organ, radial_button)
+			LAZYDISTINCTADD(attached_organs, organ)
 	if(!LAZYLEN(attached_organs))
 		to_chat(user, SPAN_WARNING("You can't find any organs to separate."))
 	else
-		if(length(attached_organs) == 1)
-			return attached_organs[1]
-		return show_radial_menu(user, tool, attached_organs, radius = 42, require_near = TRUE, use_labels = TRUE, check_locs = list(tool))
+		var/obj/item/organ/organ_to_remove = attached_organs[1]
+		if(attached_organs.len > 1)
+			organ_to_remove = input(user, "Which organ do you want to separate?") as null|anything in attached_organs
+		if(organ_to_remove)
+			return organ_to_remove
 	return FALSE
 
 /decl/surgery_step/internal/detatch_organ/begin_step(mob/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
@@ -137,12 +135,11 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/internal/remove_organ
 	name = "Remove internal organ"
-	description = "This procedure removes a detached internal organ."
 	allowed_tools = list(
-		/obj/item/hemostat = 100,
-		/obj/item/wirecutters = 75,
-		/obj/item/knife = 75,
-		/obj/item/kitchen/utensil/fork = 20
+		/obj/item/weapon/hemostat = 100,
+		/obj/item/weapon/wirecutters = 75,
+		/obj/item/weapon/material/knife = 75,
+		/obj/item/weapon/material/kitchen/utensil/fork = 20
 	)
 	min_duration = 60
 	max_duration = 80
@@ -153,23 +150,23 @@
 		var/list/removable_organs
 		for(var/obj/item/organ/internal/I in affected.implants)
 			if(I.status & ORGAN_CUT_AWAY)
-				var/image/radial_button = image(icon = I.icon, icon_state = I.icon_state)
-				radial_button.name = "Remove \the [I.name]"
-				LAZYSET(removable_organs, I, radial_button)
+				LAZYDISTINCTADD(removable_organs, I)
 		if(!LAZYLEN(removable_organs))
 			to_chat(user, SPAN_WARNING("You can't find any removable organs."))
 		else
-			if(length(removable_organs) == 1)
-				return removable_organs[1]
-			return show_radial_menu(user, tool, removable_organs, radius = 42, require_near = TRUE, use_labels = TRUE, check_locs = list(tool))
+			var/obj/item/organ/organ_to_remove = removable_organs[1]
+			if(removable_organs.len > 1)
+				organ_to_remove = input(user, "Which organ do you want to remove?") as null|anything in removable_organs
+			if(organ_to_remove)
+				return organ_to_remove
 	return FALSE
 
 /decl/surgery_step/internal/remove_organ/get_skill_reqs(mob/living/user, mob/living/carbon/human/target, obj/item/tool)
 	var/target_zone = user.zone_sel.selecting
 	var/obj/item/organ/internal/O = LAZYACCESS(target.surgeries_in_progress, target_zone)
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
-	if(BP_IS_PROSTHETIC(O))
-		if(BP_IS_PROSTHETIC(affected))
+	if(BP_IS_ROBOTIC(O))
+		if(BP_IS_ROBOTIC(affected))
 			return SURGERY_SKILLS_ROBOTIC
 		else
 			return SURGERY_SKILLS_ROBOTIC_ON_MEAT
@@ -193,7 +190,7 @@
 	if(istype(O) && istype(affected))
 		affected.implants -= O
 		O.dropInto(target.loc)
-		if(!BP_IS_PROSTHETIC(affected))
+		if(!BP_IS_ROBOTIC(affected))
 			playsound(target.loc, 'sound/effects/squelch1.ogg', 15, 1)
 		else
 			playsound(target.loc, 'sound/items/Ratchet.ogg', 50, 1)
@@ -217,7 +214,6 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/internal/replace_organ
 	name = "Replace internal organ"
-	description = "This procedure replaces a removed internal organ."
 	allowed_tools = list(
 		/obj/item/organ/internal = 100
 	)
@@ -228,8 +224,8 @@
 /decl/surgery_step/internal/replace_organ/get_skill_reqs(mob/living/user, mob/living/carbon/human/target, obj/item/tool)
 	var/obj/item/organ/internal/O = tool
 	var/obj/item/organ/external/affected = target.get_organ(user.zone_sel.selecting)
-	if(BP_IS_PROSTHETIC(O) || istype(O, /obj/item/organ/internal/augment))
-		if(BP_IS_PROSTHETIC(affected))
+	if(BP_IS_ROBOTIC(O) || istype(O, /obj/item/organ/internal/augment))
+		if(BP_IS_ROBOTIC(affected))
 			return SURGERY_SKILLS_ROBOTIC
 		else
 			return SURGERY_SKILLS_ROBOTIC_ON_MEAT
@@ -245,7 +241,7 @@
 			to_chat(user, SPAN_WARNING("You cannot install a crystalline organ into a non-crystalline bodypart."))
 		else if(!BP_IS_CRYSTAL(O) && BP_IS_CRYSTAL(affected))
 			to_chat(user, SPAN_WARNING("You cannot install a non-crystalline organ into a crystalline bodypart."))
-		else if(BP_IS_PROSTHETIC(affected) && !BP_IS_PROSTHETIC(O))
+		else if(BP_IS_ROBOTIC(affected) && !BP_IS_ROBOTIC(O))
 			to_chat(user, SPAN_WARNING("You cannot install a naked organ into a robotic body."))
 		else if(!target.species)
 			CRASH("Target ([target]) of surgery [type] has no species!")
@@ -297,11 +293,10 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/internal/attach_organ
 	name = "Attach internal organ"
-	description = "This procedure reattaches a replaced internal organ."
 	allowed_tools = list(
-		/obj/item/sutures = 100,
+		/obj/item/weapon/FixOVein = 100,
 		/obj/item/stack/cable_coil = 75,
-		/obj/item/tape_roll = 50
+		/obj/item/weapon/tape_roll = 50
 	)
 	min_duration = 100
 	max_duration = 120
@@ -311,8 +306,8 @@
 	var/target_zone = user.zone_sel.selecting
 	var/obj/item/organ/internal/O = LAZYACCESS(target.surgeries_in_progress, target_zone)
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
-	if(BP_IS_PROSTHETIC(O))
-		if(BP_IS_PROSTHETIC(affected))
+	if(BP_IS_ROBOTIC(O))
+		if(BP_IS_ROBOTIC(affected))
 			return SURGERY_SKILLS_ROBOTIC
 		else
 			return SURGERY_SKILLS_ROBOTIC_ON_MEAT
@@ -326,14 +321,12 @@
 
 	for(var/obj/item/organ/I in affected.implants)
 		if(I && (I.status & ORGAN_CUT_AWAY))
-			var/image/radial_button = image(icon = I.icon, icon_state = I.icon_state)
-			radial_button.name = "Attach \the [I.name]"
-			LAZYSET(attachable_organs, I, radial_button)
+			LAZYADD(attachable_organs, I)
 
 	if(!LAZYLEN(attachable_organs))
 		return FALSE
 
-	var/obj/item/organ/organ_to_replace = show_radial_menu(user, tool, attachable_organs, radius = 42, require_near = TRUE, use_labels = TRUE, check_locs = list(tool))
+	var/obj/item/organ/organ_to_replace = input(user, "Which organ do you want to reattach?") as null|anything in attachable_organs
 	if(!organ_to_replace)
 		return FALSE
 
@@ -347,7 +340,7 @@
 			to_chat(user, SPAN_WARNING("\The [A] cannot function within a non-robotic limb."))
 			return FALSE
 
-	if(BP_IS_PROSTHETIC(organ_to_replace) && target.species.spawn_flags & SPECIES_NO_ROBOTIC_INTERNAL_ORGANS)
+	if(BP_IS_ROBOTIC(organ_to_replace) && target.species.spawn_flags & SPECIES_NO_ROBOTIC_INTERNAL_ORGANS)
 		user.visible_message("<span class='notice'>[target]'s biology has rejected the attempts to attach \the [organ_to_replace].</span>")
 		return FALSE
 
@@ -371,7 +364,7 @@
 
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
 	if(istype(I) && I.parent_organ == target_zone && affected && (I in affected.implants))
-		I.status &= ~ORGAN_CUT_AWAY //apply sutures
+		I.status &= ~ORGAN_CUT_AWAY //apply fixovein
 		affected.implants -= I
 		I.replaced(target, affected)
 
@@ -380,3 +373,88 @@
 	user.visible_message("<span class='warning'>[user]'s hand slips, damaging the flesh in [target]'s [affected.name] with \the [tool]!</span>", \
 	"<span class='warning'>Your hand slips, damaging the flesh in [target]'s [affected.name] with \the [tool]!</span>")
 	affected.take_external_damage(20, used_weapon = tool)
+
+//////////////////////////////////////////////////////////////////
+//	 Peridaxon necrosis treatment surgery step
+//////////////////////////////////////////////////////////////////
+/decl/surgery_step/internal/treat_necrosis
+	name = "Treat necrosis"
+	allowed_tools = list(
+		/obj/item/weapon/reagent_containers/dropper = 100,
+		/obj/item/weapon/reagent_containers/glass/bottle = 75,
+		/obj/item/weapon/reagent_containers/glass/beaker = 75,
+		/obj/item/weapon/reagent_containers/spray = 50,
+		/obj/item/weapon/reagent_containers/glass/bucket = 50,
+	)
+
+	can_infect = 0
+	blood_level = 0
+
+	min_duration = 50
+	max_duration = 60
+
+/decl/surgery_step/internal/treat_necrosis/pre_surgery_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
+	var/obj/item/weapon/reagent_containers/container = tool
+	if(!istype(container) || !container.reagents.has_reagent(/datum/reagent/peridaxon) || !..())
+		return FALSE
+	var/obj/item/organ/external/affected = target.get_organ(target_zone)
+	var/list/obj/item/organ/internal/dead_organs = list()
+	for(var/obj/item/organ/internal/I in target.internal_organs)
+		if(I && !(I.status & ORGAN_CUT_AWAY) && (I.status & ORGAN_DEAD) && I.parent_organ == affected.organ_tag && !BP_IS_ROBOTIC(I))
+			dead_organs |= I
+	if(!dead_organs.len)
+		return FALSE
+	var/obj/item/organ/internal/organ_to_fix = dead_organs[1]
+	if(dead_organs.len > 1)
+		organ_to_fix = input(user, "Which organ do you want to regenerate?") as null|anything in dead_organs
+	if(!organ_to_fix)
+		return FALSE
+	if(!organ_to_fix.can_recover())
+		to_chat(user, SPAN_WARNING("The [organ_to_fix.name] is necrotic and can't be saved, it will need to be replaced."))
+		return FALSE
+	if(organ_to_fix.damage >= organ_to_fix.max_damage)
+		to_chat(user, SPAN_WARNING("The [organ_to_fix.name] needs to be repaired before it is regenerated."))
+		return FALSE
+	return organ_to_fix
+
+/decl/surgery_step/internal/treat_necrosis/begin_step(mob/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
+	user.visible_message("[user] starts applying medication to the affected tissue in [target]'s [LAZYACCESS(target.surgeries_in_progress, target_zone)] with \the [tool]." , \
+	"You start applying medication to the affected tissue in [target]'s [LAZYACCESS(target.surgeries_in_progress, target_zone)] with \the [tool].")
+	target.custom_pain("Something in your [LAZYACCESS(target.surgeries_in_progress, target_zone)] is causing you a lot of pain!",50, affecting = LAZYACCESS(target.surgeries_in_progress, target_zone))
+	..()
+
+/decl/surgery_step/internal/treat_necrosis/end_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
+	var/obj/item/organ/internal/affected = LAZYACCESS(target.surgeries_in_progress, target_zone)
+	var/obj/item/weapon/reagent_containers/container = tool
+
+	var/amount = container.amount_per_transfer_from_this
+	var/datum/reagents/temp_reagents = new(amount, GLOB.temp_reagents_holder)
+	container.reagents.trans_to_holder(temp_reagents, amount)
+
+	var/rejuvenate = temp_reagents.has_reagent(/datum/reagent/peridaxon)
+
+	var/trans = temp_reagents.trans_to_mob(target, temp_reagents.total_volume, CHEM_BLOOD) //technically it's contact, but the reagents are being applied to internal tissue
+	if (trans > 0)
+
+		if(rejuvenate)
+			affected.status &= ~ORGAN_DEAD
+			affected.owner.update_body(1)
+
+		user.visible_message("<span class='notice'>[user] applies [trans] unit\s of the solution to affected tissue in [target]'s [affected.name]</span>.", \
+			"<span class='notice'>You apply [trans] unit\s of the solution to affected tissue in [target]'s [affected.name] with \the [tool].</span>")
+	qdel(temp_reagents)
+
+/decl/surgery_step/internal/treat_necrosis/fail_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
+	var/obj/item/organ/external/affected = target.get_organ(target_zone)
+
+	if (!istype(tool, /obj/item/weapon/reagent_containers))
+		return
+
+	var/obj/item/weapon/reagent_containers/container = tool
+
+	var/trans = container.reagents.trans_to_mob(target, container.amount_per_transfer_from_this, CHEM_BLOOD)
+
+	user.visible_message("<span class='warning'>[user]'s hand slips, applying [trans] units of the solution to the wrong place in [target]'s [affected.name] with the [tool]!</span>" , \
+	"<span class='warning'>Your hand slips, applying [trans] units of the solution to the wrong place in [target]'s [affected.name] with the [tool]!</span>")
+
+	//no damage or anything, just wastes medicine

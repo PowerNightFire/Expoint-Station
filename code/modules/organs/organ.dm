@@ -1,10 +1,11 @@
+var/list/organ_cache = list()
+
 /obj/item/organ
 	name = "organ"
 	icon = 'icons/obj/surgery.dmi'
 	germ_level = 0
 	w_class = ITEM_SIZE_TINY
 	default_action_type = /datum/action/item_action/organ
-	material = /decl/material/solid/meat
 
 	// Strings.
 	var/organ_tag = "organ"           // Unique identifier.
@@ -24,7 +25,12 @@
 	var/min_broken_damage = 30        // Damage before becoming broken
 	var/max_damage = 30               // Damage cap
 	var/rejecting                     // Is this organ already being rejected?
+
 	var/death_time
+
+	// Bioprinter stats
+	var/can_be_printed = TRUE
+	var/print_cost
 
 /obj/item/organ/Destroy()
 	owner = null
@@ -44,8 +50,8 @@
 	return (damage >= min_broken_damage || (status & ORGAN_CUT_AWAY) || (status & ORGAN_BROKEN))
 
 //Second argument may be a dna datum; if null will be set to holder's dna.
-/obj/item/organ/Initialize(mapload, var/datum/dna/given_dna)
-	. = ..(mapload)
+/obj/item/organ/New(var/mob/living/carbon/holder, var/datum/dna/given_dna)
+	..(holder)
 	if(!istype(given_dna))
 		given_dna = null
 
@@ -54,21 +60,21 @@
 	else
 		max_damage = min_broken_damage * 2
 
-	if(iscarbon(loc))
-		owner = loc
-		if(!given_dna && owner.dna)
-			given_dna = owner.dna
+	if(istype(holder))
+		owner = holder
+		if(!given_dna && holder.dna)
+			given_dna = holder.dna
 		else
-			log_debug("[src] spawned in [owner] without a proper DNA.")
+			log_debug("[src] spawned in [holder] without a proper DNA.")
 
 	if (given_dna)
 		set_dna(given_dna)
 	if (!species)
-		species = get_species_by_key(GLOB.using_map.default_species)
+		species = all_species[SPECIES_HUMAN]
 	species.resize_organ(src)
 
 	create_reagents(5 * (w_class-1)**2)
-	reagents.add_reagent(/decl/material/liquid/nutriment/protein, reagents.maximum_volume)
+	reagents.add_reagent(/datum/reagent/nutriment/protein, reagents.maximum_volume)
 
 	update_icon()
 
@@ -79,7 +85,7 @@
 			blood_DNA = list()
 		blood_DNA.Cut()
 		blood_DNA[dna.unique_enzymes] = dna.b_type
-		species = get_species_by_key(dna.species)
+		species = all_species[dna.species]
 		if (!species)
 			crash_with("Invalid DNA species. Expected a valid species name as string, was: [log_info_line(dna.species)]")
 
@@ -99,19 +105,26 @@
 	//dead already, no need for more processing
 	if(status & ORGAN_DEAD)
 		return
-	// Don't process if we're in a freezer, an MMI or a stasis bag.or a freezer or something I dunno
-	if(is_preserved())
+
+	//check if we've hit max_damage
+	if(damage >= max_damage)
+		die()
 		return
+
 	//Process infections
-	if (BP_IS_PROSTHETIC(src) || (owner && owner.species && (owner.species.species_flags & SPECIES_FLAG_IS_PLANT)))
+	if (BP_IS_ROBOTIC(src) || (owner && owner.species && (owner.species.species_flags & SPECIES_FLAG_IS_PLANT)))
 		germ_level = 0
 		return
 
+	// Don't process if we're in a freezer, an MMI or a stasis bag.or a freezer or something I dunno
+	if(is_preserved())
+		return
+
 	if(!owner && reagents)
-		if(prob(40) && reagents.total_volume >= 0.1)
-			if(reagents.has_reagent(/decl/material/liquid/blood))
-				blood_splatter(get_turf(src), src, 1)
-			reagents.remove_any(0.1)
+		var/datum/reagent/blood/B = locate(/datum/reagent/blood) in reagents.reagent_list
+		if(B && prob(40))
+			reagents.remove_reagent(/datum/reagent/blood,0.1)
+			blood_splatter(src,B,1)
 		if(config.organs_decay)
 			take_general_damage(rand(1,3))
 		germ_level += rand(2,6)
@@ -126,16 +139,12 @@
 		handle_rejection()
 		handle_germ_effects()
 
-	//check if we've hit max_damage
-	if(damage >= max_damage)
-		die()
-
 /obj/item/organ/proc/is_preserved()
 	if(istype(loc,/obj/item/organ))
 		var/obj/item/organ/O = loc
 		return O.is_preserved()
 	else
-		return (istype(loc,/obj/item/mmi) || istype(loc,/obj/structure/closet/body_bag/cryobag) || istype(loc,/obj/structure/closet/crate/freezer) || istype(loc,/obj/item/storage/box/freezer))
+		return (istype(loc,/obj/item/device/mmi) || istype(loc,/obj/structure/closet/body_bag/cryobag) || istype(loc,/obj/structure/closet/crate/freezer) || istype(loc,/obj/item/weapon/storage/box/freezer))
 
 /obj/item/organ/examine(mob/user)
 	. = ..(user)
@@ -147,17 +156,17 @@
 
 /obj/item/organ/proc/handle_germ_effects()
 	//** Handle the effects of infections
-	var/germ_immunity = owner.get_immunity() //reduces the amount of times we need to call this proc
-	var/antibiotics = REAGENT_VOLUME(owner.reagents, /decl/material/liquid/antibiotics)
+	var/virus_immunity = owner.virus_immunity() //reduces the amount of times we need to call this proc
+	var/antibiotics = owner.reagents.get_reagent_amount(/datum/reagent/spaceacillin)
 
-	if (germ_level > 0 && germ_level < INFECTION_LEVEL_ONE/2 && prob(germ_immunity*0.3))
+	if (germ_level > 0 && germ_level < INFECTION_LEVEL_ONE/2 && prob(virus_immunity*0.3))
 		germ_level--
 
 	if (germ_level >= INFECTION_LEVEL_ONE/2)
 		//aiming for germ level to go from ambient to INFECTION_LEVEL_TWO in an average of 15 minutes, when immunity is full.
 		if(antibiotics < 5 && prob(round(germ_level/6 * owner.immunity_weakness() * 0.01)))
-			if(germ_immunity > 0)
-				germ_level += Clamp(round(1/germ_immunity), 1, 10) // Immunity starts at 100. This doubles infection rate at 50% immunity. Rounded to nearest whole.
+			if(virus_immunity > 0)
+				germ_level += Clamp(round(1/virus_immunity), 1, 10) // Immunity starts at 100. This doubles infection rate at 50% immunity. Rounded to nearest whole.
 			else // Will only trigger if immunity has hit zero. Once it does, 10x infection rate.
 				germ_level += 10
 
@@ -177,9 +186,9 @@
 /obj/item/organ/proc/handle_rejection()
 	// Process unsuitable transplants. TODO: consider some kind of
 	// immunosuppressant that changes transplant data to make it match.
-	if(owner.get_immunity() < 10) //for now just having shit immunity will suppress it
+	if(owner.virus_immunity() < 10) //for now just having shit immunity will suppress it
 		return
-	if(BP_IS_PROSTHETIC(src))
+	if(BP_IS_ROBOTIC(src))
 		return
 	if(dna)
 		if(!rejecting)
@@ -197,9 +206,9 @@
 						germ_level += rand(2,3)
 					if(501 to INFINITY)
 						germ_level += rand(3,5)
-						owner.reagents.add_reagent(/decl/material/liquid/coagulated_blood, rand(1,2))
+						owner.reagents.add_reagent(/datum/reagent/toxin, rand(1,2))
 
-/obj/item/organ/proc/receive_chem(chemical)
+/obj/item/organ/proc/receive_chem(chemical as obj)
 	return 0
 
 /obj/item/organ/proc/remove_rejuv()
@@ -243,12 +252,9 @@
 	if (can_recover())
 		damage = between(0, damage - round(amount, 0.1), max_damage)
 
-/obj/item/organ/proc/robotize(var/company, var/skip_prosthetics = 0, var/keep_organs = 0, var/apply_material = /decl/material/solid/metal/steel)
-	status = ORGAN_PROSTHETIC
-	reagents?.clear_reagents()
-	material = decls_repository.get_decl(apply_material)
-	matter = null
-	create_matter()
+
+/obj/item/organ/proc/robotize() //Being used to make robutt hearts, etc
+	status = ORGAN_ROBOTIC
 
 /obj/item/organ/proc/mechassist() //Used to add things like pacemakers, etc
 	status = ORGAN_ASSISTED
@@ -273,40 +279,37 @@
 
 	START_PROCESSING(SSobj, src)
 	rejecting = null
-	if(!BP_IS_PROSTHETIC(src) && species && reagents?.total_volume < 5)
-		owner.vessel.trans_to(src, 5 - reagents.total_volume, 1, 1)
+	if(!BP_IS_ROBOTIC(src))
+		var/datum/reagent/blood/organ_blood = locate(/datum/reagent/blood) in reagents.reagent_list //TODO fix this and all other occurences of locate(/datum/reagent/blood) horror
+		if(!organ_blood || !organ_blood.data["blood_DNA"])
+			owner.vessel.trans_to(src, 5, 1, 1)
 
-	if(vital)
+	if(owner && vital)
 		if(user)
 			admin_attack_log(user, owner, "Removed a vital organ ([src]).", "Had a vital organ ([src]) removed.", "removed a vital organ ([src]) from")
 		owner.death()
-	screen_loc = null
-	owner.client?.screen -= src
+
 	owner = null
 
 /obj/item/organ/proc/replaced(var/mob/living/carbon/human/target, var/obj/item/organ/external/affected)
 	owner = target
 	action_button_name = initial(action_button_name)
 	forceMove(owner) //just in case
-	if(BP_IS_PROSTHETIC(src))
+	if(BP_IS_ROBOTIC(src))
 		set_dna(owner.dna)
 	return 1
 
 /obj/item/organ/attack(var/mob/target, var/mob/user)
-	if(status & ORGAN_PROSTHETIC || !istype(target) || !istype(user) || (user != target && user.a_intent == I_HELP))
+
+	if(status & ORGAN_ROBOTIC || !istype(target) || !istype(user) || (user != target && user.a_intent == I_HELP))
 		return ..()
 
 	if(alert("Do you really want to use this organ as food? It will be useless for anything else afterwards.",,"Ew, no.","Bon appetit!") == "Ew, no.")
-		to_chat(user, SPAN_NOTICE("You successfully repress your cannibalistic tendencies."))
+		to_chat(user, "<span class='notice'>You successfully repress your cannibalistic tendencies.</span>")
 		return
-
-	if(QDELETED(src))
-		return
-
 	if(!user.unEquip(src))
 		return
-
-	var/obj/item/chems/food/snacks/organ/O = new(get_turf(src))
+	var/obj/item/weapon/reagent_containers/food/snacks/organ/O = new(get_turf(src))
 	O.SetName(name)
 	O.appearance = src
 	if(reagents && reagents.total_volume)
@@ -317,7 +320,7 @@
 	target.attackby(O, user)
 
 /obj/item/organ/proc/can_feel_pain()
-	return (!BP_IS_PROSTHETIC(src) && (!species || !(species.species_flags & SPECIES_FLAG_NO_PAIN)))
+	return (!BP_IS_ROBOTIC(src) && (!species || !(species.species_flags & SPECIES_FLAG_NO_PAIN)))
 
 /obj/item/organ/proc/is_usable()
 	return !(status & (ORGAN_CUT_AWAY|ORGAN_MUTATED|ORGAN_DEAD))
@@ -331,7 +334,7 @@
 		. += tag ? "<span class='average'>Crystalline</span>" : "Crystalline"
 	else if(BP_IS_ASSISTED(src))
 		. += tag ? "<span class='average'>Assisted</span>" : "Assisted"
-	else if(BP_IS_PROSTHETIC(src))
+	else if(BP_IS_ROBOTIC(src))
 		. += tag ? "<span class='average'>Mechanical</span>" : "Mechanical"
 	if(status & ORGAN_CUT_AWAY)
 		. += tag ? "<span class='bad'>Severed</span>" : "Severed"

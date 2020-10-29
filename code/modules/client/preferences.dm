@@ -1,6 +1,12 @@
 #define SAVE_RESET -1
 
-/datum/preferences
+#define JOB_PRIORITY_HIGH   0x1
+#define JOB_PRIORITY_MEDIUM 0x2
+#define JOB_PRIORITY_LOW    0x4
+#define JOB_PRIORITY_LIKELY 0x3
+#define JOB_PRIORITY_PICKED 0x7
+
+datum/preferences
 	//doohickeys for savefiles
 	var/path
 	var/default_slot = 1				//Holder so it doesn't default to slot 1, rather the last one used
@@ -15,7 +21,7 @@
 	//game-preferences
 	var/lastchangelog = ""				//Saved changlog filesize to detect if there was a change
 
-	//Mob preview
+		//Mob preview
 	var/icon/preview_icon = null
 
 	var/client/client = null
@@ -100,7 +106,7 @@
 
 	if(href_list["preference"] == "open_whitelist_forum")
 		if(config.forumurl)
-			user << link(config.forumurl)
+			send_link(user, config.forumurl)
 		else
 			to_chat(user, "<span class='danger'>The forum URL is not set in the server configuration.</span>")
 			return
@@ -143,7 +149,7 @@
 	character.set_species(species)
 
 	if(be_random_name)
-		var/decl/cultural_info/culture = SSlore.get_culture(cultural_info[TAG_CULTURE])
+		var/decl/cultural_info/culture = SSculture.get_culture(cultural_info[TAG_CULTURE])
 		if(culture) real_name = culture.get_random_name(gender)
 
 	if(config.humans_need_surnames)
@@ -160,24 +166,32 @@
 	character.age = age
 	character.b_type = b_type
 
-	character.eye_colour = eye_colour
+	character.r_eyes = r_eyes
+	character.g_eyes = g_eyes
+	character.b_eyes = b_eyes
 
 	character.h_style = h_style
-	character.hair_colour = hair_colour
+	character.r_hair = r_hair
+	character.g_hair = g_hair
+	character.b_hair = b_hair
 
 	character.f_style = f_style
-	character.facial_hair_colour = facial_hair_colour
+	character.r_facial = r_facial
+	character.g_facial = g_facial
+	character.b_facial = b_facial
 
-	character.skin_colour = skin_colour
+	character.r_skin = r_skin
+	character.g_skin = g_skin
+	character.b_skin = b_skin
 
-	character.skin_tone = skin_tone
-	character.skin_base = skin_base
+	character.s_tone = s_tone
+	character.s_base = s_base
 
 	character.h_style = h_style
 	character.f_style = f_style
 
 	// Replace any missing limbs.
-	for(var/name in global.all_limb_tags)
+	for(var/name in BP_ALL_LIMBS)
 		var/obj/item/organ/external/O = character.organs_by_name[name]
 		if(!O && organ_data[name] != "amputated")
 			var/list/organ_data = character.species.has_limbs[name]
@@ -186,7 +200,7 @@
 			O = new limb_path(character)
 
 	// Destroy/cyborgize organs and limbs. The order is important for preserving low-level choices for robolimb sprites being overridden.
-	for(var/name in global.all_limb_tags_by_depth)
+	for(var/name in BP_BY_DEPTH)
 		var/status = organ_data[name]
 		var/obj/item/organ/external/O = character.organs_by_name[name]
 		if(!O)
@@ -307,7 +321,7 @@
 		var/name
 		for(var/i=1, i<= config.character_slots, i++)
 			S.cd = GLOB.using_map.character_load_path(S, i)
-			S["real_name"] >> name
+			from_save(S["real_name"], name)
 			if(!name)	name = "Character[i]"
 			if(i==default_slot)
 				name = "<b>[name]</b>"
@@ -325,11 +339,73 @@
 		panel = null
 	close_browser(user, "window=saves")
 
-/datum/preferences/proc/apply_post_login_preferences()
-	set waitfor = 0
-	if(!client)
-		return
-	if(client.get_preference_value(/datum/client_preference/chat_position) == GLOB.PREF_YES)
-		client.update_chat_position(TRUE)
-	if(client.get_preference_value(/datum/client_preference/fullscreen_mode) != GLOB.PREF_OFF)
-		client.toggle_fullscreen(client.get_preference_value(/datum/client_preference/fullscreen_mode))
+/datum/preferences/proc/selected_jobs_titles(priority = JOB_PRIORITY_PICKED)
+	. = list()
+	if (priority & JOB_PRIORITY_HIGH)
+		. |= job_high
+	if (priority & JOB_PRIORITY_MEDIUM)
+		. |= job_medium
+	if (priority & JOB_PRIORITY_LOW)
+		. |= job_low
+
+/datum/preferences/proc/selected_jobs_list(priority = JOB_PRIORITY_PICKED)
+	. = list()
+	for (var/title in selected_jobs_titles(priority))
+		var/datum/job/job = SSjobs.get_by_title(title)
+		if (!job)
+			continue
+		. += job
+
+/datum/preferences/proc/selected_jobs_assoc(priority = JOB_PRIORITY_PICKED)
+	. = list()
+	for (var/title in selected_jobs_titles(priority))
+		var/datum/job/job = SSjobs.get_by_title(title)
+		if (!job)
+			continue
+		.[title] = job
+
+/datum/preferences/proc/selected_branches_list(priority = JOB_PRIORITY_PICKED)
+	. = list()
+	for (var/datum/job/job in selected_jobs_list(priority))
+		var/name = branches[job.title]
+		if (!name)
+			continue
+		. |= mil_branches.get_branch(name)
+
+/datum/preferences/proc/selected_branches_assoc(priority = JOB_PRIORITY_PICKED)
+	. = list()
+	for (var/datum/job/job in selected_jobs_list(priority))
+		var/name = branches[job.title]
+		if (!name || .[name])
+			continue
+		.[name] = mil_branches.get_branch(name)
+
+/datum/preferences/proc/for_each_selected_job(datum/callback/callback, priority = JOB_PRIORITY_LIKELY)
+	. = list()
+	if (!islist(priority))
+		priority = selected_jobs_assoc(priority)
+	for (var/title in priority)
+		var/datum/job/job = priority[title]
+		.[title] = callback.Invoke(job)
+
+/datum/preferences/proc/for_each_selected_job_multi(list/callbacks, priority = JOB_PRIORITY_LIKELY)
+	. = list()
+	if (!islist(priority))
+		priority = selected_jobs_assoc(priority)
+	for (var/callback in callbacks)
+		. += for_each_selected_job(callback, priority)
+
+/datum/preferences/proc/for_each_selected_branch(datum/callback/callback, priority = JOB_PRIORITY_LIKELY)
+	. = list()
+	if (!islist(priority))
+		priority = selected_branches_assoc(priority)
+	for (var/name in priority)
+		var/datum/mil_branch/branch = priority[name]
+		.[name] = callback.Invoke(branch)
+
+/datum/preferences/proc/for_each_selected_branch_multi(list/callbacks, priority = JOB_PRIORITY_LIKELY)
+	. = list()
+	if (!islist(priority))
+		priority = selected_branches_assoc(priority)
+	for (var/callback in callbacks)
+		. += for_each_selected_branch(callback, priority)

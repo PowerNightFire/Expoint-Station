@@ -5,23 +5,23 @@
 	icon_state = "empty"
 	density = 0
 	anchored = 1
-	var/obj/item/nuclear_cylinder/cylinder
+	var/obj/item/weapon/nuclear_cylinder/cylinder
 	var/armed = 0
 	var/damaged = 0
 
-/obj/machinery/self_destruct/attackby(obj/item/W, mob/user)
+/obj/machinery/self_destruct/attackby(obj/item/W as obj, mob/user as mob)
 	if(isWelder(W))
 		if(damaged)
 			user.visible_message("[user] begins to repair [src].", "You begin repairing [src].")
 			if(do_after(usr, 100, src))
-				var/obj/item/weldingtool/w
+				var/obj/item/weapon/weldingtool/w
 				if(w.burn_fuel(10))
 					damaged = 0
 					user.visible_message("[user] repairs [src].", "You repair [src].")
 				else
 					to_chat(user, "<span class='warning'>There is not enough fuel to repair [src].</span>")
 				return
-	if(istype(W, /obj/item/nuclear_cylinder))
+	if(istype(W, /obj/item/weapon/nuclear_cylinder))
 		if(damaged)
 			to_chat(user, "<span class='warning'>[src] is damaged, you cannot place the cylinder.</span>")
 			return
@@ -85,14 +85,19 @@
 		src.add_fingerprint(usr)
 	..()
 
-/obj/machinery/self_destruct/explosion_act(severity)
-	..()
-	if(!QDELETED(src) && (severity == 1 || (prob(100 - (25 * severity)))))
-		set_damaged()
+/obj/machinery/self_destruct/ex_act(severity)
+	switch(severity)
+		if(1)
+			set_damaged()
+		if(2)
+			if(prob(50))
+				set_damaged()
+		if(3)
+			if(prob(25))
+				set_damaged()
 
 /obj/machinery/self_destruct/proc/set_damaged()
-	if(!damaged)
-		visible_message(SPAN_DANGER("\The [src] dents and chars."))
+		src.visible_message("<span class='warning'>[src] dents and chars.</span>")
 		damaged = 1
 
 /obj/machinery/self_destruct/examine(mob/user)

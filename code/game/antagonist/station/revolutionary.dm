@@ -30,6 +30,8 @@ GLOBAL_DATUM_INIT(revs, /datum/antagonist/revolutionary, new)
 	faction = "revolutionary"
 
 	blacklisted_jobs = list(/datum/job/ai, /datum/job/cyborg)
+	restricted_jobs = list(/datum/job/captain, /datum/job/hop, /datum/job/hos, /datum/job/chief_engineer, /datum/job/rd, /datum/job/cmo, /datum/job/lawyer)
+	protected_jobs = list(/datum/job/officer, /datum/job/warden, /datum/job/detective)
 
 
 /datum/antagonist/revolutionary/create_global_objectives()
@@ -37,7 +39,7 @@ GLOBAL_DATUM_INIT(revs, /datum/antagonist/revolutionary, new)
 		return
 	global_objectives = list()
 	for(var/mob/living/carbon/human/player in SSmobs.mob_list)
-		if(!player.mind || player.stat==2 || !(player.mind.assigned_role in SSjobs.titles_by_department(DEPT_COMMAND)))
+		if(!player.mind || player.stat==2 || !(player.mind.assigned_role in SSjobs.titles_by_department(COM)))
 			continue
 		var/datum/objective/rev/rev_obj = new
 		rev_obj.target = player.mind

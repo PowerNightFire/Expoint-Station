@@ -40,8 +40,8 @@
 	icon_state = "power"
 
 // On creation automatically connects to active sensors. This is delayed to ensure sensors already exist.
-/obj/machinery/computer/power_monitor/Initialize()
-	. = ..()
+/obj/machinery/computer/power_monitor/New()
+	..()
 	power_monitor = new(src)
 
 // On user click opens the UI of this computer.

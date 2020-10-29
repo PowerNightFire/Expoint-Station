@@ -13,11 +13,11 @@
 			continue
 		I.forceMove(src)
 
-/obj/structure/largecrate/attack_hand(mob/user)
+/obj/structure/largecrate/attack_hand(mob/user as mob)
 	to_chat(user, "<span class='notice'>You need a crowbar to pry this open!</span>")
 	return
 
-/obj/structure/largecrate/attackby(obj/item/W, mob/user)
+/obj/structure/largecrate/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isCrowbar(W))
 		new /obj/item/stack/material/wood(src)
 		var/turf/T = get_turf(src)
@@ -38,8 +38,8 @@
 	var/held_count = 1
 	var/held_type
 
-/obj/structure/largecrate/animal/Initialize()
-	. = ..()
+/obj/structure/largecrate/animal/New()
+	..()
 	if(held_type)
 		for(var/i = 1;i<=held_count;i++)
 			new held_type(src)

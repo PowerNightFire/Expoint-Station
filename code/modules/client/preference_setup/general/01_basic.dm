@@ -11,23 +11,24 @@ datum/preferences
 	sort_order = 1
 
 /datum/category_item/player_setup_item/physical/basic/load_character(var/savefile/S)
-	from_file(S["gender"],                pref.gender)
-	from_file(S["age"],                   pref.age)
-	from_file(S["spawnpoint"],            pref.spawnpoint)
-	from_file(S["OOC_Notes"],             pref.metadata)
-	from_file(S["real_name"],             pref.real_name)
-	from_file(S["name_is_always_random"], pref.be_random_name)
+	from_save(S["gender"],                pref.gender)
+	from_save(S["age"],                   pref.age)
+	from_save(S["spawnpoint"],            pref.spawnpoint)
+	from_save(S["OOC_Notes"],             pref.metadata)
+	from_save(S["real_name"],             pref.real_name)
+	from_save(S["name_is_always_random"], pref.be_random_name)
 
 /datum/category_item/player_setup_item/physical/basic/save_character(var/savefile/S)
-	to_file(S["gender"],                  pref.gender)
-	to_file(S["age"],                     pref.age)
-	to_file(S["spawnpoint"],              pref.spawnpoint)
-	to_file(S["OOC_Notes"],               pref.metadata)
-	to_file(S["real_name"],               pref.real_name)
-	to_file(S["name_is_always_random"],   pref.be_random_name)
+	to_save(S["gender"],                  pref.gender)
+	to_save(S["age"],                     pref.age)
+	to_save(S["spawnpoint"],              pref.spawnpoint)
+	to_save(S["OOC_Notes"],               pref.metadata)
+	to_save(S["real_name"],               pref.real_name)
+	to_save(S["name_is_always_random"],   pref.be_random_name)
 
 /datum/category_item/player_setup_item/physical/basic/sanitize_character()
-	var/datum/species/S =   get_species_by_key(pref.species) || get_species_by_key(GLOB.using_map.default_species)
+	var/datum/species/S = all_species[pref.species ? pref.species : SPECIES_HUMAN]
+	if(!S) S = all_species[SPECIES_HUMAN]
 	pref.age                = sanitize_integer(pref.age, S.min_age, S.max_age, initial(pref.age))
 	pref.gender             = sanitize_inlist(pref.gender, S.genders, pick(S.genders))
 	pref.spawnpoint         = sanitize_inlist(pref.spawnpoint, spawntypes(), initial(pref.spawnpoint))
@@ -35,7 +36,7 @@ datum/preferences
 	// This is a bit noodly. If pref.cultural_info[TAG_CULTURE] is null, then we haven't finished loading/sanitizing, which means we might purge
 	// numbers or w/e from someone's name by comparing them to the map default. So we just don't bother sanitizing at this point otherwise.
 	if(pref.cultural_info[TAG_CULTURE])
-		var/decl/cultural_info/check = SSlore.get_culture(pref.cultural_info[TAG_CULTURE])
+		var/decl/cultural_info/check = SSculture.get_culture(pref.cultural_info[TAG_CULTURE])
 		if(check)
 			pref.real_name = check.sanitize_name(pref.real_name, pref.species)
 			if(!pref.real_name)
@@ -56,17 +57,14 @@ datum/preferences
 	. = jointext(.,null)
 
 /datum/category_item/player_setup_item/physical/basic/OnTopic(var/href,var/list/href_list, var/mob/user)
-	var/datum/species/S = get_species_by_key(pref.species)
+	var/datum/species/S = all_species[pref.species]
 
 	if(href_list["rename"])
 		var/raw_name = input(user, "Choose your character's name:", "Character Name")  as text|null
 		if (!isnull(raw_name) && CanUseTopic(user))
 
-			var/decl/cultural_info/check = SSlore.get_culture(pref.cultural_info[TAG_CULTURE])
+			var/decl/cultural_info/check = SSculture.get_culture(pref.cultural_info[TAG_CULTURE])
 			var/new_name = check.sanitize_name(raw_name, pref.species)
-			if(filter_block_message(user, new_name))
-				return TOPIC_NOACTION
-
 			if(new_name)
 				pref.real_name = new_name
 				return TOPIC_REFRESH
@@ -84,7 +82,7 @@ datum/preferences
 
 	else if(href_list["gender"])
 		var/new_gender = input(user, "Choose your character's gender:", CHARACTER_PREFERENCE_INPUT_TITLE, pref.gender) as null|anything in S.genders
-		S = get_species_by_key(pref.species)
+		S = all_species[pref.species]
 		if(new_gender && CanUseTopic(user) && (new_gender in S.genders))
 			pref.gender = new_gender
 			if(!(pref.f_style in S.get_facial_hair_styles(pref.gender)))

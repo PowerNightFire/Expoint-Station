@@ -20,7 +20,6 @@
 	// These areas are used specifically by code and need to be broken out somehow
 	var/list/area_usage_test_exempted_areas = list(
 		/area/beach,
-		/area/ship,
 		/area/centcom,
 		/area/centcom/holding,
 		/area/centcom/specops,
@@ -28,8 +27,6 @@
 		/area/hallway,
 		/area/maintenance,
 		/area/medical,
-		/area/medical/virology,
-		/area/medical/virologyaccess,
 		/area/overmap,
 		/area/rnd,
 		/area/rnd/xenobiology,

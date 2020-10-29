@@ -13,6 +13,9 @@
 /obj/structure/window/blocks_airlock()
 	return 0
 
+/obj/machinery/mech_sensor/blocks_airlock()
+	return 0
+
 /obj/effect/energy_field/blocks_airlock()
 	return 0
 
@@ -38,20 +41,22 @@
 	return
 
 /obj/structure/window/airlock_crush(var/crush_damage)
-	explosion_act(2)//Smashin windows
+	ex_act(2)//Smashin windows
 
 /obj/machinery/portable_atmospherics/canister/airlock_crush(var/crush_damage)
 	. = ..()
-	take_damage(crush_damage)
+	health -= crush_damage
+	healthcheck()
 
 /obj/effect/energy_field/airlock_crush(var/crush_damage)
 	Stress(crush_damage)
 
 /obj/structure/closet/airlock_crush(var/crush_damage)
 	..()
-	take_damage(crush_damage)
+	damage(crush_damage)
 	for(var/atom/movable/AM in src)
 		AM.airlock_crush()
+	return
 
 /mob/living/airlock_crush(var/crush_damage)
 	. = ..()

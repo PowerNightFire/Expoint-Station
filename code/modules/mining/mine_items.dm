@@ -8,37 +8,37 @@
 /obj/structure/closet/secure_closet/miner/WillContain()
 	return list(
 		new /datum/atom_creator/weighted(list(
-				/obj/item/storage/backpack/industrial,
-				/obj/item/storage/backpack/satchel/eng
+				/obj/item/weapon/storage/backpack/industrial,
+				/obj/item/weapon/storage/backpack/satchel/eng
 			)),
-		/obj/item/radio/headset/headset_cargo,
+		/obj/item/device/radio/headset/headset_cargo,
 		/obj/item/clothing/under/rank/miner,
 		/obj/item/clothing/gloves/thick,
-		/obj/item/clothing/shoes/color/black,
-		/obj/item/scanner/gas,
-		/obj/item/storage/ore,
-		/obj/item/flashlight/lantern,
-		/obj/item/shovel,
-		/obj/item/pickaxe,
+		/obj/item/clothing/shoes/black,
+		/obj/item/device/scanner/gas,
+		/obj/item/weapon/storage/ore,
+		/obj/item/device/flashlight/lantern,
+		/obj/item/weapon/shovel,
+		/obj/item/weapon/pickaxe,
 		/obj/item/clothing/glasses/meson
 	)
 
 /**********'pickaxes' but theyre drills actually***************/
 
-/obj/item/pickaxe
+/obj/item/weapon/pickaxe
 	name = "mining drill"
 	desc = "The most basic of mining drills, for short excavations and small mineral extractions."
-	icon = 'icons/obj/items/tool/mining_drill.dmi'
+	icon = 'icons/obj/tools.dmi'
 	obj_flags = OBJ_FLAG_CONDUCTIBLE
-	slot_flags = SLOT_LOWER_BODY
+	slot_flags = SLOT_BELT
 	force = 15.0
 	throwforce = 4.0
 	icon_state = "drill"
 	item_state = "jackhammer"
 	w_class = ITEM_SIZE_HUGE
-	material = /decl/material/solid/metal/steel
+	matter = list(MATERIAL_STEEL = 3750)
 	var/digspeed = 40 //moving the delay to an item var so R&D can make improved picks. --NEO
-	origin_tech = "{'materials':1,'engineering':1}"
+	origin_tech = list(TECH_MATERIAL = 1, TECH_ENGINEERING = 1)
 	attack_verb = list("hit", "pierced", "sliced", "attacked")
 	var/drill_sound = 'sound/weapons/Genhit.ogg'
 	var/drill_verb = "drilling"
@@ -48,54 +48,45 @@
 	var/build_from_parts = FALSE
 	var/hardware_color
 
-/obj/item/pickaxe/Initialize()
+/obj/item/weapon/pickaxe/Initialize()
 	if(build_from_parts)
 		icon_state = "pick_hardware"
 		color = hardware_color
 		overlays += overlay_image(icon, "pick_handle", flags=RESET_COLOR)
 	. = ..()
 
-/obj/item/pickaxe/hammer
+/obj/item/weapon/pickaxe/hammer
 	name = "sledgehammer"
 	desc = "A mining hammer made of reinforced metal. You feel like smashing your boss in the face with this."
-	icon = 'icons/obj/items/tool/sledgehammer.dmi'
-	icon_state = "sledgehammer"
 
-/obj/item/pickaxe/drill
+/obj/item/weapon/pickaxe/drill
 	name = "advanced mining drill" // Can dig sand as well!
 	icon_state = "handdrill"
 	item_state = "jackhammer"
 	digspeed = 30
-	origin_tech = "{'materials':2,'powerstorage':3,'engineering':2}"
+	origin_tech = list(TECH_MATERIAL = 2, TECH_POWER = 3, TECH_ENGINEERING = 2)
 	desc = "Yours is the drill that will pierce through the rock walls."
 	drill_verb = "drilling"
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
 
-/obj/item/pickaxe/jackhammer
+/obj/item/weapon/pickaxe/jackhammer
 	name = "sonic jackhammer"
 	icon_state = "jackhammer"
 	item_state = "jackhammer"
 	digspeed = 20 //faster than drill, but cannot dig
-	origin_tech = "{'materials':3,'powerstorage':2,'engineering':2}"
+	origin_tech = list(TECH_MATERIAL = 3, TECH_POWER = 2, TECH_ENGINEERING = 2)
 	desc = "Cracks rocks with sonic blasts, perfect for killing cave lizards."
 	drill_verb = "hammering"
 
-/obj/item/pickaxe/diamonddrill //When people ask about the badass leader of the mining tools, they are talking about ME!
+/obj/item/weapon/pickaxe/diamonddrill //When people ask about the badass leader of the mining tools, they are talking about ME!
 	name = "diamond mining drill"
 	icon_state = "diamonddrill"
 	item_state = "jackhammer"
 	digspeed = 5 //Digs through walls, girders, and can dig up sand
-	origin_tech = "{'materials':6,'powerstorage':4,'engineering':5}"
+	origin_tech = list(TECH_MATERIAL = 6, TECH_POWER = 4, TECH_ENGINEERING = 5)
 	desc = "Yours is the drill that will pierce the heavens!"
 	drill_verb = "drilling"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/gemstone/diamond = MATTER_AMOUNT_TRACE
-	)
 
-/obj/item/pickaxe/borgdrill
+/obj/item/weapon/pickaxe/borgdrill
 	name = "cyborg mining drill"
 	icon_state = "diamonddrill"
 	item_state = "jackhammer"
@@ -104,69 +95,64 @@
 	drill_verb = "drilling"
 
 //****************************actual pickaxes***********************
-/obj/item/pickaxe/silver
+/obj/item/weapon/pickaxe/silver
 	name = "silver pickaxe"
 	desc = "This makes no metallurgic sense."
-	icon = 'icons/obj/items/tool/pickaxe.dmi'
 	icon_state = "pick_preview"
 	item_state = "pickaxe"
 	digspeed = 30
-	origin_tech = "{'materials':3}"
+	origin_tech = list(TECH_MATERIAL = 3)
 	drill_verb = "picking"
 	sharp = 1
 	build_from_parts = TRUE
 	hardware_color = COLOR_SILVER
 
-/obj/item/pickaxe/gold
+/obj/item/weapon/pickaxe/gold
 	name = "golden pickaxe"
 	desc = "This makes no metallurgic sense."
-	icon = 'icons/obj/items/tool/pickaxe.dmi'
 	icon_state = "pick_preview"
 	item_state = "pickaxe"
 	digspeed = 20
-	origin_tech = "{'materials':4}"
+	origin_tech = list(TECH_MATERIAL = 4)
 	drill_verb = "picking"
 	sharp = 1
 	build_from_parts = TRUE
 	hardware_color = COLOR_GOLD
 
-/obj/item/pickaxe/diamond
+/obj/item/weapon/pickaxe/diamond
 	name = "diamond pickaxe"
 	desc = "A pickaxe with a diamond pick head."
-	icon = 'icons/obj/items/tool/pickaxe.dmi'
 	icon_state = "pick_preview"
 	item_state = "pickaxe"
 	digspeed = 10
-	origin_tech = "{'materials':6,'engineering':4}"
+	origin_tech = list(TECH_MATERIAL = 6, TECH_ENGINEERING = 4)
 	drill_verb = "picking"
 	sharp = 1
 	build_from_parts = TRUE
 	hardware_color = COLOR_DIAMOND
-	material = /decl/material/solid/gemstone/diamond
 
 /*****************************Shovel********************************/
 
-/obj/item/shovel
+/obj/item/weapon/shovel
 	name = "shovel"
 	desc = "A large tool for digging and moving dirt."
-	icon = 'icons/obj/items/tool/shovel.dmi'
+	icon = 'icons/obj/tools.dmi'
 	icon_state = "shovel"
 	obj_flags = OBJ_FLAG_CONDUCTIBLE
-	slot_flags = SLOT_LOWER_BODY
+	slot_flags = SLOT_BELT
 	force = 8.0
 	throwforce = 4.0
 	item_state = "shovel"
 	w_class = ITEM_SIZE_HUGE
-	origin_tech = "{'materials':1,'engineering':1}"
-	material = /decl/material/solid/metal/steel
+	origin_tech = list(TECH_MATERIAL = 1, TECH_ENGINEERING = 1)
+	matter = list(MATERIAL_STEEL = 50)
 	attack_verb = list("bashed", "bludgeoned", "thrashed", "whacked")
 	sharp = 0
 	edge = 1
 
-/obj/item/shovel/spade
+/obj/item/weapon/shovel/spade
 	name = "spade"
 	desc = "A small tool for digging and moving dirt."
-	icon = 'icons/obj/items/tool/spade.dmi'
 	icon_state = "spade"
 	item_state = "spade"
 	force = 5.0
@@ -181,7 +167,7 @@
 	icon_state = "folded"
 	amount = 10
 	max_amount = 10
-	icon = 'icons/obj/items/marking_beacon.dmi'
+	icon = 'icons/obj/marking_beacon.dmi'
 
 	var/upright = 0
 	var/fringe = null
@@ -194,10 +180,10 @@
 
 /obj/item/stack/flag/green
 	light_color = COLOR_LIME
-
+	
 /obj/item/stack/flag/blue
 	light_color = COLOR_BLUE
-
+	
 /obj/item/stack/flag/teal
 	light_color = COLOR_TEAL
 
@@ -233,7 +219,7 @@
 	if(use(1)) // Don't skip use() checks even if you only need one! Stacks with the amount of 0 are possible, e.g. on synthetics!
 		var/obj/item/stack/flag/newflag = new src.type(T, 1)
 		newflag.set_up()
-		if(istype(T, /turf/simulated/floor/asteroid) || istype(T, /turf/exterior))
+		if(istype(T, /turf/simulated/floor/asteroid) || istype(T, /turf/simulated/floor/exoplanet))
 			user.visible_message("\The [user] plants \the [newflag.singular_name] firmly in the ground.")
 		else
 			user.visible_message("\The [user] attaches \the [newflag.singular_name] firmly to the ground.")

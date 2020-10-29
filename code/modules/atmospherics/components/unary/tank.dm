@@ -10,7 +10,7 @@
 	var/filling // list of gas ratios to use.
 
 	level = 1
-	dir = SOUTH
+	dir = 2
 	initialize_directions = 2
 	density = 1
 	connect_types = CONNECT_TYPE_REGULAR|CONNECT_TYPE_SUPPLY|CONNECT_TYPE_SCRUBBER|CONNECT_TYPE_FUEL
@@ -18,10 +18,6 @@
 
 	build_icon = 'icons/atmos/tank.dmi'
 	build_icon_state = "air"
-
-	construct_state = /decl/machine_construction/pipe
-	uncreated_component_parts = null // don't use power
-	frame_type = /obj/item/pipe/tank
 
 /obj/machinery/atmospherics/unary/tank/Initialize()
 	. = ..()
@@ -53,40 +49,58 @@
 /obj/machinery/atmospherics/unary/tank/return_air()
 	return air_contents
 
-/obj/machinery/atmospherics/unary/tank/deconstruction_pressure_check()
-	if (air_contents.return_pressure() > 2*ONE_ATMOSPHERE)
-		return FALSE
-	return TRUE
+/obj/machinery/atmospherics/unary/tank/attackby(var/obj/item/W as obj, var/mob/user as mob)
+	if(istype(W, /obj/item/device/pipe_painter))
+		return
+
+	if(isWrench(W))		
+		if (air_contents.return_pressure() > 2*ONE_ATMOSPHERE)
+			to_chat(user, "<span class='warning'>You cannot unwrench \the [src], it is too exerted due to internal pressure.</span>")
+			add_fingerprint(user)
+			return 1
+
+		playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
+		to_chat(user, "<span class='notice'>You begin to unfasten \the [src]...</span>")
+
+		if (do_after(user, 40, src))
+			user.visible_message("<span class='notice'>\The [user] unfastens \the [src].</span>", "<span class='notice'>You have unfastened \the [src].</span>", "You hear a ratchet.")		
+			new /obj/item/pipe/tank(loc, src)
+			qdel(src)
 
 /obj/machinery/atmospherics/unary/tank/air
 	name = "Pressure Tank (Air)"
 	icon_state = "air"
-	filling = list(/decl/material/gas/oxygen = O2STANDARD, /decl/material/gas/nitrogen = N2STANDARD)
+	filling = list(GAS_OXYGEN = O2STANDARD, GAS_NITROGEN = N2STANDARD)
 
 /obj/machinery/atmospherics/unary/tank/oxygen
 	name = "Pressure Tank (Oxygen)"
 	icon_state = "o2"
-	filling = list(/decl/material/gas/oxygen = 1)
+	filling = list(GAS_OXYGEN = 1)
 
 /obj/machinery/atmospherics/unary/tank/nitrogen
 	name = "Pressure Tank (Nitrogen)"
 	icon_state = "n2"
-	filling = list(/decl/material/gas/nitrogen = 1)
+	filling = list(GAS_NITROGEN = 1)
 
 /obj/machinery/atmospherics/unary/tank/carbon_dioxide
 	name = "Pressure Tank (Carbon Dioxide)"
 	icon_state = "co2"
-	filling = list(/decl/material/gas/carbon_dioxide = 1)
+	filling = list(GAS_CO2 = 1)
+
+/obj/machinery/atmospherics/unary/tank/phoron
+	name = "Pressure Tank (Phoron)"
+	icon_state = "phoron"
+	filling = list(GAS_PHORON = 1)
 
 /obj/machinery/atmospherics/unary/tank/nitrous_oxide
 	name = "Pressure Tank (Nitrous Oxide)"
 	icon_state = "n2o"
-	filling = list(/decl/material/gas/nitrous_oxide = 1)
+	filling = list(GAS_N2O = 1)
 
 /obj/machinery/atmospherics/unary/tank/hydrogen
 	name = "Pressure Tank (Hydrogen)"
 	icon_state = "h2"
-	filling = list(/decl/material/gas/hydrogen = 1)
+	filling = list(GAS_HYDROGEN = 1)
 
 /obj/item/pipe/tank
 	icon = 'icons/atmos/tank.dmi'

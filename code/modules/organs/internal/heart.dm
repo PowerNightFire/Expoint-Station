@@ -22,7 +22,7 @@
 		icon_state = dead_icon
 	..()
 
-/obj/item/organ/internal/heart/robotize(var/company, var/skip_prosthetics, var/keep_organs, var/apply_material = /decl/material/solid/metal/steel)
+/obj/item/organ/internal/heart/robotize()
 	. = ..()
 	icon_state = "heart-prosthetic"
 
@@ -39,7 +39,7 @@
 	..()
 
 /obj/item/organ/internal/heart/proc/handle_pulse()
-	if(BP_IS_PROSTHETIC(src))
+	if(BP_IS_ROBOTIC(src))
 		pulse = PULSE_NONE	//that's it, you're dead (or your metal heart is), nothing can influence your pulse
 		return
 
@@ -120,13 +120,13 @@
 	if(!owner || owner.InStasis() || owner.stat == DEAD || owner.bodytemperature < 170)
 		return
 
-	if(pulse != PULSE_NONE || BP_IS_PROSTHETIC(src))
+	if(pulse != PULSE_NONE || BP_IS_ROBOTIC(src))
 		//Bleeding out
 		var/blood_max = 0
 		var/list/do_spray = list()
 		for(var/obj/item/organ/external/temp in owner.organs)
 
-			if(BP_IS_PROSTHETIC(temp))
+			if(BP_IS_ROBOTIC(temp))
 				continue
 
 			var/open_wound
@@ -156,7 +156,7 @@
 						blood_max += bleed_amount
 						do_spray += "[temp.name]"
 					else
-						owner.vessel.remove_any(bleed_amount)
+						owner.vessel.remove_reagent(/datum/reagent/blood, bleed_amount)
 
 		switch(pulse)
 			if(PULSE_SLOW)
@@ -166,7 +166,7 @@
 			if(PULSE_2FAST, PULSE_THREADY)
 				blood_max *= 1.5
 
-		if(CE_STABLE in owner.chem_effects)
+		if(CE_STABLE in owner.chem_effects) // inaprovaline
 			blood_max *= 0.8
 
 		if(world.time >= next_blood_squirt && istype(owner.loc, /turf) && do_spray.len)
@@ -193,10 +193,10 @@
 	if(!is_usable())
 		return FALSE
 
-	return pulse > PULSE_NONE || BP_IS_PROSTHETIC(src) || (owner.status_flags & FAKEDEATH)
+	return pulse > PULSE_NONE || BP_IS_ROBOTIC(src) || (owner.status_flags & FAKEDEATH)
 
 /obj/item/organ/internal/heart/listen()
-	if(BP_IS_PROSTHETIC(src) && is_working())
+	if(BP_IS_ROBOTIC(src) && is_working())
 		if(is_bruised())
 			return "sputtering pump"
 		else

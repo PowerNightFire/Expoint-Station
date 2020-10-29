@@ -1,12 +1,11 @@
-/decl/codex_category/languages
+/datum/codex_category/languages/
 	name = "Languages"
 	desc = "Languages spoken in known space."
 
-/decl/codex_category/languages/Initialize()
+/datum/codex_category/languages/Initialize()
 	var/example_line = "This is just some random words. What did you expect here? Hah hah!"
-	var/language_types = decls_repository.get_decls_of_subtype(/decl/language)
-	for(var/langname in language_types)
-		var/decl/language/L = language_types[langname]
+	for(var/langname in all_languages)
+		var/datum/language/L = all_languages[langname]
 		if(L.hidden_from_codex)
 			continue
 		if(L.type == L.category)
@@ -19,7 +18,7 @@
 		if(L.flags & SIGNLANG)
 			lang_info += "It is completely non-verbal, using gestures or signs to communicate."
 		if(L.flags & HIVEMIND)
-			lang_info += "It's a 'hivemind' language, broadcast to all creatures who understand it."
+			lang_info += "It's a 'hivemind' language, broadcasted to all creatures who understand it."
 		if(L.flags & NO_STUTTER)
 			lang_info += "It will not be affected by speech impediments."
 
@@ -36,4 +35,4 @@
 		entry.associated_strings += L.shorthand
 		SScodex.add_entry_by_string(entry.display_name, entry)
 		items += entry.display_name
-	. = ..()
+	..()

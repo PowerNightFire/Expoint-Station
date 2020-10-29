@@ -92,8 +92,8 @@ var/datum/mil_branches/mil_branches = new()
  *  A single military branch, such as Fleet or Marines
  */
 /datum/mil_branch
-	var/name = "Unknown"         // Longer name for branch, eg  "Grand High Nosepickers"
-	var/name_short       		// Abbreviation of the name, eg "GHN"
+	var/name = "Unknown"         // Longer name for branch, eg "Sol Central Marine Corps"
+	var/name_short       		// Abbreviation of the name, eg "SCMC"
 
 
 
@@ -110,6 +110,8 @@ var/datum/mil_branches/mil_branches = new()
 
 	// Email addresses will be created under this domain name. Mostly for the looks.
 	var/email_domain = "freemail.net"
+
+	var/allow_custom_email = FALSE
 
 	var/list/min_skill
 

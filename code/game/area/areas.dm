@@ -7,11 +7,15 @@
 	var/global/global_uid = 0
 	var/uid
 	var/area_flags
-	var/show_starlight = FALSE
 
 /area/New()
 	icon_state = ""
 	uid = ++global_uid
+
+	if(!requires_power)
+		power_light = 0
+		power_equip = 0
+		power_environ = 0
 
 	if(dynamic_lighting)
 		luminosity = 0
@@ -51,9 +55,6 @@
 
 	for(var/obj/machinery/M in T)
 		M.area_changed(old_area, A) // They usually get moved events, but this is the one way an area can change without triggering one.
-
-/area/proc/alert_on_fall(var/mob/living/carbon/human/H)
-	return
 
 /area/proc/get_contents()
 	return contents
@@ -111,6 +112,7 @@
 		if(!all_doors)
 			return
 		for(var/obj/machinery/door/firedoor/E in all_doors)
+			E.locked = FALSE
 			if(!E.blocked)
 				if(E.operating)
 					E.nextstate = FIREDOOR_OPEN
@@ -143,6 +145,7 @@
 		if(!all_doors)
 			return
 		for(var/obj/machinery/door/firedoor/D in all_doors)
+			D.locked = FALSE
 			if(!D.blocked)
 				if(D.operating)
 					D.nextstate = FIREDOOR_OPEN
@@ -232,28 +235,36 @@ var/list/mob/living/forced_ambiance_list = new
 	play_ambience(L)
 	L.lastarea = newarea
 
-/area/Exited(A)
-	if(isliving(A))
-		clear_ambience(A)
-	return ..()
-
 /area/proc/play_ambience(var/mob/living/L)
 	// Ambience goes down here -- make sure to list each area seperately for ease of adding things in later, thanks! Note: areas adjacent to each other should have the same sounds to prevent cutoff when possible.- LastyScratch
 	if(!(L && L.client && L.get_preference_value(/datum/client_preference/play_ambiance) == GLOB.PREF_YES))	return
 
 	var/turf/T = get_turf(L)
+	var/hum = 0
+	if(L.get_sound_volume_multiplier() >= 0.2 && !always_unpowered && power_environ)
+		for(var/obj/machinery/atmospherics/unary/vent_pump/vent in src)
+			if(vent.can_pump())
+				hum = 1
+				break
+	if(hum)
+		if(!L.client.ambience_playing)
+			L.client.ambience_playing = 1
+			L.playsound_local(T,sound('sound/ambience/shipambience.ogg', repeat = 1, wait = 0, volume = 20, channel = GLOB.ambience_sound_channel))
+	else
+		if(L.client.ambience_playing)
+			L.client.ambience_playing = 0
+			sound_to(L, sound(null, channel = GLOB.ambience_sound_channel))
 
-	if(LAZYLEN(forced_ambience) && !(L in forced_ambiance_list))
-		forced_ambiance_list += L
-		L.playsound_local(T,sound(pick(forced_ambience), repeat = 1, wait = 0, volume = 25, channel = GLOB.lobby_sound_channel))
+	if(L.lastarea != src)
+		if(LAZYLEN(forced_ambience))
+			forced_ambiance_list |= L
+			L.playsound_local(T,sound(pick(forced_ambience), repeat = 1, wait = 0, volume = 25, channel = GLOB.lobby_sound_channel))
+		else	//stop any old area's forced ambience, and try to play our non-forced ones
+			sound_to(L, sound(null, channel = GLOB.lobby_sound_channel))
+			forced_ambiance_list -= L
 	if(ambience.len && prob(5) && (world.time >= L.client.played + 3 MINUTES))
 		L.playsound_local(T, sound(pick(ambience), repeat = 0, wait = 0, volume = 15, channel = GLOB.lobby_sound_channel))
 		L.client.played = world.time
-
-/area/proc/clear_ambience(var/mob/living/L)
-	if(L in forced_ambiance_list)
-		sound_to(L, sound(null, channel = GLOB.lobby_sound_channel))
-		forced_ambiance_list -= L
 
 /area/proc/gravitychange(var/gravitystate = 0)
 	has_gravity = gravitystate
@@ -281,24 +292,6 @@ var/list/mob/living/forced_ambiance_list = new
 				H.AdjustWeakened(3)
 			to_chat(mob, "<span class='notice'>The sudden appearance of gravity makes you fall to the floor!</span>")
 
-/area/proc/throw_unbuckled_occupants(var/maxrange, var/speed, var/direction = null)
-	for(var/mob/M in src)
-		addtimer(CALLBACK(src, .proc/throw_unbuckled_occupant, M, maxrange, speed, direction), 0)
-
-/area/proc/throw_unbuckled_occupant(var/mob/M, var/maxrange, var/speed, var/direction = null)
-	if(iscarbon(M))
-		if(M.buckled)
-			to_chat(M, SPAN_WARNING("Sudden acceleration presses you into your chair!"))
-			shake_camera(M, 3, 1)
-		else
-			shake_camera(M, 10, 1)
-			M.visible_message(SPAN_WARNING("[M.name] is tossed around by the sudden acceleration!"), SPAN_WARNING("The floor lurches beneath you!"))
-			if(!direction)
-				M.throw_at_random(FALSE, maxrange, speed)
-			else
-				var/turf/T = get_ranged_target_turf(M, direction, maxrange)
-				M.throw_at(T, maxrange, speed)
-
 /area/proc/prison_break()
 	var/obj/machinery/power/apc/theAPC = get_apc()
 	if(theAPC && theAPC.operating)
@@ -309,28 +302,16 @@ var/list/mob/living/forced_ambiance_list = new
 		for(var/obj/machinery/door/window/temp_windoor in src)
 			temp_windoor.open()
 
-/area/has_gravity()
+/area/proc/has_gravity()
 	return has_gravity
 
 /area/space/has_gravity()
 	return 0
 
-/atom/proc/has_gravity()
-	var/area/A = get_area(src)
-	if(A && A.has_gravity())
-		return 1
-	return 0
-
-/mob/has_gravity()
-	if(!lastarea)
-		lastarea = get_area(src)
-	if(!lastarea || !lastarea.has_gravity())
-		return 0
-
-	return 1
-
-/turf/has_gravity()
-	var/area/A = loc
+/proc/has_gravity(atom/AT, turf/T)
+	if(!T)
+		T = get_turf(AT)
+	var/area/A = get_area(T)
 	if(A && A.has_gravity())
 		return 1
 	return 0

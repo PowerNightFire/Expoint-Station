@@ -9,10 +9,10 @@ var/list/escape_pods_by_name = list()
 /datum/shuttle/autodock/ferry/escape_pod/New()
 	if(name in escape_pods_by_name)
 		CRASH("An escape pod with the name '[name]' has already been defined.")
-	move_time = SSevac.evacuation_controller.evac_transit_delay + rand(-30, 60)
+	move_time = evacuation_controller.evac_transit_delay + rand(-30, 60)
 	escape_pods_by_name[name] = src
 	escape_pods += src
-	move_time = round(SSevac.evacuation_controller.evac_transit_delay/10)
+	move_time = round(evacuation_controller.evac_transit_delay/10)
 
 	..()
 
@@ -62,7 +62,7 @@ var/list/escape_pods_by_name = list()
 		"override_enabled" = docking_program.override_enabled,
 		"door_state" = 	docking_program.memory["door_status"]["state"],
 		"door_lock" = 	docking_program.memory["door_status"]["lock"],
-		"can_force" = pod.can_force() || (SSevac.evacuation_controller.has_evacuated() && pod.can_launch()),	//allow players to manually launch ahead of time if the shuttle leaves
+		"can_force" = pod.can_force() || (evacuation_controller.has_evacuated() && pod.can_launch()),	//allow players to manually launch ahead of time if the shuttle leaves
 		"is_armed" = pod.arming_controller.armed,
 	)
 
@@ -75,14 +75,14 @@ var/list/escape_pods_by_name = list()
 		ui.set_auto_update(1)
 
 /obj/machinery/embedded_controller/radio/simple_docking_controller/escape_pod/OnTopic(user, href_list)
-	if(href_list["command"] == "manual_arm")
+	if(href_list["manual_arm"])
 		pod.arming_controller.arm()
 		return TOPIC_REFRESH
 
-	if(href_list["command"] == "force_launch")
+	if(href_list["force_launch"])
 		if (pod.can_force())
 			pod.force_launch(src)
-		else if (SSevac.evacuation_controller.has_evacuated() && pod.can_launch())	//allow players to manually launch ahead of time if the shuttle leaves
+		else if (evacuation_controller.has_evacuated() && pod.can_launch())	//allow players to manually launch ahead of time if the shuttle leaves
 			pod.launch(src)
 		return TOPIC_REFRESH
 
@@ -134,7 +134,7 @@ var/list/escape_pods_by_name = list()
 /datum/computer/file/embedded_program/docking/simple/escape_pod_berth/proc/arm()
 	if(!armed)
 		armed = 1
-		toggleDoor(memory["door_status"], tag_door, TRUE, "open")
+		open_door()
 
 
 /datum/computer/file/embedded_program/docking/simple/escape_pod_berth/receive_user_command(command)
@@ -145,7 +145,7 @@ var/list/escape_pods_by_name = list()
 /datum/computer/file/embedded_program/docking/simple/escape_pod_berth/process()
 	..()
 	if (eject_time && world.time >= eject_time && !closing)
-		toggleDoor(memory["door_status"], tag_door, TRUE, "close")
+		close_door()
 		closing = 1
 
 /datum/computer/file/embedded_program/docking/simple/escape_pod_berth/prepare_for_docking()
@@ -164,15 +164,11 @@ var/list/escape_pods_by_name = list()
 /datum/computer/file/embedded_program/docking/simple/escape_pod
 	var/tag_pump
 
-/datum/computer/file/embedded_program/docking/simple/escape_pod/reset_id_tags(base_tag)
-	. = ..()
-	if (istype(master, /obj/machinery/embedded_controller/radio/simple_docking_controller/escape_pod))
-		var/obj/machinery/embedded_controller/radio/simple_docking_controller/escape_pod/controller = master
-		tag_pump = (!base_tag && controller.tag_pump) || "[id_tag]_pump"
-
-/datum/computer/file/embedded_program/docking/simple/escape_pod/get_receive_filters()
-	. = ..()
-	.[tag_pump] = "main pumps"
+/datum/computer/file/embedded_program/docking/simple/escape_pod/New(var/obj/machinery/embedded_controller/M)
+	..(M)
+	if (istype(M, /obj/machinery/embedded_controller/radio/simple_docking_controller/escape_pod))
+		var/obj/machinery/embedded_controller/radio/simple_docking_controller/escape_pod/controller = M
+		tag_pump = controller.tag_pump ? controller.tag_pump : "[id_tag]_pump"
 
 /datum/computer/file/embedded_program/docking/simple/escape_pod/finish_undocking()
 	. = ..()

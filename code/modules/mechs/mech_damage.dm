@@ -28,10 +28,10 @@
 	return def_zone //Careful with effects, mechs shouldn't be stunned
 	
 /mob/living/exosuit/hitby(atom/movable/AM, var/datum/thrownthing/TT)
-	..()
 	if(LAZYLEN(pilots) && (!hatch_closed || !prob(body.pilot_coverage)))
 		var/mob/living/pilot = pick(pilots)
 		return pilot.hitby(AM, TT)
+	. = ..()
 
 /mob/living/exosuit/bullet_act(obj/item/projectile/P, def_zone, used_weapon)
 	switch(def_zone)
@@ -49,11 +49,8 @@
 			. += body_armor
 
 /mob/living/exosuit/updatehealth()
-	if(body)
-		maxHealth = body.mech_health
-		health = maxHealth-(getFireLoss()+getBruteLoss())
-	else
-		health = 0 // Shouldn't exist without a body, no idea how the runtime is being generated.
+	maxHealth = body ? body.mech_health : 0
+	health = maxHealth-(getFireLoss()+getBruteLoss())
 
 /mob/living/exosuit/adjustFireLoss(var/amount, var/obj/item/mech_component/MC = pick(list(arms, legs, body, head)))
 	if(MC)

@@ -1,5 +1,5 @@
-/decl/language/human/monkey
-	name = "Primitive"
+/datum/language/human/monkey
+	name = LANGUAGE_PRIMITIVE
 	desc = "Ook ook ook."
 	speech_verb = "chimpers"
 	ask_verb = "chimpers"

@@ -17,7 +17,7 @@
 /obj/structure/cult/pylon
 	name = "Pylon"
 	desc = "A floating crystal that hums with an unearthly energy."
-	icon = 'icons/obj/structures/pylon.dmi'
+	icon = 'icons/obj/pylon.dmi'
 	icon_state = "pylon"
 	var/isbroken = 0
 	light_max_bright = 0.5
@@ -26,16 +26,16 @@
 	light_color = "#3e0000"
 	var/obj/item/wepon = null
 
-/obj/structure/cult/pylon/attack_hand(mob/M)
+/obj/structure/cult/pylon/attack_hand(mob/M as mob)
 	attackpylon(M, 5)
 
 /obj/structure/cult/pylon/attack_generic(var/mob/user, var/damage)
 	attackpylon(user, damage)
 
-/obj/structure/cult/pylon/attackby(obj/item/W, mob/user)
+/obj/structure/cult/pylon/attackby(obj/item/W as obj, mob/user as mob)
 	attackpylon(user, W.force)
 
-/obj/structure/cult/pylon/proc/attackpylon(mob/user, var/damage)
+/obj/structure/cult/pylon/proc/attackpylon(mob/user as mob, var/damage)
 	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 	if(!isbroken)
 		if(prob(1+ damage * 5))
@@ -62,16 +62,13 @@
 		playsound(get_turf(src), 'sound/effects/Glasshit.ogg', 75, 1)
 
 
-/obj/structure/cult/pylon/proc/repair(mob/user)
+/obj/structure/cult/pylon/proc/repair(mob/user as mob)
 	if(isbroken)
 		to_chat(user, "You repair the pylon.")
 		isbroken = 0
 		set_density(1)
 		icon_state = "pylon"
 		set_light(0.5)
-
-/obj/structure/cult/pylon/get_artifact_scan_data()
-	return "Tribal pylon - subject resembles statues/emblems built by cargo cult civilisations to honour energy systems from post-warp civilisations."
 
 /obj/structure/cult/tome
 	name = "Desk"
@@ -116,8 +113,8 @@
 		/mob/living/simple_animal/hostile/faithless/cult
 	)
 
-/obj/effect/gateway/active/Initialize()
-	. = ..()
+/obj/effect/gateway/active/New()
+	..()
 	addtimer(CALLBACK(src, .proc/create_and_delete), rand(30,60) SECONDS)
 
 
@@ -135,8 +132,8 @@
 	if(M.stat != DEAD)
 		if(M.HasMovementHandler(/datum/movement_handler/mob/transformation))
 			return
-
-		M.handle_pre_transformation()
+		if(M.has_brain_worms())
+			return //Borer stuff - RR
 
 		if(iscultist(M)) return
 		if(!ishuman(M) && !isrobot(M)) return
@@ -153,7 +150,7 @@
 		else
 			for(var/obj/item/W in M)
 				M.drop_from_inventory(W)
-				if(istype(W, /obj/item/implant))
+				if(istype(W, /obj/item/weapon/implant))
 					qdel(W)
 
 		var/mob/living/new_mob = new /mob/living/simple_animal/corgi(A.loc)

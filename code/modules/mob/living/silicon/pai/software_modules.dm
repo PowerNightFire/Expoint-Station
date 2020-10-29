@@ -58,7 +58,7 @@
 			// Find the carrier
 			while(!istype(M, /mob/living))
 				if(!M || !M.loc || count > 6)
-					//For a runtime where M ends up in nullspace
+					//For a runtime where M ends up in nullspace (similar to bluespace but less colourful)
 					to_chat(src, "You are not being carried by anyone!")
 					return 0
 				M = M.loc
@@ -98,7 +98,7 @@
 			var/ch_stat = user.silicon_radio.channels[ch_name]
 			var/ch_dat[0]
 			ch_dat["name"] = ch_name
-			// FREQ_LISTENING is const in /obj/item/radio
+			// FREQ_LISTENING is const in /obj/item/device/radio
 			ch_dat["listening"] = !!(ch_stat & user.silicon_radio.FREQ_LISTENING)
 			channels[++channels.len] = ch_dat
 
@@ -175,7 +175,7 @@
 		else if(href_list["cable"])
 			var/turf/T = get_turf_or_move(P.loc)
 			P.hack_aborted = 0
-			P.cable = new /obj/item/pai_cable(T)
+			P.cable = new /obj/item/weapon/pai_cable(T)
 			for(var/mob/M in viewers(T))
 				M.show_message("<span class='warning'>A port on [P] opens to reveal [P.cable], which promptly falls to the floor.</span>", 3,
 				               "<span class='warning'>You hear the soft click of something light and hard falling to the ground.</span>", 2)
@@ -238,8 +238,7 @@
 			var/gases[0]
 			for(var/g in env.gas)
 				var/gas[0]
-				var/decl/material/mat = decls_repository.get_decl(g)
-				gas["name"] = capitalize(mat.gas_name)
+				gas["name"] = gas_data.name[g]
 				gas["percent"] = round((env.gas[g] / t_moles) * 100)
 				gases[++gases.len] = gas
 			data["gas"] = gases
@@ -277,7 +276,7 @@
 	name = "Universal Translator"
 	ram_cost = 35
 	id = "translator"
-	var/list/languages = list(/decl/language/human/common)
+	var/list/languages = list(LANGUAGE_SPACER, LANGUAGE_GUTTER, LANGUAGE_UNATHI_SINTA, LANGUAGE_SKRELLIAN, LANGUAGE_EAL, LANGUAGE_HUMAN_ARABIC, LANGUAGE_HUMAN_CHINESE, LANGUAGE_HUMAN_IBERIAN, LANGUAGE_HUMAN_INDIAN, LANGUAGE_HUMAN_RUSSIAN, LANGUAGE_HUMAN_SELENIAN)
 
 	toggle(mob/living/silicon/pai/user)
 		// 	Sol Common, Tradeband and Gutter are added with New() and are therefore the current default, always active languages

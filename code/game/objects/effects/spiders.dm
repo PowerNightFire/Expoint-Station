@@ -8,39 +8,25 @@
 	var/health = 15
 
 //similar to weeds, but only barfed out by nurses manually
-/obj/effect/spider/explosion_act(severity)
-	..()
-	if(!QDELETED(src) && (severity == 1 || (severity == 2 && prob(50) || (severity == 3 && prob(5)))))
-		qdel(src)
+/obj/effect/spider/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			qdel(src)
+		if(2.0)
+			if (prob(50))
+				qdel(src)
+		if(3.0)
+			if (prob(5))
+				qdel(src)
+	return
 
-/obj/effect/spider/attack_hand(mob/living/user)
-
-	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
-	user.do_attack_animation(src)
-	if(prob(50))
-		visible_message(SPAN_WARNING("\The [user] tries to squash \the [src], but misses!"))
-		disturbed()
-		return
-
-	var/showed_msg = FALSE
-	if(ishuman(user))
-		var/mob/living/carbon/human/H = user
-		var/decl/natural_attack/attack = H.get_unarmed_attack(src)
-		if(istype(attack))
-			attack.show_attack(H, src, H.zone_sel.selecting, 1)
-			showed_msg = TRUE
-	if(!showed_msg)
-		visible_message(SPAN_DANGER("\The [user] squashes \the [src] flat!"))
-
-	die()
-
-/obj/effect/spider/attackby(var/obj/item/W, var/mob/user)
+/obj/effect/spider/attackby(var/obj/item/weapon/W, var/mob/user)
 	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 
 	if(W.attack_verb.len)
-		visible_message("<span class='warning'>\The [src] has been [pick(W.attack_verb)] with \the [W][(user ? " by [user]." : ".")]</span>")
+		visible_message("<span class='warning'>\The [src] have been [pick(W.attack_verb)] with \the [W][(user ? " by [user]." : ".")]</span>")
 	else
-		visible_message("<span class='warning'>\The [src] has been attacked with \the [W][(user ? " by [user]." : ".")]</span>")
+		visible_message("<span class='warning'>\The [src] have been attacked with \the [W][(user ? " by [user]." : ".")]</span>")
 
 	var/damage = W.force / 4.0
 
@@ -48,7 +34,7 @@
 		damage += 5
 
 	if(isWelder(W))
-		var/obj/item/weldingtool/WT = W
+		var/obj/item/weapon/weldingtool/WT = W
 
 		if(WT.remove_fuel(0, user))
 			damage = 15
@@ -99,7 +85,7 @@
 
 /obj/effect/spider/eggcluster/Initialize(mapload, atom/parent)
 	. = ..()
-	color = parent?.color || color
+	get_light_and_color(parent)
 	pixel_x = rand(3,-3)
 	pixel_y = rand(3,-3)
 	START_PROCESSING(SSobj, src)
@@ -125,14 +111,6 @@
 			if(O)
 				O.implants += spiderling
 		qdel(src)
-
-/obj/effect/spider/proc/disturbed()
-	return
-
-/obj/effect/spider/proc/die()
-	visible_message("<span class='alert'>[src] dies!</span>")
-	new /obj/effect/decal/cleanable/spiderling_remains(loc)
-	qdel(src)
 
 /obj/effect/spider/spiderling
 	name = "spiderling"
@@ -167,11 +145,11 @@
 		dormant = FALSE
 
 	if(dormant)
-		GLOB.moved_event.register(src, src, /obj/effect/spider/proc/disturbed)
+		GLOB.moved_event.register(src, src, /obj/effect/spider/spiderling/proc/disturbed)
 	else
 		START_PROCESSING(SSobj, src)
 
-	color = parent?.color || color
+	get_light_and_color(parent)
 	. = ..()
 
 /obj/effect/spider/spiderling/mundane
@@ -182,25 +160,26 @@
 
 /obj/effect/spider/spiderling/Destroy()
 	if(dormant)
-		GLOB.moved_event.unregister(src, src, /obj/effect/spider/proc/disturbed)
+		GLOB.moved_event.unregister(src, src, /obj/effect/spider/spiderling/proc/disturbed)
 	STOP_PROCESSING(SSobj, src)
 	walk(src, 0) // Because we might have called walk_to, we must stop the walk loop or BYOND keeps an internal reference to us forever.
 	. = ..()
 
-/obj/effect/spider/spiderling/attackby(var/obj/item/W, var/mob/user)
+/obj/effect/spider/spiderling/attackby(var/obj/item/weapon/W, var/mob/user)
 	..()
 	if(health > 0)
 		disturbed()
 
 /obj/effect/spider/spiderling/Crossed(var/mob/living/L)
-	if(dormant && istype(L) && L.mob_size > MOB_SIZE_TINY)
+	if(dormant && istype(L) && L.mob_size > MOB_TINY)
 		disturbed()
 
-/obj/effect/spider/spiderling/disturbed()
+/obj/effect/spider/spiderling/proc/disturbed()
 	if(!dormant)
 		return
 	dormant = FALSE
-	GLOB.moved_event.unregister(src, src, /obj/effect/spider/proc/disturbed)
+
+	GLOB.moved_event.unregister(src, src, /obj/effect/spider/spiderling/proc/disturbed)
 	START_PROCESSING(SSobj, src)
 
 /obj/effect/spider/spiderling/Bump(atom/user)
@@ -208,6 +187,11 @@
 		forceMove(user.loc)
 	else
 		..()
+
+/obj/effect/spider/spiderling/proc/die()
+	visible_message("<span class='alert'>[src] dies!</span>")
+	new /obj/effect/decal/cleanable/spiderling_remains(loc)
+	qdel(src)
 
 /obj/effect/spider/spiderling/healthcheck()
 	if(health <= 0)
@@ -238,7 +222,7 @@
 
 	if(loc)
 		var/datum/gas_mixture/environment = loc.return_air()
-		if(environment && environment.gas[/decl/material/gas/methyl_bromide] > 0)
+		if(environment && environment.gas[GAS_METHYL_BROMIDE] > 0)
 			die()
 			return
 
@@ -268,7 +252,7 @@
 
 	if(isturf(loc))
 		if(prob(25))
-			var/list/nearby = RANGE_TURFS(src, 5) - loc
+			var/list/nearby = trange(5, src) - loc
 			if(nearby.len)
 				var/target_atom = pick(nearby)
 				walk_to(src, target_atom, 5)

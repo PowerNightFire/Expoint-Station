@@ -1,13 +1,13 @@
 /area
 	var/list/req_access = list()
-	var/secure = FALSE    // unsecure areas will have doors between them use access diff; secure ones use union.
+	var/secure = TRUE    // unsecure areas will have doors between them use access diff; secure ones use union.
 
 // Given two areas, find the minimal req_access needed such that (return value) + (area access) >= (other area access) and vice versa
 /proc/req_access_diff(area/first, area/second)
 	if(!length(first.req_access))
-		return second.req_access?.Copy()
+		return second.req_access.Copy()
 	if(!length(second.req_access))
-		return first.req_access?.Copy()
+		return first.req_access.Copy()
 	. = list()
 	for(var/requirement in first.req_access)
 		add_access_requirement(., get_minimal_requirement(second.req_access, requirement))
@@ -17,10 +17,10 @@
 // Given two areas, find the minimal req_access needed such that req_access >= (area access) + (other area access)
 /proc/req_access_union(area/first, area/second)
 	if(!length(first.req_access))
-		return second.req_access?.Copy()
+		return second.req_access.Copy()
 	if(!length(second.req_access))
-		return first.req_access?.Copy()
-	. = first.req_access?.Copy()
+		return first.req_access.Copy()
+	. = first.req_access.Copy()
 	for(var/requirement in second.req_access)
 		add_access_requirement(., requirement)
 

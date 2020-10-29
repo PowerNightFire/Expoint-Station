@@ -6,9 +6,6 @@
 	rock_colors = list(COLOR_ASTEROID_ROCK, COLOR_GRAY80, COLOR_BROWN)
 	plant_colors = list("#0e1e14","#1a3e38","#5a7467","#9eab88","#6e7248", "RANDOM")
 	map_generators = list(/datum/random_map/noise/exoplanet/grass)
-	flora_diversity = 6
-	fauna_types = list(/mob/living/simple_animal/yithian, /mob/living/simple_animal/tindalos, /mob/living/simple_animal/hostile/retaliate/jelly)
-	megafauna_types = list(/mob/living/simple_animal/hostile/retaliate/parrot/space/megafauna, /mob/living/simple_animal/hostile/retaliate/goose/dire)
 
 /obj/effect/overmap/visitable/sector/exoplanet/grass/generate_map()
 	if(prob(40))
@@ -49,7 +46,7 @@
 			S.set_trait(TRAIT_SPREAD,1)
 
 /area/exoplanet/grass
-	base_turf = /turf/exterior/wildgrass
+	base_turf = /turf/simulated/floor/exoplanet/grass
 	ambience = list('sound/effects/wind/wind_2_1.ogg','sound/effects/wind/wind_2_2.ogg','sound/effects/wind/wind_3_1.ogg','sound/effects/wind/wind_4_1.ogg','sound/ambience/eeriejungle2.ogg','sound/ambience/eeriejungle1.ogg')
 
 /area/exoplanet/grass/play_ambience(var/mob/living/L)
@@ -61,8 +58,11 @@
 /datum/random_map/noise/exoplanet/grass
 	descriptor = "grass exoplanet"
 	smoothing_iterations = 2
-	land_type = /turf/exterior/wildgrass
-	water_type = /turf/exterior/water
+	land_type = /turf/simulated/floor/exoplanet/grass
+	water_type = /turf/simulated/floor/exoplanet/water/shallow
 
 	flora_prob = 10
 	large_flora_prob = 30
+	flora_diversity = 6
+	fauna_types = list(/mob/living/simple_animal/yithian, /mob/living/simple_animal/tindalos, /mob/living/simple_animal/hostile/retaliate/jelly)
+	megafauna_types = list(/mob/living/simple_animal/hostile/retaliate/parrot/space/megafauna, /mob/living/simple_animal/hostile/retaliate/goose/dire)

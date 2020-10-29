@@ -3,13 +3,12 @@
 	desc = "Embedded augment."
 	icon = 'icons/obj/augment.dmi'
 	//By default these fit on both flesh and robotic organs and are robotic
-	status = ORGAN_PROSTHETIC
-	default_action_type = /datum/action/item_action/organ/augment
-	material = /decl/material/solid/metal/steel
-	var/descriptor = ""
-	var/known = TRUE
+	status = ORGAN_ROBOTIC
 	var/augment_flags = AUGMENTATION_MECHANIC | AUGMENTATION_ORGANIC
 	var/list/allowed_organs = list(BP_AUGMENT_R_ARM, BP_AUGMENT_L_ARM)
+	default_action_type = /datum/action/item_action/organ/augment
+	var/descriptor = ""
+	var/known = TRUE
 
 /obj/item/organ/internal/augment/Initialize()
 	. = ..()
@@ -31,7 +30,7 @@
 /obj/item/organ/internal/augment/proc/onRemove()
 	return
 
-/obj/item/organ/internal/augment/attackby(obj/item/W, mob/user)
+/obj/item/organ/internal/augment/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isScrewdriver(W) && allowed_organs.len > 1)
 		//Here we can adjust location for implants that allow multiple slots
 		organ_tag = input(user, "Adjust installation parameters") as null|anything in allowed_organs

@@ -17,8 +17,8 @@
 	. = FALSE
 	if(BP_IS_CRYSTAL(limb))
 		to_chat(user, SPAN_WARNING("You cannot use \the [src] to treat a crystalline limb."))
-	else if(BP_IS_PROSTHETIC(limb))
-		to_chat(user, SPAN_WARNING("You cannot use \the [src] to treat a prosthetic limb."))
+	else if(BP_IS_ROBOTIC(limb))
+		to_chat(user, SPAN_WARNING("You cannot use \the [src] to treat a robotic limb."))
 	else
 		. = TRUE
 
@@ -70,7 +70,7 @@
 	singular_name = "gauze length"
 	desc = "Some sterile gauze to wrap around bloody stumps."
 	icon_state = "brutepack"
-	origin_tech = "{'biotech':1}"
+	origin_tech = list(TECH_BIO = 1)
 	animal_heal = 5
 	apply_sounds = list('sound/effects/rip1.ogg','sound/effects/rip2.ogg')
 	amount = 10
@@ -128,7 +128,7 @@
 	singular_name = "ointment"
 	icon_state = "ointment"
 	heal_burn = 1
-	origin_tech = "{'biotech':1}"
+	origin_tech = list(TECH_BIO = 1)
 	animal_heal = 4
 	apply_sounds = list('sound/effects/ointment.ogg')
 
@@ -162,7 +162,7 @@
 	desc = "An advanced trauma kit for severe injuries."
 	icon_state = "traumakit"
 	heal_brute = 0
-	origin_tech = "{'biotech':1}"
+	origin_tech = list(TECH_BIO = 1)
 	animal_heal = 12
 	apply_sounds = list('sound/effects/rip1.ogg','sound/effects/rip2.ogg','sound/effects/tape.ogg')
 	amount = 10
@@ -218,7 +218,7 @@
 	desc = "An advanced treatment kit for severe burns."
 	icon_state = "burnkit"
 	heal_burn = 5
-	origin_tech = "{'biotech':1}"
+	origin_tech = list(TECH_BIO = 1)
 	animal_heal = 7
 	apply_sounds = list('sound/effects/ointment.ogg')
 
@@ -259,8 +259,8 @@
 	var/list/splintable_organs = list(BP_L_ARM, BP_R_ARM, BP_L_LEG, BP_R_LEG, BP_L_HAND, BP_R_HAND, BP_L_FOOT, BP_R_FOOT)	//List of organs you can splint, natch.
 
 /obj/item/stack/medical/splint/check_limb_state(var/mob/user, var/obj/item/organ/external/limb)
-	if(BP_IS_PROSTHETIC(limb))
-		to_chat(user, SPAN_WARNING("You cannot use \the [src] to treat a prosthetic limb."))
+	if(BP_IS_ROBOTIC(limb))
+		to_chat(user, SPAN_WARNING("You cannot use \the [src] to treat a robotic limb."))
 		return FALSE
 	return TRUE
 
@@ -273,19 +273,19 @@
 		var/obj/item/organ/external/affecting = H.get_organ(user.zone_sel.selecting) //nullchecked by ..()
 		var/limb = affecting.name
 		if(!(affecting.organ_tag in splintable_organs))
-			to_chat(user, SPAN_WARNING("You can't use \the [src] to apply a splint there!"))
+			to_chat(user, SPAN_DANGER("You can't use \the [src] to apply a splint there!"))
 			return
 		if(affecting.splinted)
-			to_chat(user, SPAN_WARNING("\The [M]'s [limb] is already splinted!"))
+			to_chat(user, SPAN_DANGER("[M]'s [limb] is already splinted!"))
 			return
 		if (M != user)
-			user.visible_message(SPAN_NOTICE("\The [user] starts to apply \the [src] to [M]'s [limb]."), SPAN_DANGER("You start to apply \the [src] to [M]'s [limb]."), SPAN_DANGER("You hear something being wrapped."))
+			user.visible_message(SPAN_DANGER("[user] starts to apply \the [src] to [M]'s [limb]."), SPAN_DANGER("You start to apply \the [src] to [M]'s [limb]."), SPAN_DANGER("You hear something being wrapped."))
 		else
-			var/obj/item/organ/external/using = user.get_organ(user.get_active_held_item_slot())
-			if(istype(using) && (affecting == using || (affecting in using.children) || affecting.organ_tag == using.parent_organ))
-				to_chat(user, SPAN_WARNING("You can't apply a splint to the arm you're using!"))
+			if(( !user.hand && (affecting.organ_tag in list(BP_R_ARM, BP_R_HAND)) || \
+				user.hand && (affecting.organ_tag in list(BP_L_ARM, BP_L_HAND)) ))
+				to_chat(user, SPAN_DANGER("You can't apply a splint to the arm you're using!"))
 				return
-			user.visible_message(SPAN_NOTICE("\The [user] starts to apply \the [src] to their [limb]."), SPAN_DANGER("You start to apply \the [src] to your [limb]."), SPAN_DANGER("You hear something being wrapped."))
+			user.visible_message(SPAN_DANGER("[user] starts to apply \the [src] to their [limb]."), SPAN_DANGER("You start to apply \the [src] to your [limb]."), SPAN_DANGER("You hear something being wrapped."))
 		if(user.do_skilled(5 SECONDS, SKILL_MEDICAL, M))
 			if((M == user && prob(75)) || prob(user.skill_fail_chance(SKILL_MEDICAL,50, SKILL_ADEPT)))
 				user.visible_message(SPAN_DANGER("\The [user] fumbles [src]."), SPAN_DANGER("You fumble [src]."), SPAN_DANGER("You hear something being wrapped."))
@@ -296,9 +296,9 @@
 					M.verbs += /mob/living/carbon/human/proc/remove_splints
 					S.forceMove(affecting)
 					if (M != user)
-						user.visible_message(SPAN_NOTICE("\The [user] finishes applying [src] to [M]'s [limb]."), SPAN_DANGER("You finish applying \the [src] to [M]'s [limb]."), SPAN_DANGER("You hear something being wrapped."))
+						user.visible_message(SPAN_DANGER("\The [user] finishes applying [src] to [M]'s [limb]."), SPAN_DANGER("You finish applying \the [src] to [M]'s [limb]."), SPAN_DANGER("You hear something being wrapped."))
 					else
-						user.visible_message(SPAN_NOTICE("\The [user] successfully applies [src] to their [limb]."), SPAN_DANGER("You successfully apply \the [src] to your [limb]."), SPAN_DANGER("You hear something being wrapped."))
+						user.visible_message(SPAN_DANGER("\The [user] successfully applies [src] to their [limb]."), SPAN_DANGER("You successfully apply \the [src] to your [limb]."), SPAN_DANGER("You hear something being wrapped."))
 					return
 				S.dropInto(src.loc) //didn't get applied, so just drop it
 			user.visible_message(SPAN_DANGER("\The [user] fails to apply [src]."), SPAN_DANGER("You fail to apply [src]."), SPAN_DANGER("You hear something being wrapped."))
@@ -312,6 +312,7 @@
 	amount = 1
 	splintable_organs = list(BP_L_ARM, BP_R_ARM, BP_L_LEG, BP_R_LEG)
 
+// For Kharmaani/adherent.
 /obj/item/stack/medical/resin
 	name = "resin patches"
 	singular_name = "resin patch"
@@ -333,7 +334,7 @@
 	heal_burn =  5
 
 /obj/item/stack/medical/resin/check_limb_state(var/mob/user, var/obj/item/organ/external/limb)
-	if(!BP_IS_PROSTHETIC(limb) && !BP_IS_CRYSTAL(limb))
+	if(!BP_IS_ROBOTIC(limb) && !BP_IS_CRYSTAL(limb))
 		to_chat(user, SPAN_WARNING("You cannot use \the [src] to treat an organic limb."))
 		return FALSE
 	return TRUE

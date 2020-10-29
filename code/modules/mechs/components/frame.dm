@@ -1,9 +1,5 @@
 /obj/item/frame_holder
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/plastic = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/metal/osmium = MATTER_AMOUNT_TRACE
-	)
+	matter = list(MATERIAL_STEEL = 175000, MATERIAL_PLASTIC = 50000, MATERIAL_OSMIUM = 30000)
 
 /obj/item/frame_holder/Initialize(mapload, var/newloc)
 	..()
@@ -17,9 +13,6 @@
 	icon_state = "backbone"
 	density = 1
 	pixel_x = -8
-	material = /decl/material/solid/metal/steel
-	atom_flags = ATOM_FLAG_CAN_BE_PAINTED
-	dir = SOUTH
 
 	// Holders for the final product.
 	var/obj/item/mech_component/manipulators/arms
@@ -29,11 +22,12 @@
 	var/is_wired = 0
 	var/is_reinforced = 0
 	var/set_name
+	dir = SOUTH
 
-/obj/structure/heavy_vehicle_frame/set_color(new_colour)
+/obj/structure/heavy_vehicle_frame/proc/set_colour(var/new_colour)
 	var/painted_component = FALSE
 	for(var/obj/item/mech_component/comp in list(body, arms, legs, head))
-		if(comp.set_color(new_colour))
+		if(comp.set_colour(new_colour))
 			painted_component = TRUE
 	if(painted_component)
 		queue_icon_update()
@@ -241,7 +235,7 @@
 		is_reinforced = (is_reinforced == FRAME_REINFORCED_SECURE) ? FRAME_REINFORCED : FRAME_REINFORCED_SECURE
 	// Welding metal.
 	else if(isWelder(thing))
-		var/obj/item/weldingtool/WT = thing
+		var/obj/item/weapon/weldingtool/WT = thing
 		if(!is_reinforced)
 			to_chat(user, SPAN_WARNING("There is no metal to secure inside \the [src]."))
 			return
@@ -269,7 +263,7 @@
 		if(arms)
 			to_chat(user, SPAN_WARNING("\The [src] already has manipulators installed."))
 			return
-		if(install_component(thing, user))
+		if(install_component(thing, user)) 
 			if(arms)
 				thing.dropInto(loc)
 				return
@@ -278,7 +272,7 @@
 		if(legs)
 			to_chat(user, SPAN_WARNING("\The [src] already has a propulsion system installed."))
 			return
-		if(install_component(thing, user))
+		if(install_component(thing, user)) 
 			if(legs)
 				thing.dropInto(loc)
 				return
@@ -287,7 +281,7 @@
 		if(head)
 			to_chat(user, SPAN_WARNING("\The [src] already has a sensor array installed."))
 			return
-		if(install_component(thing, user))
+		if(install_component(thing, user)) 
 			if(head)
 				thing.dropInto(loc)
 				return

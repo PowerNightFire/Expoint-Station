@@ -25,6 +25,7 @@
 		)
 
 /obj/item/clothing/suit/space
+
 	var/can_breach = 1                      // Set to 0 to disregard all breaching.
 	var/list/breaches = list()              // Breach datum container.
 	var/resilience = 0.2                    // Multiplier that turns damage into breach class. 1 is 100% of damage to breach, 0.1 is 10%. 0.2 -> 50 brute/burn damage to cause 10 breach damage
@@ -175,13 +176,13 @@
 
 //Handles repairs (and also upgrades).
 
-/obj/item/clothing/suit/space/attackby(obj/item/W, mob/user)
+/obj/item/clothing/suit/space/attackby(obj/item/W as obj, mob/user as mob)
 	if(istype(W,/obj/item/stack/material))
 		var/repair_power = 0
-		switch(W.get_material_type())
-			if(/decl/material/solid/metal/steel)
+		switch(W.get_material_name())
+			if(MATERIAL_STEEL)
 				repair_power = 2
-			if(/decl/material/solid/plastic)
+			if(MATERIAL_PLASTIC)
 				repair_power = 1
 
 		if(!repair_power)
@@ -215,7 +216,7 @@
 			to_chat(user, "There is no structural damage on \the [src] to repair.")
 			return
 
-		var/obj/item/weldingtool/WT = W
+		var/obj/item/weapon/weldingtool/WT = W
 		if(!WT.remove_fuel(5))
 			to_chat(user, "<span class='warning'>You need more welding fuel to repair this suit.</span>")
 			return
@@ -223,7 +224,7 @@
 		repair_breaches(BRUTE, 3, user)
 		return
 
-	else if(istype(W, /obj/item/tape_roll))
+	else if(istype(W, /obj/item/weapon/tape_roll))
 		var/datum/breach/target_breach		//Target the largest unpatched breach.
 		for(var/datum/breach/B in breaches)
 			if(B.patched)

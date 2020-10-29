@@ -27,22 +27,22 @@
 		qdel(src)
 		return
 
-/obj/machinery/shield/Initialize()
-	. = ..()
+/obj/machinery/shield/New()
 	src.set_dir(pick(1,2,3,4))
+	..()
 	update_nearby_tiles(need_rebuild=1)
 
 /obj/machinery/shield/Destroy()
 	set_opacity(0)
 	set_density(0)
 	update_nearby_tiles()
-	. = ..()
+	..()
 
 /obj/machinery/shield/CanPass(atom/movable/mover, turf/target, height, air_group)
 	if(!height || air_group) return 0
 	else return ..()
 
-/obj/machinery/shield/attackby(obj/item/W, mob/user)
+/obj/machinery/shield/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(!istype(W)) return
 
 	//Calculate damage
@@ -67,10 +67,18 @@
 	set_opacity(1)
 	spawn(20) if(!QDELETED(src)) set_opacity(0)
 
-/obj/machinery/shield/explosion_act(severity)
-	. = ..()
-	if(. && ((severity == 1 && prob(75)) || (severity == 2 && prob(50)) || (severity == 3 && prob(25))))
-		physically_destroyed()
+/obj/machinery/shield/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			if (prob(75))
+				qdel(src)
+		if(2.0)
+			if (prob(50))
+				qdel(src)
+		if(3.0)
+			if (prob(25))
+				qdel(src)
+	return
 
 /obj/machinery/shield/emp_act(severity)
 	switch(severity)
@@ -80,28 +88,33 @@
 			if(prob(50))
 				qdel(src)
 
-/obj/machinery/shield/hitby(AM, var/datum/thrownthing/TT)
-	..()
+
+/obj/machinery/shield/hitby(AM as mob|obj, var/datum/thrownthing/TT)
 	//Let everyone know we've been hit!
-	visible_message(SPAN_DANGER("\The [src] was hit by \the [AM]."))
+	visible_message("<span class='notice'><B>\[src] was hit by [AM].</B></span>")
+
 	//Super realistic, resource-intensive, real-time damage calculations.
 	var/tforce = 0
+
 	if(ismob(AM)) // All mobs have a multiplier and a size according to mob_defines.dm
 		var/mob/I = AM
 		tforce = I.mob_size * (TT.speed/THROWFORCE_SPEED_DIVISOR)
 	else
 		var/obj/O = AM
 		tforce = O.throwforce * (TT.speed/THROWFORCE_SPEED_DIVISOR)
+
 	src.health -= tforce
+
 	//This seemed to be the best sound for hitting a force field.
 	playsound(src.loc, 'sound/effects/EMPulse.ogg', 100, 1)
+
 	check_failure()
+
 	//The shield becomes dense to absorb the blow.. purely asthetic.
 	set_opacity(1)
-	spawn(20)
-		if(!QDELETED(src))
-			set_opacity(0)
+	spawn(20) if(!QDELETED(src)) set_opacity(0)
 
+	..()
 /obj/machinery/shieldgen
 	name = "Emergency shield projector"
 	desc = "Used to seal minor hull breaches."
@@ -110,7 +123,7 @@
 	density = 1
 	opacity = 0
 	anchored = 0
-	initial_access = list(access_engine)
+	req_access = list(access_engine)
 	var/const/max_health = 100
 	var/health = max_health
 	var/active = 0
@@ -125,7 +138,7 @@
 
 /obj/machinery/shieldgen/Destroy()
 	collapse_shields()
-	. = ..()
+	..()
 
 /obj/machinery/shieldgen/proc/shields_up()
 	if(active) return 0 //If it's already turned on, how did this get called?
@@ -210,18 +223,20 @@
 	update_icon()
 	return
 
-/obj/machinery/shieldgen/explosion_act(severity)
-	. = ..()
-	if(.)
-		if(severity == 1)
-			health -= 75
-		else if(severity == 2)
-			health -= 30
-			if(prob(15))
-				malfunction = 1
-		else if(severity == 3)
-			health -= 10
-		checkhp()
+/obj/machinery/shieldgen/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			src.health -= 75
+			src.checkhp()
+		if(2.0)
+			src.health -= 30
+			if (prob(15))
+				src.malfunction = 1
+			src.checkhp()
+		if(3.0)
+			src.health -= 10
+			src.checkhp()
+	return
 
 /obj/machinery/shieldgen/emp_act(severity)
 	switch(severity)
@@ -235,7 +250,7 @@
 				malfunction = 1
 	checkhp()
 
-/obj/machinery/shieldgen/interface_interact(mob/user)
+/obj/machinery/shieldgen/interface_interact(mob/user as mob)
 	if(!CanInteract(user, DefaultTopicState()))
 		return FALSE
 	if(locked)
@@ -246,14 +261,14 @@
 		return TRUE
 
 	if (src.active)
-		user.visible_message("<span class='notice'>[html_icon(src)] [user] deactivated the shield generator.</span>", \
-			"<span class='notice'>[html_icon(src)] You deactivate the shield generator.</span>", \
+		user.visible_message("<span class='notice'>[icon2html(src, viewers(get_turf(src)))] [user] deactivated the shield generator.</span>", \
+			"<span class='notice'>[icon2html(src,user)] You deactivate the shield generator.</span>", \
 			"You hear heavy droning fade out.")
 		src.shields_down()
 	else
 		if(anchored)
-			user.visible_message("<span class='notice'>[html_icon(src)] [user] activated the shield generator.</span>", \
-				"<span class='notice'>[html_icon(src)] You activate the shield generator.</span>", \
+			user.visible_message("<span class='notice'>[icon2html(src, viewers(get_turf(src)))] [user] activated the shield generator.</span>", \
+				"<span class='notice'>[icon2html(src, user)] You activate the shield generator.</span>", \
 				"You hear heavy droning.")
 			src.shields_up()
 		else
@@ -266,7 +281,7 @@
 		update_icon()
 		return 1
 
-/obj/machinery/shieldgen/attackby(obj/item/W, mob/user)
+/obj/machinery/shieldgen/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isScrewdriver(W))
 		playsound(src.loc, 'sound/items/Screwdriver.ogg', 100, 1)
 		if(is_open)
@@ -287,7 +302,7 @@
 				to_chat(user, "<span class='notice'>You repair the [src]!</span>")
 				update_icon()
 
-	else if(istype(W, /obj/item/wrench))
+	else if(istype(W, /obj/item/weapon/wrench))
 		if(locked)
 			to_chat(user, "The bolts are covered, unlocking this would retract the covers.")
 			return
@@ -305,7 +320,7 @@
 			anchored = 1
 
 
-	else if(istype(W, /obj/item/card/id) || istype(W, /obj/item/modular_computer/pda))
+	else if(istype(W, /obj/item/weapon/card/id) || istype(W, /obj/item/modular_computer/pda))
 		if(src.allowed(user))
 			src.locked = !src.locked
 			to_chat(user, "The controls are now [src.locked ? "locked." : "unlocked."]")

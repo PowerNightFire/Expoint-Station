@@ -2,11 +2,11 @@
 /obj/machinery/shieldwallgen
 	name = "Shield Generator"
 	desc = "A shield generator."
-	icon = 'icons/obj/machines/shieldgen.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "Shield_Gen"
 	anchored = 0
 	density = 1
-	initial_access = list(list(access_engine_equip, access_research))
+	req_access = list(list(access_engine_equip,access_research))
 	var/active = 0
 	var/power = 0
 	var/locked = 1
@@ -59,17 +59,15 @@
 				"You hear heavy droning.")
 		return TOPIC_REFRESH
 
-/obj/machinery/shieldwallgen/explosion_act(var/severity)
-	. = ..()
-	if(.)
-		switch(severity)
-			if(1)
-				active = 0
-				storedpower = 0
-			if(2)
-				storedpower -= rand(min(storedpower,max_stored_power/2), max_stored_power)
-			if(3)
-				storedpower -= rand(0, max_stored_power)
+/obj/machinery/shieldwallgen/ex_act(var/severity)
+	switch(severity)
+		if(1)
+			active = 0
+			storedpower = 0
+		if(2)
+			storedpower -= rand(min(storedpower,max_stored_power/2), max_stored_power)
+		if(3)
+			storedpower -= rand(0, max_stored_power)
 
 /obj/machinery/shieldwallgen/emp_act(var/severity)
 	switch(severity)
@@ -217,7 +215,7 @@
 			src.anchored = 0
 			return
 
-	if(istype(W, /obj/item/card/id)||istype(W, /obj/item/modular_computer))
+	if(istype(W, /obj/item/weapon/card/id)||istype(W, /obj/item/modular_computer))
 		if (src.allowed(user))
 			src.locked = !src.locked
 			to_chat(user, "Controls are now [src.locked ? "locked." : "unlocked."]")
@@ -292,7 +290,7 @@
 
 /obj/machinery/shieldwall/Destroy()
 	update_nearby_tiles()
-	. = ..()
+	..()
 
 /obj/machinery/shieldwall/attackby(var/obj/item/I, var/mob/user)
 	var/obj/machinery/shieldwallgen/G = prob(50) ? gen_primary : gen_secondary
@@ -323,18 +321,21 @@
 	..()
 	return
 
-/obj/machinery/shieldwall/explosion_act(severity)
-	SHOULD_CALL_PARENT(FALSE)
-	if(!needs_power)
-		return
-	var/obj/machinery/shieldwallgen/G = prob(50) ? gen_primary : gen_secondary
-	switch(severity)
-		if(1)
-			G.storedpower -= rand(30000, min(G.storedpower, 60000))
-		if(2)
-			G.storedpower -= rand(15000, min(G.storedpower, 30000))
-		if(3)
-			G.storedpower -= rand(5000, min(G.storedpower, 15000))
+
+/obj/machinery/shieldwall/ex_act(severity)
+	if(needs_power)
+		var/obj/machinery/shieldwallgen/G = prob(50) ? gen_primary : gen_secondary
+		switch(severity)
+			if(1.0) //big boom
+				G.storedpower -= rand(30000, min(G.storedpower, 60000))
+
+			if(2.0) //medium boom
+				G.storedpower -= rand(15000, min(G.storedpower, 30000))
+
+			if(3.0) //lil boom
+				G.storedpower -= rand(5000, min(G.storedpower, 15000))
+	return
+
 
 /obj/machinery/shieldwall/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
 	if(air_group || (height==0)) return 1

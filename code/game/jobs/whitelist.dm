@@ -35,7 +35,7 @@ var/list/whitelist = list()
 		alien_whitelist = splittext(text, "\n")
 		return 1
 /proc/load_alienwhitelistSQL()
-	var/DBQuery/query = dbcon_old.NewQuery("SELECT * FROM `whitelist`")
+	var/DBQuery/query = dbcon_old.NewQuery("SELECT * FROM whitelist")
 	if(!query.Execute())
 		to_world_log(dbcon_old.ErrorMsg())
 		return 0
@@ -50,7 +50,7 @@ var/list/whitelist = list()
 	return 1
 
 /proc/is_species_whitelisted(mob/M, var/species_name)
-	var/datum/species/S = get_species_by_key(species_name)
+	var/datum/species/S = all_species[species_name]
 	return is_alien_whitelisted(M, S)
 
 //todo: admin aliens
@@ -62,8 +62,8 @@ var/list/whitelist = list()
 	if(check_rights(R_ADMIN, 0, M))
 		return 1
 
-	if(istype(species,/decl/language))
-		var/decl/language/L = species
+	if(istype(species,/datum/language))
+		var/datum/language/L = species
 		if(!(L.flags & (WHITELISTED|RESTRICTED)))
 			return 1
 		return whitelist_lookup(L.name, M.ckey)
@@ -72,7 +72,7 @@ var/list/whitelist = list()
 		var/datum/species/S = species
 		if(!(S.spawn_flags & (SPECIES_IS_WHITELISTED|SPECIES_IS_RESTRICTED)))
 			return 1
-		return whitelist_lookup(S.get_root_species_name(M), M.ckey)
+		return whitelist_lookup(S.get_bodytype(S), M.ckey)
 
 	return 0
 

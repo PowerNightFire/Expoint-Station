@@ -190,7 +190,7 @@
 
 		if(!check_rights(R_ADMIN))	return
 
-		if(!SSticker.mode || !SSevac.evacuation_controller)
+		if(!SSticker.mode || !evacuation_controller)
 			return
 
 		if(SSticker.mode.name == "blob")
@@ -199,10 +199,10 @@
 
 		switch(href_list["call_shuttle"])
 			if("1")
-				if (SSevac.evacuation_controller.call_evacuation(usr, TRUE))
+				if (evacuation_controller.call_evacuation(usr, TRUE))
 					log_and_message_admins("called an evacuation.")
 			if("2")
-				if (SSevac.evacuation_controller.cancel_evacuation())
+				if (evacuation_controller.cancel_evacuation())
 					log_and_message_admins("cancelled an evacuation.")
 
 		href_list["secretsadmin"] = "check_antagonist"
@@ -232,6 +232,7 @@
 
 		switch(href_list["simplemake"])
 			if("observer")			M.change_mob_type( /mob/observer/ghost , null, null, delmob )
+			if("nymph")				M.change_mob_type( /mob/living/carbon/alien/diona , null, null, delmob )
 			if("human")				M.change_mob_type( /mob/living/carbon/human , null, null, delmob, href_list["species"])
 			if("slime")				M.change_mob_type( /mob/living/carbon/slime , null, null, delmob )
 			if("monkey")			M.change_mob_type( /mob/living/carbon/human/monkey , null, null, delmob )
@@ -307,10 +308,10 @@
 		ban_unban_log_save("[key_name(usr)] edited [banned_key]'s ban. Reason: [reason] Duration: [duration]")
 		log_and_message_admins("edited [banned_key]'s ban. Reason: [reason] Duration: [duration]")
 		Banlist.cd = "/base/[banfolder]"
-		Banlist["reason"] << reason
-		Banlist["temp"] << temp
-		Banlist["minutes"] << minutes
-		Banlist["bannedby"] << usr.ckey
+		to_save(Banlist["reason"], reason)
+		to_save(Banlist["temp"], temp)
+		to_save(Banlist["minutes"], minutes)
+		to_save(Banlist["bannedby"], usr.ckey)
 		Banlist.cd = "/base"
 		SSstatistics.add_field("ban_edit",1)
 		unbanpanel()
@@ -343,8 +344,8 @@
 //Regular jobs
 	//Command (Blue)
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
-		jobs += "<tr align='center' bgcolor='ccccff'><th colspan='[length(SSjobs.titles_by_department(DEPT_COMMAND))]'><a href='?src=\ref[src];jobban3=commanddept;jobban4=\ref[M]'>Command Positions</a></th></tr><tr align='center'>"
-		for(var/jobPos in SSjobs.titles_by_department(DEPT_COMMAND))
+		jobs += "<tr align='center' bgcolor='ccccff'><th colspan='[length(SSjobs.titles_by_department(COM))]'><a href='?src=\ref[src];jobban3=commanddept;jobban4=\ref[M]'>Command Positions</a></th></tr><tr align='center'>"
+		for(var/jobPos in SSjobs.titles_by_department(COM))
 			if(!jobPos)	continue
 			var/datum/job/job = SSjobs.get_by_title(jobPos)
 			if(!job) continue
@@ -363,8 +364,8 @@
 
 	//Command Support (Sky Blue)
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
-		jobs += "<tr bgcolor='87ceeb'><th colspan='[length(SSjobs.titles_by_department("support"))]'><a href='?src=\ref[src];jobban3=supportdept;jobban4=\ref[M]'>Command Support Positions</a></th></tr><tr align='center'>"
-		for(var/jobPos in SSjobs.titles_by_department("support"))
+		jobs += "<tr bgcolor='87ceeb'><th colspan='[length(SSjobs.titles_by_department(SPT))]'><a href='?src=\ref[src];jobban3=supportdept;jobban4=\ref[M]'>Command Support Positions</a></th></tr><tr align='center'>"
+		for(var/jobPos in SSjobs.titles_by_department(SPT))
 			if(!jobPos)	continue
 			var/datum/job/job = SSjobs.get_by_title(jobPos)
 			if(!job) continue
@@ -384,8 +385,8 @@
 	//Security (Red)
 		counter = 0
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
-		jobs += "<tr bgcolor='ffddf0'><th colspan='[length(SSjobs.titles_by_department("security"))]'><a href='?src=\ref[src];jobban3=securitydept;jobban4=\ref[M]'>Security Positions</a></th></tr><tr align='center'>"
-		for(var/jobPos in SSjobs.titles_by_department("security"))
+		jobs += "<tr bgcolor='ffddf0'><th colspan='[length(SSjobs.titles_by_department(SEC))]'><a href='?src=\ref[src];jobban3=securitydept;jobban4=\ref[M]'>Security Positions</a></th></tr><tr align='center'>"
+		for(var/jobPos in SSjobs.titles_by_department(SEC))
 			if(!jobPos)	continue
 			var/datum/job/job = SSjobs.get_by_title(jobPos)
 			if(!job) continue
@@ -405,8 +406,8 @@
 	//Engineering (Yellow)
 		counter = 0
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
-		jobs += "<tr bgcolor='fff5cc'><th colspan='[length(SSjobs.titles_by_department("engineering"))]'><a href='?src=\ref[src];jobban3=engineeringdept;jobban4=\ref[M]'>Engineering Positions</a></th></tr><tr align='center'>"
-		for(var/jobPos in SSjobs.titles_by_department("engineering"))
+		jobs += "<tr bgcolor='fff5cc'><th colspan='[length(SSjobs.titles_by_department(ENG))]'><a href='?src=\ref[src];jobban3=engineeringdept;jobban4=\ref[M]'>Engineering Positions</a></th></tr><tr align='center'>"
+		for(var/jobPos in SSjobs.titles_by_department(ENG))
 			if(!jobPos)	continue
 			var/datum/job/job = SSjobs.get_by_title(jobPos)
 			if(!job) continue
@@ -426,8 +427,8 @@
 	//Medical (White)
 		counter = 0
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
-		jobs += "<tr bgcolor='ffeef0'><th colspan='[length(SSjobs.titles_by_department("medical"))]'><a href='?src=\ref[src];jobban3=medicaldept;jobban4=\ref[M]'>Medical Positions</a></th></tr><tr align='center'>"
-		for(var/jobPos in SSjobs.titles_by_department("medical"))
+		jobs += "<tr bgcolor='ffeef0'><th colspan='[length(SSjobs.titles_by_department(MED))]'><a href='?src=\ref[src];jobban3=medicaldept;jobban4=\ref[M]'>Medical Positions</a></th></tr><tr align='center'>"
+		for(var/jobPos in SSjobs.titles_by_department(MED))
 			if(!jobPos)	continue
 			var/datum/job/job = SSjobs.get_by_title(jobPos)
 			if(!job) continue
@@ -447,8 +448,8 @@
 	//Science (Purple)
 		counter = 0
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
-		jobs += "<tr bgcolor='e79fff'><th colspan='[length(SSjobs.titles_by_department("science"))]'><a href='?src=\ref[src];jobban3=sciencedept;jobban4=\ref[M]'>Science Positions</a></th></tr><tr align='center'>"
-		for(var/jobPos in SSjobs.titles_by_department("science"))
+		jobs += "<tr bgcolor='e79fff'><th colspan='[length(SSjobs.titles_by_department(SCI))]'><a href='?src=\ref[src];jobban3=sciencedept;jobban4=\ref[M]'>Science Positions</a></th></tr><tr align='center'>"
+		for(var/jobPos in SSjobs.titles_by_department(SCI))
 			if(!jobPos)	continue
 			var/datum/job/job = SSjobs.get_by_title(jobPos)
 			if(!job) continue
@@ -467,8 +468,8 @@
 
 	//Exploration (Pale Purple)
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
-		jobs += "<tr bgcolor='b784a7'><th colspan='[length(SSjobs.titles_by_department("exploration"))]'><a href='?src=\ref[src];jobban3=explorationdept;jobban4=\ref[M]'>Exploration Positions</a></th></tr><tr align='center'>"
-		for(var/jobPos in SSjobs.titles_by_department("exploration"))
+		jobs += "<tr bgcolor='b784a7'><th colspan='[length(SSjobs.titles_by_department(EXP))]'><a href='?src=\ref[src];jobban3=explorationdept;jobban4=\ref[M]'>Exploration Positions</a></th></tr><tr align='center'>"
+		for(var/jobPos in SSjobs.titles_by_department(EXP))
 			if(!jobPos)	continue
 			var/datum/job/job = SSjobs.get_by_title(jobPos)
 			if(!job) continue
@@ -487,8 +488,8 @@
 
 	//Service (Tea Green)
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
-		jobs += "<tr bgcolor='d0f0c0'><th colspan='[length(SSjobs.titles_by_department("service"))]'><a href='?src=\ref[src];jobban3=servicedept;jobban4=\ref[M]'>Service Positions</a></th></tr><tr align='center'>"
-		for(var/jobPos in SSjobs.titles_by_department("service"))
+		jobs += "<tr bgcolor='d0f0c0'><th colspan='[length(SSjobs.titles_by_department(SRV))]'><a href='?src=\ref[src];jobban3=servicedept;jobban4=\ref[M]'>Service Positions</a></th></tr><tr align='center'>"
+		for(var/jobPos in SSjobs.titles_by_department(SRV))
 			if(!jobPos)	continue
 			var/datum/job/job = SSjobs.get_by_title(jobPos)
 			if(!job) continue
@@ -508,8 +509,8 @@
 
 	//Supply (Khaki)
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
-		jobs += "<tr bgcolor='f0e68c'><th colspan='[length(SSjobs.titles_by_department("supply"))]'><a href='?src=\ref[src];jobban3=supplydept;jobban4=\ref[M]'>Supply Positions</a></th></tr><tr align='center'>"
-		for(var/jobPos in SSjobs.titles_by_department("supply"))
+		jobs += "<tr bgcolor='f0e68c'><th colspan='[length(SSjobs.titles_by_department(SUP))]'><a href='?src=\ref[src];jobban3=supplydept;jobban4=\ref[M]'>Supply Positions</a></th></tr><tr align='center'>"
+		for(var/jobPos in SSjobs.titles_by_department(SUP))
 			if(!jobPos)	continue
 			var/datum/job/job = SSjobs.get_by_title(jobPos)
 			if(!job) continue
@@ -529,8 +530,8 @@
 	//Civilian (Grey)
 		counter = 0
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
-		jobs += "<tr bgcolor='dddddd'><th colspan='[length(SSjobs.titles_by_department("civilian"))]'><a href='?src=\ref[src];jobban3=civiliandept;jobban4=\ref[M]'>Civilian Positions</a></th></tr><tr align='center'>"
-		for(var/jobPos in SSjobs.titles_by_department("civilian"))
+		jobs += "<tr bgcolor='dddddd'><th colspan='[length(SSjobs.titles_by_department(CIV))]'><a href='?src=\ref[src];jobban3=civiliandept;jobban4=\ref[M]'>Civilian Positions</a></th></tr><tr align='center'>"
+		for(var/jobPos in SSjobs.titles_by_department(CIV))
 			if(!jobPos)	continue
 			var/datum/job/job = SSjobs.get_by_title(jobPos)
 			if(!job) continue
@@ -556,8 +557,8 @@
 	//Non-Human (Green)
 		counter = 0
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
-		jobs += "<tr bgcolor='ccffcc'><th colspan='[length(SSjobs.titles_by_department("misc"))+1]'><a href='?src=\ref[src];jobban3=nonhumandept;jobban4=\ref[M]'>Non-human Positions</a></th></tr><tr align='center'>"
-		for(var/jobPos in SSjobs.titles_by_department("misc"))
+		jobs += "<tr bgcolor='ccffcc'><th colspan='[length(SSjobs.titles_by_department(MSC))+1]'><a href='?src=\ref[src];jobban3=nonhumandept;jobban4=\ref[M]'>Non-human Positions</a></th></tr><tr align='center'>"
+		for(var/jobPos in SSjobs.titles_by_department(MSC))
 			if(!jobPos)	continue
 			var/datum/job/job = SSjobs.get_by_title(jobPos)
 			if(!job) continue
@@ -607,7 +608,7 @@
 		jobs += "</tr></table>"
 		#undef ANTAG_COLUMNS
 
-		var/list/misc_roles = list("Botany Roles", "Graffiti")
+		var/list/misc_roles = list("Dionaea", "Graffiti")
 		//Other roles  (BLUE, because I have no idea what other color to make this)
 		jobs += "<table cellpadding='1' cellspacing='0' width='100%'>"
 		jobs += "<tr bgcolor='ccccff'><th colspan='[LAZYLEN(misc_roles)]'>Other Roles</th></tr><tr align='center'>"
@@ -660,68 +661,68 @@
 		var/list/job_list = list()
 		switch(href_list["jobban3"])
 			if("commanddept")
-				for(var/jobPos in SSjobs.titles_by_department(DEPT_COMMAND))
+				for(var/jobPos in SSjobs.titles_by_department(COM))
 					if(!jobPos)	continue
 					var/datum/job/temp = SSjobs.get_by_title(jobPos)
 					if(!temp) continue
 					job_list += temp.title
 			if("supportdept")
-				for(var/jobPos in SSjobs.titles_by_department(DEPT_SUPPORT))
+				for(var/jobPos in SSjobs.titles_by_department(SPT))
 					if(!jobPos)	continue
 					var/datum/job/temp = SSjobs.get_by_title(jobPos)
 					if(!temp) continue
 					job_list += temp.title
 			if("securitydept")
-				for(var/jobPos in SSjobs.titles_by_department(DEPT_COMMAND))
+				for(var/jobPos in SSjobs.titles_by_department(SEC))
 					if(!jobPos)	continue
 					var/datum/job/temp = SSjobs.get_by_title(jobPos)
 					if(!temp) continue
 					job_list += temp.title
 			if("engineeringdept")
-				for(var/jobPos in SSjobs.titles_by_department(DEPT_ENGINEERING))
+				for(var/jobPos in SSjobs.titles_by_department(ENG))
 					if(!jobPos)	continue
 					var/datum/job/temp = SSjobs.get_by_title(jobPos)
 					if(!temp) continue
 					job_list += temp.title
 			if("medicaldept")
-				for(var/jobPos in SSjobs.titles_by_department(DEPT_MEDICAL))
+				for(var/jobPos in SSjobs.titles_by_department(MED))
 					if(!jobPos)	continue
 					var/datum/job/temp = SSjobs.get_by_title(jobPos)
 					if(!temp) continue
 					job_list += temp.title
 			if("sciencedept")
-				for(var/jobPos in SSjobs.titles_by_department(DEPT_SCIENCE))
+				for(var/jobPos in SSjobs.titles_by_department(SCI))
 					if(!jobPos)	continue
 					var/datum/job/temp = SSjobs.get_by_title(jobPos)
 					if(!temp) continue
 					job_list += temp.title
 			if("explorationdept")
-				for(var/jobPos in SSjobs.titles_by_department(DEPT_EXPLORATION))
+				for(var/jobPos in SSjobs.titles_by_department(EXP))
 					if(!jobPos)	continue
 					var/datum/job/temp = SSjobs.get_by_title(jobPos)
 					if(!temp) continue
 					job_list += temp.title
 			if("servicedept")
-				for(var/jobPos in SSjobs.titles_by_department(DEPT_SERVICE))
+				for(var/jobPos in SSjobs.titles_by_department(SRV))
 					if(!jobPos)	continue
 					var/datum/job/temp = SSjobs.get_by_title(jobPos)
 					if(!temp) continue
 					job_list += temp.title
 			if("supplydept")
-				for(var/jobPos in SSjobs.titles_by_department(DEPT_SUPPLY))
+				for(var/jobPos in SSjobs.titles_by_department(SUP))
 					if(!jobPos)	continue
 					var/datum/job/temp = SSjobs.get_by_title(jobPos)
 					if(!temp) continue
 					job_list += temp.title
 			if("civiliandept")
-				for(var/jobPos in SSjobs.titles_by_department(DEPT_CIVILIAN))
+				for(var/jobPos in SSjobs.titles_by_department(CIV))
 					if(!jobPos)	continue
 					var/datum/job/temp = SSjobs.get_by_title(jobPos)
 					if(!temp) continue
 					job_list += temp.title
 			if("nonhumandept")
 				job_list += "pAI"
-				for(var/jobPos in SSjobs.titles_by_department(DEPT_MISC))
+				for(var/jobPos in SSjobs.titles_by_department(MSC))
 					if(!jobPos)	continue
 					var/datum/job/temp = SSjobs.get_by_title(jobPos)
 					if(!temp) continue
@@ -1048,6 +1049,23 @@
 		speech = sanitize(speech) // Nah, we don't trust them
 		log_and_message_admins("forced [key_name_admin(M)] to say: [speech]")
 
+	else if (href_list["reloadsave"])
+		if(!check_rights(R_DEBUG))	return
+		var/mob/M = locate(href_list["reloadsave"])
+		if (!ismob(M))
+			return
+		if (!M.client)
+			return
+		var/client/C = M.client
+		to_chat(usr, SPAN_NOTICE("Attempting to reload save for [C.key] <A HREF='?src=\ref[src];reloadsaveshow=\ref[C.prefs]'>View Prefs Datum</A>"))
+		C.prefs.setup()
+
+	else if (href_list["reloadsaveshow"])
+		if(!check_rights(R_DEBUG))	return
+		var/datum/preferences/prefs = locate(href_list["reloadsaveshow"])
+		if (prefs)
+			usr.client.debug_variables(prefs)
+
 	else if(href_list["sendtoprison"])
 		if(!check_rights(R_ADMIN))	return
 
@@ -1082,8 +1100,8 @@
 		M.forceMove(prison_cell)
 		if(istype(M, /mob/living/carbon/human))
 			var/mob/living/carbon/human/prisoner = M
-			prisoner.equip_to_slot_or_del(new /obj/item/clothing/under/color/orange(prisoner), slot_w_uniform_str)
-			prisoner.equip_to_slot_or_del(new /obj/item/clothing/shoes/color/orange(prisoner), slot_shoes_str)
+			prisoner.equip_to_slot_or_del(new /obj/item/clothing/under/color/orange(prisoner), slot_w_uniform)
+			prisoner.equip_to_slot_or_del(new /obj/item/clothing/shoes/orange(prisoner), slot_shoes)
 
 		to_chat(M, "<span class='warning'>You have been sent to the prison station!</span>")
 		log_and_message_admins("sent [key_name_admin(M)] to the prison station.")
@@ -1179,8 +1197,8 @@
 
 		if(istype(M, /mob/living/carbon/human))
 			var/mob/living/carbon/human/observer = M
-			observer.equip_to_slot_or_del(new /obj/item/clothing/under/suit_jacket(observer), slot_w_uniform_str)
-			observer.equip_to_slot_or_del(new /obj/item/clothing/shoes/color/black(observer), slot_shoes_str)
+			observer.equip_to_slot_or_del(new /obj/item/clothing/under/suit_jacket(observer), slot_w_uniform)
+			observer.equip_to_slot_or_del(new /obj/item/clothing/shoes/black(observer), slot_shoes)
 		M.Paralyse(5)
 		sleep(5)
 		M.forceMove(pick(GLOB.tdomeobserve))
@@ -1199,9 +1217,9 @@
 
 		if(config.allow_admin_rev)
 			L.revive()
-			log_and_message_admins("healed/revived [key_name(L)]")
+			log_and_message_admins("healed / Rrvived [key_name(L)]")
 		else
-			to_chat(usr, "Admin rejuvenates have been disabled")
+			to_chat(usr, "Admin Rejuvinates have been disabled")
 
 	else if(href_list["makeai"])
 		if(!check_rights(R_SPAWN))	return
@@ -1288,7 +1306,7 @@
 		var/mob/observer/ghost/G = C.mob
 		if(istype(G))
 			sleep(2)
-			G.ManualFollow(M)
+			G.start_following(M)
 
 	else if(href_list["check_antagonist"])
 		check_antagonists()
@@ -1379,31 +1397,34 @@
 		to_chat(src.owner, "[special_role_description]")
 		to_chat(src.owner, "(<a href='?src=\ref[usr];priv_msg=\ref[M]'>PM</a>) (<A HREF='?src=\ref[src];adminplayeropts=\ref[M]'>PP</A>) (<A HREF='?_src_=vars;Vars=\ref[M]'>VV</A>) ([admin_jump_link(M, src)]) (<A HREF='?src=\ref[src];secretsadmin=check_antagonist'>CA</A>)")
 
-	else if(href_list["adminspawnprayreward"])
+	else if(href_list["adminspawncookie"])
 		if(!check_rights(R_ADMIN|R_FUN))	return
 
-		var/mob/living/carbon/human/H = locate(href_list["adminspawnprayreward"])
+		var/mob/living/carbon/human/H = locate(href_list["adminspawncookie"])
 		if(!ishuman(H))
 			to_chat(usr, "This can only be used on instances of type /mob/living/carbon/human")
 			return
 
-		var/obj/item/C = new GLOB.using_map.pray_reward_type(get_turf(H))
-		H.put_in_hands(C)
-		if(C.loc !=H)
-			message_admins("[key_name(H)] has their hands full, so they did not receive their [C.name], spawned by [key_name(src.owner)].")
-			qdel(C)
-			return
+		H.equip_to_slot_or_del( new /obj/item/weapon/reagent_containers/food/snacks/cookie(H), slot_l_hand )
+		if(!(istype(H.l_hand,/obj/item/weapon/reagent_containers/food/snacks/cookie)))
+			H.equip_to_slot_or_del( new /obj/item/weapon/reagent_containers/food/snacks/cookie(H), slot_r_hand )
+			if(!(istype(H.r_hand,/obj/item/weapon/reagent_containers/food/snacks/cookie)))
+				log_admin("[key_name(H)] has their hands full, so they did not receive their cookie, spawned by [key_name(src.owner)].")
+				message_admins("[key_name(H)] has their hands full, so they did not receive their cookie, spawned by [key_name(src.owner)].")
+				return
+			else
+				H.update_inv_r_hand()//To ensure the icon appears in the HUD
+		else
+			H.update_inv_l_hand()
+		log_admin("[key_name(H)] got their cookie, spawned by [key_name(src.owner)]")
+		message_admins("[key_name(H)] got their cookie, spawned by [key_name(src.owner)]")
+		SSstatistics.add_field("admin_cookies_spawned",1)
+		to_chat(H, "<span class='notice'>Your prayers have been answered!! You received the <b>best cookie</b>!</span>")
 
-		log_admin("[key_name(H)] got their [C.name], spawned by [key_name(src.owner)]")
-		message_admins("[key_name(H)] got their [C.name], spawned by [key_name(src.owner)]")
-		SSstatistics.add_field("admin_pray_rewards_spawned",1)
-		to_chat(H, SPAN_NOTICE("Your prayers have been answered!! You received the <b>best [C.name]</b>!"))
-		return
-
-	else if(href_list["Artillery"])
+	else if(href_list["BlueSpaceArtillery"])
 		if(!check_rights(R_ADMIN|R_FUN))	return
 
-		var/mob/living/M = locate(href_list["Artillery"])
+		var/mob/living/M = locate(href_list["BlueSpaceArtillery"])
 		if(!isliving(M))
 			to_chat(usr, "This can only be used on instances of type /mob/living")
 			return
@@ -1419,9 +1440,9 @@
 		spawn(50)
 			BSACooldown = 0
 
-		to_chat(M, "You've been hit by wormhole artillery!")
-		log_admin("[key_name(M)] has been hit by wormhole artillery fired by [src.owner]")
-		message_admins("[key_name(M)] has been hit by wormhole artillery fired by [src.owner]")
+		to_chat(M, "You've been hit by bluespace artillery!")
+		log_admin("[key_name(M)] has been hit by Bluespace Artillery fired by [src.owner]")
+		message_admins("[key_name(M)] has been hit by Bluespace Artillery fired by [src.owner]")
 
 		var/obj/effect/stop/S
 		S = new /obj/effect/stop(M.loc)
@@ -1470,7 +1491,7 @@
 		if(!istype(H))
 			to_chat(usr, "This can only be used on instances of type /mob/living/carbon/human")
 			return
-		if(!istype(H.l_ear, /obj/item/radio/headset) && !istype(H.r_ear, /obj/item/radio/headset))
+		if(!istype(H.l_ear, /obj/item/device/radio/headset) && !istype(H.r_ear, /obj/item/device/radio/headset))
 			to_chat(usr, "The person you are trying to contact is not wearing a headset")
 			return
 
@@ -1483,17 +1504,17 @@
 
 	else if(href_list["AdminFaxView"])
 		var/obj/item/fax = locate(href_list["AdminFaxView"])
-		if (istype(fax, /obj/item/paper))
-			var/obj/item/paper/P = fax
+		if (istype(fax, /obj/item/weapon/paper))
+			var/obj/item/weapon/paper/P = fax
 			P.show_content(usr,1)
-		else if (istype(fax, /obj/item/photo))
-			var/obj/item/photo/H = fax
+		else if (istype(fax, /obj/item/weapon/photo))
+			var/obj/item/weapon/photo/H = fax
 			H.show(usr)
-		else if (istype(fax, /obj/item/paper_bundle))
+		else if (istype(fax, /obj/item/weapon/paper_bundle))
 			//having multiple people turning pages on a paper_bundle can cause issues
 			//open a browse window listing the contents instead
 			var/data = ""
-			var/obj/item/paper_bundle/B = fax
+			var/obj/item/weapon/paper_bundle/B = fax
 
 			for (var/page = 1, page <= B.pages.len, page++)
 				var/obj/pageobj = B.pages[page]
@@ -1504,15 +1525,15 @@
 			to_chat(usr, "<span class='warning'>The faxed item is not viewable. This is probably a bug, and should be reported on the tracker: [fax.type]</span>")
 	else if (href_list["AdminFaxViewPage"])
 		var/page = text2num(href_list["AdminFaxViewPage"])
-		var/obj/item/paper_bundle/bundle = locate(href_list["paper_bundle"])
+		var/obj/item/weapon/paper_bundle/bundle = locate(href_list["paper_bundle"])
 
 		if (!bundle) return
 
-		if (istype(bundle.pages[page], /obj/item/paper))
-			var/obj/item/paper/P = bundle.pages[page]
+		if (istype(bundle.pages[page], /obj/item/weapon/paper))
+			var/obj/item/weapon/paper/P = bundle.pages[page]
 			P.show_content(src.owner, 1)
-		else if (istype(bundle.pages[page], /obj/item/photo))
-			var/obj/item/photo/H = bundle.pages[page]
+		else if (istype(bundle.pages[page], /obj/item/weapon/photo))
+			var/obj/item/weapon/photo/H = bundle.pages[page]
 			H.show(src.owner)
 		return
 
@@ -1522,7 +1543,7 @@
 		var/replyorigin = href_list["replyorigin"]
 
 
-		var/obj/item/paper/admin/P = new /obj/item/paper/admin( null ) //hopefully the null loc won't cause trouble for us
+		var/obj/item/weapon/paper/admin/P = new /obj/item/weapon/paper/admin( null ) //hopefully the null loc won't cause trouble for us
 		faxreply = P
 
 		P.admindatum = src
@@ -1623,7 +1644,11 @@
 			else if(!ispath(path, /obj) && !ispath(path, /turf) && !ispath(path, /mob))
 				removed_paths += dirty_path
 				continue
-			else if(ispath(path, /obj/item/energy_blade/blade))//Not an item one should be able to spawn./N
+			else if(ispath(path, /obj/item/weapon/gun/energy/pulse_rifle))
+				if(!check_rights(R_FUN,0))
+					removed_paths += dirty_path
+					continue
+			else if(ispath(path, /obj/item/weapon/melee/energy/blade))//Not an item one should be able to spawn./N
 				if(!check_rights(R_FUN,0))
 					removed_paths += dirty_path
 					continue
@@ -1708,7 +1733,7 @@
 									var/mob/M = O
 									M.real_name = obj_name
 
-		log_and_message_admins("created [number] [english_list(paths)] at ([target.x],[target.y],[target.z])")
+		log_and_message_admins("created [number] [english_list(paths)]")
 		return
 
 	else if(href_list["admin_secrets_panel"])
@@ -1914,8 +1939,8 @@
 		if(check_rights(R_ADMIN|R_SERVER))
 			if(href_list["vsc"] == "airflow")
 				vsc.ChangeSettingsDialog(usr,vsc.settings)
-			if(href_list["vsc"] == "contam")
-				vsc.ChangeSettingsDialog(usr,vsc.contaminant_control.settings)
+			if(href_list["vsc"] == "phoron")
+				vsc.ChangeSettingsDialog(usr,vsc.plc.settings)
 			if(href_list["vsc"] == "default")
 				vsc.SetDefault(usr)
 
@@ -1925,13 +1950,15 @@
 			if(!istype(M))
 				to_chat(usr, "[M] is illegal type, must be /mob!")
 				return
-			var/decl/language/L = SSlore.get_language_by_name(href_list["lang"])
+			var/lang2toggle = href_list["lang"]
+			var/datum/language/L = all_languages[lang2toggle]
+
 			if(L in M.languages)
-				if(!M.remove_language(L.type))
-					to_chat(usr, "Failed to remove language '[L.name]' from \the [M]!")
+				if(!M.remove_language(lang2toggle))
+					to_chat(usr, "Failed to remove language '[lang2toggle]' from \the [M]!")
 			else
-				if(!M.add_language(L.type))
-					to_chat(usr, "Failed to add language '[L.name]' from \the [M]!")
+				if(!M.add_language(lang2toggle))
+					to_chat(usr, "Failed to add language '[lang2toggle]' from \the [M]!")
 
 			show_player_panel(M)
 
@@ -2014,7 +2041,7 @@ mob/living/proc/can_centcom_reply()
 	return 0
 
 mob/living/carbon/human/can_centcom_reply()
-	return istype(l_ear, /obj/item/radio/headset) || istype(r_ear, /obj/item/radio/headset)
+	return istype(l_ear, /obj/item/device/radio/headset) || istype(r_ear, /obj/item/device/radio/headset)
 
 mob/living/silicon/ai/can_centcom_reply()
 	return silicon_radio != null && !check_unable(2)

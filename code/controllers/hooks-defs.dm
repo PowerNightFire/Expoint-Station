@@ -57,6 +57,13 @@
 /hook/borgify
 
 /**
+ * Podman hook.
+ * Called in podmen.dm when someone is brought back as a Diona.
+ * Parameters: var/mob/living/carbon/alien/diona
+ */
+/hook/harvest_podman
+
+/**
  * Payroll revoked hook.
  * Called in Accounts_DB.dm when someone's payroll is stolen at the Accounts terminal.
  * Parameters: var/datum/money_account
@@ -73,14 +80,14 @@
 /**
  * Employee reassignment hook.
  * Called in card.dm when someone's card is reassigned at the HoP's desk.
- * Parameters: var/obj/item/card/id
+ * Parameters: var/obj/item/weapon/card/id
  */
 /hook/reassign_employee
 
 /**
  * Employee terminated hook.
  * Called in card.dm when someone's card is terminated at the HoP's desk.
- * Parameters: var/obj/item/card/id
+ * Parameters: var/obj/item/weapon/card/id
  */
 /hook/terminate_employee
 

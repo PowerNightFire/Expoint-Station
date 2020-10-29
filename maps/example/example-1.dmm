@@ -9,17 +9,22 @@
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "d" = (
-/obj/machinery/light/spot,
+/obj/machinery/light{
+	dir = 1
+	},
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "e" = (
-/obj/machinery/light/spot,
-/turf/simulated/floor/plating,
-/area/shuttle/escape)
+/obj/machinery/light{
+	dir = 8;
+	icon_state = "tube1"
+	},
+/turf/simulated/floor/tiled,
+/area/constructionsite)
 "f" = (
-/obj/machinery/light/spot{
-	icon_state = "tube_map";
-	dir = 1
+/obj/machinery/light{
+	dir = 4;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled,
 /area/constructionsite)
@@ -55,10 +60,7 @@
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "k" = (
-/obj/machinery/light/spot{
-	icon_state = "tube_map";
-	dir = 8
-	},
+/obj/machinery/light,
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "l" = (
@@ -69,45 +71,45 @@
 /area/constructionsite)
 "m" = (
 /obj/machinery/atmospherics/pipe/simple/visible{
-	icon_state = "intact";
-	dir = 5
+	dir = 5;
+	icon_state = "intact"
 	},
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "n" = (
 /obj/machinery/atmospherics/portables_connector{
-	icon_state = "map_connector";
-	dir = 8
+	dir = 8;
+	icon_state = "map_connector"
 	},
 /obj/machinery/portable_atmospherics/canister/air,
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "o" = (
 /obj/machinery/atmospherics/pipe/simple/visible{
-	icon_state = "intact";
-	dir = 4
+	dir = 4;
+	icon_state = "intact"
 	},
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "p" = (
 /obj/machinery/atmospherics/pipe/simple/visible{
-	icon_state = "intact";
-	dir = 6
+	dir = 6;
+	icon_state = "intact"
 	},
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "q" = (
 /obj/machinery/atmospherics/portables_connector{
-	icon_state = "map_connector";
-	dir = 8
+	dir = 8;
+	icon_state = "map_connector"
 	},
 /obj/machinery/portable_atmospherics/canister/empty,
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "r" = (
 /obj/machinery/atmospherics/unary/vent_scrubber/on{
-	icon_state = "map_scrubber_on";
-	dir = 1
+	dir = 1;
+	icon_state = "map_scrubber_on"
 	},
 /turf/simulated/floor/tiled,
 /area/constructionsite)
@@ -122,13 +124,13 @@
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "u" = (
-/obj/machinery/light_switch/on{
+/obj/machinery/light_switch{
 	pixel_x = -25
 	},
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "v" = (
-/obj/machinery/light_switch/on{
+/obj/machinery/light_switch{
 	pixel_x = 25
 	},
 /turf/simulated/floor/tiled,
@@ -138,7 +140,7 @@
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "x" = (
-/obj/structure/ladder,
+/obj/structure/ladder/up,
 /turf/simulated/floor/tiled,
 /area/constructionsite)
 "y" = (
@@ -170,20 +172,19 @@
 /turf/simulated/floor/plating,
 /area/shuttle/escape)
 "C" = (
-/obj/machinery/light/spot{
-	icon_state = "tube_map";
-	dir = 4
-	},
-/turf/simulated/floor/tiled,
-/area/constructionsite)
+/obj/machinery/light,
+/turf/simulated/floor/plating,
+/area/shuttle/escape)
 "D" = (
 /obj/machinery/door/airlock/external/bolted{
+	frequency = 1379;
 	id_tag = "example_shuttle_port_hatch"
 	},
 /turf/simulated/floor/plating,
 /area/shuttle/escape)
 "E" = (
 /obj/machinery/door/airlock/external/bolted{
+	frequency = 1379;
 	id_tag = "example_shuttle_starboard_hatch"
 	},
 /turf/simulated/floor/plating,
@@ -198,6 +199,7 @@
 /area/constructionsite)
 "G" = (
 /obj/machinery/door/airlock/external/bolted{
+	frequency = 1379;
 	id_tag = "lower_level_dock_hatch"
 	},
 /turf/simulated/floor,
@@ -212,42 +214,6 @@
 "J" = (
 /obj/effect/landmark/test/space_turf,
 /turf/space,
-/area/space)
-"M" = (
-/obj/structure/table/steel,
-/obj/machinery/recharger,
-/turf/simulated/floor/tiled,
-/area/constructionsite)
-"Q" = (
-/obj/structure/table/rack,
-/obj/item/gun/projectile/automatic/assault_rifle,
-/obj/item/gun/projectile/automatic/assault_rifle,
-/obj/item/gun/projectile/automatic/assault_rifle,
-/turf/simulated/floor/tiled,
-/area/constructionsite)
-"S" = (
-/obj/structure/table/rack,
-/obj/item/gun/energy/laser,
-/obj/item/gun/energy/laser,
-/obj/item/gun/energy/laser,
-/turf/simulated/floor/tiled,
-/area/constructionsite)
-"V" = (
-/obj/structure/table/rack,
-/obj/item/gun/projectile/revolver,
-/obj/item/gun/projectile/revolver,
-/obj/item/gun/projectile/revolver,
-/turf/simulated/floor/tiled,
-/area/constructionsite)
-"X" = (
-/obj/structure/table/rack,
-/obj/item/gun/projectile/shotgun/pump,
-/obj/item/gun/projectile/shotgun/pump,
-/obj/item/gun/projectile/shotgun/pump,
-/turf/simulated/floor/tiled,
-/area/constructionsite)
-"Z" = (
-/turf/simulated/wall/r_wall,
 /area/space)
 
 (1,1,1) = {"
@@ -711,7 +677,7 @@ a
 y
 A
 B
-e
+C
 y
 a
 a
@@ -768,25 +734,25 @@ a
 a
 a
 a
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
 b
 G
 b
-Z
-Z
-Z
-Z
-Z
-Z
+a
+a
+a
+a
+a
+a
 a
 a
 a
@@ -802,25 +768,25 @@ a
 a
 a
 a
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
 b
 F
 b
-Z
-Z
-Z
-Z
-Z
-Z
+a
+a
+a
+a
+a
+a
 a
 a
 a
@@ -836,8 +802,8 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 b
 b
@@ -853,8 +819,8 @@ b
 b
 b
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -870,25 +836,25 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 c
 c
 c
-k
+e
 c
 c
 u
 c
 c
-k
+e
 h
 i
 j
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -904,8 +870,8 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 c
 l
@@ -921,8 +887,8 @@ c
 c
 c
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -938,8 +904,8 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 c
 l
@@ -955,8 +921,8 @@ t
 t
 c
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -972,25 +938,25 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
-f
-l
-l
-l
-c
-c
-c
-c
-c
-t
-t
-t
 d
+l
+l
+l
+c
+c
+c
+c
+c
+t
+t
+t
+k
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -1006,8 +972,8 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 c
 c
@@ -1023,8 +989,8 @@ t
 t
 c
 b
-Z
-Z
+a
+a
 J
 a
 a
@@ -1040,8 +1006,8 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 c
 w
@@ -1057,8 +1023,8 @@ c
 c
 c
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -1074,8 +1040,8 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 c
 b
@@ -1088,11 +1054,11 @@ c
 c
 c
 c
-Q
+c
 c
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -1108,8 +1074,8 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 c
 w
@@ -1122,11 +1088,11 @@ c
 c
 c
 c
-V
+c
 c
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -1142,8 +1108,8 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 c
 c
@@ -1156,11 +1122,11 @@ c
 c
 c
 c
-S
+c
 c
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -1176,25 +1142,25 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
-f
-c
-c
-c
-c
-c
-c
-c
-c
-c
-c
-X
 d
+c
+c
+c
+c
+c
+c
+c
+c
+c
+c
+c
+k
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -1210,8 +1176,8 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 c
 c
@@ -1224,11 +1190,11 @@ p
 r
 c
 c
-M
+c
 c
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -1244,8 +1210,8 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 c
 c
@@ -1261,8 +1227,8 @@ c
 c
 c
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -1278,25 +1244,25 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 c
 c
 v
-C
+f
 c
 n
 c
 q
 c
-C
+f
 c
 c
 c
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -1312,8 +1278,8 @@ a
 a
 a
 a
-Z
-Z
+a
+a
 b
 b
 b
@@ -1329,8 +1295,8 @@ b
 b
 b
 b
-Z
-Z
+a
+a
 a
 a
 a
@@ -1346,25 +1312,25 @@ a
 a
 a
 a
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
 a
 a
 a
@@ -1380,25 +1346,25 @@ a
 a
 a
 a
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
-Z
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
+a
 a
 a
 a

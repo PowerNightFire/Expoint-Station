@@ -3,7 +3,7 @@
 	animate_movement = 2
 
 	var/obj_flags
-	var/list/req_access
+
 	var/list/matter //Used to store information about the contents of the object.
 	var/w_class // Size of the object.
 	var/unacidable = 0 //universal "unacidabliness" var, here so you can use it in any obj.
@@ -16,26 +16,11 @@
 	var/anchor_fall = FALSE
 	var/holographic = 0 //if the obj is a holographic object spawned by the holodeck
 
-/obj/hitby(atom/movable/AM, var/datum/thrownthing/TT)
-	..()
-	if(!anchored)
-		step(src, AM.last_move)
-
-/obj/proc/create_matter()
-	if(length(matter))
-		for(var/mat in matter)
-			matter[mat] = round(matter[mat] * get_matter_amount_modifier())
-	UNSETEMPTY(matter)
-
 /obj/Destroy()
 	STOP_PROCESSING(SSobj, src)
 	return ..()
 
-/obj/proc/get_matter_amount_modifier()
-	. = ceil(w_class * 0.25)
-
 /obj/item/proc/is_used_on(obj/O, mob/user)
-	return
 
 /obj/assume_air(datum/gas_mixture/giver)
 	if(loc)
@@ -113,7 +98,7 @@
 /obj/proc/hides_under_flooring()
 	return level == 1
 
-/obj/proc/hear_talk(mob/M, text, verb, decl/language/speaking)
+/obj/proc/hear_talk(mob/M as mob, text, verb, datum/language/speaking)
 	if(talking_atom)
 		talking_atom.catchMessage(text, M)
 /*
@@ -124,7 +109,7 @@
 		*/
 	return
 
-/obj/proc/see_emote(mob/M, text, var/emote_type)
+/obj/proc/see_emote(mob/M as mob, text, var/emote_type)
 	return
 
 /obj/proc/show_message(msg, type, alt, alt_type)//Message, type of message (1 or 2), alternative message, alt message type (1 or 2)
@@ -194,10 +179,3 @@
 
 //For things to apply special effects after damaging an organ, called by organ's take_damage
 /obj/proc/after_wounding(obj/item/organ/external/organ, datum/wound)
-	return
-
-/obj/can_be_injected_by(var/atom/injector)
-	. = ATOM_IS_OPEN_CONTAINER(src) && ..()
-
-/obj/get_mass()
-	return min(2**(w_class-1), 100)

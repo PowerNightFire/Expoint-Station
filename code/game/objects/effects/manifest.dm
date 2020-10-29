@@ -4,15 +4,16 @@
 	icon_state = "x"
 	unacidable = 1//Just to be sure.
 
-/obj/effect/manifest/Initialize()
-	. = ..()
-	invisibility = INVISIBILITY_ABSTRACT
+/obj/effect/manifest/New()
+
+	src.invisibility = 101
+	return
 
 /obj/effect/manifest/proc/manifest()
 	var/dat = "<B>Crew Manifest</B>:<BR>"
 	for(var/mob/living/carbon/human/M in SSmobs.mob_list)
 		dat += text("    <B>[]</B> -  []<BR>", M.name, M.get_assignment())
-	var/obj/item/paper/P = new /obj/item/paper( src.loc )
+	var/obj/item/weapon/paper/P = new /obj/item/weapon/paper( src.loc )
 	P.info = dat
 	P.SetName("paper- 'Crew Manifest'")
 	//SN src = null

@@ -8,25 +8,25 @@
 	atom_flags = ATOM_FLAG_NO_TEMP_CHANGE | ATOM_FLAG_OPEN_CONTAINER | ATOM_FLAG_CLIMBABLE
 	//copypaste sorry
 	var/amount_per_transfer_from_this = 5 //shit I dunno, adding this so syringes stop runtime erroring. --NeoFite
-	var/obj/item/storage/bag/trash/mybag	= null
-	var/obj/item/mop/mymop = null
-	var/obj/item/chems/spray/myspray = null
-	var/obj/item/lightreplacer/myreplacer = null
+	var/obj/item/weapon/storage/bag/trash/mybag	= null
+	var/obj/item/weapon/mop/mymop = null
+	var/obj/item/weapon/reagent_containers/spray/myspray = null
+	var/obj/item/device/lightreplacer/myreplacer = null
 	var/signs = 0	//maximum capacity hardcoded below
 
 
-/obj/structure/janitorialcart/Initialize()
-	. = ..()
+/obj/structure/janitorialcart/New()
 	create_reagents(180)
+
 
 /obj/structure/janitorialcart/examine(mob/user, distance)
 	. = ..()
 	if(distance <= 1)
-		to_chat(user, "[src] [html_icon(src)] contains [reagents.total_volume] unit\s of liquid!")
+		to_chat(user, "[src] [icon2html(src, viewers(get_turf(src)))] contains [reagents.total_volume] unit\s of liquid!")
 
 
 /obj/structure/janitorialcart/attackby(obj/item/I, mob/user)
-	if(istype(I, /obj/item/storage/bag/trash) && !mybag)
+	if(istype(I, /obj/item/weapon/storage/bag/trash) && !mybag)
 		if(!user.unEquip(I, src))
 			return
 		mybag = I
@@ -34,7 +34,7 @@
 		updateUsrDialog()
 		to_chat(user, "<span class='notice'>You put [I] into [src].</span>")
 
-	else if(istype(I, /obj/item/mop))
+	else if(istype(I, /obj/item/weapon/mop))
 		if(I.reagents.total_volume < I.reagents.maximum_volume)	//if it's not completely soaked we assume they want to wet it, otherwise store it
 			if(reagents.total_volume < 1)
 				to_chat(user, "<span class='warning'>[src] is out of water!</span>")
@@ -51,7 +51,7 @@
 			updateUsrDialog()
 			to_chat(user, "<span class='notice'>You put [I] into [src].</span>")
 
-	else if(istype(I, /obj/item/chems/spray) && !myspray)
+	else if(istype(I, /obj/item/weapon/reagent_containers/spray) && !myspray)
 		if(!user.unEquip(I, src))
 			return
 		myspray = I
@@ -59,7 +59,7 @@
 		updateUsrDialog()
 		to_chat(user, "<span class='notice'>You put [I] into [src].</span>")
 
-	else if(istype(I, /obj/item/lightreplacer) && !myreplacer)
+	else if(istype(I, /obj/item/device/lightreplacer) && !myreplacer)
 		if(!user.unEquip(I, src))
 			return
 		myreplacer = I
@@ -67,7 +67,7 @@
 		updateUsrDialog()
 		to_chat(user, "<span class='notice'>You put [I] into [src].</span>")
 
-	else if(istype(I, /obj/item/caution))
+	else if(istype(I, /obj/item/weapon/caution))
 		if(signs < 4)
 			if(!user.unEquip(I, src))
 				return
@@ -78,7 +78,7 @@
 		else
 			to_chat(user, "<span class='notice'>[src] can't hold any more signs.</span>")
 
-	else if(istype(I, /obj/item/chems/glass))
+	else if(istype(I, /obj/item/weapon/reagent_containers/glass))
 		return // So we do not put them in the trash bag as we mean to fill the mop bucket
 
 	else if(mybag)
@@ -135,7 +135,7 @@
 					myreplacer = null
 			if("sign")
 				if(signs)
-					var/obj/item/caution/Sign = locate() in src
+					var/obj/item/weapon/caution/Sign = locate() in src
 					if(Sign)
 						user.put_in_hands(Sign)
 						to_chat(user, "<span class='notice'>You take \a [Sign] from [src].</span>")
@@ -172,8 +172,9 @@
 	atom_flags = ATOM_FLAG_NO_TEMP_CHANGE | ATOM_FLAG_OPEN_CONTAINER
 	//copypaste sorry
 	var/amount_per_transfer_from_this = 5 //shit I dunno, adding this so syringes stop runtime erroring. --NeoFite
-	var/obj/item/storage/bag/trash/mybag	= null
+	var/obj/item/weapon/storage/bag/trash/mybag	= null
 	var/callme = "pimpin' ride"	//how do people refer to it?
+	buckle_movable = FALSE
 
 
 /obj/structure/bed/chair/janicart/Initialize()
@@ -185,13 +186,13 @@
 	if(distance > 1)
 		return
 
-	to_chat(user, "[html_icon(src)] This [callme] contains [reagents.total_volume] unit\s of water!")
+	to_chat(user, "[icon2html(src, user)] This [callme] contains [reagents.total_volume] unit\s of water!")
 	if(mybag)
 		to_chat(user, "\A [mybag] is hanging on the [callme].")
 
 
 /obj/structure/bed/chair/janicart/attackby(obj/item/I, mob/user)
-	if(istype(I, /obj/item/mop))
+	if(istype(I, /obj/item/weapon/mop))
 		if(reagents.total_volume > 1)
 			reagents.trans_to_obj(I, 2)
 			to_chat(user, "<span class='notice'>You wet [I] in the [callme].</span>")
@@ -200,7 +201,7 @@
 			to_chat(user, "<span class='notice'>This [callme] is out of water!</span>")
 	else if(istype(I, /obj/item/key))
 		to_chat(user, "Hold [I] in one of your hands while you drive this [callme].")
-	else if(istype(I, /obj/item/storage/bag/trash))
+	else if(istype(I, /obj/item/weapon/storage/bag/trash))
 		if(!user.unEquip(I, src))
 			return
 		to_chat(user, "<span class='notice'>You hook the trashbag onto the [callme].</span>")
@@ -214,14 +215,16 @@
 	else
 		..()
 
+
 /obj/structure/bed/chair/janicart/relaymove(mob/user, direction)
 	if(user.stat || user.stunned || user.weakened || user.paralysis)
 		unbuckle_mob()
-	if(locate(/obj/item/key) in user.get_held_items())
+	if(istype(user.l_hand, /obj/item/key) || istype(user.r_hand, /obj/item/key))
 		step(src, direction)
 		update_mob()
 	else
-		to_chat(user, SPAN_WARNING("You'll need the keys in one of your hands to drive this [callme]."))
+		to_chat(user, "<span class='notice'>You'll need the keys in one of your hands to drive this [callme].</span>")
+
 
 /obj/structure/bed/chair/janicart/Move()
 	..()

@@ -17,7 +17,7 @@
 	..()
 	items = list()
 
-/datum/uplink_random_selection/proc/get_random_item(var/telecrystals, obj/item/uplink/U, var/list/bought_items)
+/datum/uplink_random_selection/proc/get_random_item(var/telecrystals, obj/item/device/uplink/U, var/list/bought_items)
 	var/const/attempts = 50
 
 	for(var/i = 0; i < attempts; i++)
@@ -75,6 +75,7 @@ var/list/uplink_random_selections_
 	items += new/datum/uplink_random_item(/datum/uplink_item/item/tools/powersink, 10, 10)
 	items += new/datum/uplink_random_item(/datum/uplink_item/item/tools/ai_module, 25, 0)
 	items += new/datum/uplink_random_item(/datum/uplink_item/item/tools/teleporter, 10, 0)
+	items += new/datum/uplink_random_item(/datum/uplink_item/item/tools/polychromic_dye_bottle)
 
 	items += new/datum/uplink_random_item(/datum/uplink_item/item/implants/imp_freedom)
 	items += new/datum/uplink_random_item(/datum/uplink_item/item/implants/imp_compress)
@@ -121,7 +122,7 @@ var/list/uplink_random_selections_
 		var/new_thing = new/datum/uplink_random_item(uplink_item_type)
 		items += new_thing
 
-/datum/uplink_random_selection/blacklist/get_random_item(var/telecrystals, obj/item/uplink/U, var/list/bought_items)
+/datum/uplink_random_selection/blacklist/get_random_item(var/telecrystals, obj/item/device/uplink/U, var/list/bought_items)
 	var/const/attempts = 50
 	for(var/i = 0; i < attempts; i++)
 		var/datum/uplink_random_item/RI = pick(items)

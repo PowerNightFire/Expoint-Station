@@ -31,15 +31,15 @@
 /turf/simulated/floor/fixed/alium/attackby(var/obj/item/C, var/mob/user)
 	if(isCrowbar(C))
 		to_chat(user, "<span class='notice'>There aren't any openings big enough to pry it away...</span>")
-		return TRUE
+		return
 	return ..()
 
-/turf/simulated/floor/fixed/alium/Initialize()
-	. = ..()
-	var/decl/material/A = decls_repository.get_decl(/decl/material/solid/metal/aliumium)
+/turf/simulated/floor/fixed/alium/New()
+	..()
+	var/material/A = SSmaterials.get_material_by_name(MATERIAL_ALIENALLOY)
 	if(!A)
 		return
-	color = A.color
+	color = A.icon_colour
 	var/style = A.hardness % 2 ? "curvy" : "jaggy"
 	icon_state = "[style][(x*y) % 7]"
 
@@ -47,9 +47,8 @@
 	initial_gas = null
 	temperature = TCMB
 
-/turf/simulated/floor/fixed/alium/explosion_act(severity)
-	SHOULD_CALL_PARENT(FALSE)
-	var/decl/material/A = decls_repository.get_decl(/decl/material/solid/metal/aliumium)
+/turf/simulated/floor/fixed/alium/ex_act(severity)
+	var/material/A = SSmaterials.get_material_by_name(MATERIAL_ALIENALLOY)
 	if(prob(A.explosion_resistance))
 		return
 	if(severity == 1)

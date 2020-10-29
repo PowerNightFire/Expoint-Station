@@ -28,7 +28,7 @@
 	exosuit_desc_string = "heavy-duty industrial lifters"
 	max_damage = 70
 	power_use = 30
-	desc = "The Industrial Digital Interaction Manifolds allow you poke untold dangers from the relative safety of your cockpit."
+	desc = "The Xion Industrial Digital Interaction Manifolds allow you poke untold dangers from the relative safety of your cockpit."
 
 /obj/item/mech_component/propulsion/powerloader
 	name = "exosuit legs"
@@ -38,7 +38,6 @@
 	move_delay = 4
 	turn_delay = 4
 	power_use = 10
-	material = /decl/material/solid/metal/steel
 
 /obj/item/mech_component/sensors/powerloader
 	name = "exosuit sensors"
@@ -58,7 +57,7 @@
 	hatch_descriptor = "roll cage"
 	pilot_coverage = 40
 	exosuit_desc_string = "an industrial rollcage"
-	desc = "An industrial roll cage. Technically OSHA compliant. Technically."
+	desc = "A Xion industrial brand roll cage. Technically OSHA compliant. Technically."
 	max_damage = 100
 	power_use = 0
 	climb_time = 6
@@ -99,8 +98,7 @@
 	name = "firefighting exosuit"
 	desc = "A mix and match of industrial parts designed to withstand fires."
 
-/mob/living/exosuit/premade/firefighter/Initialize()
-	. = ..()
+/mob/living/exosuit/premade/firefighter/New()
 	if(!arms) 
 		arms = new /obj/item/mech_component/manipulators/powerloader(src)
 		arms.color = "#385b3c"
@@ -114,7 +112,9 @@
 		body = new /obj/item/mech_component/chassis/heavy(src)
 		body.color = "#385b3c"
 
-	material = decls_repository.get_decl(/decl/material/solid/metal/plasteel/ocp)
+	..()
+
+	material = SSmaterials.get_material_by_name(MATERIAL_OSMIUM_CARBIDE_PLASTEEL)
 
 /mob/living/exosuit/premade/firefighter/spawn_mech_equipment()
 	..()

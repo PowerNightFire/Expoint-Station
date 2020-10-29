@@ -10,7 +10,6 @@
 #define INVISIBILITY_LIGHTING    20
 #define INVISIBILITY_LEVEL_ONE   35
 #define INVISIBILITY_LEVEL_TWO   45
-#define INVISIBILITY_OVERMAP     50
 #define INVISIBILITY_OBSERVER    60
 #define INVISIBILITY_EYE         61
 #define INVISIBILITY_SYSTEM      99
@@ -41,7 +40,7 @@
 #define     IMPCHEM_HUD 6 // Chemical implant.
 #define    IMPTRACK_HUD 7 // Tracking implant.
 #define SPECIALROLE_HUD 8 // AntagHUD image.
-#define  STATUS_HUD_OOC 9 // STATUS_HUD without check for someone being ill.
+#define  STATUS_HUD_OOC 9 // STATUS_HUD without virus DB check for someone being ill.
 #define 	  LIFE_HUD 10 // STATUS_HUD that only reports dead or alive
 
 // Shuttle moving status.
@@ -76,11 +75,10 @@
 #define DEFAULT_JOB_TYPE /datum/job/assistant
 
 //Area flags, possibly more to come
-#define AREA_FLAG_RAD_SHIELDED      1 // Shielded from radiation, clearly.
-#define AREA_FLAG_EXTERNAL          2 // External as in exposed to space, not outside in a nice, green, forest.
-#define AREA_FLAG_ION_SHIELDED      4 // Shielded from ionospheric anomalies.
+#define AREA_FLAG_RAD_SHIELDED      1 // shielded from radiation, clearly
+#define AREA_FLAG_EXTERNAL          2 // External as in exposed to space, not outside in a nice, green, forest
+#define AREA_FLAG_ION_SHIELDED      4 // shielded from ionospheric anomalies as an FBP / IPC
 #define AREA_FLAG_IS_NOT_PERSISTENT 8 // SSpersistence will not track values from this area.
-#define AREA_FLAG_IS_BACKGROUND     16// Blueprints can create areas on top of these areas. Cannot edit the name of or delete these areas.
 
 //Map template flags
 #define TEMPLATE_FLAG_ALLOW_DUPLICATES 1 // Lets multiple copies of the template to be spawned
@@ -88,6 +86,9 @@
 #define TEMPLATE_FLAG_CLEAR_CONTENTS   4 // if it should destroy objects it spawns on top of
 #define TEMPLATE_FLAG_NO_RUINS         8 // if it should forbid ruins from spawning on top of it
 #define TEMPLATE_FLAG_NO_RADS          16// Removes all radiation from the template after spawning.
+
+//Ruin map template flags
+#define TEMPLATE_FLAG_RUIN_STARTS_DISALLOWED 32 // Ruin is not available during spawning unless another ruin permits it.
 
 // Convoluted setup so defines can be supplied by Bay12 main server compile script.
 // Should still work fine for people jamming the icons into their repo.
@@ -114,7 +115,43 @@
 #define BOMBCAP_HEAVY_RADIUS (GLOB.max_explosion_range/2)
 #define BOMBCAP_LIGHT_RADIUS GLOB.max_explosion_range
 #define BOMBCAP_FLASH_RADIUS (GLOB.max_explosion_range*1.5)
+									// NTNet module-configuration values. Do not change these. If you need to add another use larger number (5..6..7 etc)
+#define NTNET_SOFTWAREDOWNLOAD 1 	// Downloads of software from NTNet
+#define NTNET_PEERTOPEER 2			// P2P transfers of files between devices
+#define NTNET_COMMUNICATION 3		// Communication (messaging)
+#define NTNET_SYSTEMCONTROL 4		// Control of various systems, RCon, air alarm control, etc.
 
+// NTNet transfer speeds, used when downloading/uploading a file/program.
+#define NTNETSPEED_LOWSIGNAL 0.5	// GQ/s transfer speed when the device is wirelessly connected and on Low signal
+#define NTNETSPEED_HIGHSIGNAL 1	// GQ/s transfer speed when the device is wirelessly connected and on High signal
+#define NTNETSPEED_ETHERNET 2		// GQ/s transfer speed when the device is using wired connection
+#define NTNETSPEED_DOS_AMPLIFICATION 5	// Multiplier for Denial of Service program. Resulting load on NTNet relay is this multiplied by NTNETSPEED of the device
+
+// Program bitflags
+#define PROGRAM_ALL 		0x1F
+#define PROGRAM_CONSOLE 	0x1
+#define PROGRAM_LAPTOP 		0x2
+#define PROGRAM_TABLET 		0x4
+#define PROGRAM_TELESCREEN 	0x8
+#define PROGRAM_PDA 		0x10
+
+#define PROGRAM_STATE_KILLED 0
+#define PROGRAM_STATE_BACKGROUND 1
+#define PROGRAM_STATE_ACTIVE 2
+
+#define PROG_MISC  		"Miscellaneous"
+#define PROG_ENG  		"Engineering"
+#define PROG_OFFICE  	"Office Work"
+#define PROG_COMMAND  	"Command"
+#define PROG_SUPPLY  	"Supply and Shuttles"
+#define PROG_ADMIN  	"NTNet Administration"
+#define PROG_UTIL 		"Utility"
+#define PROG_SEC 		"Security"
+#define PROG_MONITOR	"Monitoring"
+
+// Caps for NTNet logging. Less than 10 would make logging useless anyway, more than 500 may make the log browser too laggy. Defaults to 100 unless user changes it.
+#define MAX_NTNET_LOGS 500
+#define MIN_NTNET_LOGS 10
 
 // Special return values from bullet_act(). Positive return values are already used to indicate the blocked level of the projectile.
 #define PROJECTILE_CONTINUE   -1 //if the projectile should continue flying after calling bullet_act()
@@ -142,9 +179,6 @@
 #define AI_RESTOREPOWER_CONNECTED 4
 #define AI_RESTOREPOWER_COMPLETED 5
 
-// AI button defines
-#define AI_BUTTON_PROC_BELONGS_TO_CALLER 1
-#define AI_BUTTON_INPUT_REQUIRES_SELECTION 2
 
 // Values represented as Oxyloss. Can be tweaked, but make sure to use integers only.
 #define AI_POWERUSAGE_LOWPOWER 1
@@ -165,6 +199,12 @@
 #define DEFAULT_SPAWNPOINT_ID "Default"
 
 #define MIDNIGHT_ROLLOVER		864000	//number of deciseconds in a day
+
+//Virus badness defines
+#define VIRUS_MILD			1
+#define VIRUS_COMMON		2	//Random events don't go higher (mutations aside)
+#define VIRUS_ENGINEERED	3
+#define VIRUS_EXOTIC		4	//Usually adminbus only
 
 //Error handler defines
 #define ERROR_USEFUL_LEN 2
@@ -235,38 +275,6 @@
 #define HTTP_POST_DLL_LOCATION (world.system_type == MS_WINDOWS ? WINDOWS_HTTP_POST_DLL_LOCATION : UNIX_HTTP_POST_DLL_LOCATION)
 #endif
 
-// Surgery candidate flags.
-#define SURGERY_NO_ROBOTIC        1
-#define SURGERY_NO_CRYSTAL        2
-#define SURGERY_NO_STUMP          4
-#define SURGERY_NO_FLESH          8
-#define SURGERY_NEEDS_INCISION   16
-#define SURGERY_NEEDS_RETRACTED  32
-#define SURGERY_NEEDS_ENCASEMENT 64
-
-// Structure interaction flags
-#define TOOL_INTERACTION_ANCHOR      1
-#define TOOL_INTERACTION_DECONSTRUCT 2
-#define TOOL_INTERACTION_WIRING      4
-#define TOOL_INTERACTION_ALL         (TOOL_INTERACTION_ANCHOR | TOOL_INTERACTION_DECONSTRUCT | TOOL_INTERACTION_WIRING)
-
-//Inserts 'a' or 'an' before X in ways \a doesn't allow
-#define ADD_ARTICLE(X) "[(lowertext(copytext(X, 1, 2)) in list("a", "e", "i", "o", "u")) ? "an" : "a"] [X]"
-
-#define SOULSTONE_CRACKED -1
-#define SOULSTONE_EMPTY 0
-#define SOULSTONE_ESSENCE 1
-
-#define INCREMENT_WORLD_Z_SIZE world.maxz++; global.connected_z_cache.Cut(); if (SSzcopy.zstack_maximums.len) { SSzcopy.calculate_zstack_limits() }
-#define ARE_Z_CONNECTED(ZA, ZB) (ZA > 0 && ZB > 0 && ZA <= world.maxz && ZB <= world.maxz && ((ZA == ZB) || ((global.connected_z_cache.len >= ZA && global.connected_z_cache[ZA]) ? global.connected_z_cache[ZA][ZB] : AreConnectedZLevels(ZA, ZB))))
-
-//Request Console Department Types
-#define RC_ASSIST 1		//Request Assistance
-#define RC_SUPPLY 2		//Request Supplies
-#define RC_INFO   4		//Relay Info
-
-#define WORTH_TO_SUPPLY_POINTS_CONSTANT       0.0075
-#define WORTH_TO_SUPPLY_POINTS_ROUND_CONSTANT 5
-
-#define  ICON_STATE_WORLD  "world"
-#define  ICON_STATE_INV  "inventory"
+//Misc text define. Does 4 spaces. Used as a makeshift tabulator.
+#define FOURSPACES "&nbsp;&nbsp;&nbsp;&nbsp;"
+#define CLIENT_FROM_VAR(I) (ismob(I) ? I:client : (isclient(I) ? I : (istype(I, /datum/mind) ? I:current?:client : null)))

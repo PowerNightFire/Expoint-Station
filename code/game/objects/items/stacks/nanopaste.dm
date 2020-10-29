@@ -4,12 +4,11 @@
 	desc = "A tube of paste containing swarms of repair nanites. Very effective in repairing robotic machinery."
 	icon = 'icons/obj/nanopaste.dmi'
 	icon_state = "tube"
-	origin_tech = "{'materials':4,'engineering':3}"
+	origin_tech = list(TECH_MATERIAL = 4, TECH_ENGINEERING = 3)
 	amount = 10
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
 
-/obj/item/stack/nanopaste/attack(mob/living/M, mob/user)
+
+/obj/item/stack/nanopaste/attack(mob/living/M as mob, mob/user as mob)
 	if (!istype(M) || !istype(user))
 		return 0
 	if (istype(M,/mob/living/silicon/robot))	//Repairing cyborgs
@@ -37,7 +36,7 @@
 			to_chat(user, "<span class='warning'>\The [M]'s [S.name] is hard and brittle - \the [src] cannot repair it.</span>")
 			return
 
-		if(S && S.is_robotic() && S.hatch_state == HATCH_OPENED)
+		if(S && BP_IS_ROBOTIC(S) && S.hatch_state == HATCH_OPENED)
 			if(!S.get_damage())
 				to_chat(user, "<span class='notice'>Nothing to fix here.</span>")
 			else if(can_use(1))

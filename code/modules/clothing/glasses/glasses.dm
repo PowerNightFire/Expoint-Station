@@ -1,9 +1,11 @@
 /obj/item/clothing/glasses
 	name = "glasses"
 	icon = 'icons/obj/clothing/obj_eyes.dmi'
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
-
+	sprite_sheets = list(
+		SPECIES_VOX = 'icons/mob/species/vox/onmob_eyes_vox.dmi',
+		SPECIES_VOX_ARMALIS = 'icons/mob/species/vox/onmob_eyes_vox_armalis.dmi',
+		SPECIES_UNATHI = 'icons/mob/species/unathi/generated/onmob_eyes_unathi.dmi'
+		)
 	var/hud_type
 	var/prescription = FALSE
 	var/toggleable = FALSE
@@ -13,7 +15,7 @@
 	var/obj/screen/overlay = null
 	var/obj/item/clothing/glasses/hud/hud = null	// Hud glasses, if any
 	var/electric = FALSE //if the glasses should be disrupted by EMP
-
+	
 	var/toggle_on_message //set these in initialize if you want messages other than about the optical matrix
 	var/toggle_off_message
 
@@ -93,7 +95,7 @@
 	icon_state = "meson"
 	item_state = "glasses"
 	action_button_name = "Toggle Goggles"
-	origin_tech = "{'magnets':2,'engineering':2}"
+	origin_tech = list(TECH_MAGNET = 2, TECH_ENGINEERING = 2)
 	toggleable = TRUE
 	vision_flags = SEE_TURFS
 	see_invisible = SEE_INVISIBLE_NOLIGHTING
@@ -116,7 +118,6 @@
 	hud_type = HUD_SCIENCE
 	toggleable = TRUE
 	electric = TRUE
-	anomaly_shielding = 0.1
 
 /obj/item/clothing/glasses/science/prescription
 	name = "prescription science goggles"
@@ -132,7 +133,7 @@
 	desc = "You can totally see in the dark now!"
 	icon_state = "night"
 	item_state = "glasses"
-	origin_tech = "{'magnets':2}"
+	origin_tech = list(TECH_MAGNET = 2)
 	darkness_view = 7
 	action_button_name = "Toggle Goggles"
 	toggleable = TRUE
@@ -148,19 +149,13 @@
 	name = "tactical goggles"
 	desc = "Self-polarizing goggles with light amplification for dark environments. Made from durable synthetic."
 	icon_state = "swatgoggles"
-	origin_tech = "{'magnets':2,'combat':4}"
+	origin_tech = list(TECH_MAGNET = 2, TECH_COMBAT = 4)
 	darkness_view = 5
 	action_button_name = "Toggle Goggles"
 	toggleable = TRUE
 	see_invisible = SEE_INVISIBLE_NOLIGHTING
 	siemens_coefficient = 0.6
 	electric = TRUE
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/metal/silver = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE
-	)
 
 /obj/item/clothing/glasses/monocle
 	name = "monocle"
@@ -175,7 +170,7 @@
 	gender = NEUTER
 	icon_state = "material"
 	item_state = "glasses"
-	origin_tech = "{'magnets':3,'engineering':3}"
+	origin_tech = list(TECH_MAGNET = 3, TECH_ENGINEERING = 3)
 	action_button_name = "Toggle Goggles"
 	toggleable = TRUE
 	vision_flags = SEE_OBJS
@@ -194,8 +189,7 @@
 	icon_state = "welding-g"
 	item_state = "welding-g"
 	action_button_name = "Flip Welding Goggles"
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
+	matter = list(MATERIAL_STEEL = 1500, MATERIAL_GLASS = 1000)
 	use_alt_layer = TRUE
 	var/up = FALSE
 	flash_protection = FLASH_PROTECTION_MAJOR
@@ -214,7 +208,7 @@
 		if(src.up)
 			src.up = !src.up
 			flags_inv |= HIDEEYES
-			body_parts_covered |= SLOT_EYES
+			body_parts_covered |= EYES
 			icon_state = initial(icon_state)
 			flash_protection = initial(flash_protection)
 			tint = initial(tint)
@@ -222,7 +216,7 @@
 		else
 			src.up = !src.up
 			flags_inv &= ~HIDEEYES
-			body_parts_covered &= ~SLOT_EYES
+			body_parts_covered &= ~EYES
 			icon_state = "[initial(icon_state)]up"
 			flash_protection = FLASH_PROTECTION_NONE
 			tint = TINT_NONE
@@ -237,11 +231,3 @@
 	icon_state = "rwelding-g"
 	item_state = "rwelding-g"
 	tint = TINT_MODERATE
-
-/obj/item/clothing/glasses/proc/network_setup()
-	set name = "Setup HUD Network"
-	set category = "Object"
-	set src in usr
-
-	var/datum/extension/network_device/D = get_extension(hud || src, /datum/extension/network_device)
-	D.ui_interact(usr)

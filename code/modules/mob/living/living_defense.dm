@@ -5,7 +5,7 @@
 		var/datum/extension/armor/armor_datum = armor
 		. = armor_datum.apply_damage_modifications(arglist(.))
 
-/mob/living/get_blocked_ratio(def_zone, damage_type, damage_flags, armor_pen, damage)
+/mob/living/proc/get_blocked_ratio(def_zone, damage_type, damage_flags, armor_pen, damage)
 	var/list/armors = get_armors_by_zone(def_zone, damage_type, damage_flags)
 	. = 0
 	for(var/armor in armors)
@@ -18,11 +18,13 @@
 	var/natural_armor = get_extension(src, /datum/extension/armor)
 	if(natural_armor)
 		. += natural_armor
+	if(psi)
+		. += get_extension(psi, /datum/extension/armor)
 
 /mob/living/bullet_act(var/obj/item/projectile/P, var/def_zone)
 
 	//Being hit while using a deadman switch
-	var/obj/item/assembly/signaler/signaler = get_active_hand()
+	var/obj/item/device/assembly/signaler/signaler = get_active_hand()
 	if(istype(signaler) && signaler.deadman)
 		log_and_message_admins("has triggered a signaler deadman's switch")
 		src.visible_message("<span class='warning'>[src] triggers their deadman's switch!</span>")
@@ -100,13 +102,7 @@
 
 //Called when the mob is hit with an item in combat. Returns the blocked result
 /mob/living/proc/hit_with_weapon(obj/item/I, mob/living/user, var/effective_force, var/hit_zone)
-	var/weapon_mention
-	if(I.attack_message_name())
-		weapon_mention = " with [I.attack_message_name()]"
-	if(effective_force)
-		visible_message("<span class='danger'>[src] has been [I.attack_verb.len? pick(I.attack_verb) : "attacked"][weapon_mention] by [user]!</span>")
-	else
-		visible_message("<span class='warning'>[src] has been [I.attack_verb.len? pick(I.attack_verb) : "attacked"][weapon_mention] by [user]!</span>")
+	visible_message("<span class='danger'>[src] has been [I.attack_verb.len? pick(I.attack_verb) : "attacked"] with [I.name] by [user]!</span>")
 
 	. = standard_weapon_hit_effects(I, user, effective_force, hit_zone)
 
@@ -115,7 +111,7 @@
 		if(istype(location)) location.add_blood_floor(src)
 
 //returns 0 if the effects failed to apply for some reason, 1 otherwise.
-/mob/living/standard_weapon_hit_effects(obj/item/I, mob/living/user, var/effective_force, var/hit_zone)
+/mob/living/proc/standard_weapon_hit_effects(obj/item/I, mob/living/user, var/effective_force, var/hit_zone)
 	if(!effective_force)
 		return 0
 
@@ -130,8 +126,6 @@
 
 //this proc handles being hit by a thrown atom
 /mob/living/hitby(var/atom/movable/AM, var/datum/thrownthing/TT)
-
-	..()
 
 	if(isliving(AM))
 		var/mob/living/M = AM
@@ -164,39 +158,32 @@
 			if(assailant)
 				admin_attack_log(TT.thrower, src, "Threw \an [O] at the victim.", "Had \an [O] thrown at them.", "threw \an [O] at")
 
-		if(O.can_embed() && (throw_damage > 5*O.w_class)) //Handles embedding for non-humans and simple_animals.
-			embed(O)
+		// Begin BS12 momentum-transfer code.
+		var/mass = 1.5
+		if(istype(O, /obj/item))
+			var/obj/item/I = O
+			mass = I.w_class/THROWNOBJ_KNOCKBACK_DIVISOR
+		var/momentum = TT.speed*mass
 
-	process_momentum(AM, TT)
+		if(momentum >= THROWNOBJ_KNOCKBACK_SPEED)
+			var/dir = TT.init_dir
 
-/mob/living/momentum_power(var/atom/movable/AM, var/datum/thrownthing/TT)
-	if(anchored || buckled)
-		return 0
+			visible_message("<span class='warning'>\The [src] staggers under the impact!</span>","<span class='warning'>You stagger under the impact!</span>")
+			src.throw_at(get_edge_target_turf(src,dir),1,momentum)
 
-	. = (AM.get_mass()*TT.speed)/(get_mass()*min(AM.throw_speed,2))
-	if(has_gravity() || check_space_footing())
-		. *= 0.5
+			if(!O || !src) return
 
-/mob/living/momentum_do(var/power, var/datum/thrownthing/TT, var/atom/movable/AM)
-	if(power >= 0.75)		//snowflake to enable being pinned to walls
-		var/direction = TT.init_dir
-		throw_at(get_edge_target_turf(src, direction), min((TT.maxrange - TT.dist_travelled) * power, 10), throw_speed * min(power, 1.5), callback = CALLBACK(src,/mob/living/proc/pin_to_wall,AM,direction))
-		visible_message(SPAN_DANGER("\The [src] staggers under the impact!"),SPAN_DANGER("You stagger under the impact!"))
-		return
+			if(O.can_embed()) //Projectile is suitable for pinning.
+				//Handles embedding for non-humans and simple_animals.
+				embed(O)
 
-	. = ..()
+				var/turf/T = near_wall(dir,2)
 
-/mob/living/proc/pin_to_wall(var/obj/O, var/direction)
-	if(!istype(O) || O.loc != src || !O.can_embed())//Projectile is suitable for pinning.
-		return
-
-	var/turf/T = near_wall(direction,2)
-
-	if(T)
-		forceMove(T)
-		visible_message(SPAN_DANGER("[src] is pinned to the wall by [O]!"),SPAN_DANGER("You are pinned to the wall by [O]!"))
-		src.anchored = 1
-		src.pinned += O
+				if(T)
+					forceMove(T)
+					visible_message("<span class='warning'>[src] is pinned to the wall by [O]!</span>","<span class='warning'>You are pinned to the wall by [O]!</span>")
+					src.anchored = 1
+					src.pinned += O
 
 /mob/living/proc/embed(var/obj/O, var/def_zone=null, var/datum/wound/supplied_wound)
 	O.forceMove(src)
@@ -207,7 +194,7 @@
 /mob/living/proc/turf_collision(var/turf/T, var/speed)
 	visible_message("<span class='danger'>[src] slams into \the [T]!</span>")
 	playsound(T, 'sound/effects/bangtaper.ogg', 50, 1, 1)//so it plays sounds on the turf instead, makes for awesome carps to hull collision and such
-	apply_damage(speed*5, BRUTE)
+	apply_damage(speed*2, BRUTE)
 
 /mob/living/proc/near_wall(var/direction,var/distance=1)
 	var/turf/T = get_step(get_turf(src),direction)

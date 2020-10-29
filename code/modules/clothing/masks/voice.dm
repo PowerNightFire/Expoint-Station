@@ -8,7 +8,7 @@
 	name = "gas mask"
 	desc = "A face-covering mask that can be connected to an air supply. It seems to house some odd electronics."
 	var/obj/item/voice_changer/changer
-	origin_tech = "{'esoteric':4}"
+	origin_tech = list(TECH_ESOTERIC = 4)
 
 /obj/item/clothing/mask/chameleon/voice/verb/Toggle_Voice_Changer()
 	set category = "Object"
@@ -26,6 +26,6 @@
 	changer.voice = voice
 	to_chat(usr, "<span class='notice'>You are now mimicking <B>[changer.voice]</B>.</span>")
 
-/obj/item/clothing/mask/chameleon/voice/Initialize()
-	. = ..()
+/obj/item/clothing/mask/chameleon/voice/New()
+	..()
 	changer = new(src)

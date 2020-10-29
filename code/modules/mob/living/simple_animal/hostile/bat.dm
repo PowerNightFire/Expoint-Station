@@ -16,7 +16,10 @@
 	health = 20
 
 	harm_intent_damage = 8
-	natural_weapon = /obj/item/natural_weapon/bite
+	melee_damage_lower = 10
+	melee_damage_upper = 10
+	attacktext = "bit"
+	attack_sound = 'sound/weapons/bite.ogg'
 
 	min_gas = null
 	max_gas = null
@@ -27,8 +30,8 @@
 	faction = "scarybat"
 	var/mob/living/owner
 
-/mob/living/simple_animal/hostile/scarybat/Initialize(mapload, mob/living/L)
-	. = ..()
+/mob/living/simple_animal/hostile/scarybat/New(loc, mob/living/L as mob)
+	..()
 	if(istype(L))
 		owner = L
 
@@ -37,10 +40,10 @@
 	if(.)
 		emote("flutters towards [.]")
 
-/mob/living/simple_animal/hostile/scarybat/Found(var/atom/A)//This is here as a potential override to pick a specific target if available
-	if(istype(A) && A == owner)
-		return 0
-	return ..()
+/mob/living/simple_animal/hostile/scarybat/ValidTarget(var/mob/M)
+	. = ..()
+	if(M == owner)
+		return FALSE
 
 /mob/living/simple_animal/hostile/scarybat/AttackingTarget()
 	. =..()

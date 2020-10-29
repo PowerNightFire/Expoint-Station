@@ -1,11 +1,18 @@
 /turf/simulated
 	name = "station"
-	initial_gas = list(/decl/material/gas/oxygen = MOLES_O2STANDARD, /decl/material/gas/nitrogen = MOLES_N2STANDARD)
 	var/wet = 0
 	var/image/wet_overlay = null
+
+	//Mining resources (for the large drills).
+	var/has_resources
+	var/list/resources
+
+	var/thermite = 0
+	initial_gas = list(GAS_OXYGEN = MOLES_O2STANDARD, GAS_NITROGEN = MOLES_N2STANDARD)
 	var/to_be_destroyed = 0 //Used for fire, if a melting temperature was reached, it will be destroyed
 	var/max_fire_temperature_sustained = 0 //The max temperature of the fire which it was subjected to
 	var/dirt = 0
+
 	var/timer_id
 
 // This is not great.
@@ -36,8 +43,8 @@
 		B.clean_blood()
 	..()
 
-/turf/simulated/Initialize()
-	. = ..()
+/turf/simulated/New()
+	..()
 	if(istype(loc, /area/chapel))
 		holy = 1
 	levelupdate()
@@ -89,7 +96,7 @@
 
 			if (bloodDNA && H.species.get_move_trail(H))
 				src.AddTracks(H.species.get_move_trail(H),bloodDNA,H.dir,0,bloodcolor) // Coming
-				var/turf/simulated/from = get_step(H, GLOB.reverse_dir[H.dir])
+				var/turf/simulated/from = get_step(H,reverse_direction(H.dir))
 				if(istype(from) && from)
 					from.AddTracks(H.species.get_move_trail(H),bloodDNA,0,H.dir,bloodcolor) // Going
 
@@ -120,9 +127,13 @@
 				for(var/i = 1 to slip_dist)
 					step(M, M.dir)
 					sleep(1)
+			else
+				M.inertia_dir = 0
+		else
+			M.inertia_dir = 0
 
 //returns 1 if made bloody, returns 0 otherwise
-/turf/simulated/add_blood(mob/living/carbon/human/M)
+/turf/simulated/add_blood(mob/living/carbon/human/M as mob)
 	if (!..())
 		return 0
 
@@ -132,15 +143,13 @@
 				B.blood_DNA = list()
 			if(!B.blood_DNA[M.dna.unique_enzymes])
 				B.blood_DNA[M.dna.unique_enzymes] = M.dna.b_type
-				var/datum/extension/forensic_evidence/forensics = get_or_create_extension(B, /datum/extension/forensic_evidence)
-				forensics.add_data(/datum/forensics/blood_dna, M.dna.unique_enzymes)
 			return 1 //we bloodied the floor
-		blood_splatter(src, M, 1)
+		blood_splatter(src,M.get_blood(M.vessel),1)
 		return 1 //we bloodied the floor
 	return 0
 
 // Only adds blood on the floor -- Skie
-/turf/simulated/proc/add_blood_floor(mob/living/carbon/M)
+/turf/simulated/proc/add_blood_floor(mob/living/carbon/M as mob)
 	if( istype(M, /mob/living/carbon/alien ))
 		var/obj/effect/decal/cleanable/blood/xeno/this = new /obj/effect/decal/cleanable/blood/xeno(src)
 		this.blood_DNA["UNKNOWN BLOOD"] = "X*"
@@ -154,19 +163,10 @@
 	if(isCoil(thing) && can_build_cable(user))
 		var/obj/item/stack/cable_coil/coil = thing
 		coil.turf_place(src, user)
-		return TRUE
+		return
 	return ..()
 
 /turf/simulated/Initialize()
 	if(GAME_STATE >= RUNLEVEL_GAME)
 		fluid_update()
 	. = ..()
-
-/turf/simulated/Destroy()
-	if (zone)
-		if (can_safely_remove_from_zone())
-			c_copy_air()
-			zone.remove(src)
-		else
-			zone.rebuild()
-	. = ..() 

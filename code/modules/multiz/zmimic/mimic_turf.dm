@@ -7,7 +7,6 @@
 	var/tmp/z_queued = 0	// How many times this turf is currently queued - multiple queue occurrences are allowed to ensure update consistency
 	var/tmp/z_eventually_space = FALSE
 	var/z_flags = 0
-	var/tmp/z_depth
 
 /turf/Entered(atom/movable/thing, turf/oldLoc)
 	. = ..()
@@ -80,11 +79,13 @@
 	plane = OPENTURF_MAX_PLANE
 
 /atom/movable/openspace/turf_overlay/attackby(obj/item/W, mob/user)
-	return loc.attackby(W, user)
+	loc.attackby(W, user)
 
-/atom/movable/openspace/turf_overlay/attack_hand(mob/user)
-	return loc.attack_hand(user)
+/atom/movable/openspace/turf_overlay/attack_hand(mob/user as mob)
+	loc.attack_hand(user)
+
+/atom/movable/openspace/turf_overlay/attack_generic(mob/user as mob)
+	loc.attack_generic(user)
 
 /atom/movable/openspace/turf_overlay/examine(mob/examiner)
-	SHOULD_CALL_PARENT(FALSE)
 	. = loc.examine(examiner)

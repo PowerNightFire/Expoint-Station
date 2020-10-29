@@ -24,7 +24,9 @@ GLOBAL_DATUM_INIT(cult, /datum/antagonist/cultist, new)
 	id = MODE_CULTIST
 	role_text = "Cultist"
 	role_text_plural = "Cultists"
-	blacklisted_jobs = list(/datum/job/ai, /datum/job/cyborg, /datum/job/submap)
+	restricted_jobs = list(/datum/job/lawyer, /datum/job/captain, /datum/job/hos)
+	protected_jobs = list(/datum/job/officer, /datum/job/warden, /datum/job/detective)
+	blacklisted_jobs = list(/datum/job/ai, /datum/job/cyborg, /datum/job/chaplain, /datum/job/psychiatrist, /datum/job/submap)
 	feedback_tag = "cult_objective"
 	antag_indicator = "hudcultist"
 	welcome_text = "You have a tome in your possession; one that will help you start the cult. Use it well and remember - there are others."
@@ -74,19 +76,19 @@ GLOBAL_DATUM_INIT(cult, /datum/antagonist/cultist, new)
 	if(!..())
 		return 0
 
-	var/obj/item/book/tome/T = new(get_turf(player))
+	var/obj/item/weapon/book/tome/T = new(get_turf(player))
 	var/list/slots = list (
-		"backpack" = slot_in_backpack_str,
-		"left pocket" = slot_l_store_str,
-		"right pocket" = slot_r_store_str,
-		"left hand" =    BP_L_HAND,
-		"right hand" =   BP_R_HAND,
+		"backpack" = slot_in_backpack,
+		"left pocket" = slot_l_store,
+		"right pocket" = slot_r_store,
+		"left hand" = slot_l_hand,
+		"right hand" = slot_r_hand,
 	)
 	for(var/slot in slots)
 		player.equip_to_slot(T, slot)
 		if(T.loc == player)
 			break
-	var/obj/item/storage/S = locate() in player.contents
+	var/obj/item/weapon/storage/S = locate() in player.contents
 	if(istype(S))
 		T.forceMove(S)
 
@@ -105,12 +107,12 @@ GLOBAL_DATUM_INIT(cult, /datum/antagonist/cultist, new)
 	if(.)
 		to_chat(player, "<span class='cult'>[conversion_blurb]</span>")
 		if(player.current && !istype(player.current, /mob/living/simple_animal/construct))
-			player.current.add_language(/decl/language/cultcommon)
+			player.current.add_language(LANGUAGE_CULT)
 
 /datum/antagonist/cultist/remove_antagonist(var/datum/mind/player, var/show_message, var/implanted)
 	. = ..()
 	if(. && player.current && !istype(player.current, /mob/living/simple_animal/construct))
-		player.current.remove_language(/decl/language/cultcommon)
+		player.current.remove_language(LANGUAGE_CULT)
 
 /datum/antagonist/cultist/update_antag_mob(var/datum/mind/player)
 	. = ..()

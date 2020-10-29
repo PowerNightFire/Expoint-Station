@@ -4,40 +4,29 @@
 	icon_state = "launcherbtt"
 	desc = "A remote control switch for something."
 	anchored = 1
-	layer = ABOVE_WINDOW_LAYER
 	power_channel = ENVIRON
 	idle_power_usage = 10
 	public_variables = list(
 		/decl/public_access/public_variable/button_active,
-		/decl/public_access/public_variable/button_state,
 		/decl/public_access/public_variable/input_toggle
 	)
 	public_methods = list(/decl/public_access/public_method/toggle_input_toggle)
 	stock_part_presets = list(/decl/stock_part_preset/radio/basic_transmitter/button = 1)
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc/buildable,
-		/obj/item/stock_parts/radio/transmitter/basic/buildable
+		/obj/item/weapon/stock_parts/power/apc,
+		/obj/item/weapon/stock_parts/radio/transmitter/basic
 	)
-	base_type = /obj/machinery/button/buildable
-	construct_state = /decl/machine_construction/wall_frame/panel_closed/simple
-	frame_type = /obj/item/frame/button
-	required_interaction_dexterity = DEXTERITY_SIMPLE_MACHINES
 
 	var/active = FALSE
 	var/operating = FALSE
-	var/state = FALSE
 	var/cooldown = 1 SECOND
-
-/obj/machinery/button/buildable
-	uncreated_component_parts = null
 
 /obj/machinery/button/Initialize()
 	. = ..()
 	update_icon()
 
-/obj/machinery/button/attackby(obj/item/W, mob/user)
-	if(!(. = component_attackby(W, user)))
-		return attack_hand(user)
+/obj/machinery/button/attackby(obj/item/weapon/W, mob/user as mob)
+	return attack_hand(user)
 
 /obj/machinery/button/interface_interact(user)
 	if(!CanInteract(user, DefaultTopicState()))
@@ -58,7 +47,6 @@
 
 	operating = TRUE
 	var/decl/public_access/public_variable/variable = decls_repository.get_decl(/decl/public_access/public_variable/button_active)
-	state = !state
 	variable.write_var(src, !active)
 	use_power_oneoff(500)
 	update_icon()
@@ -75,8 +63,8 @@
 
 /decl/public_access/public_variable/button_active
 	expected_type = /obj/machinery/button
-	name = "button toggle"
-	desc = "Toggled whenever the button is pressed."
+	name = "button active"
+	desc = "Whether the button is currently in the on state."
 	can_write = FALSE
 	has_updates = TRUE
 
@@ -87,22 +75,6 @@
 	. = ..()
 	if(.)
 		button.active = new_val
-
-// The point here is that button_active just pulses on button press and can't be changed otherwise, while button_state can be changed externally.
-/decl/public_access/public_variable/button_state
-	expected_type = /obj/machinery/button
-	name = "button active"
-	desc = "Whether the button is currently in the on state."
-	can_write = TRUE
-	has_updates = FALSE
-
-/decl/public_access/public_variable/button_state/access_var(obj/machinery/button/button)
-	return button.state
-
-/decl/public_access/public_variable/button_state/write_var(obj/machinery/button/button, new_val)
-	. = ..()
-	if(.)
-		button.state = new_val
 
 /decl/stock_part_preset/radio/basic_transmitter/button
 	transmit_on_change = list("button_active" = /decl/public_access/public_variable/button_active)
@@ -118,7 +90,7 @@
 
 //alternate button with the same functionality, except has a door control sprite instead
 /obj/machinery/button/alternate
-	icon = 'icons/obj/machines/button_door.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "doorctrl"
 
 /obj/machinery/button/alternate/on_update_icon()
@@ -146,7 +118,7 @@
 
 //alternate button with the same toggle functionality, except has a door control sprite instead
 /obj/machinery/button/toggle/alternate
-	icon = 'icons/obj/machines/button_door.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "doorctrl"
 
 /obj/machinery/button/toggle/alternate/on_update_icon()
@@ -167,7 +139,7 @@
 //-------------------------------
 
 /obj/machinery/button/alternate/door
-	icon = 'icons/obj/machines/button_door.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "doorctrl"
 	stock_part_presets = list(/decl/stock_part_preset/radio/basic_transmitter/button/door)
 
@@ -203,3 +175,4 @@
 /decl/stock_part_preset/radio/basic_transmitter/button/atmosia
 	transmit_on_change = list("valve_toggle" = /decl/public_access/public_variable/button_active)
 	frequency = FUEL_FREQ
+	filter = RADIO_ATMOSIA

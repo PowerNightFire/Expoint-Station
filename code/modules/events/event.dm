@@ -61,7 +61,6 @@
 	var/datum/event_meta/event_meta = null
 	var/list/affecting_z
 	var/has_skybox_image
-	var/check_proc          //global proc to be tested for whether this event will be selected. Null is valid.
 
 /datum/event/nothing
 
@@ -111,7 +110,6 @@
 //Do not override this proc, instead use the appropiate procs.
 //This proc will handle the calls to the appropiate procs.
 /datum/event/proc/process()
-	SHOULD_NOT_SLEEP(TRUE)
 	if(activeFor > startWhen && activeFor < endWhen)
 		tick()
 

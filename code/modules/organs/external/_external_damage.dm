@@ -4,16 +4,12 @@
 
 /obj/item/organ/external/proc/is_damageable(var/additional_damage = 0)
 	//Continued damage to vital organs can kill you, and robot organs don't count towards total damage so no need to cap them.
-	return (BP_IS_PROSTHETIC(src) || brute_dam + burn_dam + additional_damage < max_damage * 4)
+	return (BP_IS_ROBOTIC(src) || brute_dam + burn_dam + additional_damage < max_damage * 4)
 
 obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 	take_external_damage(amount)
 
 /obj/item/organ/external/proc/take_external_damage(brute, burn, damage_flags, used_weapon = null)
-	
-	if(!owner)
-		return
-
 	brute = round(brute * get_brute_mod(damage_flags), 0.1)
 	burn = round(burn * get_burn_mod(damage_flags), 0.1)
 
@@ -34,7 +30,7 @@ obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 			owner.visible_message("<span class='warning'>\The [owner]'s crystalline [name] shines with absorbed energy!</span>")
 
 	if(used_weapon)
-		add_autopsy_data(used_weapon, brute + burn)
+		add_autopsy_data("[used_weapon]", brute + burn)
 
 	var/spillover = 0
 	var/pure_brute = brute
@@ -74,7 +70,7 @@ obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 	// If the limbs can break, make sure we don't exceed the maximum damage a limb can take before breaking
 	var/datum/wound/created_wound
 	var/block_cut = (species.species_flags & SPECIES_FLAG_NO_MINOR_CUT) && brute <= 15
-	var/can_cut = !block_cut && !BP_IS_PROSTHETIC(src) && (sharp || prob(brute))
+	var/can_cut = !block_cut && !BP_IS_ROBOTIC(src) && (sharp || prob(brute))
 
 	if(brute)
 		var/to_create = BRUISE
@@ -135,7 +131,7 @@ obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 
 	var/damage_amt = brute
 	var/cur_damage = brute_dam
-	if(laser || BP_IS_PROSTHETIC(src))
+	if(laser || BP_IS_ROBOTIC(src))
 		damage_amt += burn
 		cur_damage += burn_dam
 
@@ -175,7 +171,7 @@ obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 		return TRUE
 
 /obj/item/organ/external/heal_damage(brute, burn, internal = 0, robo_repair = 0)
-	if(BP_IS_PROSTHETIC(src) && !robo_repair)
+	if(BP_IS_ROBOTIC(src) && !robo_repair)
 		return
 
 	//Heal damage on the individual wounds
@@ -207,10 +203,10 @@ obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 
 // Geneloss/cloneloss.
 /obj/item/organ/external/proc/get_genetic_damage()
-	return ((species && (species.species_flags & SPECIES_FLAG_NO_SCAN)) || BP_IS_PROSTHETIC(src)) ? 0 : genetic_degradation
+	return ((species && (species.species_flags & SPECIES_FLAG_NO_SCAN)) || BP_IS_ROBOTIC(src)) ? 0 : genetic_degradation
 
 /obj/item/organ/external/proc/remove_genetic_damage(var/amount)
-	if((species.species_flags & SPECIES_FLAG_NO_SCAN) || BP_IS_PROSTHETIC(src))
+	if((species.species_flags & SPECIES_FLAG_NO_SCAN) || BP_IS_ROBOTIC(src))
 		genetic_degradation = 0
 		status &= ~ORGAN_MUTATED
 		return
@@ -223,7 +219,7 @@ obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 	return -(genetic_degradation - last_gene_dam)
 
 /obj/item/organ/external/proc/add_genetic_damage(var/amount)
-	if((species.species_flags & SPECIES_FLAG_NO_SCAN) || BP_IS_PROSTHETIC(src))
+	if((species.species_flags & SPECIES_FLAG_NO_SCAN) || BP_IS_ROBOTIC(src))
 		genetic_degradation = 0
 		status &= ~ORGAN_MUTATED
 		return
@@ -236,19 +232,19 @@ obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 	return (genetic_degradation - last_gene_dam)
 
 /obj/item/organ/external/proc/mutate()
-	if(BP_IS_PROSTHETIC(src))
+	if(BP_IS_ROBOTIC(src))
 		return
 	src.status |= ORGAN_MUTATED
 	if(owner) owner.update_body()
 
 /obj/item/organ/external/proc/unmutate()
-	if(!BP_IS_DEFORMED(src) && !BP_IS_PROSTHETIC(src))
+	if(!BP_IS_DEFORMED(src) && !BP_IS_ROBOTIC(src))
 		src.status &= ~ORGAN_MUTATED
 		if(owner) owner.update_body()
 
 // Pain/halloss
 /obj/item/organ/external/proc/get_pain()
-	if(!can_feel_pain() || BP_IS_PROSTHETIC(src))
+	if(!can_feel_pain() || BP_IS_ROBOTIC(src))
 		return 0
 	var/lasting_pain = 0
 	if(is_broken())
@@ -286,23 +282,26 @@ obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 	if(agony_amount && owner && can_feel_pain())
 		agony_amount -= (owner.chem_effects[CE_PAINKILLER]/2)//painkillers does wonders!
 		agony_amount += get_pain()
-		if(agony_amount < 5) 
-			return
+		if(agony_amount < 5) return
 
-		if(check_pain_disarm())
-			return TRUE
+		if(limb_flags & ORGAN_FLAG_CAN_GRASP)
+			if(prob((agony_amount/max_damage)*100))
+				owner.grasp_damage_disarm(src)
+				return 1
 
-		if(limb_flags & ORGAN_FLAG_CAN_STAND)
+		else if((limb_flags & ORGAN_FLAG_CAN_STAND))
 			if(prob((agony_amount/max_damage)*100))
 				owner.stance_damage_prone(src)
-				return TRUE
+				return 1
 
 		else if(agony_amount > 0.5 * max_damage)
-			owner.visible_message(SPAN_WARNING("\The [owner] reels in pain!"))
+			owner.visible_message("<span class='warning'>[owner] reels in pain!</span>")
 			if(has_genitals() || agony_amount > max_damage)
 				owner.Weaken(4)
 			else
 				owner.Stun(4)
+				owner.drop_l_hand()
+				owner.drop_r_hand()
 			return 1
 
 /obj/item/organ/external/proc/get_agony_multiplier()
@@ -311,13 +310,13 @@ obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 /obj/item/organ/external/proc/sever_artery()
 	if(species && species.has_organ[BP_HEART])
 		var/obj/item/organ/internal/heart/O = species.has_organ[BP_HEART]
-		if(!BP_IS_PROSTHETIC(src) && !(status & ORGAN_ARTERY_CUT) && !initial(O.open))
+		if(!BP_IS_ROBOTIC(src) && !(status & ORGAN_ARTERY_CUT) && !initial(O.open))
 			status |= ORGAN_ARTERY_CUT
 			return TRUE
 	return FALSE
 
 /obj/item/organ/external/proc/sever_tendon()
-	if((limb_flags & ORGAN_FLAG_HAS_TENDON) && !BP_IS_PROSTHETIC(src) && !(status & ORGAN_TENDON_CUT))
+	if((limb_flags & ORGAN_FLAG_HAS_TENDON) && !BP_IS_ROBOTIC(src) && !(status & ORGAN_TENDON_CUT))
 		status |= ORGAN_TENDON_CUT
 		return TRUE
 	return FALSE
@@ -327,7 +326,7 @@ obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 	var/B = 1
 	if(A && istype(A))
 		B = A.brute_mult
-	if(!BP_IS_PROSTHETIC(src))
+	if(!BP_IS_ROBOTIC(src))
 		B *= species.get_brute_mod(owner)
 	var/blunt = !(damage_flags & DAM_EDGE|DAM_SHARP)
 	if(blunt && BP_IS_BRITTLE(src))
@@ -341,7 +340,7 @@ obj/item/organ/external/take_general_damage(var/amount, var/silent = FALSE)
 	var/B = 1
 	if(A && istype(A))
 		B = A.burn_mult
-	if(!BP_IS_PROSTHETIC(src))
+	if(!BP_IS_ROBOTIC(src))
 		B *= species.get_burn_mod(owner)
 	if(BP_IS_CRYSTAL(src))
 		B *= 0.1

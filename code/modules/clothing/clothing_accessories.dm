@@ -8,13 +8,6 @@
 			if (AC.slot == A.slot)
 				return 0
 
-// Override for action buttons.
-/obj/item/clothing/attack_self(mob/user)
-	if(loc == user && user.get_active_hand() != src)
-		attack_hand(user)
-	else
-		. = ..()
-
 /obj/item/clothing/attackby(var/obj/item/I, var/mob/user)
 	if(istype(I, /obj/item/clothing/accessory))
 
@@ -32,12 +25,12 @@
 			to_chat(user, "<span class='warning'>You cannot attach more accessories of this type to [src].</span>")
 		return
 
-	if(length(accessories))
+	if(accessories.len)
 		for(var/obj/item/clothing/accessory/A in accessories)
 			A.attackby(I, user)
 		return
 
-	. = ..()
+	..()
 
 /obj/item/clothing/attack_hand(var/mob/user)
 	//only forward to the attached accessory if the clothing is equipped (not in a storage)
@@ -58,20 +51,20 @@
 	if (usr.incapacitated())
 		return
 
-	if(!istype(over_object, /obj/screen/inventory))
+	if (!usr.unEquip(src))
 		return
 
-	var/obj/screen/inventory/inv = over_object
-	src.add_fingerprint(usr)
-	if(usr.unEquip(src))
-		usr.equip_to_slot_if_possible(src, inv.slot_id)
-
+	switch(over_object.name)
+		if("r_hand")
+			usr.put_in_r_hand(src)
+		if("l_hand")
+			usr.put_in_l_hand(src)
 	src.add_fingerprint(usr)
 
 /obj/item/clothing/examine(mob/user)
 	. = ..()
 	for(var/obj/item/clothing/accessory/A in accessories)
-		to_chat(user, "[html_icon(A)] \A [A] is attached to it.")
+		to_chat(user, "[icon2html(A, user)] \A [A] is attached to it.")
 	switch(ironed_state)
 		if(WRINKLES_WRINKLY)
 			to_chat(user, "<span class='bad'>It's wrinkly.</span>")
@@ -134,7 +127,7 @@
 		src.verbs -= /obj/item/clothing/proc/removetie_verb
 
 /obj/item/clothing/emp_act(severity)
-	if(length(accessories))
+	if(accessories.len)
 		for(var/obj/item/clothing/accessory/A in accessories)
 			A.emp_act(severity)
 	..()

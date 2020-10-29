@@ -32,7 +32,7 @@
 	SSstatistics.add_field("cyborg_frames_built",1)
 	return TRUE
 
-/obj/item/robot_parts/robot_suit/attackby(obj/item/W, mob/user)
+/obj/item/robot_parts/robot_suit/attackby(obj/item/W as obj, mob/user as mob)
 
 	// Uninstall a robotic part.
 	if(isCrowbar(W))
@@ -61,7 +61,7 @@
 			update_icon()
 
 	// Install an MMI/brain.
-	else if(istype(W, /obj/item/mmi) || istype(W, /obj/item/organ/internal/posibrain))
+	else if(istype(W, /obj/item/device/mmi) || istype(W, /obj/item/organ/internal/posibrain))
 
 		if(!istype(loc,/turf))
 			to_chat(user, SPAN_WARNING("You can't put \the [W] in without the frame being on the ground."))
@@ -72,8 +72,8 @@
 			return
 
 		var/mob/living/carbon/brain/B
-		if(istype(W, /obj/item/mmi))
-			var/obj/item/mmi/M = W
+		if(istype(W, /obj/item/device/mmi))
+			var/obj/item/device/mmi/M = W
 			B = M.brainmob
 		else
 			var/obj/item/organ/internal/posibrain/P = W
@@ -123,7 +123,8 @@
 			O.job = "Robot"
 
 		var/obj/item/robot_parts/chest/chest = parts[BP_CHEST]
-		chest.cell.forceMove(O)
+		if (chest && chest.cell)
+			chest.cell.forceMove(O)
 		W.forceMove(O) //Should fix cybros run time erroring when blown up. It got deleted before, along with the frame.
 
 		// Since we "magically" installed a cell, we also have to update the correct component.
@@ -137,7 +138,7 @@
 		O.Namepick()
 		qdel(src)
 
-	else if(istype(W, /obj/item/pen))
+	else if(istype(W, /obj/item/weapon/pen))
 		var/t = sanitizeSafe(input(user, "Enter new robot name", src.name, src.created_name), MAX_NAME_LEN)
 		if(t && (in_range(src, user) || loc == user))
 			created_name = t

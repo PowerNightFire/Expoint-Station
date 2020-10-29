@@ -6,7 +6,6 @@
 	var/loot = ""			//a list of possible items to spawn- a string of paths
 
 /obj/effect/spawner/lootdrop/Initialize()
-	..()
 	var/list/things = params2list(loot)
 
 	if(things && things.len)

@@ -16,13 +16,13 @@ var/global/list/narsie_list = list()
 	consume_range = 3 //How many tiles out do we eat
 
 
-/obj/singularity/narsie/Initialize()
-	. = ..()
+/obj/singularity/narsie/New()
+	..()
 	narsie_list.Add(src)
 
 /obj/singularity/narsie/Destroy()
 	narsie_list.Remove(src)
-	. = ..()
+	..()
 
 /obj/singularity/narsie/large
 	name = "Nar-Sie"
@@ -40,8 +40,8 @@ var/global/list/narsie_list = list()
 	var/announce=1
 	var/cause_hell = 1
 
-/obj/singularity/narsie/large/Initialize()
-	. = ..()
+/obj/singularity/narsie/large/New()
+	..()
 	if(announce)
 		to_world("<font size='15' color='red'><b>[uppertext(name)] HAS RISEN</b></font>")
 		sound_to(world, sound('sound/effects/wind/wind_5_1.ogg'))
@@ -54,9 +54,9 @@ var/global/list/narsie_list = list()
 		narsie_cometh = 1
 
 		spawn(10 SECONDS)
-			if(SSevac.evacuation_controller)
-				SSevac.evacuation_controller.call_evacuation(null, TRUE, 1)
-				SSevac.evacuation_controller.evac_no_return = 0 // Cannot recall
+			if(evacuation_controller)
+				evacuation_controller.call_evacuation(null, TRUE, 1)
+				evacuation_controller.evac_no_return = 0 // Cannot recall
 
 /obj/singularity/narsie/Process()
 	eat()
@@ -264,8 +264,7 @@ var/global/list/narsie_list = list()
 			var/turf/T2 = A
 			T2.ChangeTurf(get_base_turf_by_area(A))
 
-/obj/singularity/narsie/explosion_act(severity) //No throwing bombs at it either. --NEO
-	SHOULD_CALL_PARENT(FALSE)
+/obj/singularity/narsie/ex_act(severity) //No throwing bombs at it either. --NEO
 	return
 
 /obj/singularity/narsie/proc/pickcultist() //Narsie rewards his cultists with being devoured first, then picks a ghost to follow. --NEO
@@ -347,13 +346,12 @@ var/global/list/narsie_list = list()
 	grav_pull = 0
 
 /obj/singularity/narsie/wizard/eat()
-	for (var/turf/T in RANGE_TURFS(src, consume_range))
+	for (var/turf/T in trange(consume_range, src))
 		consume(T)
 
 /obj/singularity/narsie/proc/narsie_spawn_animation()
-	set waitfor = FALSE
 	icon = 'icons/obj/narsie_spawn_anim.dmi'
-	set_dir(SOUTH)
+	dir = SOUTH
 	move_self = 0
 	flick("narsie_spawn_anim",src)
 	sleep(11)

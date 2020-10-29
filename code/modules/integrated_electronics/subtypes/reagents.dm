@@ -145,7 +145,7 @@
 	log_admin("[key_name(L)] was successfully injected with " + reagents.get_reagents() + " by \the [acting_object]")
 	L.visible_message("<span class='warning'>\The [acting_object] injects [L] with its needle!</span>", \
 					"<span class='warning'>\The [acting_object] injects you with its needle!</span>")
-	reagents.trans_to_mob(L, transfer_amount, CHEM_INJECT)
+	reagents.trans_to_mob(L, transfer_amount, CHEM_BLOOD)
 	activate_pin(2)
 
 /obj/item/integrated_circuit/reagent/injector/proc/draw_after(var/weakref/target, var/amount)
@@ -177,7 +177,7 @@
 		return
 
 	if(direction_mode == IC_REAGENTS_INJECT)
-		if(!reagents.total_volume || !AM.reagents || !REAGENTS_FREE_SPACE(AM.reagents))
+		if(!reagents.total_volume || !AM.reagents || !AM.reagents.get_free_space())
 			activate_pin(3)
 			return
 
@@ -199,7 +199,7 @@
 			addtimer(CALLBACK(src, .proc/inject_after, weakref(L)), injection_delay)
 			return
 		else
-			if(!ATOM_IS_OPEN_CONTAINER(AM))
+			if(!AM.is_open_container())
 				activate_pin(3)
 				return
 
@@ -235,7 +235,7 @@
 				activate_pin(3)
 				return
 
-			if(!ATOM_IS_OPEN_CONTAINER(AM))
+			if(!AM.is_open_container())
 				activate_pin(3)
 				return
 			tramount = min(tramount, AM.reagents.total_volume)
@@ -290,7 +290,7 @@
 	if(!source.reagents)
 		return
 
-	if(!ATOM_IS_OPEN_CONTAINER(source))
+	if(!source.is_open_container())
 		return
 
 	source.reagents.trans_to(target, transfer_amount)
@@ -420,8 +420,7 @@
 	switch(ord)
 		if(1)
 			var/cont[0]
-			for(var/rtype in reagents.reagent_volumes)
-				var/decl/material/RE = decls_repository.get_decl(rtype)
+			for(var/datum/reagent/RE in reagents.reagent_list)
 				cont += RE.name
 			set_pin_data(IC_OUTPUT, 3, cont)
 			push_data()
@@ -481,14 +480,13 @@
 	if(!source.reagents || !target.reagents)
 		return
 
-	if(!ATOM_IS_OPEN_CONTAINER(source) || istype(source, /mob))
+	if(!source.is_open_container() || istype(source, /mob))
 		return
 
 	if(target.reagents.maximum_volume - target.reagents.total_volume <= 0)
 		return
 
-	for(var/rtype in source.reagents.reagent_volumes)
-		var/decl/material/G = decls_repository.get_decl(rtype)
+	for(var/datum/reagent/G in source.reagents.reagent_list)
 		if(!direction_mode)
 			if(G.name in demand)
 				source.reagents.trans_type_to(target, G.type, transfer_amount)
@@ -519,7 +517,7 @@
 
 /obj/item/integrated_circuit/input/funnel/attackby_react(obj/item/I, mob/living/user, intent)
 	var/atom/movable/target = get_pin_data_as_type(IC_INPUT, 1, /atom/movable)
-	var/obj/item/chems/container = I
+	var/obj/item/weapon/reagent_containers/container = I
 
 	if(!check_target(target))
 		return FALSE

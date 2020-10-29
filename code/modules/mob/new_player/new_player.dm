@@ -19,8 +19,8 @@
 
 	virtual_mob = null // Hear no evil, speak no evil
 
-/mob/new_player/Initialize()
-	. = ..()
+/mob/new_player/New()
+	..()
 	verbs += /mob/proc/toggle_antag_pool
 
 /mob/new_player/proc/new_player_panel(force = FALSE)
@@ -43,7 +43,7 @@
 			var/isadmin = 0
 			if(src.client && src.client.holder)
 				isadmin = 1
-			var/DBQuery/query = dbcon.NewQuery("SELECT `id` FROM `erro_poll_question` WHERE [(isadmin ? "" : "`adminonly` = FALSE AND")] NOW() BETWEEN `starttime` AND `endtime` AND `id` NOT IN (SELECT `pollid` FROM `erro_poll_vote` WHERE `ckey` = \"[ckey]\") AND `id` NOT IN (SELECT `pollid` FROM `erro_poll_textreply` WHERE `ckey` = \"[ckey]\")")
+			var/DBQuery/query = dbcon.NewQuery("SELECT id FROM erro_poll_question WHERE [(isadmin ? "" : "adminonly = false AND")] Now() BETWEEN starttime AND endtime AND id NOT IN (SELECT pollid FROM erro_poll_vote WHERE ckey = \"[ckey]\") AND id NOT IN (SELECT pollid FROM erro_poll_textreply WHERE ckey = \"[ckey]\")")
 			query.Execute()
 			var/newpoll = 0
 			while(query.NextRow())
@@ -173,7 +173,7 @@
 		if(!SSjobs.check_general_join_blockers(src, job))
 			return FALSE
 
-		var/datum/species/S = get_species_by_key(client.prefs.species)
+		var/datum/species/S = all_species[client.prefs.species]
 		if(!check_species_allowed(S))
 			return 0
 
@@ -187,7 +187,7 @@
 		var/voted = 0
 
 		//First check if the person has not voted yet.
-		var/DBQuery/query = dbcon.NewQuery("SELECT * FROM `erro_privacy` WHERE `ckey` = '[src.ckey]'")
+		var/DBQuery/query = dbcon.NewQuery("SELECT * FROM erro_privacy WHERE ckey='[src.ckey]'")
 		query.Execute()
 		while(query.NextRow())
 			voted = 1
@@ -203,7 +203,7 @@
 			if("nostats")
 				option = "NOSTATS"
 			if("later")
-				close_browser(usr, "window=privacypoll")
+				show_browser(usr, null,"window=privacypoll")
 				return
 			if("abstain")
 				option = "ABSTAIN"
@@ -212,10 +212,11 @@
 			return
 
 		if(!voted)
-			var/DBQuery/query_insert = dbcon.NewQuery("INSERT INTO `erro_privacy` VALUES (NULL, NOW(), '[src.ckey]', '[option]')")
+			var/sql = "INSERT INTO erro_privacy VALUES (null, Now(), '[src.ckey]', '[option]')"
+			var/DBQuery/query_insert = dbcon.NewQuery(sql)
 			query_insert.Execute()
 			to_chat(usr, "<b>Thank you for your vote!</b>")
-			close_browser(usr, "window=privacypoll")
+			show_browser(usr, null,"window=privacypoll")
 
 	if(!ready && href_list["preference"])
 		if(client)
@@ -328,7 +329,7 @@
 		character = character.AIize(move=0) // AIize the character, but don't move them yet
 
 		// is_available for AI checks that there is an empty core available in this list
-		var/obj/structure/aicore/deactivated/C = empty_playable_ai_cores[1]
+		var/obj/structure/AIcore/deactivated/C = empty_playable_ai_cores[1]
 		empty_playable_ai_cores -= C
 
 		character.forceMove(C.loc)
@@ -352,8 +353,10 @@
 			AnnounceArrival(character, job, spawnpoint.msg)
 		else
 			AnnounceCyborg(character, job, spawnpoint.msg)
-		matchmaker.do_matchmaking()
 	log_and_message_admins("has joined the round as [character.mind.assigned_role].", character)
+
+	if(character.needs_wheelchair())
+		equip_wheelchair(character)
 
 	qdel(src)
 
@@ -372,21 +375,21 @@
 	header += "<b>Welcome, [name].<br></b>"
 	header += "Round Duration: [roundduration2text()]<br>"
 
-	if(SSevac.evacuation_controller.has_evacuated())
+	if(evacuation_controller.has_evacuated())
 		header += "<font color='red'><b>The [station_name()] has been evacuated.</b></font><br>"
-	else if(SSevac.evacuation_controller.is_evacuating())
-		if(SSevac.evacuation_controller.emergency_evacuation) // Emergency shuttle is past the point of no recall
+	else if(evacuation_controller.is_evacuating())
+		if(evacuation_controller.emergency_evacuation) // Emergency shuttle is past the point of no recall
 			header += "<font color='red'>The [station_name()] is currently undergoing evacuation procedures.</font><br>"
 		else                                           // Crew transfer initiated
 			header += "<font color='red'>The [station_name()] is currently undergoing crew transfer procedures.</font><br>"
 
 	var/list/dat = list()
 	dat += "Choose from the following open/valid positions:<br>"
-	dat += "<a href='byond://?src=\ref[src];invalid_jobs=1'>[show_invalid_jobs ? "Hide":"Show"] unavailable jobs</a><br>"
+	dat += "<a href='byond://?src=\ref[src];invalid_jobs=1'>[show_invalid_jobs ? "Hide":"Show"] unavailable jobs.</a><br>"
 	dat += "<table>"
 	dat += "<tr><td colspan = 3><b>[GLOB.using_map.station_name]:</b></td></tr>"
 
-	// MAIN MAP JOBS
+	// TORCH JOBS
 	var/list/job_summaries
 	var/list/hidden_reasons = list()
 	for(var/datum/job/job in SSjobs.primary_job_datums)
@@ -401,7 +404,7 @@
 		dat += job_summaries
 	else
 		dat += "<tr><td>No available positions.</td></tr>"
-	// END MAIN MAP JOBS
+	// END TORCH JOBS
 
 	// SUBMAP JOBS
 	for(var/thing in SSmapping.submaps)
@@ -432,9 +435,7 @@
 		additional_dat += "<br>"
 		dat = additional_dat + dat
 	dat = header + dat
-	var/datum/browser/popup = new(src, "latechoices", "Choose Profession", 450, 640)
-	popup.set_content(jointext(dat, null))
-	popup.open(0)
+	show_browser(src, jointext(dat, null), "window=latechoices;size=450x640;can_close=1")
 
 /mob/new_player/proc/create_character(var/turf/spawn_turf)
 	spawning = 1
@@ -444,7 +445,7 @@
 
 	var/datum/species/chosen_species
 	if(client.prefs.species)
-		chosen_species = get_species_by_key(client.prefs.species)
+		chosen_species = all_species[client.prefs.species]
 
 	if(!spawn_turf)
 		var/datum/job/job = SSjobs.get_by_title(mind.assigned_role)
@@ -480,13 +481,6 @@
 		mind.original = new_character
 		if(client.prefs.memory)
 			mind.StoreMemory(client.prefs.memory)
-		if(client.prefs.relations.len)
-			for(var/T in client.prefs.relations)
-				var/TT = matchmaker.relation_types[T]
-				var/datum/relation/R = new TT
-				R.holder = mind
-				R.info = client.prefs.relations_info[T]
-			mind.gen_relations_info = client.prefs.relations_info["general"]
 		mind.transfer_to(new_character)					//won't transfer key since the mind is not active
 
 	new_character.dna.ready_dna(new_character)
@@ -534,10 +528,10 @@
 /mob/new_player/get_species()
 	var/datum/species/chosen_species
 	if(client.prefs.species)
-		chosen_species = get_species_by_key(client.prefs.species)
+		chosen_species = all_species[client.prefs.species]
 
 	if(!chosen_species || !check_species_allowed(chosen_species, 0))
-		return GLOB.using_map.default_species
+		return SPECIES_HUMAN
 
 	return chosen_species.name
 
@@ -548,10 +542,10 @@
 /mob/new_player/is_ready()
 	return ready && ..()
 
-/mob/new_player/hear_say(var/message, var/verb = "says", var/decl/language/language = null, var/alt_name = "",var/italics = 0, var/mob/speaker = null)
+/mob/new_player/hear_say(var/message, var/verb = "says", var/datum/language/language = null, var/alt_name = "",var/italics = 0, var/mob/speaker = null)
 	return
 
-/mob/new_player/hear_radio(var/message, var/verb="says", var/decl/language/language=null, var/part_a, var/part_b, var/part_c, var/mob/speaker = null, var/hard_to_hear = 0)
+/mob/new_player/hear_radio(var/message, var/verb="says", var/datum/language/language=null, var/part_a, var/part_b, var/part_c, var/mob/speaker = null, var/hard_to_hear = 0)
 	return
 
 /mob/new_player/show_message(msg, type, alt, alt_type)
@@ -573,11 +567,4 @@ mob/new_player/MayRespawn()
 	if(get_preference_value(/datum/client_preference/play_lobby_music) == GLOB.PREF_NO)
 		return
 	var/music_track/new_track = GLOB.using_map.get_lobby_track(GLOB.using_map.lobby_track.type)
-	if(new_track)
-		new_track.play_to(src)
-
-/mob/new_player/handle_reading_literacy(var/mob/user, var/text_content, var/skip_delays)
-	. = text_content
-
-/mob/new_player/handle_writing_literacy(var/mob/user, var/text_content, var/skip_delays)
-	. = text_content
+	new_track.play_to(src)

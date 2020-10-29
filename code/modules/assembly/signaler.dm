@@ -1,14 +1,10 @@
-/obj/item/assembly/signaler
+/obj/item/device/assembly/signaler
 	name = "remote signaling device"
 	desc = "Used to remotely activate devices."
 	icon_state = "signaller"
 	item_state = "signaler"
-	origin_tech = "{'magnets':1}"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/slag = MATTER_AMOUNT_TRACE
-	)
+	origin_tech = list(TECH_MAGNET = 1)
+	matter = list(MATERIAL_STEEL = 1000, MATERIAL_GLASS = 200, MATERIAL_WASTE = 100)
 	wires = WIRE_RECEIVE | WIRE_PULSE | WIRE_RADIO_PULSE | WIRE_RADIO_RECEIVE
 
 	secured = 1
@@ -21,11 +17,14 @@
 	var/datum/radio_frequency/radio_connection
 	var/deadman = 0
 
-/obj/item/assembly/signaler/Initialize()
-	. = ..()
-	set_frequency(frequency)
+/obj/item/device/assembly/signaler/New()
+	..()
+	spawn(40)
+		set_frequency(frequency)
+	return
 
-/obj/item/assembly/signaler/activate()
+
+/obj/item/device/assembly/signaler/activate()
 	if(cooldown > 0)	return 0
 	cooldown = 2
 	spawn(10)
@@ -34,12 +33,12 @@
 	signal()
 	return 1
 
-/obj/item/assembly/signaler/on_update_icon()
+/obj/item/device/assembly/signaler/on_update_icon()
 	if(holder)
 		holder.update_icon()
 	return
 
-/obj/item/assembly/signaler/interact(mob/user, flag1)
+/obj/item/device/assembly/signaler/interact(mob/user as mob, flag1)
 	var/t1 = "-------"
 	var/dat = {"
 		<TT>
@@ -66,7 +65,7 @@
 	return
 
 
-/obj/item/assembly/signaler/Topic(href, href_list, state = GLOB.physical_state)
+/obj/item/device/assembly/signaler/Topic(href, href_list, state = GLOB.physical_state)
 	if((. = ..()))
 		close_browser(usr, "window=radio")
 		onclose(usr, "radio")
@@ -94,7 +93,7 @@
 	return
 
 
-/obj/item/assembly/signaler/proc/signal()
+/obj/item/device/assembly/signaler/proc/signal()
 	if(!radio_connection) return
 
 	var/datum/signal/signal = new
@@ -104,7 +103,7 @@
 	radio_connection.post_signal(src, signal)
 	return
 /*
-	for(var/obj/item/assembly/signaler/S in world)
+	for(var/obj/item/device/assembly/signaler/S in world)
 		if(!S)	continue
 		if(S == src)	continue
 		if((S.frequency == src.frequency) && (S.code == src.code))
@@ -113,7 +112,7 @@
 	return 0*/
 
 
-/obj/item/assembly/signaler/pulse(var/radio = 0)
+/obj/item/device/assembly/signaler/pulse(var/radio = 0)
 	if(src.connected && src.wires)
 		connected.Pulse(src)
 	else if(holder)
@@ -123,15 +122,19 @@
 	return 1
 
 
-/obj/item/assembly/signaler/receive_signal(datum/signal/signal)
+/obj/item/device/assembly/signaler/receive_signal(datum/signal/signal)
 	if(!signal)	return 0
 	if(signal.encryption != code)	return 0
 	if(!(src.wires & WIRE_RADIO_RECEIVE))	return 0
 	pulse(1)
-	if(!holder)
-		audible_message(SPAN_NOTICE("[html_icon(src)] *beep* *beep*"), null, 3)
 
-/obj/item/assembly/signaler/proc/set_frequency(new_frequency)
+	if(!holder)
+		for(var/mob/O in hearers(1, src.loc))
+			O.show_message(text("[icon2html(src, O)] *beep* *beep*"), 3, "*beep* *beep*", 2)
+	return
+
+
+/obj/item/device/assembly/signaler/proc/set_frequency(new_frequency)
 	set waitfor = 0
 	if(!frequency)
 		return
@@ -144,7 +147,7 @@
 	radio_connection = radio_controller.add_object(src, frequency, RADIO_CHAT)
 	return
 
-/obj/item/assembly/signaler/Process()
+/obj/item/device/assembly/signaler/Process()
 	if(!deadman)
 		STOP_PROCESSING(SSobj, src)
 	var/mob/M = src.loc
@@ -157,7 +160,7 @@
 		M.visible_message("[M]'s finger twitches a bit over [src]'s signal button!")
 	return
 
-/obj/item/assembly/signaler/verb/deadman_it()
+/obj/item/device/assembly/signaler/verb/deadman_it()
 	set src in usr
 	set name = "Threaten to push the button!"
 	set desc = "BOOOOM!"
@@ -174,7 +177,7 @@
 		usr.visible_message("<span class='notice'>[usr] moves their finger away from [src]'s signal button.</span>")
 
 
-/obj/item/assembly/signaler/Destroy()
+/obj/item/device/assembly/signaler/Destroy()
 	if(radio_controller)
 		radio_controller.remove_object(src,frequency)
 	frequency = 0

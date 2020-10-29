@@ -6,56 +6,21 @@ GLOBAL_LIST_INIT(security_statuses, list("None", "Released", "Parolled", "Incarc
 GLOBAL_VAR_INIT(default_security_status, "None")
 GLOBAL_VAR_INIT(arrest_security_status, "Arrest")
 
+// Kept as a computer file for possible future expansion into servers.
 /datum/computer_file/report/crew_record
 	filetype = "CDB"
 	size = 2
 	var/icon/photo_front = null
 	var/icon/photo_side = null
 	//More variables below.
-	var/list/grants = list()	// List of weakrefs to grant files.
-	var/user_id					// A unique identifier linking a mob/player/user to this access record and their grants.
-	
+
 /datum/computer_file/report/crew_record/New()
 	..()
-	filename = "record[random_id(type, 100,999)]"
-	user_id = "[sequential_id("datum/computer_file/report/crew_record")]"
 	load_from_mob(null)
 
 /datum/computer_file/report/crew_record/Destroy()
 	. = ..()
 	GLOB.all_crew_records.Remove(src)
-
-/datum/computer_file/report/crew_record/proc/add_grant(var/datum/computer_file/data/grant_record/new_grant)
-	grants |= weakref(new_grant)
-
-/datum/computer_file/report/crew_record/proc/remove_grant(var/grant_name)
-	for(var/weakref/grant in grants)
-		var/datum/computer_file/data/grant_record/GR = grant.resolve()
-		if(!GR)
-			grants -= GR
-			continue
-		if(GR.stored_data == grant_name)
-			grants -= GR
-			return
-
-/datum/computer_file/report/crew_record/proc/calculate_size()
-	size = max(1, round(length(user_id) + length(grants) / 20))
-
-/datum/computer_file/report/crew_record/proc/get_access(var/network_id)
-	var/list/access_grants = list()
-	for(var/datum/computer_file/data/grant_record/grant in get_valid_grants())
-		LAZYDISTINCTADD(access_grants, uppertext("[network_id].[grant.stored_data]"))
-	return access_grants
-
-/datum/computer_file/report/crew_record/proc/get_valid_grants()
-	var/list/valid_grants = list()
-	for(var/weakref/grant in grants)
-		var/datum/computer_file/data/grant_record/GR = grant.resolve()
-		if(!istype(GR) || GR.holder != holder)
-			grants.Remove(grant)
-			continue // This is a bad grant. File is gone or moved.
-		LAZYDISTINCTADD(valid_grants, GR)
-	return valid_grants
 
 /datum/computer_file/report/crew_record/proc/load_from_mob(var/mob/living/carbon/human/H)
 	if(istype(H))
@@ -73,7 +38,7 @@ GLOBAL_VAR_INIT(arrest_security_status, "Arrest")
 		formal_name = H.real_name
 		if(H.client && H.client.prefs)
 			for(var/culturetag in H.client.prefs.cultural_info)
-				var/decl/cultural_info/culture = SSlore.get_culture(H.client.prefs.cultural_info[culturetag])
+				var/decl/cultural_info/culture = SSculture.get_culture(H.client.prefs.cultural_info[culturetag])
 				if(H.char_rank && H.char_rank.name_short)
 					formal_name = "[formal_name][culture.get_formal_name_suffix()]"
 				else
@@ -91,7 +56,7 @@ GLOBAL_VAR_INIT(arrest_security_status, "Arrest")
 	set_sex(gender_term)
 	set_age(H ? H.age : 30)
 	set_status(GLOB.default_physical_status)
-	set_species(H ? H.get_species() : GLOB.using_map.default_species)
+	set_species(H ? H.get_species() : SPECIES_HUMAN)
 	set_branch(H ? (H.char_branch && H.char_branch.name) : "None")
 	set_rank(H ? (H.char_rank && H.char_rank.name) : "None")
 	set_public_record(H && H.public_record && !jobban_isbanned(H, "Records") ? html_decode(H.public_record) : "No record supplied")
@@ -106,13 +71,13 @@ GLOBAL_VAR_INIT(arrest_security_status, "Arrest")
 		else
 			var/organ_data = list("\[*\]")
 			for(var/obj/item/organ/external/E in H.organs)
-				if(BP_IS_PROSTHETIC(E))
+				if(BP_IS_ROBOTIC(E))
 					organ_data += "[E.model ? "[E.model] " : null][E.name] prosthetic"
 			for(var/obj/item/organ/internal/I in H.internal_organs)
 				if(BP_IS_ASSISTED(I))
 					organ_data += I.get_mechanical_assisted_descriptor()
-				else if (BP_IS_PROSTHETIC(I))
-					organ_data += "[I.name] prosthetic"
+				else if (BP_IS_ROBOTIC(I))
+					organ_data += "robotic [I.name] prosthetic"
 			set_implants(jointext(organ_data, "\[*\]"))
 
 	// Security record
@@ -129,7 +94,7 @@ GLOBAL_VAR_INIT(arrest_security_status, "Arrest")
 		if(H.client && H.client.prefs)
 			var/list/qualifications
 			for(var/culturetag in H.client.prefs.cultural_info)
-				var/decl/cultural_info/culture = SSlore.get_culture(H.client.prefs.cultural_info[culturetag])
+				var/decl/cultural_info/culture = SSculture.get_culture(H.client.prefs.cultural_info[culturetag])
 				var/extra_note = culture.get_qualifications()
 				if(extra_note)
 					LAZYADD(qualifications, extra_note)
@@ -154,44 +119,12 @@ GLOBAL_VAR_INIT(arrest_security_status, "Arrest")
 	// Antag record
 	set_antagRecord(H && H.exploit_record && !jobban_isbanned(H, "Records") ? html_decode(H.exploit_record) : "")
 
-// Cut down version for silicons
-/datum/computer_file/report/crew_record/synth/load_from_mob(var/mob/living/silicon/S)
-	if(istype(S))
-		photo_front = getFlatIcon(S, SOUTH, always_use_defdir = 1)
-		photo_side = getFlatIcon(S, WEST, always_use_defdir = 1)
-
-	// Generic record
-	set_name(S ? S.real_name : "Unset")
-	set_formal_name(S ? S.real_name : "Unset")
-	set_sex("Unset")
-	set_status(GLOB.default_physical_status)
-	var/silicon_type = "Synthetic Lifeform"
-	var/robojob = GetAssignment(S)
-	if(istype(S, /mob/living/silicon/robot))
-		var/mob/living/silicon/robot/R = S
-		silicon_type = R.braintype
-		if(R.module)
-			robojob = "[R.module.display_name] [silicon_type]"
-	if(istype(S, /mob/living/silicon/ai))
-		silicon_type = "AI"
-		robojob = "Artificial Intelligence"
-	set_job(S ? robojob : "Unset")
-	set_species(silicon_type)
-
-	set_implants("Robotic body")
-
-	// Security record
-	set_criminalStatus(GLOB.default_security_status)
-
 // Global methods
 // Used by character creation to create a record for new arrivals.
-/proc/CreateModularRecord(var/mob/living/H, record_type = /datum/computer_file/report/crew_record)
-	var/datum/computer_file/report/crew_record/CR = new record_type()
+/proc/CreateModularRecord(var/mob/living/carbon/human/H)
+	var/datum/computer_file/report/crew_record/CR = new/datum/computer_file/report/crew_record()
 	GLOB.all_crew_records.Add(CR)
 	CR.load_from_mob(H)
-	var/datum/computer_network/network = get_local_network_at(get_turf(H))
-	if(network)
-		network.store_file(CR, MF_ROLE_CREW_RECORDS)
 	return CR
 
 // Gets crew records filtered by set of positions
@@ -221,7 +154,6 @@ GLOBAL_VAR_INIT(arrest_security_status, "Arrest")
 	dat += "</tt>"
 	return dat
 
-//Should only be used for OOC stuff, for player-facing stuff you must go through the network.
 /proc/get_crewmember_record(var/name)
 	for(var/datum/computer_file/report/crew_record/CR in GLOB.all_crew_records)
 		if(CR.get_name() == name)

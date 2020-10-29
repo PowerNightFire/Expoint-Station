@@ -1,7 +1,6 @@
-/obj/item/flash
+/obj/item/device/flash
 	name = "flash"
 	desc = "A device that produces a bright flash of light, designed to stun and disorient an attacker."
-	icon = 'icons/obj/items/device/flash.dmi'
 	icon_state = "flash"
 	item_state = "flashtool"
 	throwforce = 5
@@ -9,9 +8,7 @@
 	throw_speed = 4
 	throw_range = 10
 	obj_flags = OBJ_FLAG_CONDUCTIBLE
-	origin_tech = "{'magnets':2,'combat':1}"
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
+	origin_tech = list(TECH_MAGNET = 2, TECH_COMBAT = 1)
 
 	var/times_used = 0 //Number of times it's been used.
 	var/broken = 0     //Is the flash burnt out?
@@ -19,14 +16,14 @@
 	var/str_min = 2 //how weak the effect CAN be
 	var/str_max = 7 //how powerful the effect COULD be
 
-/obj/item/flash/proc/clown_check(var/mob/user)
+/obj/item/device/flash/proc/clown_check(var/mob/user)
 	if(user && (MUTATION_CLUMSY in user.mutations) && prob(50))
 		to_chat(user, "<span class='warning'>\The [src] slips out of your hand.</span>")
-		user.unEquip(src)
+		user.unequip_item()
 		return 0
 	return 1
 
-/obj/item/flash/proc/flash_recharge()
+/obj/item/device/flash/proc/flash_recharge()
 	//capacitor recharges over time
 	for(var/i=0, i<3, i++)
 		if(last_used+600 > world.time)
@@ -37,7 +34,7 @@
 	times_used = max(0,round(times_used)) //sanity
 
 //attack_as_weapon
-/obj/item/flash/attack(mob/living/M, mob/living/user, var/target_zone)
+/obj/item/device/flash/attack(mob/living/M, mob/living/user, var/target_zone)
 	if(!user || !M)	return 0 //sanity
 	admin_attack_log(user, M, "flashed their victim using \a [src].", "Was flashed by \a [src].", "used \a [src] to flash")
 
@@ -86,7 +83,8 @@
 					M.eye_blurry += flash_strength
 					M.confused += (flash_strength + 2)
 					if(flash_strength > 3)
-						M.drop_held_items()
+						M.drop_l_hand()
+						M.drop_r_hand()
 					if(flash_strength > 5)
 						M.Weaken(2)
 			else
@@ -135,7 +133,7 @@
 
 
 
-/obj/item/flash/attack_self(mob/living/carbon/user, flag = 0, emp = 0)
+/obj/item/device/flash/attack_self(mob/living/carbon/user as mob, flag = 0, emp = 0)
 	if(!user || !clown_check(user)) 	return 0
 
 	if(broken)
@@ -181,7 +179,7 @@
 
 	return 1
 
-/obj/item/flash/emp_act(severity)
+/obj/item/device/flash/emp_act(severity)
 	if(broken)	return
 	flash_recharge()
 	switch(times_used)
@@ -201,22 +199,17 @@
 						O.show_message("<span class='disarm'>[M] is blinded by the [name]!</span>")
 	..()
 
-/obj/item/flash/synthetic //not for regular use, weaker effects
+/obj/item/device/flash/synthetic //not for regular use, weaker effects
 	name = "modified flash"
 	desc = "A device that produces a bright flash of light. This is a specialized version designed specifically for use in camera systems."
 	icon_state = "sflash"
 	str_min = 1
 	str_max = 4
 
-/obj/item/flash/advanced
+/obj/item/device/flash/advanced
 	name = "advanced flash"
 	desc = "A device that produces a very bright flash of light. This is an advanced and expensive version often issued to VIPs."
 	icon_state = "advflash"
-	origin_tech = "{'combat':2,'magnets':2}"
+	origin_tech = list(TECH_COMBAT = 2, TECH_MAGNET = 2)
 	str_min = 3
 	str_max = 8
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/metal/silver = MATTER_AMOUNT_TRACE
-	)

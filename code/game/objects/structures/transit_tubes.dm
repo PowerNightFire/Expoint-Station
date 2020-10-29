@@ -53,10 +53,35 @@
 
 	..()
 
-/obj/structure/transit_tube_pod/Initialize()
-	. = ..()
 
-	air_contents.adjust_multi(/decl/material/gas/oxygen, MOLES_O2STANDARD * 2, /decl/material/gas/nitrogen, MOLES_N2STANDARD)
+
+// When destroyed by explosions, properly handle contents.
+obj/structure/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			for(var/atom/movable/AM in contents)
+				AM.dropInto(loc)
+				AM.ex_act(severity++)
+
+			qdel(src)
+			return
+		if(2.0)
+			if(prob(50))
+				for(var/atom/movable/AM in contents)
+					AM.dropInto(loc)
+					AM.ex_act(severity++)
+
+				qdel(src)
+				return
+		if(3.0)
+			return
+
+
+
+/obj/structure/transit_tube_pod/New(loc)
+	..(loc)
+
+	air_contents.adjust_multi(GAS_OXYGEN, MOLES_O2STANDARD * 2, GAS_NITROGEN, MOLES_N2STANDARD)
 	air_contents.temperature = T20C
 
 	// Give auto tubes time to align before trying to start moving
@@ -65,15 +90,15 @@
 
 
 
-/obj/structure/transit_tube/Initialize()
-	. = ..()
+/obj/structure/transit_tube/New(loc)
+	..(loc)
 
 	if(tube_dirs == null)
 		init_dirs()
 
 
 
-/obj/structure/transit_tube/Bumped(mob/AM)
+/obj/structure/transit_tube/Bumped(mob/AM as mob|obj)
 	var/obj/structure/transit_tube/T = locate() in AM.loc
 	if(T)
 		to_chat(AM, "<span class='warning'>The tube's support pylons block your way.</span>")
@@ -82,7 +107,10 @@
 		AM.dropInto(loc)
 		to_chat(AM, "<span class='info'>You slip under the tube.</span>")
 
-/obj/structure/transit_tube/station/Bumped(mob/AM)
+/obj/structure/transit_tube/station/New(loc)
+	..(loc)
+
+/obj/structure/transit_tube/station/Bumped(mob/AM as mob|obj)
 	if(!pod_moving && icon_state == "open" && istype(AM, /mob))
 		for(var/obj/structure/transit_tube_pod/pod in loc)
 			if(pod.contents.len)
@@ -91,7 +119,7 @@
 			else if(!pod.moving && (pod.dir in directions()))
 				AM.forceMove(pod)
 
-/obj/structure/transit_tube/station/attack_hand(mob/user)
+/obj/structure/transit_tube/station/attack_hand(mob/user as mob)
 	if(!pod_moving)
 		for(var/obj/structure/transit_tube_pod/pod in loc)
 			if(!pod.moving && (pod.dir in directions()))

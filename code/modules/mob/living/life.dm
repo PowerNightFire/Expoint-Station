@@ -24,10 +24,16 @@
 	if(stat != DEAD)
 		aura_check(AURA_TYPE_LIFE)
 
+		if(!InStasis())
+			//Mutations and radiation
+			handle_mutations_and_radiation()
+
 	//Check if we're on fire
 	handle_fire()
 
-	for(var/obj/item/grab/G in get_active_grabs())
+	update_pulling()
+
+	for(var/obj/item/grab/G in src)
 		G.Process()
 
 	handle_actions()
@@ -52,6 +58,11 @@
 
 /mob/living/proc/handle_environment(var/datum/gas_mixture/environment)
 	return
+
+/mob/living/proc/update_pulling()
+	if(pulling)
+		if(incapacitated())
+			stop_pulling()
 
 //This updates the health and status of the mob (conscious, unconscious, dead)
 /mob/living/proc/handle_regular_status_updates()
@@ -100,7 +111,9 @@
 	return silent
 
 /mob/living/proc/handle_drugged()
-	return adjust_drugged(-1)
+	if(druggy)
+		druggy = max(druggy-1, 0)
+	return druggy
 
 /mob/living/proc/handle_slurring()
 	if(slurring)
@@ -163,7 +176,7 @@
 		clear_fullscreen("blind")
 		set_fullscreen(disabilities & NEARSIGHTED, "impaired", /obj/screen/fullscreen/impaired, 1)
 		set_fullscreen(eye_blurry, "blurry", /obj/screen/fullscreen/blurry)
-		set_fullscreen(drugged, "high", /obj/screen/fullscreen/high)
+		set_fullscreen(druggy, "high", /obj/screen/fullscreen/high)
 
 	set_fullscreen(stat == UNCONSCIOUS, "blackout", /obj/screen/fullscreen/blackout)
 
@@ -176,15 +189,13 @@
 	else if(eyeobj)
 		if(eyeobj.owner != src)
 			reset_view(null)
-	else if(z_eye) 
-		return
-	else if(client && !client.adminobs)
+	else if(!client.adminobs)
 		reset_view(null)
 
 /mob/living/proc/update_sight()
 	set_sight(0)
 	set_see_in_dark(0)
-	if(stat == DEAD || (eyeobj && !eyeobj.living_eye))
+	if(stat == DEAD || eyeobj)
 		update_dead_sight()
 	else
 		update_living_sight()

@@ -32,7 +32,7 @@
 
 /mob/living/carbon/human
 	var/oxygen_alert = 0
-	var/toxins_alert = 0
+	var/phoron_alert = 0
 	var/co2_alert = 0
 	var/fire_alert = 0
 	var/pressure_alert = 0
@@ -49,7 +49,7 @@
 
 	fire_alert = 0 //Reset this here, because both breathe() and handle_environment() have a chance to set it.
 
-	//TODO: seperate this out
+	//TODO: separate this out
 	// update the current life tick, can be used to e.g. only do something every 4 ticks
 	life_tick++
 
@@ -80,6 +80,10 @@
 		handle_stamina()
 
 		handle_medical_side_effects()
+
+		if(!client && !mind)
+			species.handle_npc(src)
+
 
 	if(!handle_some_updates())
 		return											//We go ahead and process them 5 times for HUD images and other stuff though.
@@ -134,11 +138,11 @@
 
 // Calculate how vulnerable the human is to the current pressure.
 // Returns 0 (equals 0 %) if sealed in an undamaged suit that's rated for the pressure, 1 if unprotected (equals 100%).
-// Suitdamage can modifiy this in 10% steps.
+// Suitdamage can modify this in 10% steps.
 /mob/living/carbon/human/proc/get_pressure_weakness(pressure)
 
 	var/pressure_adjustment_coefficient = 0
-	var/list/zones = list(SLOT_HEAD, SLOT_UPPER_BODY, SLOT_LOWER_BODY, SLOT_LEGS, SLOT_FEET, SLOT_ARMS, SLOT_HANDS)
+	var/list/zones = list(HEAD, UPPER_TORSO, LOWER_TORSO, LEGS, FEET, ARMS, HANDS)
 	for(var/zone in zones)
 		var/list/covers = get_covering_equipped_items(zone)
 		var/zone_exposure = 1
@@ -151,7 +155,7 @@
 
 	return pressure_adjustment_coefficient
 
-// Calculate how much of the enviroment pressure-difference affects the human.
+// Calculate how much of the environment pressure-difference affects the human.
 /mob/living/carbon/human/calculate_affecting_pressure(var/pressure)
 	var/pressure_difference
 
@@ -203,7 +207,7 @@
 	..()
 	if(stat != DEAD)
 		if ((disabilities & COUGHING) && prob(5) && paralysis <= 1)
-			drop_held_items()
+			unequip_item()
 			spawn(0)
 				emote("cough")
 
@@ -229,6 +233,19 @@
 		if(species.appearance_flags & RADIATION_GLOWS)
 			set_light(0.3, 0.1, max(1,min(20,radiation/20)), 2, species.get_flesh_colour(src))
 		// END DOGSHIT SNOWFLAKE
+
+		var/obj/item/organ/internal/diona/nutrients/rad_organ = locate() in internal_organs
+		if (rad_organ && !rad_organ.is_broken())
+			var/rads = radiation/25
+
+			radiation -= rads
+			set_nutrition(Clamp(nutrition+rads, 0, 550))
+
+			if (radiation < 2)
+				radiation = 0
+
+			return
+
 		var/damage = 0
 		radiation -= 1 * RADIATION_SPEED_COEFFICIENT
 		if(prob(25))
@@ -244,8 +261,12 @@
 					Weaken(3)
 					if(!lying)
 						emote("collapse")
-				if(prob(5) && prob(100 * RADIATION_SPEED_COEFFICIENT))
-					lose_hair()
+				if(prob(5) && prob(100 * RADIATION_SPEED_COEFFICIENT) && species.get_bodytype(src) == SPECIES_HUMAN) //apes go bald
+					if((h_style != "Bald" || f_style != "Shaved" ))
+						to_chat(src, "<span class='warning'>Your hair falls out.</span>")
+						h_style = "Bald"
+						f_style = "Shaved"
+						update_hair()
 
 		if (radiation > 75)
 			damage = 3
@@ -284,9 +305,9 @@
 /mob/living/carbon/human/get_breath_from_internal(volume_needed=STD_BREATH_VOLUME)
 	if(internal)
 
-		var/obj/item/tank/rig_supply
-		if(istype(back,/obj/item/rig))
-			var/obj/item/rig/rig = back
+		var/obj/item/weapon/tank/rig_supply
+		if(istype(back,/obj/item/weapon/rig))
+			var/obj/item/weapon/rig/rig = back
 			if(!rig.offline && (rig.air_supply && internal == rig.air_supply))
 				rig_supply = rig.air_supply
 
@@ -315,7 +336,7 @@
 	if(!environment || (MUTATION_SPACERES in mutations))
 		return
 
-	//Stuff like water absorbtion happens here.
+	//Stuff like diona water absorbtion happens here.
 	species.handle_environment_special(src)
 
 	//Moved pressure calculations here for use in skip-processing check.
@@ -324,9 +345,8 @@
 
 	//Check for contaminants before anything else because we don't want to skip it.
 	for(var/g in environment.gas)
-		var/decl/material/mat = decls_repository.get_decl(g)
-		if((mat.gas_flags & XGM_GAS_CONTAMINANT) && environment.gas[g] > mat.gas_overlay_limit + 1)
-			handle_contaminants()
+		if(gas_data.flags[g] & XGM_GAS_CONTAMINANT && environment.gas[g] > gas_data.overlay_limit[g] + 1)
+			pl_effects()
 			break
 
 	if(istype(src.loc, /turf/space)) //being in a closet will interfere with radiation, may not make sense but we don't model radiation for atoms in general so it will have to do for now.
@@ -453,7 +473,7 @@
 			adjust_hydration(-hyd_remove)
 			bodytemperature += min((body_temperature_difference / BODYTEMP_AUTORECOVERY_DIVISOR), -BODYTEMP_AUTORECOVERY_MINIMUM)
 
-	//This proc returns a number made up of the flags for body parts which you are protected on. (such as HEAD, SLOT_UPPER_BODY, SLOT_LOWER_BODY, etc. See setup.dm for the full list)
+	//This proc returns a number made up of the flags for body parts which you are protected on. (such as HEAD, UPPER_TORSO, LOWER_TORSO, etc. See setup.dm for the full list)
 /mob/living/carbon/human/proc/get_heat_protection_flags(temperature) //Temperature is the temperature you're being exposed to.
 	. = 0
 	//Handle normal clothing
@@ -495,27 +515,27 @@
 /mob/living/carbon/human/proc/get_thermal_protection(var/flags)
 	.=0
 	if(flags)
-		if(flags & SLOT_HEAD)
+		if(flags & HEAD)
 			. += THERMAL_PROTECTION_HEAD
-		if(flags & SLOT_UPPER_BODY)
+		if(flags & UPPER_TORSO)
 			. += THERMAL_PROTECTION_UPPER_TORSO
-		if(flags & SLOT_LOWER_BODY)
+		if(flags & LOWER_TORSO)
 			. += THERMAL_PROTECTION_LOWER_TORSO
-		if(flags & SLOT_LEG_LEFT)
+		if(flags & LEG_LEFT)
 			. += THERMAL_PROTECTION_LEG_LEFT
-		if(flags & SLOT_LEG_RIGHT)
+		if(flags & LEG_RIGHT)
 			. += THERMAL_PROTECTION_LEG_RIGHT
-		if(flags & SLOT_FOOT_LEFT)
+		if(flags & FOOT_LEFT)
 			. += THERMAL_PROTECTION_FOOT_LEFT
-		if(flags & SLOT_FOOT_RIGHT)
+		if(flags & FOOT_RIGHT)
 			. += THERMAL_PROTECTION_FOOT_RIGHT
-		if(flags & SLOT_ARM_LEFT)
+		if(flags & ARM_LEFT)
 			. += THERMAL_PROTECTION_ARM_LEFT
-		if(flags & SLOT_ARM_RIGHT)
+		if(flags & ARM_RIGHT)
 			. += THERMAL_PROTECTION_ARM_RIGHT
-		if(flags & SLOT_HAND_LEFT)
+		if(flags & HAND_LEFT)
 			. += THERMAL_PROTECTION_HAND_LEFT
-		if(flags & SLOT_HAND_RIGHT)
+		if(flags & HAND_RIGHT)
 			. += THERMAL_PROTECTION_HAND_RIGHT
 	return min(1,.)
 
@@ -538,16 +558,12 @@
 
 	// Trace chemicals
 	for(var/T in chem_doses)
-		if(bloodstr.has_reagent(T) || ingested.has_reagent(T) || touching.has_reagent(T))
+		if(bloodstr?.has_reagent(T) || ingested?.has_reagent(T) || touching?.has_reagent(T))
 			continue
-		var/decl/material/R = T
+		var/datum/reagent/R = T
 		chem_doses[T] -= initial(R.metabolism)*2
 		if(chem_doses[T] <= 0)
 			chem_doses -= T
-
-	// Not an ideal place to handle this, but there doesn't seem to be a more appropriate centralized area.
-	if(chem_effects[CE_GLOWINGEYES])
-		update_eyes()
 
 	updatehealth()
 
@@ -598,7 +614,7 @@
 			if(sleeping)
 				handle_dreams()
 				if (mind)
-					//Are they SSD? If so we'll keep them asleep but work off some of that sleep var in case of sedatives or similar.
+					//Are they SSD? If so we'll keep them asleep but work off some of that sleep var in case of stoxin or similar.
 					if(client || sleeping > 3)
 						AdjustSleeping(-1)
 				species.handle_sleeping(src)
@@ -639,12 +655,12 @@
 		if(gloves && germ_level > gloves.germ_level && prob(10))
 			gloves.germ_level += 1
 
-		if(vsc.contaminant_control.CONTAMINATION_LOSS)
-			var/total_contamination= 0
+		if(vsc.plc.CONTAMINATION_LOSS)
+			var/total_phoronloss = 0
 			for(var/obj/item/I in src)
 				if(I.contaminated)
-					total_contamination += vsc.contaminant_control.CONTAMINATION_LOSS
-			adjustToxLoss(total_contamination)
+					total_phoronloss += vsc.plc.CONTAMINATION_LOSS
+			adjustToxLoss(total_phoronloss)
 
 		// nutrition decrease
 		if(nutrition > 0)
@@ -718,15 +734,13 @@
 			clear_fullscreen("brute")
 
 		if(healths)
-
-			var/mutable_appearance/healths_ma = new(healths)
-			healths_ma.icon_state = "blank"
-			healths_ma.overlays = null
-
+			healths.overlays.Cut()
 			if (chem_effects[CE_PAINKILLER] > 100)
-				healths_ma.icon_state = "health_numb"
+				healths.icon_state = "health_numb"
 			else
 				// Generate a by-limb health display.
+				healths.icon_state = "blank"
+
 				var/no_damage = 1
 				var/trauma_val = 0 // Used in calculating softcrit/hardcrit indicators.
 				if(can_feel_pain())
@@ -753,8 +767,8 @@
 							health_images += image('icons/mob/screen1_health.dmi',"hardcrit")
 				else if(no_damage)
 					health_images += image('icons/mob/screen1_health.dmi',"fullhealth")
-				healths_ma.overlays += health_images
-			healths.appearance = healths_ma
+
+				healths.overlays += health_images
 
 		if(nutrition_icon)
 			switch(nutrition)
@@ -783,7 +797,7 @@
 		if(pressure)
 			pressure.icon_state = "pressure[pressure_alert]"
 		if(toxin)
-			toxin.icon_state = "tox[toxins_alert ? "1" : "0"]"
+			toxin.icon_state = "tox[phoron_alert ? "1" : "0"]"
 		if(oxygen)
 			oxygen.icon_state = "oxy[oxygen_alert ? "1" : "0"]"
 		if(fire)
@@ -960,12 +974,21 @@
 		var/image/holder = hud_list[STATUS_HUD]
 		if(stat == DEAD)
 			holder.icon_state = "huddead"
+
+		else if(has_brain_worms())
+			var/mob/living/simple_animal/borer/B = has_brain_worms()
+			if(B.controlling)
+				holder.icon_state = "hudbrainworm"
+			else
+				holder.icon_state = "hudhealthy"
 		else
 			holder.icon_state = "hudhealthy"
 
 		var/image/holder2 = hud_list[STATUS_HUD_OOC]
 		if(stat == DEAD)
 			holder2.icon_state = "huddead"
+		else if(has_brain_worms())
+			holder2.icon_state = "hudbrainworm"
 		else
 			holder2.icon_state = "hudhealthy"
 
@@ -976,7 +999,7 @@
 		var/image/holder = hud_list[ID_HUD]
 		holder.icon_state = "hudunknown"
 		if(wear_id)
-			var/obj/item/card/id/I = wear_id.GetIdCard()
+			var/obj/item/weapon/card/id/I = wear_id.GetIdCard()
 			if(I)
 				var/datum/job/J = SSjobs.get_by_title(I.GetJobName())
 				if(J)
@@ -989,7 +1012,7 @@
 		holder.icon_state = "hudblank"
 		var/perpname = name
 		if(wear_id)
-			var/obj/item/card/id/I = wear_id.GetIdCard()
+			var/obj/item/weapon/card/id/I = wear_id.GetIdCard()
 			if(I)
 				perpname = I.registered_name
 
@@ -1018,13 +1041,13 @@
 		holder2.icon_state = "hudblank"
 		holder3.icon_state = "hudblank"
 
-		for(var/obj/item/implant/I in src)
+		for(var/obj/item/weapon/implant/I in src)
 			if(I.implanted)
-				if(istype(I,/obj/item/implant/tracking))
+				if(istype(I,/obj/item/weapon/implant/tracking))
 					holder1.icon_state = "hud_imp_tracking"
-				if(istype(I,/obj/item/implant/loyalty))
+				if(istype(I,/obj/item/weapon/implant/loyalty))
 					holder2.icon_state = "hud_imp_loyal"
-				if(istype(I,/obj/item/implant/chem))
+				if(istype(I,/obj/item/weapon/implant/chem))
 					holder3.icon_state = "hud_imp_chem"
 
 		hud_list[IMPTRACK_HUD] = holder1
@@ -1090,14 +1113,13 @@
 	..()
 	if(machine_visual && machine_visual != A)
 		machine_visual.remove_visual(src)
-	if(eyeobj)
-		eyeobj.remove_visual(src)
 
 /mob/living/carbon/human/handle_vision()
 	if(client)
 		client.screen.Remove(GLOB.global_hud.nvg, GLOB.global_hud.thermal, GLOB.global_hud.meson, GLOB.global_hud.science)
 	if(machine)
 		var/viewflags = machine.check_eye(src)
+		machine.apply_visual(src)
 		if(viewflags < 0)
 			reset_view(null, 0)
 		else if(viewflags)
@@ -1107,7 +1129,7 @@
 			reset_view(null)
 	else
 		var/isRemoteObserve = 0
-		if(z_eye)
+		if(bound_overlay && client.eye == bound_overlay && !is_physically_disabled())
 			isRemoteObserve = 1
 		else if((mRemote in mutations) && remoteview_target)
 			if(remoteview_target.stat == CONSCIOUS)

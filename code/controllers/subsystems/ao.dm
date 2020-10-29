@@ -30,9 +30,3 @@ SUBSYSTEM_DEF(ao)
 			CHECK_TICK
 		else if (MC_TICK_CHECK)
 			return
-
-/datum/controller/subsystem/ao/StartLoadingMap()
-	suspend()
-
-/datum/controller/subsystem/ao/StopLoadingMap()
-	wake()

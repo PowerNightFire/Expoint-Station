@@ -27,15 +27,6 @@
 	pipe_class = PIPE_CLASS_OMNI
 	connect_dir_type = SOUTH | NORTH | EAST | WEST
 
-	construct_state = /decl/machine_construction/default/panel_closed/item_chassis
-	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc/buildable,
-		/obj/item/stock_parts/keyboard,
-		/obj/item/stock_parts/console_screen
-	)
-	stat_immune = 0
-	frame_type = /obj/item/pipe
-
 /obj/machinery/atmospherics/omni/Initialize()
 	. = ..()
 	icon_state = "base"
@@ -84,14 +75,27 @@
 		return 0
 	return 1
 
-/obj/machinery/atmospherics/omni/deconstruction_pressure_check(state_path, mob/user)
+/obj/machinery/atmospherics/omni/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
+	if(!isWrench(W))
+		return ..()
+
 	var/int_pressure = 0
 	for(var/datum/omni_port/P in ports)
 		int_pressure += P.air.return_pressure()
 	var/datum/gas_mixture/env_air = loc.return_air()
 	if ((int_pressure - env_air.return_pressure()) > 2*ONE_ATMOSPHERE)
-		return FALSE
-	return TRUE
+		to_chat(user, "<span class='warning'>You cannot unwrench \the [src], it is too exerted due to internal pressure.</span>")
+		add_fingerprint(user)
+		return 1
+	to_chat(user, "<span class='notice'>You begin to unfasten \the [src]...</span>")
+	playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
+	if(do_after(user, 40, src))
+		user.visible_message( \
+			"<span class='notice'>\The [user] unfastens \the [src].</span>", \
+			"<span class='notice'>You have unfastened \the [src].</span>", \
+			"You hear a ratchet.")
+		new /obj/item/pipe(loc, src)
+		qdel(src)
 
 /obj/machinery/atmospherics/omni/interface_interact(mob/user)
 	ui_interact(user)
@@ -124,7 +128,7 @@
 	for(var/datum/omni_port/P in ports)
 		if(P.update)
 			var/ref_layer = 0
-			switch(P.direction)
+			switch(P.dir)
 				if(NORTH)
 					ref_layer = 1
 				if(SOUTH)
@@ -157,7 +161,7 @@
 		return
 
 	if(P.mode > 0)
-		var/ic_dir = dir_name(P.direction)
+		var/ic_dir = dir_name(P.dir)
 		var/ic_on = ic_dir
 		var/ic_off = ic_dir
 		switch(P.mode)
@@ -179,11 +183,11 @@
 		if(!istype(T))
 			return
 		if(!T.is_plating() && istype(P.node, /obj/machinery/atmospherics/pipe) && P.node.level == 1 )
-			//pipe_state = icon_manager.get_atmos_icon("underlay_down", P.direction, color_cache_name(P.node))
-			pipe_state = icon_manager.get_atmos_icon("underlay", P.direction, color_cache_name(P.node), "down")
+			//pipe_state = icon_manager.get_atmos_icon("underlay_down", P.dir, color_cache_name(P.node))
+			pipe_state = icon_manager.get_atmos_icon("underlay", P.dir, color_cache_name(P.node), "down")
 		else
-			//pipe_state = icon_manager.get_atmos_icon("underlay_intact", P.direction, color_cache_name(P.node))
-			pipe_state = icon_manager.get_atmos_icon("underlay", P.direction, color_cache_name(P.node), "intact")
+			//pipe_state = icon_manager.get_atmos_icon("underlay_intact", P.dir, color_cache_name(P.node))
+			pipe_state = icon_manager.get_atmos_icon("underlay", P.dir, color_cache_name(P.node), "intact")
 
 		return list("on_icon" = ic_on, "off_icon" = ic_off, "pipe_icon" = pipe_state)
 
@@ -209,11 +213,16 @@
 
 /obj/machinery/atmospherics/omni/network_expand(datum/pipe_network/new_network, obj/machinery/atmospherics/pipe/reference)
 	for(var/datum/omni_port/P in ports)
-		if((reference == P.node) && (new_network != P.network))
-			qdel(P.network)
+		if(reference == P.node)
 			P.network = new_network
+			break
 
-	new_network.normal_members |= src
+	if(new_network.normal_members.Find(src))
+		return 0
+
+	new_network.normal_members += src
+
+	return null
 
 /obj/machinery/atmospherics/omni/Destroy()
 	for(var/datum/omni_port/P in ports)
@@ -229,7 +238,7 @@
 	for(var/datum/omni_port/P in ports)
 		if(P.node || P.mode == 0)
 			continue
-		for(var/obj/machinery/atmospherics/target in get_step(src, P.direction))
+		for(var/obj/machinery/atmospherics/target in get_step(src, P.dir))
 			if(target.initialize_directions & get_dir(target,src))
 				if (check_connect_types(target,src))
 					P.node = target

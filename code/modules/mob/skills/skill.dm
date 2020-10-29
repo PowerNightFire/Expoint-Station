@@ -7,7 +7,7 @@ GLOBAL_LIST_EMPTY(skills)
 	var/desc = "Placeholder skill"         // Generic description of this skill.
 
    	// Names for different skill values, in order from 1 up.
-	var/list/levels = list( 		"Unskilled"			= "Unskilled Description",
+	var/levels = list( 		"Unskilled"			= "Unskilled Description",
 							"Basic"				= "Basic Description",
 							"Trained"			= "Trained Description",
 							"Experienced"		= "Experienced Description",
@@ -76,36 +76,34 @@ GLOBAL_LIST_EMPTY(skills)
 
 // ONLY SKILL DEFINITIONS BELOW THIS LINE
 // Category: Organizational
-/decl/hierarchy/skill/organizational/literacy
-	ID = "literacy"
-	name = "Literacy"
-	desc = "Your ability to read and write."
-	levels = list(
-		"Unskilled"   = "You are completely incapable of reading or writing.",
-		"Basic"       = "With time, effort and patience, you are able to read and write at a very simple level.",
-		"Trained"     = "You can read and write fluently, without delays or too many misunderstandings.",
-		"Experienced" = "You can quickly and easily digest complex information, and spend less time for a higher benefit from reading textbooks.",
-		"Master"      = "Your mastery of the written word is such that you are able to produce your own textbooks for others to use. You can write a textbook about any skill you have personally trained in."
-	)
+
+/decl/hierarchy/skill/organizational/bureaucracy
+	ID = "bureaucracy"
+	name = "Bureaucracy"
+	desc = "Your ability to write and complete paperwork, navigate complex organiztions, and understand laws and regulations."
+	levels = list( "Unskilled"			= "You can usually fill out basic paperwork, if with a few errors. You have a vague understanding of the law, gleaned mostly from the news and personal experience.",
+						"Basic"				= "You are familiar with the paperwork needed to do your job, and can navigate it well. You have some understanding of the law as it applies to you and those around you.",
+						"Trained"			= "You can navigate most paperwork thrown at you, even if you are unfamiliar with it. You have a good working understanding of the law and any regulations or procedures relevant to you.",
+						"Experienced"		= "With your experience, you can easily create paperwork for any eventuality, and write reports which are clear and understandable. You have an excellent knowledge of the law, possibly including formal legal training.",
+						"Master"		= "You can make paperwork dance to your bidding, and navigate the most byzantine bureaucratic structures with ease and familiarity. Your reports are works of literature. Your knowledge of the law is both broad and intimate, and you may be certified to practice law.")
+
+/decl/hierarchy/skill/organizational/bureaucracy/update_special_effects(mob/mob, level)
+	mob.remove_language(LANGUAGE_LEGALESE)
+	if(level >= SKILL_EXPERT)
+		mob.add_language(LANGUAGE_LEGALESE)
 
 /decl/hierarchy/skill/organizational/finance
 	ID = "finance"
 	name = "Finance"
 	desc = "Your ability to manage money and investments."
-	levels = list(
-		"Unskilled"   = "Your understanding of money starts and ends with personal finance. While you are able to perform basic transactions, you get lost in the details, and can find yourself ripped off on occasion.<br>- You get some starting money. Its amount increases with level.<br>- You can use the verb \"Appraise\" to see the value of different objects.",
-		"Basic"       = "You have some limited understanding of financial transactions, and will generally be able to keep accurate records. You have little experience with investment, and managing large sums of money will likely go poorly for you.",
-		"Trained"     = "You are good at managing accounts, keeping records, and arranging transactions. You have some familiarity with mortgages, insurance, stocks, and bonds, but may be stumped when facing more complicated financial devices.",
-		"Experienced" = "With your experience, you are familiar with any financial entities you may run across, and are a shrewd judge of value. More often than not, investments you make will pan out well.<BR> - You can speak and understand Legalese.",
-		"Master"      = "You have an excellent knowledge of finance, will often make brilliant investments, and have an instinctive feel for interstellar economics. Financial instruments are weapons in your hands. You likely have professional experience in the finance industry."
-	)
-
-/decl/hierarchy/skill/organizational/finance/update_special_effects(mob/mob, level)
-	mob.remove_language(/decl/language/legal)
-	if(level >= SKILL_EXPERT)
-		mob.add_language(/decl/language/legal)
+	levels = list( "Unskilled"			= "Your understanding of money starts and ends with personal finance. While you are able to perform basic transactions, you get lost in the details, and can find yourself ripped off on occasion.<br>- You get some starting money. Its amount increases with level.<br>- You can use the verb \"Appraise\" to see the value of different objects.",
+						"Basic"				= "You have some limited understanding of financial transactions, and will generally be able to keep accurate records. You have little experience with investment, and managing large sums of money will likely go poorly for you.",
+						"Trained"			= "You are good at managing accounts, keeping records, and arranging transactions. You have some familiarity with mortgages, insurance, stocks, and bonds, but may be stumped when facing more complicated financial devices.",
+						"Experienced"		= "With your experience, you are familiar with any financial entities you may run across, and are a shrewd judge of value. More often than not, investments you make will pan out well.",
+						"Master"		= "You have an excellent knowledge of finance, will often make brilliant investments, and have an instinctive feel for interstellar economics. Financial instruments are weapons in your hands. You likely have professional experience in the finance industry.")
 
 // Category: General
+
 /decl/hierarchy/skill/general/EVA
 	ID = "EVA"
 	name = "Extra-vehicular activity"
@@ -134,7 +132,7 @@ GLOBAL_LIST_EMPTY(skills)
 						"Basic"				= "You can pilot a small, short-range craft safely, but larger ships are out of your area of expertise. You are by no means an expert, and probably don't have much training. Skills of this level are typical for deck crew.<br>- You can operate small shuttlecraft without error.<br>- You can completely avoid meteors on slow speed while using tiny shuttlecrafts such as the GUP.",
 						"Trained"			= "You are a trained pilot, and can safely operate anything from a small craft to a corvette. You can spend extended periods of time piloting a spacecraft, and you're versed in the abilities of different ships, and what makes them function. You can do basic maintenance on smaller vessels, and perform most basic maneuvers. You can use armed spacecraft. You can make basic calculations relating to piloting. Skills of this level are typical for newer pilots. You have probably received formal piloting training.<br>- You can operate large ships without error.<br>- You can completely avoid meteors on slow speed using any shuttlecrafts.",
 						"Experienced"		= "You are an experienced pilot, and can safely take the helm of many types of craft. You could probably live in a spacecraft, and you're very well versed in essentially everything related to space-faring vessels. Not only can you fly a ship, but you can perform difficult maneuvers, and make most calculations related to piloting a spacecraft. You can maintain a ship. Skills of this level are typical for very experienced pilots. You have received formal piloting training.<br>- You can completely avoid meteors on normal speed while using tiny shuttlecrafts.",
-						"Master"		= "Not only are you an exceptional pilot, but you have mastered peripheral functions such as stellar navigation and FTL jump plotting. You have experience performing complex maneuvers, managing squadrons of small craft, and operating in hostile environments.<br>- You can completely avoid meteors on normal speed using any shuttlecrafts.<br>- Less meteors will hit the ship while passing through meteor fields. <br>- You can manually land shuttles on exoplanets.")
+						"Master"		= "Not only are you an exceptional pilot, but you have mastered peripheral functions such as stellar navigation and bluespace jump plotting. You have experience performing complex maneuvers, managing squadrons of small craft, and operating in hostile environments.<br>- You can completely avoid meteors on normal speed using any shuttlecrafts.<br>- Less meteors will hit the ship while passing through meteor fields.")
 	difficulty = SKILL_AVERAGE
 	default_max = SKILL_ADEPT
 
@@ -142,7 +140,7 @@ GLOBAL_LIST_EMPTY(skills)
 	ID = "hauling"
 	name = "Athletics"
 	desc = "Your ability to perform tasks requiring great strength, dexterity, or endurance."
-	levels = list( "Unskilled"			= "You are not used to manual labor, tire easily, and are likely not in great shape. Extended heavy labor may be dangerous for you.<br>- You can pull objects but start to generate Lactate after tiring out. Your strength increases with level.<br>- You can throw objects. Their speed, thrown distance, and force increases with level.<br>- You can sprint, the stamina consumption rate is lowered with each level.<br>- You can leap by holding Ctrl and clicking on a distant target with grab intent, leap range is increased and chances of falling over are decreased with each level.",
+	levels = list( "Unskilled"			= "You are not used to manual labor, tire easily, and are likely not in great shape. Extended heavy labor may be dangerous for you.<br>- You can pull objects but start to generate Lactate after tiring out. Your strength increases with level.<br>- You can throw objects. Their speed, thrown distance, and force increases with level.<br>- You can sprint, the stamina consumption rate is lowered with each level.<br>- You can leap by clicking on a distant target with grab intent, leap range is increased and chances of falling over are decreased with each level.",
 						"Basic"				= "You have some familiarity with manual labor, and are in reasonable physical shape. Tasks requiring great dexterity or strength may still elude you.<br>- You can throw \"huge\" items or normal-sized mobs without getting weakened.",
 						"Trained"			= "You have sufficient strength and dexterity for even very strenuous tasks, and can work for a long time without tiring.",
 						"Experienced"		= "You have experience with heavy work in trying physical conditions, and are in excellent shape. You visit the gym frequently.",
@@ -219,7 +217,9 @@ GLOBAL_LIST_EMPTY(skills)
 			return difficulty
 		if(SKILL_ADEPT)
 			return 2*difficulty
-		if(SKILL_EXPERT, SKILL_PROF)
+		if(SKILL_EXPERT)
+			return 3*difficulty
+		if(SKILL_PROF)
 			return 4*difficulty
 		else
 			return 0
@@ -250,10 +250,9 @@ GLOBAL_LIST_EMPTY(skills)
 	ID = "construction"
 	name = "Construction"
 	desc = "Your ability to construct various buildings, such as walls, floors, tables and so on. Note that constructing devices such as APCs additionally requires the Electronics skill. A low level of this skill is typical for janitors, a high level of this skill is typical for engineers."
-	//TODO: generalize material lists based on mat properties.
 	levels = list( "Unskilled"			= "You can break furniture, disassemble chairs and tables, bash your way through a window, open a crate, or pry open an unpowered airlock. You can recognize and use basic hand tools and inflatable barriers, though not very well.<br>- You can attempt to construct items above your skill level, success chance increases with level.",
 						"Basic"				= "You can dismantle or build a wall or window, redecorate a room, and replace floor tiles and carpeting. You can safely use a welder without burning your eyes, and using hand tools is second nature to you.<br>- You can construct items from Steel, Wood and Plastic.",
-						"Trained"			= "You can build, repair, or dismantle most things, but will occasionally make mistakes and have things not come out the way you expected.<br>- You can construct items from Bronze, Gold, Osmium, Plasteel, Platinum, Reinforced Glass, Sandstone, Silver, Deuterium, Metallic Hydrogen, Borosilicate Glass, Tritium, and Uranium.<br>- You can construct furnitures.<br>- You can construct simple objects such as light fixtures, crude weapons, and wall-mounted frames.<br>- You can safely use the plasmacutter to deconstruct structures.",
+						"Trained"			= "You can build, repair, or dismantle most things, but will occasionally make mistakes and have things not come out the way you expected.<br>- You can construct items from Bronze, Gold, Osmium, Plasteel, Platinum, Reinforced Glass, Sandstone, Silver, Deuterium, Metallic Hydrogen, Phoron, Phoron Glass, Tritium, and Uranium.<br>- You can construct furnitures.<br>- You can construct simple objects such as light fixtures, crude weapons, and wall-mounted frames.<br>- You can safely use the plasmacutter to deconstruct structures.",
 						"Experienced"		= "You know how to seal a breach, rebuild broken piping, and repair major damage. You know the basics of structural engineering.<br>- You can construct items from Osmium-Carbide Plasteel, Titanium, Diamond and make complex objects such as machine and weapon frames.",
 						"Master"		= "You are a construction worker or engineer. You could pretty much rebuild the installation or ship from the ground up, given supplies, and you're efficient and skilled at repairing damage.")
 	difficulty = SKILL_EASY
@@ -297,8 +296,8 @@ GLOBAL_LIST_EMPTY(skills)
 	desc = "Describes the ability to assemble complex devices, such as computers, circuits, printers, robots or gas tank assemblies (bombs). Note that if a device requires electronics or programming, those skills are also required in addition to this skill."
 	levels = list( "Unskilled"			= "You know how to use the technology that was present in whatever society you grew up in. You know how to tell when something is malfunctioning, but you have to call tech support to get it fixed.",
 						"Basic"				= "You use and repair high-tech equipment in the course of your daily work. You can fix simple problems, and you know how to use a circuit printer or autolathe. You can build simple robots such as cleanbots and medibots.",
-						"Trained"			= "You can build or repair an exosuit or cyborg chassis, use advanced fabricators and analyzers, and build prosthetic limbs. You can safely transfer an MMI or posibrain into a cyborg chassis.<br>- You can attach robotic limbs. Its speed increases with level.",
-						"Experienced"		= "You have years of experience building or reverse-engineering complex devices. Your use of fabricators and destructive analyzers is efficient and methodical. You can design contraptions to order, and likely sell those designs at a profit.",
+						"Trained"			= "You can build or repair an exosuit or cyborg chassis, use a protolathe and destructive analyzer, and build prosthetic limbs. You can safely transfer an MMI or posibrain into a cyborg chassis.<br>- You can attach robotic limbs. Its speed increases with level.",
+						"Experienced"		= "You have years of experience building or reverse-engineering complex devices. Your use of the lathes and destructive analyzers is efficient and methodical. You can design contraptions to order, and likely sell those designs at a profit.",
 						"Master"		= "You are an inventor or researcher. You can design, build, and modify equipment that most people don't even know exists. You are at home in the lab and the workshop and you've never met a gadget you couldn't take apart, put back together, and replicate.")
 
 /decl/hierarchy/skill/research/science
@@ -306,8 +305,8 @@ GLOBAL_LIST_EMPTY(skills)
 	name = "Science"
 	desc = "Your experience and knowledge with scientific methods and processes."
 	levels = list( "Unskilled"			= "You know what science is and probably have a vague idea of the scientific method from your high school science classes.",
-						"Basic"				= "You keep up with scientific discoveries. You know a little about most fields of research. You've learned basic laboratory skills. You may read about science as a hobby; or you may be working in a field related to science and have learned about science that way. You could design a simple experiment.",
-						"Trained"			= "You are a scientist, perhaps a graduate student or post-graduate researcher. You can design an experiment, analyze your results, publish your data, and integrate what you've learned with the research of other scientists. Your laboratory skills are reliable, and you know how to find information you need when you research a new scientific topic. You can dissect exotic xenofauna without many issues.",
+						"Basic"				= "You keep up with scientific discoveries. You know a little about most fields of research. You've learned basic laboratory skills. You may read about science as a hobby; or you may be working in a field related to science and have learned about science that way. You could design a simple experiment.<br>- You can determine the presence of flora, fauna, and an atmosphere when scanning exoplanets.",
+						"Trained"			= "You are a scientist, perhaps a graduate student or post-graduate researcher. You can design an experiment, analyze your results, publish your data, and integrate what you've learned with the research of other scientists. Your laboratory skills are reliable, and you know how to find information you need when you research a new scientific topic. You can dissect exotic xenofauna without many issues.<br>- You can determine the composition of an atmosphere when scanning exoplanets.<br>- You can determine the number of artificial structures when scanning exoplanets.<br>- You can successfully perform surgery on slimes.",
 						"Experienced"		= "You are a junior researcher. You can formulate your own questions, use the tools at hand to test your hypotheses, and investigate entirely new phenomena. You likely have a track record of success in publishing your conclusions and attracting funding.",
 						"Master"		= "You are a professional researcher, and you have made multiple new discoveries in your field. Your experiments are well-designed. You are known as an authority in your specialty and your papers often appear in prestigious journals. You may be coordinating the research efforts of a team of scientists, and likely know how to make your findings appealing to investors.")
 
@@ -318,8 +317,8 @@ GLOBAL_LIST_EMPTY(skills)
 	name = "Medicine"
 	desc = "Covers an understanding of the human body and medicine. At a low level, this skill gives a basic understanding of applying common types of medicine, and a rough understanding of medical devices like the health analyzer. At a high level, this skill grants exact knowledge of all the medicine available on the installation, as well as the ability to use complex medical devices like the body scanner or mass spectrometer."
 	levels = list( "Unskilled"			= "You know first aid, such as how to apply a bandage or ointment to an injury. You can use an autoinjector designed for civilian use, probably by reading the directions printed on it. You can tell when someone is badly hurt and needs a doctor; you can see whether someone has a badly broken bone, is having trouble breathing, or is unconscious. You may have trouble telling the difference between unconscious and dead at distance.<br>- You can use first aid supplies found in kits and pouches, including autoinjectors.",
-						"Basic"				= "You've taken a nursing or EMT course. You can stop bleeding, do CPR, apply a splint, take someone's pulse, apply trauma and burn treatments, and read a handheld health scanner. You probably know that antitoxins help poisoning and oxygen helps people with breathing problems; you can use a syringe or start an IV. You've been briefed on the symptoms of common emergencies like a punctured lung, appendicitis, alcohol poisoning, or broken bones, and though you can't treat them, you know that they need a doctor's attention. You can recognize most emergencies as emergencies and safely stabilize and transport a patient.<br>- You can fully operate Defibrillators, Health Analyzers, IV drips, and Syringes.",
-						"Trained"			= "You are an experienced EMT, an experienced nurse, or a medical resident. You know how to treat most illnesses and injuries, though exotic illnesses and unusual injuries may still stump you. You have probably begun to specialize in some sub-field of medicine. In emergencies, you can think fast enough to keep your patients alive, and even when you can't treat a patient, you know how to find someone who can. You can use a full-body scanner, and you know something's off about a patient with an alien parasite.<br>- You can fully operate Sleepers.<br>- You can apply splints without failing. You can perform simple surgery steps if you have Experienced Anatomy skill",
+						"Basic"				= "You've taken a nursing or EMT course. You can stop bleeding, do CPR, apply a splint, take someone's pulse, apply trauma and burn treatments, and read a handheld health scanner. You probably know that Dylovene helps poisoning and Dexalin helps people with breathing problems; you can use a syringe or start an IV. You've been briefed on the symptoms of common emergencies like a punctured lung, appendicitis, alcohol poisoning, or broken bones, and though you can't treat them, you know that they need a doctor's attention. You can recognize most emergencies as emergencies and safely stabilize and transport a patient.<br>- You can fully operate Defibrillators, Health Analyzers, IV drips, and Syringes.",
+						"Trained"			= "You are an experienced EMT, an experienced nurse, or a medical resident. You know how to treat most illnesses and injuries, though exotic illnesses and unusual injuries may still stump you. You have probably begun to specialize in some sub-field of medicine. In emergencies, you can think fast enough to keep your patients alive, and even when you can't treat a patient, you know how to find someone who can. You can use a full-body scanner, and you know something's off about a patient with an alien parasite or cortical borer.<br>- You can fully operate Sleepers.<br>- You can apply splints without failing. You can perform simple surgery steps if you have Experienced Anatomy skill",
 						"Experienced"		= "You are a senior nurse or paramedic, or a practicing doctor. You know how to use all of the medical devices available to treat a patient. Your deep knowledge of the body and medications will let you diagnose and come up with a course of treatment for most ailments. You can perform a full-body scan thoroughly and find important information.<br>- You can fully operate Body Scanners. You can perform all surgery steps if you have Experienced Anatomy skill",
 						"Master"		= "You are an experienced doctor or an expert nurse or EMT. You've seen almost everything there is to see when it comes to injuries and illness and even when it comes to something you haven't seen, you can apply your wide knowledge base to put together a treatment. In a pinch, you can do just about any medicine-related task, but your specialty, whatever it may be, is where you really shine.")
 

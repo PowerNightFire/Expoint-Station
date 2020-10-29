@@ -1,7 +1,7 @@
 /obj/structure/railing
 	name = "railing"
 	desc = "A simple bar railing designed to protect against careless trespass."
-	icon = 'icons/obj/structures/railing.dmi'
+	icon = 'icons/obj/railing.dmi'
 	icon_state = "railing0-1"
 	density = 1
 	throwpass = 1
@@ -10,11 +10,10 @@
 	anchored = FALSE
 	atom_flags = ATOM_FLAG_NO_TEMP_CHANGE | ATOM_FLAG_CHECKS_BORDER | ATOM_FLAG_CLIMBABLE
 	obj_flags = OBJ_FLAG_ROTATABLE
-	material = DEFAULT_FURNITURE_MATERIAL
-	material_alteration = MAT_FLAG_ALTERATION_ALL
-	maxhealth = 100
 
 	var/broken =    FALSE
+	var/health =    70
+	var/maxhealth = 70
 	var/neighbor_status = 0
 
 /obj/structure/railing/mapped
@@ -28,6 +27,13 @@
 /obj/structure/railing/mapped/no_density
 	density = 0
 
+/obj/structure/railing/mapped/no_density/Initialize()
+	. = ..()
+	update_icon()
+
+/obj/structure/railing/New(var/newloc, var/material_key = DEFAULT_FURNITURE_MATERIAL)
+	material = material_key // Converted to datum in initialize().
+	..(newloc)
 
 /obj/structure/railing/Process()
 	if(!material || !material.radioactivity)
@@ -37,8 +43,18 @@
 
 /obj/structure/railing/Initialize()
 	. = ..()
-	if(!material)
+
+	if(!isnull(material) && !istype(material))
+		material = SSmaterials.get_material_by_name(material)
+	if(!istype(material))
 		return INITIALIZE_HINT_QDEL
+
+	name = "[material.display_name] [initial(name)]"
+	desc = "A simple [material.display_name] railing designed to protect against careless trespass."
+	maxhealth = round(material.integrity / 5)
+	health = maxhealth
+	color = material.icon_colour
+
 	if(material.products_need_process())
 		START_PROCESSING(SSobj, src)
 	if(material.conductive)
@@ -48,20 +64,11 @@
 	if(anchored)
 		update_icon(FALSE)
 
-/obj/structure/railing/get_material_health_modifier()
-	. = 0.2
-
-/obj/structure/railing/update_material_desc(override_desc)
-	if(material)
-		desc = "A simple [material.solid_name] railing designed to protect against careless trespass."
-	else
-		..()
-
 /obj/structure/railing/Destroy()
 	anchored = FALSE
-	atom_flags &= ~ATOM_FLAG_CHECKS_BORDER
+	atom_flags = 0
 	broken = TRUE
-	for(var/thing in RANGE_TURFS(src, 1))
+	for(var/thing in trange(1, src))
 		var/turf/T = thing
 		for(var/obj/structure/railing/R in T.contents)
 			R.update_icon()
@@ -190,7 +197,6 @@
 	if(istype(W, /obj/item/grab) && get_dist(src,user)<2)
 		var/obj/item/grab/G = W
 		if(istype(G.affecting, /mob/living/carbon/human))
-			var/mob/living/carbon/human/H = G.get_affecting_mob()
 			var/obj/occupied = turf_is_crowded()
 			if(occupied)
 				to_chat(user, "<span class='danger'>There's \a [occupied] in the way.</span>")
@@ -198,19 +204,19 @@
 
 			if(G.force_danger())
 				if(user.a_intent == I_HURT)
-					visible_message("<span class='danger'>[G.assailant] slams [H]'s face against \the [src]!</span>")
+					visible_message("<span class='danger'>[G.assailant] slams [G.affecting]'s face against \the [src]!</span>")
 					playsound(loc, 'sound/effects/grillehit.ogg', 50, 1)
-					var/blocked = H.get_blocked_ratio(BP_HEAD, BRUTE, damage = 8)
+					var/blocked = G.affecting.get_blocked_ratio(BP_HEAD, BRUTE, damage = 8)
 					if (prob(30 * (1 - blocked)))
-						H.Weaken(5)
-					H.apply_damage(8, BRUTE, BP_HEAD)
+						G.affecting.Weaken(5)
+					G.affecting.apply_damage(8, BRUTE, BP_HEAD)
 				else
-					if (get_turf(H) == get_turf(src))
-						H.forceMove(get_step(src, src.dir))
+					if (get_turf(G.affecting) == get_turf(src))
+						G.affecting.forceMove(get_step(src, src.dir))
 					else
-						H.dropInto(loc)
-					H.Weaken(5)
-					visible_message("<span class='danger'>[G.assailant] throws \the [H] over \the [src].</span>")
+						G.affecting.dropInto(loc)
+					G.affecting.Weaken(5)
+					visible_message("<span class='danger'>[G.assailant] throws \the [G.affecting] over \the [src].</span>")
 			else
 				to_chat(user, "<span class='danger'>You need a better grip to do that!</span>")
 			return
@@ -239,7 +245,7 @@
 			return
 	// Repair
 	if(isWelder(W))
-		var/obj/item/weldingtool/F = W
+		var/obj/item/weapon/weldingtool/F = W
 		if(F.isOn())
 			if(health >= maxhealth)
 				to_chat(user, "<span class='warning'>\The [src] does not need repairs.</span>")
@@ -272,12 +278,10 @@
 		return
 	. = ..()
 
-/obj/structure/railing/explosion_act(severity)
-	..()
-	if(!QDELETED(src))
-		qdel(src)
+/obj/structure/railing/ex_act(severity)
+	qdel(src)
 
-/obj/structure/railing/can_climb(var/mob/living/user, post_climb_check=0)
+/obj/structure/railing/can_climb(var/mob/living/user, post_climb_check=FALSE, check_silicon=TRUE)
 	. = ..()
 	if(. && get_turf(user) == get_turf(src))
 		var/turf/T = get_step(src, src.dir)

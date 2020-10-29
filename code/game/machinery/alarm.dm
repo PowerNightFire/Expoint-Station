@@ -1,19 +1,18 @@
 /decl/environment_data
 	var/list/important_gasses = list(
-		/decl/material/gas/oxygen =         TRUE,
-		/decl/material/gas/nitrogen =       TRUE,
-		/decl/material/gas/carbon_dioxide = TRUE
+		GAS_OXYGEN =         TRUE,
+		GAS_NITROGEN =       TRUE,
+		GAS_CO2 = TRUE
 	)
 	var/list/dangerous_gasses = list(
-		/decl/material/gas/carbon_dioxide = TRUE,
-		/decl/material/gas/chlorine = TRUE
+		GAS_CO2 = TRUE
 	)
 	var/list/filter_gasses = list(
-		/decl/material/gas/oxygen,
-		/decl/material/gas/nitrogen,
-		/decl/material/gas/carbon_dioxide,
-		/decl/material/gas/nitrous_oxide,
-		/decl/material/gas/chlorine
+		GAS_OXYGEN,
+		GAS_NITROGEN,
+		GAS_CO2,
+		GAS_N2O,
+		GAS_PHORON
 	)
 
 ////////////////////////////////////////
@@ -57,7 +56,7 @@
 	idle_power_usage = 80
 	active_power_usage = 1000 //For heating/cooling rooms. 1000 joules equates to about 1 degree every 2 seconds for a single tile of air.
 	power_channel = ENVIRON
-	initial_access = list(list(access_atmospherics, access_engine_equip))
+	req_access = list(list(access_atmospherics, access_engine_equip))
 	clicksound = "button"
 	clickvol = 30
 
@@ -72,6 +71,7 @@
 	var/rcon_setting = 2
 	var/rcon_time = 0
 	var/locked = 1
+	var/wiresexposed = 0 // If it's been screwdrivered open.
 	var/aidisabled = 0
 	var/shorted = 0
 
@@ -81,6 +81,7 @@
 	var/screen = AALARM_SCREEN_MAIN
 	var/area_uid
 	var/area/alarm_area
+	var/buildstage = 2 //2 is built, 1 is building, 0 is frame.
 
 	var/target_temperature = T0C+20
 	var/regulating_temperature = 0
@@ -99,19 +100,13 @@
 	var/environment_type = /decl/environment_data
 	var/report_danger_level = 1
 
-	base_type = /obj/machinery/alarm
-	frame_type = /obj/item/frame/air_alarm
-	stat_immune = 0
-	uncreated_component_parts = null
-	construct_state = /decl/machine_construction/wall_frame/panel_closed
-
 /obj/machinery/alarm/cold
 	target_temperature = T0C+4
 
 /decl/environment_data/finnish/Initialize()
 	. = ..()
-	important_gasses[/decl/material/liquid/water] = TRUE
-	dangerous_gasses -= /decl/material/liquid/water
+	important_gasses[GAS_STEAM] = TRUE
+	dangerous_gasses -= GAS_STEAM
 
 /obj/machinery/alarm/warm
 	target_temperature = T0C+75
@@ -124,40 +119,50 @@
 	report_danger_level = 0
 	breach_detection = 0
 
-/obj/machinery/alarm/server/Initialize()
-	initial_access = list(list(access_rd, access_atmospherics, access_engine_equip))
+/obj/machinery/alarm/server/New()
+	..()
+	req_access = list(access_rd, access_atmospherics, access_engine_equip)
 	TLV["temperature"] =	list(T0C-26, T0C, T0C+30, T0C+40) // K
 	target_temperature = T0C+10
-	. = ..()
 
 /obj/machinery/alarm/Destroy()
-	GLOB.name_set_event.unregister(src, get_area(src), .proc/change_area_name)
 	unregister_radio(src, frequency)
 	return ..()
 
-/obj/machinery/alarm/Initialize(mapload, var/dir)
-	. = ..()
+/obj/machinery/alarm/New(var/loc, var/dir, atom/frame)
+	..(loc)
 
+	if(dir)
+		src.set_dir(dir)
+
+	if(istype(frame))
+		buildstage = 0
+		wiresexposed = 1
+		pixel_x = (dir & 3)? 0 : (dir == 4 ? -21 : 21)
+		pixel_y = (dir & 3)? (dir ==1 ? -21 : 21) : 0
+		update_icon()
+		frame.transfer_fingerprints_to(src)
+
+/obj/machinery/alarm/Initialize()
+	. = ..()
 	alarm_area = get_area(src)
-	if(!alarm_area)
-		return // spawned in nullspace, presumably as a prototype for construction purposes.
 	area_uid = alarm_area.uid
 	if (name == "alarm")
 		SetName("[alarm_area.name] Air Alarm")
 
 	// breathable air according to human/Life()
-	TLV[/decl/material/gas/oxygen] =			list(16, 19, 135, 140) // Partial pressure, kpa
-	TLV[/decl/material/gas/carbon_dioxide] = list(-1.0, -1.0, 5, 10) // Partial pressure, kpa
+	TLV[GAS_OXYGEN] =			list(16, 19, 135, 140) // Partial pressure, kpa
+	TLV[GAS_CO2] = list(-1.0, -1.0, 5, 10) // Partial pressure, kpa
 	TLV["other"] =			list(-1.0, -1.0, 0.2, 0.5) // Partial pressure, kpa
 	TLV["pressure"] =		list(ONE_ATMOSPHERE*0.80,ONE_ATMOSPHERE*0.90,ONE_ATMOSPHERE*1.10,ONE_ATMOSPHERE*1.20) /* kpa */
 	TLV["temperature"] =	list(T0C-26, T0C, T0C+40, T0C+66) // K
 
+
 	var/decl/environment_data/env_info = decls_repository.get_decl(environment_type)
-	for(var/g in subtypesof(/decl/material/gas))
+	for(var/g in gas_data.gases)
 		if(!env_info.important_gasses[g])
 			trace_gas += g
 
-	GLOB.name_set_event.register(alarm_area, src, .proc/change_area_name)
 	set_frequency(frequency)
 	update_icon()
 
@@ -167,7 +172,7 @@
 	return ..()
 
 /obj/machinery/alarm/Process()
-	if((stat & (NOPOWER|BROKEN)) || shorted)
+	if((stat & (NOPOWER|BROKEN)) || shorted || buildstage != 2)
 		return
 
 	var/turf/simulated/location = loc
@@ -263,8 +268,8 @@
 		other_moles += environment.gas[g] //this is only going to be used in a partial pressure calc, so we don't need to worry about group_multiplier here.
 
 	pressure_dangerlevel = get_danger_level(environment_pressure, TLV["pressure"])
-	oxygen_dangerlevel = get_danger_level(environment.gas[/decl/material/gas/oxygen]*partial_pressure, TLV[/decl/material/gas/oxygen])
-	co2_dangerlevel = get_danger_level(environment.gas[/decl/material/gas/carbon_dioxide]*partial_pressure, TLV[/decl/material/gas/carbon_dioxide])
+	oxygen_dangerlevel = get_danger_level(environment.gas[GAS_OXYGEN]*partial_pressure, TLV[GAS_OXYGEN])
+	co2_dangerlevel = get_danger_level(environment.gas[GAS_CO2]*partial_pressure, TLV[GAS_CO2])
 	temperature_dangerlevel = get_danger_level(environment.temperature, TLV["temperature"])
 	other_dangerlevel = get_danger_level(other_moles*partial_pressure, TLV["other"])
 
@@ -305,22 +310,7 @@
 	return 0
 
 /obj/machinery/alarm/on_update_icon()
-	// Set pixel offsets
-	pixel_x = 0
-	pixel_y = 0
-	var/turf/T = get_step(get_turf(src), turn(dir, 180))
-	if(istype(T) && T.density)
-		if(dir == NORTH)
-			pixel_y = -21
-		else if(dir == SOUTH)
-			pixel_y = 21
-		else if(dir == WEST)
-			pixel_x = 21
-		else if(dir == EAST)
-			pixel_x = -21
-
-	// Broken or deconstructed states
-	if(!istype(construct_state, /decl/machine_construction/wall_frame/panel_closed))
+	if(wiresexposed)
 		icon_state = "alarmx"
 		set_light(0)
 		return
@@ -329,7 +319,6 @@
 		set_light(0)
 		return
 
-	// Operational: state according to danger level, lights on
 	var/icon_level = danger_level
 	if (alarm_area.atmosalm)
 		icon_level = max(icon_level, 1)	//if there's an atmos alarm but everything is okay locally, no need to go past yellow
@@ -345,6 +334,19 @@
 		if (2)
 			icon_state = "alarm1"
 			new_color = COLOR_RED_LIGHT
+
+	pixel_x = 0
+	pixel_y = 0
+	var/turf/T = get_step(get_turf(src), turn(dir, 180))
+	if(istype(T) && T.density)
+		if(dir == NORTH)
+			pixel_y = -21
+		else if(dir == SOUTH)
+			pixel_y = 21
+		else if(dir == WEST)
+			pixel_x = 21
+		else if(dir == EAST)
+			pixel_x = -21
 
 	set_light(0.25, 0.1, 1, 2, new_color)
 
@@ -413,7 +415,7 @@
 	switch(mode)
 		if(AALARM_MODE_SCRUBBING)
 			for(var/device_id in alarm_area.air_scrub_names)
-				send_signal(device_id, list("set_power"= 1, "set_scrub_gas" = list(/decl/material/gas/carbon_dioxide = 1), "set_scrubbing"= SCRUBBER_SCRUB, "panic_siphon"= 0) )
+				send_signal(device_id, list("set_power"= 1, "set_scrub_gas" = list(GAS_CO2 = 1), "set_scrubbing"= SCRUBBER_SCRUB, "panic_siphon"= 0) )
 			for(var/device_id in alarm_area.air_vent_names)
 				send_signal(device_id, list("set_power"= 1, "set_checks"= "default", "set_external_pressure"= "default") )
 
@@ -510,9 +512,8 @@
 		environment_data[++environment_data.len] = list("name" = "Pressure", "value" = pressure, "unit" = "kPa", "danger_level" = pressure_dangerlevel)
 		var/decl/environment_data/env_info = decls_repository.get_decl(environment_type)
 		for(var/gas_id in env_info.important_gasses)
-			var/decl/material/mat = decls_repository.get_decl(gas_id)
 			environment_data[++environment_data.len] = list(
-				"name" =  capitalize(mat.gas_name),
+				"name" =  gas_data.name[gas_id],
 				"value" = environment.gas[gas_id] / total * 100,
 				"unit" = "%",
 				"danger_level" = env_info.dangerous_gasses[gas_id] ? co2_dangerlevel : oxygen_dangerlevel
@@ -566,10 +567,9 @@
 					)
 				var/decl/environment_data/env_info = decls_repository.get_decl(environment_type)
 				for(var/gas_id in env_info.filter_gasses)
-					var/decl/material/mat = decls_repository.get_decl(gas_id)
 					scrubbers[scrubbers.len]["filters"] += list(
 						list(
-							"name" = capitalize(mat.gas_name),
+							"name" = gas_data.name[gas_id],
 							"id"   = gas_id,
 							"val"  = (gas_id in info["scrubbing_gas"])
 						)
@@ -591,8 +591,8 @@
 			var/thresholds[0]
 
 			var/list/gas_names = list(
-				/decl/material/gas/oxygen         = "O<sub>2</sub>",
-				/decl/material/gas/carbon_dioxide = "CO<sub>2</sub>",
+				GAS_OXYGEN         = "O<sub>2</sub>",
+				GAS_CO2 = "CO<sub>2</sub>",
 				"other"          = "Other")
 			for (var/g in gas_names)
 				thresholds[++thresholds.len] = list("name" = gas_names[g], "settings" = list())
@@ -614,6 +614,9 @@
 			data["thresholds"] = thresholds
 
 /obj/machinery/alarm/CanUseTopic(var/mob/user, var/datum/topic_state/state, var/href_list = list())
+	if(buildstage != 2)
+		return STATUS_CLOSE
+
 	if(aidisabled && isAI(user))
 		to_chat(user, "<span class='warning'>AI control for \the [src] interface has been disabled.</span>")
 		return STATUS_CLOSE
@@ -767,21 +770,91 @@
 			apply_mode()
 			return TOPIC_REFRESH
 
-/obj/machinery/alarm/attackby(obj/item/W, mob/user)
-	if(!(stat & (BROKEN|NOPOWER)))
-		if (istype(W, /obj/item/card/id) || istype(W, /obj/item/modular_computer))// trying to unlock the interface with an ID card
-			if(allowed(user) && !wires.IsIndexCut(AALARM_WIRE_IDSCAN))
-				locked = !locked
-				to_chat(user, "<span class='notice'>You [ locked ? "lock" : "unlock"] the Air Alarm interface.</span>")
-			else
-				to_chat(user, "<span class='warning'>Access denied.</span>")
-			return TRUE
+/obj/machinery/alarm/attackby(obj/item/W as obj, mob/user as mob)
+	switch(buildstage)
+		if(2)
+			if(isScrewdriver(W))  // Opening that Air Alarm up.
+//				to_chat(user, "You pop the Air Alarm's maintence panel open.")
+				wiresexposed = !wiresexposed
+				to_chat(user, "The wires have been [wiresexposed ? "exposed" : "unexposed"]")
+				update_icon()
+				return
+
+			if (wiresexposed && isWirecutter(W))
+				user.visible_message("<span class='warning'>[user] has cut the wires inside \the [src]!</span>", "You have cut the wires inside \the [src].")
+				playsound(src.loc, 'sound/items/Wirecutter.ogg', 50, 1)
+				new/obj/item/stack/cable_coil(get_turf(src), 5)
+				buildstage = 1
+				update_icon()
+				return
+
+			if (istype(W, /obj/item/weapon/card/id) || istype(W, /obj/item/modular_computer))// trying to unlock the interface with an ID card
+				if(stat & (NOPOWER|BROKEN))
+					to_chat(user, "It does nothing")
+					return
+				else
+					if(allowed(usr) && !wires.IsIndexCut(AALARM_WIRE_IDSCAN))
+						locked = !locked
+						to_chat(user, "<span class='notice'>You [ locked ? "lock" : "unlock"] the Air Alarm interface.</span>")
+					else
+						to_chat(user, "<span class='warning'>Access denied.</span>")
+			return
+
+		if(1)
+			if(isCoil(W))
+				var/obj/item/stack/cable_coil/C = W
+				if (C.use(5))
+					to_chat(user, "<span class='notice'>You wire \the [src].</span>")
+					buildstage = 2
+					update_icon()
+					return
+				else
+					to_chat(user, "<span class='warning'>You need 5 pieces of cable to do wire \the [src].</span>")
+					return
+
+			else if(isCrowbar(W))
+				to_chat(user, "You start prying out the circuit.")
+				playsound(src.loc, 'sound/items/Crowbar.ogg', 50, 1)
+				if(do_after(user,20) && buildstage == 1)
+					to_chat(user, "You pry out the circuit!")
+					var/obj/item/weapon/airalarm_electronics/circuit = new /obj/item/weapon/airalarm_electronics()
+					circuit.dropInto(user.loc)
+					buildstage = 0
+					update_icon()
+				return
+		if(0)
+			if(istype(W, /obj/item/weapon/airalarm_electronics))
+				to_chat(user, "You insert the circuit!")
+				qdel(W)
+				buildstage = 1
+				update_icon()
+				return
+
+			else if(isWrench(W))
+				to_chat(user, "You remove the fire alarm assembly from the wall!")
+				new /obj/item/frame/air_alarm(get_turf(user))
+				playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
+				qdel(src)
+
 	return ..()
 
-/obj/machinery/alarm/proc/change_area_name(var/area/A, var/old_area_name, var/new_area_name)
-	if(A != get_area(src))
-		return
-	SetName(replacetext(name,old_area_name,new_area_name))
+/obj/machinery/alarm/examine(mob/user)
+	. = ..()
+	if (buildstage < 2)
+		to_chat(user, "It is not wired.")
+	if (buildstage < 1)
+		to_chat(user, "The circuit is missing.")
+/*
+AIR ALARM CIRCUIT
+Just a object used in constructing air alarms
+*/
+/obj/item/weapon/airalarm_electronics
+	name = "air alarm electronics"
+	icon = 'icons/obj/doors/door_assembly.dmi'
+	icon_state = "door_electronics"
+	desc = "Looks like a circuit. Probably is."
+	w_class = ITEM_SIZE_SMALL
+	matter = list(MATERIAL_STEEL = 50, MATERIAL_GLASS = 50)
 
 /*
 FIRE ALARM
@@ -791,7 +864,6 @@ FIRE ALARM
 	desc = "<i>\"Pull this in case of emergency\"</i>. Thus, keep pulling it forever."
 	icon = 'icons/obj/firealarm.dmi'
 	icon_state = "casing"
-	required_interaction_dexterity = DEXTERITY_SIMPLE_MACHINES
 	var/detecting = 1.0
 	var/working = 1.0
 	var/time = 10.0
@@ -802,35 +874,24 @@ FIRE ALARM
 	active_power_usage = 6
 	power_channel = ENVIRON
 	var/last_process = 0
+	var/wiresexposed = 0
+	var/buildstage = 2 // 2 = complete, 1 = no wires,  0 = circuit gone
 	var/seclevel
 	var/global/list/overlays_cache
 
-	base_type = /obj/machinery/firealarm
-	frame_type = /obj/item/frame/fire_alarm
-	stat_immune = 0
-	uncreated_component_parts = null
-	construct_state = /decl/machine_construction/wall_frame/panel_closed
-
 /obj/machinery/firealarm/examine(mob/user)
 	. = ..()
-	if(loc.z in GLOB.using_map.contact_levels)
-		var/decl/security_state/security_state = decls_repository.get_decl(GLOB.using_map.security_state)
-		to_chat(user, "The current alert level is [security_state.current_security_level.name].")
+	var/decl/security_state/security_state = decls_repository.get_decl(GLOB.using_map.security_state)
+	to_chat(user, "The current alert level is [security_state.current_security_level.name].")
 
-/obj/machinery/firealarm/proc/get_cached_overlay(key)
-	if(!LAZYACCESS(overlays_cache, key))
-		var/state
-		switch(key)
-			if(/decl/machine_construction/wall_frame/panel_open)
-				state = "b2"
-			if(/decl/machine_construction/wall_frame/no_wires)
-				state = "b1"
-			if(/decl/machine_construction/wall_frame/no_circuit)
-				state = "b0"
-			else
-				state = key
-		LAZYSET(overlays_cache, key, image(icon, state))
-	return overlays_cache[key]
+/obj/machinery/firealarm/Initialize()
+	. = ..()
+	update_icon()
+
+/obj/machinery/firealarm/proc/get_cached_overlay(state)
+	if(!LAZYACCESS(overlays_cache, state))
+		LAZYSET(overlays_cache, state, image(icon, state))
+	return overlays_cache[state]
 
 /obj/machinery/firealarm/on_update_icon()
 	overlays.Cut()
@@ -850,8 +911,8 @@ FIRE ALARM
 			pixel_x = -21
 
 	icon_state = "casing"
-	if(construct_state && !istype(construct_state, /decl/machine_construction/wall_frame/panel_closed))
-		overlays += get_cached_overlay(construct_state.type)
+	if(wiresexposed)
+		overlays += get_cached_overlay("b[buildstage]")
 		set_light(0)
 		return
 
@@ -866,13 +927,12 @@ FIRE ALARM
 			overlays += get_cached_overlay("fire1")
 			set_light(0.25, 0.1, 1, 2, COLOR_RED)
 		else if(z in GLOB.using_map.contact_levels)
+			overlays += get_cached_overlay("fire0")
 			var/decl/security_state/security_state = decls_repository.get_decl(GLOB.using_map.security_state)
 			var/decl/security_level/sl = security_state.current_security_level
 
 			set_light(sl.light_max_bright, sl.light_inner_range, sl.light_outer_range, 2, sl.light_color_alarm)
 			overlays += image(sl.icon, sl.overlay_alarm)
-		else
-			overlays += get_cached_overlay("fire0")
 
 /obj/machinery/firealarm/fire_act(datum/gas_mixture/air, exposed_temperature, exposed_volume)
 	if(src.detecting)
@@ -888,10 +948,63 @@ FIRE ALARM
 		alarm(rand(30/severity, 60/severity))
 	..()
 
-/obj/machinery/firealarm/attackby(obj/item/W, mob/user)
-	if((. = ..()))
+/obj/machinery/firealarm/attackby(obj/item/W as obj, mob/user as mob)
+	if(isScrewdriver(W) && buildstage == 2)
+		wiresexposed = !wiresexposed
+		update_icon()
 		return
+
+	if(wiresexposed)
+		switch(buildstage)
+			if(2)
+				if(isMultitool(W))
+					src.detecting = !( src.detecting )
+					if (src.detecting)
+						user.visible_message("<span class='notice'>\The [user] has reconnected [src]'s detecting unit!</span>", "<span class='notice'>You have reconnected [src]'s detecting unit.</span>")
+					else
+						user.visible_message("<span class='notice'>\The [user] has disconnected [src]'s detecting unit!</span>", "<span class='notice'>You have disconnected [src]'s detecting unit.</span>")
+				else if(isWirecutter(W))
+					user.visible_message("<span class='notice'>\The [user] has cut the wires inside \the [src]!</span>", "<span class='notice'>You have cut the wires inside \the [src].</span>")
+					new/obj/item/stack/cable_coil(get_turf(src), 5)
+					playsound(src.loc, 'sound/items/Wirecutter.ogg', 50, 1)
+					buildstage = 1
+					update_icon()
+			if(1)
+				if(istype(W, /obj/item/stack/cable_coil))
+					var/obj/item/stack/cable_coil/C = W
+					if (C.use(5))
+						to_chat(user, "<span class='notice'>You wire \the [src].</span>")
+						buildstage = 2
+						update_icon()
+						return
+					else
+						to_chat(user, "<span class='warning'>You need 5 pieces of cable to wire \the [src].</span>")
+						return
+				else if(isCrowbar(W))
+					to_chat(user, "You start prying out the circuit.")
+					playsound(src.loc, 'sound/items/Crowbar.ogg', 50, 1)
+					if (do_after(user,20))
+						to_chat(user, "You pry out the circuit!")
+						var/obj/item/weapon/firealarm_electronics/circuit = new /obj/item/weapon/firealarm_electronics()
+						circuit.dropInto(user.loc)
+						buildstage = 0
+						update_icon()
+			if(0)
+				if(istype(W, /obj/item/weapon/firealarm_electronics))
+					to_chat(user, "You insert the circuit!")
+					qdel(W)
+					buildstage = 1
+					update_icon()
+
+				else if(isWrench(W))
+					to_chat(user, "You remove the fire alarm assembly from the wall!")
+					new /obj/item/frame/fire_alarm(get_turf(user))
+					playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
+					qdel(src)
+		return
+
 	src.alarm()
+	return
 
 /obj/machinery/firealarm/Process()//Note: this processing was mostly phased out due to other code, and only runs when needed
 	if(stat & (NOPOWER|BROKEN))
@@ -955,6 +1068,11 @@ FIRE ALARM
 		onclose(user, "firealarm")
 	return
 
+/obj/machinery/firealarm/CanUseTopic(user)
+	if(buildstage != 2)
+		return STATUS_CLOSE
+	return ..()
+
 /obj/machinery/firealarm/OnTopic(user, href_list)
 	if (href_list["reset"])
 		src.reset()
@@ -995,11 +1113,38 @@ FIRE ALARM
 	playsound(src, 'sound/machines/fire_alarm.ogg', 75, 0)
 	return
 
-/obj/machinery/firealarm/Initialize(mapload, dir)
-	. = ..()
+
+
+/obj/machinery/firealarm/New(loc, dir, atom/frame)
+	..(loc)
+
 	if(dir)
-		set_dir((dir & (NORTH|SOUTH)) ? dir : GLOB.reverse_dir[dir])
-	queue_icon_update()
+		src.set_dir((dir & (NORTH|SOUTH)) ? dir : GLOB.reverse_dir[dir])
+
+	if(istype(frame))
+		buildstage = 0
+		wiresexposed = 1
+		pixel_x = (dir & 3)? 0 : (dir == 4 ? -21 : 21)
+		pixel_y = (dir & 3)? (dir ==1 ? -21 : 21) : 0
+		update_icon()
+		frame.transfer_fingerprints_to(src)
+
+/obj/machinery/firealarm/Initialize()
+	. = ..()
+	if(z in GLOB.using_map.contact_levels)
+		update_icon()
+
+/*
+FIRE ALARM CIRCUIT
+Just a object used in constructing fire alarms
+*/
+/obj/item/weapon/firealarm_electronics
+	name = "fire alarm electronics"
+	icon = 'icons/obj/doors/door_assembly.dmi'
+	icon_state = "door_electronics"
+	desc = "A circuit. It has a label on it, it says \"Can handle heat levels up to 40 degrees celsius!\"."
+	w_class = ITEM_SIZE_SMALL
+	matter = list(MATERIAL_STEEL = 50, MATERIAL_GLASS = 50)
 
 /obj/machinery/partyalarm
 	name = "\improper PARTY BUTTON"

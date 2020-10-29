@@ -6,8 +6,6 @@
 	desc = "Protected by FRM."
 	icon = 'icons/obj/module.dmi'
 	icon_state = "cyborg_upgrade"
-	material = /decl/material/solid/metal/steel
-
 	var/locked = 0
 	var/require_module = 0
 	var/installed = 0
@@ -17,6 +15,7 @@
 		to_chat(usr, "<span class='warning'>The [src] will not function on a deceased robot.</span>")
 		return 1
 	return 0
+
 
 /obj/item/borg/upgrade/reset
 	name = "robotic module reset board"
@@ -52,11 +51,6 @@
 	name = "\improper Madhouse Productions Official Party Module"
 	desc = "A weird-looking chip with third-party additions crudely soldered in. It feels cheap and chintzy in the hand. Inscribed into the cheap-feeling circuit is the logo of Madhouse Productions, a group that arranges parties and entertainment venues."
 	new_module = "Party"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/metal/aluminium = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/gemstone/diamond = MATTER_AMOUNT_TRACE
-	)
 
 /obj/item/borg/upgrade/uncertified/combat
 	name = "ancient module"
@@ -69,7 +63,7 @@
 	icon_state = "cyborg_upgrade1"
 	var/heldname = "default name"
 
-/obj/item/borg/upgrade/rename/attack_self(mob/user)
+/obj/item/borg/upgrade/rename/attack_self(mob/user as mob)
 	heldname = sanitizeSafe(input(user, "Enter new robot name", "Robot Reclassification", heldname), MAX_NAME_LEN)
 
 /obj/item/borg/upgrade/rename/action(var/mob/living/silicon/robot/R)
@@ -102,8 +96,7 @@
 	name = "robot emergency restart module"
 	desc = "Used to force a restart of a disabled-but-repaired robot, bringing it back online."
 	icon_state = "cyborg_upgrade1"
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
+
 
 /obj/item/borg/upgrade/restart/action(var/mob/living/silicon/robot/R)
 	if(R.health < 0)
@@ -126,11 +119,6 @@
 	desc = "Used to kick in a robot's VTEC systems, increasing their speed."
 	icon_state = "cyborg_upgrade2"
 	require_module = 1
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE
-	)
 
 /obj/item/borg/upgrade/vtec/action(var/mob/living/silicon/robot/R)
 	if(..()) return FALSE
@@ -148,12 +136,7 @@
 	desc = "Used to cool a mounted energy gun, increasing the potential current in it and thus its recharge rate."
 	icon_state = "cyborg_upgrade3"
 	require_module = 1
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/gemstone/diamond = MATTER_AMOUNT_TRACE
-	)
+
 
 /obj/item/borg/upgrade/weaponcooler/action(var/mob/living/silicon/robot/R)
 	if(..()) return 0
@@ -163,7 +146,7 @@
 		to_chat(usr, "There's no mounting point for the module!")
 		return 0
 
-	var/obj/item/gun/energy/gun/secure/mounted/T = locate() in R.module
+	var/obj/item/weapon/gun/energy/gun/secure/mounted/T = locate() in R.module
 	if(!T)
 		T = locate() in R.module.equipment
 	if(!T)
@@ -185,11 +168,6 @@
 	desc = "A carbon dioxide jetpack suitable for low-gravity mining operations."
 	icon_state = "cyborg_upgrade3"
 	require_module = 1
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/plastic = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/metal/uranium = MATTER_AMOUNT_TRACE
-	)
 
 /obj/item/borg/upgrade/jetpack/action(var/mob/living/silicon/robot/R)
 	if(..()) return 0
@@ -199,8 +177,8 @@
 		to_chat(usr, "There's no mounting point for the module!")
 		return 0
 	else
-		R.module.equipment += new/obj/item/tank/jetpack/carbondioxide
-		for(var/obj/item/tank/jetpack/carbondioxide in R.module.equipment)
+		R.module.equipment += new/obj/item/weapon/tank/jetpack/carbondioxide
+		for(var/obj/item/weapon/tank/jetpack/carbondioxide in R.module.equipment)
 			R.internals = src
 		//R.icon_state="Miner+j"
 		return 1
@@ -210,11 +188,6 @@
 	desc = "A rapid construction device module for use during construction operations."
 	icon_state = "cyborg_upgrade3"
 	require_module = 1
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/metal/silver = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE
-	)
 
 /obj/item/borg/upgrade/rcd/action(var/mob/living/silicon/robot/R)
 	if(..()) return 0
@@ -224,19 +197,14 @@
 		to_chat(usr, "There's no mounting point for the module!")
 		return 0
 	else
-		R.module.equipment += new/obj/item/rcd/borg(R.module)
+		R.module.equipment += new/obj/item/weapon/rcd/borg(R.module)
 		return 1
 
-/obj/item/borg/upgrade/syndicate
+/obj/item/borg/upgrade/syndicate/
 	name = "illegal equipment module"
 	desc = "Unlocks the hidden, deadlier functions of a robot."
 	icon_state = "cyborg_upgrade3"
 	require_module = 1
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/gemstone/diamond = MATTER_AMOUNT_TRACE
-	)
 
 /obj/item/borg/upgrade/syndicate/action(var/mob/living/silicon/robot/R)
 	if(..()) return 0

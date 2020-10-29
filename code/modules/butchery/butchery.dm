@@ -4,11 +4,11 @@
 #define CARCASS_JOINTED  "jointed"
 
 /mob/living
-	var/meat_type =         /obj/item/chems/food/snacks/meat
+	var/meat_type =         /obj/item/weapon/reagent_containers/food/snacks/meat
 	var/meat_amount =       3
-	var/skin_material =     /decl/material/solid/skin
+	var/skin_material =     MATERIAL_SKIN_GENERIC
 	var/skin_amount =       3
-	var/bone_material =     /decl/material/solid/bone
+	var/bone_material =     MATERIAL_BONE_GENERIC
 	var/bone_amount =       3
 	var/skull_type
 	var/butchery_rotation = 90
@@ -25,13 +25,13 @@
 	blood_splatter(get_turf(src), src, large = TRUE)
 	var/meat_count = 0
 	for(var/i=0;i<meat_amount;i++)
-		var/obj/item/chems/food/snacks/meat/slab = new effective_meat_type(get_turf(src))
+		var/obj/item/weapon/reagent_containers/food/snacks/meat/slab = new effective_meat_type(get_turf(src))
 		. += slab
 		if(istype(slab))
 			meat_count++
 	if(reagents && meat_count > 0)
 		var/reagent_split = round(reagents.total_volume/meat_count,1)
-		for(var/obj/item/chems/food/snacks/meat/slab in .)
+		for(var/obj/item/weapon/reagent_containers/food/snacks/meat/slab in .)
 			reagents.trans_to_obj(slab, reagent_split)
 
 /mob/living/carbon/human/harvest_meat()
@@ -43,7 +43,7 @@
 /mob/living/proc/harvest_skin()
 	. = list()
 	if(skin_material && skin_amount)
-		var/decl/material/M = decls_repository.get_decl(skin_material)
+		var/material/M = SSmaterials.get_material_by_name(skin_material)
 		. += new M.stack_type(get_turf(src), skin_amount, skin_material)
 		blood_splatter(get_turf(src), src, large = TRUE)
 
@@ -51,7 +51,7 @@
 	. = list()
 	var/turf/T = get_turf(src)
 	if(bone_material && bone_amount)
-		var/decl/material/M = decls_repository.get_decl(bone_material)
+		var/material/M = SSmaterials.get_material_by_name(bone_material)
 		. += new M.stack_type(T, bone_amount, bone_material)
 		blood_splatter(T, src, large = TRUE)
 	if(skull_type)
@@ -63,14 +63,8 @@
 	desc = "It looks pretty sharp."
 	anchored = TRUE
 	density =  TRUE
-	icon = 'icons/obj/structures/butchery.dmi'
+	icon = 'icons/obj/butchery.dmi'
 	icon_state = "spike"
-	material = /decl/material/solid/metal/steel
-	material_alteration = MAT_FLAG_ALTERATION_COLOR | MAT_FLAG_ALTERATION_NAME
-	matter = list(
-		DEFAULT_FURNITURE_MATERIAL = MATTER_AMOUNT_PRIMARY
-	)
-	tool_interaction_flags = (TOOL_INTERACTION_ANCHOR | TOOL_INTERACTION_DECONSTRUCT)
 
 	var/mob/living/occupant
 	var/occupant_state =   CARCASS_EMPTY
@@ -108,10 +102,6 @@
 
 /obj/structure/kitchenspike/proc/try_spike(var/mob/living/target, var/mob/living/user)
 	if(!istype(target) || !Adjacent(user) || user.incapacitated())
-		return
-
-	if(!anchored)
-		to_chat(user, SPAN_WARNING("Anchor \the [src] in place first!"))
 		return
 
 	if(!target.stat)
@@ -225,7 +215,7 @@
 			if(CARCASS_JOINTED)
 				do_butchery_step(user, CARCASS_EMPTY,   "butchering")
 		busy = FALSE
-		return TRUE
+
 #undef CARCASS_EMPTY
 #undef CARCASS_FRESH
 #undef CARCASS_SKINNED

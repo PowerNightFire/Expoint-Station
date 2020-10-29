@@ -22,32 +22,30 @@
 	response_harm   = "pokes"
 	maxHealth = 125
 	health = 125
-	natural_weapon = /obj/item/natural_weapon/bite
+	melee_damage_lower = 10
+	melee_damage_upper = 15
+	melee_damage_flags = DAM_SHARP
 	heat_damage_per_tick = 20
 	cold_damage_per_tick = 20
 	faction = "spiders"
 	pass_flags = PASS_FLAG_TABLE
 	move_to_delay = 3
 	speed = 1
-	max_gas = list(
-		/decl/material/gas/chlorine = 1, 
-		/decl/material/gas/carbon_dioxide = 5, 
-		/decl/material/gas/methyl_bromide = 1
-	)
+	max_gas = list(GAS_PHORON = 1, GAS_CO2 = 5, GAS_METHYL_BROMIDE = 1)
 	bleed_colour = "#0d5a71"
 	break_stuff_probability = 25
 	pry_time = 8 SECONDS
 	pry_desc = "clawing"
 
-	meat_type = /obj/item/chems/food/snacks/spider
+	meat_type = /obj/item/weapon/reagent_containers/food/snacks/spider
 	meat_amount = 3
 	bone_material = null
 	bone_amount =   0
-	skin_material = /decl/material/solid/skin/insect
+	skin_material = MATERIAL_SKIN_CHITIN
 	skin_amount =   5
 
 	var/poison_per_bite = 6
-	var/poison_type = /decl/material/liquid/venom
+	var/poison_type = /datum/reagent/toxin/venom
 	var/busy = 0
 	var/eye_colour
 	var/allowed_eye_colours = list(COLOR_RED, COLOR_ORANGE, COLOR_YELLOW, COLOR_LIME, COLOR_DEEP_SKY_BLUE, COLOR_INDIGO, COLOR_VIOLET, COLOR_PINK)
@@ -65,7 +63,8 @@
 	meat_amount = 4
 	maxHealth = 200
 	health = 200
-	natural_weapon = /obj/item/natural_weapon/bite/strong
+	melee_damage_lower = 13
+	melee_damage_upper = 18
 	poison_per_bite = 5
 	speed = 2
 	move_to_delay = 4
@@ -84,10 +83,12 @@
 	icon_dead = "beige_dead"
 	maxHealth = 80
 	health = 80
+	melee_damage_lower = 10
+	melee_damage_upper = 14
 	harm_intent_damage = 6 //soft
 	poison_per_bite = 5
 	speed = 0
-	poison_type = /decl/material/liquid/sedatives
+	poison_type = /datum/reagent/soporific
 	break_stuff_probability = 10
 	pry_time = 9 SECONDS
 
@@ -109,7 +110,8 @@
 	icon_dead = "black_dead"
 	maxHealth = 150
 	health = 150
-	natural_weapon = /obj/item/natural_weapon/bite/strong
+	melee_damage_lower = 17
+	melee_damage_upper = 20
 	poison_per_bite = 10
 	speed = -1
 	move_to_delay = 2
@@ -132,6 +134,8 @@
 	icon_dead = "purple_dead"
 	maxHealth = 90
 	health = 90
+	melee_damage_lower = 10
+	melee_damage_upper = 14
 	poison_per_bite = 15
 	ranged = TRUE
 	move_to_delay = 2
@@ -146,12 +150,14 @@
 
 //General spider procs
 /mob/living/simple_animal/hostile/giant_spider/Initialize(var/mapload, var/atom/parent)
-	color = parent?.color || color
+	get_light_and_color(parent)
 	spider_randomify()
 	update_icon()
 	. = ..()
 
 /mob/living/simple_animal/hostile/giant_spider/proc/spider_randomify() //random math nonsense to get their damage, health and venomness values
+	melee_damage_lower = rand(0.8 * initial(melee_damage_lower), initial(melee_damage_lower))
+	melee_damage_upper = rand(initial(melee_damage_upper), (1.2 * initial(melee_damage_upper)))
 	maxHealth = rand(initial(maxHealth), (1.4 * initial(maxHealth)))
 	health = maxHealth
 	eye_colour = pick(allowed_eye_colours)
@@ -183,9 +189,7 @@
 	. = ..()
 	if(isliving(.))
 		if(health < maxHealth)
-			var/obj/item/W = get_natural_weapon()
-			if(W)
-				health += (0.2 * W.force) //heal a bit on hit
+			health += (0.2 * rand(melee_damage_lower, melee_damage_upper)) //heal a bit on hit
 		if(ishuman(.))
 			var/mob/living/carbon/human/H = .
 			var/obj/item/clothing/suit/space/S = H.get_covering_equipped_item_by_zone(BP_CHEST)
@@ -259,9 +263,8 @@ Guard caste procs
 
 /mob/living/simple_animal/hostile/giant_spider/guard/proc/go_berserk()
 	audible_message("<span class='danger'>\The [src] chitters wildly!</span>")
-	var/obj/item/W = get_natural_weapon()
-	if(W)
-		W.force = initial(W.force) + 5
+	melee_damage_lower +=5
+	melee_damage_upper +=5
 	move_to_delay--
 	break_stuff_probability = 45
 	addtimer(CALLBACK(src, .proc/calm_down), 3 MINUTES)
@@ -269,9 +272,8 @@ Guard caste procs
 /mob/living/simple_animal/hostile/giant_spider/guard/proc/calm_down()
 	berserking = FALSE
 	visible_message("<span class='notice'>\The [src] calms down and surveys the area.</span>")
-	var/obj/item/W = get_natural_weapon()
-	if(W)
-		W.force = initial(W.force)
+	melee_damage_lower -= 5
+	melee_damage_upper -= 5
 	move_to_delay++
 	break_stuff_probability = 10
 
@@ -303,7 +305,7 @@ Nurse caste procs
 		var/mob/living/carbon/human/H = .
 		if(prob(infest_chance) && max_eggs)
 			var/obj/item/organ/external/O = pick(H.organs)
-			if(!BP_IS_PROSTHETIC(O) && !BP_IS_CRYSTAL(O) && (LAZYLEN(O.implants) < 2))
+			if(!BP_IS_ROBOTIC(O) && !BP_IS_CRYSTAL(O) && (LAZYLEN(O.implants) < 2))
 				var/eggs = new /obj/effect/spider/eggcluster(O, src)
 				O.implants += eggs
 				max_eggs--
@@ -444,13 +446,13 @@ Hunter caste procs
 		stop_automation = first_stop_automation
 	
 /mob/living/simple_animal/hostile/giant_spider/hunter/throw_impact(atom/hit_atom)
-	..()
 	if(isliving(hit_atom))
 		var/mob/living/target = hit_atom
 		stop_automation = FALSE
 		visible_message(SPAN_DANGER("\The [src] slams into \the [target], knocking them over!"))
 		target.Weaken(1)
 		MoveToTarget()
+	. = ..()
 
 /******************
 Spitter caste procs

@@ -17,6 +17,8 @@ var/list/department_radio_keys = list(
 	  ":p" = "AI Private",	".p" = "AI Private",
 	  ":z" = "Entertainment",".z" = "Entertainment",
 	  ":y" = "Exploration",		".y" = "Exploration",
+	  ":k" = "Recon",		".k" = "Recon",	//Skrell Recon ship
+	  ":o" = "Response Team",".o" = "Response Team", //ERT
 
 	  ":R" = "right ear",	".R" = "right ear",
 	  ":L" = "left ear",	".L" = "left ear",
@@ -35,6 +37,7 @@ var/list/department_radio_keys = list(
 	  ":P" = "AI Private",	".P" = "AI Private",
 	  ":Z" = "Entertainment",".Z" = "Entertainment",
 	  ":Y" = "Exploration",		".Y" = "Exploration",
+	  ":O" = "Response Team", ".O" = "Response Team",
 
 	  //kinda localization -- rastaf0
 	  //same keys as above, but on russian keyboard layout. This file uses cp1251 as encoding.
@@ -77,8 +80,8 @@ proc/get_radio_key_from_channel(var/channel)
 
 	var/mob/living/carbon/human/H = src
 	if (H.l_ear || H.r_ear)
-		var/obj/item/radio/headset/dongle
-		if(istype(H.l_ear,/obj/item/radio/headset))
+		var/obj/item/device/radio/headset/dongle
+		if(istype(H.l_ear,/obj/item/device/radio/headset))
 			dongle = H.l_ear
 		else
 			dongle = H.r_ear
@@ -86,10 +89,10 @@ proc/get_radio_key_from_channel(var/channel)
 		if(dongle.translate_binary) return 1
 
 /mob/living/proc/get_default_language()
-	. = ispath(default_language, /decl/language) && decls_repository.get_decl(default_language)
+	return default_language
 
 /mob/proc/is_muzzled()
-	return istype(wear_mask, /obj/item/clothing/mask/muzzle) || istype(wear_mask, /obj/item/clothing/sealant)
+	return istype(wear_mask, /obj/item/clothing/mask/muzzle)
 
 //Takes a list of the form list(message, verb, whispering) and modifies it as needed
 //Returns 1 if a speech problem was applied, 0 otherwise
@@ -122,7 +125,7 @@ proc/get_radio_key_from_channel(var/channel)
 
 /mob/living/proc/handle_message_mode(message_mode, message, verb, speaking, used_radios, alt_name)
 	if(message_mode == "intercom")
-		for(var/obj/item/radio/intercom/I in view(1, null))
+		for(var/obj/item/device/radio/intercom/I in view(1, null))
 			I.talk_into(src, message, verb, speaking)
 			used_radios += I
 	return 0
@@ -152,8 +155,7 @@ proc/get_radio_key_from_channel(var/channel)
 
 	return html_encode(message)
 
-/mob/living/say(var/message, var/decl/language/speaking = null, var/verb="says", var/alt_name="", whispering)
-	set waitfor = FALSE
+/mob/living/say(var/message, var/datum/language/speaking = null, var/verb="says", var/alt_name="", whispering)
 	if(client)
 		if(client.prefs.muted & MUTE_IC)
 			to_chat(src, "<span class='warning'>You cannot speak in IC (Muted).</span>")
@@ -164,10 +166,10 @@ proc/get_radio_key_from_channel(var/channel)
 			return say_dead(message)
 		return
 
-	if(findlasttextEx(message, get_prefix_key(/decl/prefix/custom_emote)) == 1)
+	var/prefix = copytext(message,1,2)
+	if(prefix == get_prefix_key(/decl/prefix/custom_emote))
 		return emote(copytext(message,2))
-
-	if(findlasttextEx(message, get_prefix_key(/decl/prefix/visible_emote)) == 1)
+	if(prefix == get_prefix_key(/decl/prefix/visible_emote))
 		return custom_emote(1, copytext(message,2))
 
 	//parse the radio code and consume it
@@ -224,7 +226,7 @@ proc/get_radio_key_from_channel(var/channel)
 	if(handle_message_mode(message_mode, message, verb, speaking, used_radios, alt_name))
 		return 1
 
-	var/list/handle_v = (istype(speaking) && speaking.get_spoken_sound()) || handle_speech_sound()
+	var/list/handle_v = handle_speech_sound()
 	var/sound/speech_sound = handle_v[1]
 	var/sound_vol = handle_v[2]
 
@@ -241,12 +243,8 @@ proc/get_radio_key_from_channel(var/channel)
 		message_range = 1
 		if(speaking)
 			message_range = speaking.get_talkinto_msg_range(message)
-		var/msg
 		if(!speaking || !(speaking.flags & NO_TALK_MSG))
-			msg = "<span class='notice'>\The [src] talks into \the [used_radios[1]].</span>"
-		for(var/mob/living/M in hearers(5, src))
-			if((M != src) && msg)
-				M.show_message(msg)
+			src.visible_message(SPAN_NOTICE("\The [src] talks into \the [used_radios[1]]."), blind_message = SPAN_NOTICE("You hear someone talk into their headset."), range = 5, exclude_mobs = list(src))
 			if (speech_sound)
 				sound_vol *= 0.5
 
@@ -282,6 +280,15 @@ proc/get_radio_key_from_channel(var/channel)
 	var/image/speech_bubble = image('icons/mob/talk.dmi',src,"h[speech_bubble_test]")
 	speech_bubble.layer = layer
 	speech_bubble.plane = plane
+	// VOREStation Port - Attempt Multi-Z Talking
+	// for (var/atom/movable/AM in get_above_oo())
+	// 	var/turf/ST = get_turf(AM)
+	// 	if(ST)
+	// 		get_mobs_and_objs_in_view_fast(ST, world.view, listening, listening_obj, /datum/client_preference/ghost_ears)
+	// 		var/image/z_speech_bubble = image('icons/mob/talk.dmi', AM, "h[speech_bubble_test]")
+	// 		QDEL_IN(z_speech_bubble, 30)
+
+	// VOREStation Port End
 
 	var/list/speech_bubble_recipients = list()
 	for(var/mob/M in listening)
@@ -289,6 +296,7 @@ proc/get_radio_key_from_channel(var/channel)
 			M.hear_say(message, verb, speaking, alt_name, italics, src, speech_sound, sound_vol)
 			if(M.client)
 				speech_bubble_recipients += M.client
+
 
 	for(var/obj/O in listening_obj)
 		spawn(0)
@@ -313,8 +321,7 @@ proc/get_radio_key_from_channel(var/channel)
 				if(O) //It's possible that it could be deleted in the meantime.
 					O.hear_talk(src, stars(message), verb, speaking)
 
-	INVOKE_ASYNC(GLOBAL_PROC, .proc/animate_speech_bubble, speech_bubble, speech_bubble_recipients, 30)
-	INVOKE_ASYNC(src, /atom/movable/proc/animate_chat, message, speaking, italics, speech_bubble_recipients, 30)
+	flick_overlay(speech_bubble, speech_bubble_recipients, 30)
 
 	if(whispering)
 		log_whisper("[name]/[key] : [message]")
@@ -322,8 +329,7 @@ proc/get_radio_key_from_channel(var/channel)
 		log_say("[name]/[key] : [message]")
 	return 1
 
-/mob/living/proc/say_signlang(var/message, var/verb="gestures", var/decl/language/language)
-	message = filter_modify_message(message)
+/mob/living/proc/say_signlang(var/message, var/verb="gestures", var/datum/language/language)
 	for (var/mob/O in viewers(src, null))
 		O.hear_signlang(message, verb, language, src)
 	return 1

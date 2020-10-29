@@ -12,23 +12,9 @@
 	program_menu_icon = "cart"
 	extended_desc = "A management tool that allows for ordering of various supplies through the facility's cargo system. Some features may require additional access."
 	size = 21
-	available_on_network = 1
+	available_on_ntnet = 1
+	requires_ntnet = 1
 	category = PROG_SUPPLY
-
-/datum/computer_file/program/supply/is_supported_by_hardware(var/hardware_flag, var/mob/user, var/loud = FALSE)
-	. = ..()
-	if(. && computer)
-		var/datum/shuttle/autodock/ferry/supply/shuttle = SSsupply.shuttle
-		var/datum/computer_network/net = computer.get_network()
-		if(!shuttle || !net)
-			if(loud)
-				computer.show_error(user, "Unable to contact the supply shuttle.")
-			return FALSE
-		var/obj/physical_router = net.router.holder
-		if(!ARE_Z_CONNECTED(shuttle.waypoint_station.z, physical_router.z))
-			if(loud)
-				computer.show_error(user, "Unable to contact a supply shuttle serving your location.")
-			return FALSE
 
 /datum/computer_file/program/supply/process_tick()
 	..()
@@ -74,10 +60,8 @@
 		data["request_length"] = SSsupply.requestlist.len
 	data["screen"] = screen
 	data["credits"] = "[SSsupply.points]"
-
-	var/decl/currency/cur = decls_repository.get_decl(GLOB.using_map.default_currency)
-	data["currency"] = cur.name
-
+	data["currency"] = GLOB.using_map.supply_currency_name
+	data["currency_short"] = GLOB.using_map.supply_currency_name_short
 	switch(screen)
 		if(1)// Main ordering menu
 			data["categories"] = category_names
@@ -93,7 +77,7 @@
 			for(var/tag in SSsupply.point_source_descriptions)
 				var/entry = list()
 				entry["desc"] = SSsupply.point_source_descriptions[tag]
-				entry["points"] = cur.format_value(SSsupply.point_sources[tag] || 0)
+				entry["points"] = SSsupply.point_sources[tag] || 0
 				point_breakdown += list(entry) //Make a list of lists, don't flatten
 			data["point_breakdown"] = point_breakdown
 			data["can_print"] = can_print()
@@ -107,6 +91,7 @@
 				data["shuttle_location"] = "No Connection"
 			data["shuttle_status"] = get_shuttle_status()
 			data["shuttle_can_control"] = shuttle.can_launch()
+
 
 		if(4)// Order processing
 			if(is_admin) // No bother sending all of this if the user can't see it.
@@ -311,7 +296,6 @@
 	category_names.Cut()
 	category_contents.Cut()
 	var/decl/hierarchy/supply_pack/root = decls_repository.get_decl(/decl/hierarchy/supply_pack)
-	var/decl/currency/cur = decls_repository.get_decl(GLOB.using_map.default_currency)
 	for(var/decl/hierarchy/supply_pack/sp in root.children)
 		if(!sp.is_category())
 			continue // No children
@@ -322,7 +306,7 @@
 				continue
 			category.Add(list(list(
 				"name" = spc.name,
-				"cost" = cur.format_value(spc.cost),
+				"cost" = spc.cost,
 				"ref" = "\ref[spc]"
 			)))
 		category_contents[sp.name] = category

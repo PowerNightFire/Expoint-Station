@@ -1,4 +1,4 @@
-/var/server_name = "Nebula13"
+/var/server_name = "Baystation 12"
 
 /var/game_id = null
 /hook/global_init/proc/generate_gameid()
@@ -73,12 +73,20 @@
 
 	//logs
 	SetupLogs()
-
+	var/date_string = time2text(world.realtime, "YYYY/MM/DD")
+	href_logfile = file("data/logs/[date_string] hrefs.htm")
+	diary = file("data/logs/[date_string].log")
+	to_file(diary, "[log_end]\n[log_end]\nStarting up. (ID: [game_id]) [time2text(world.timeofday, "hh:mm.ss")][log_end]\n---------------------[log_end]")
 	changelog_hash = md5('html/changelog.html')					//used for telling if the changelog has changed recently
 
 	if(config && config.server_name != null && config.server_suffix && world.port > 0)
 		// dumb and hardcoded but I don't care~
 		config.server_name += " #[(world.port % 1000) / 100]"
+
+	if(config && config.log_runtime)
+		var/runtime_log = file("data/logs/runtime/[date_string]_[time2text(world.timeofday, "hh:mm")]_[game_id].log")
+		to_file(runtime_log, "Game [game_id] starting up at [time2text(world.timeofday, "hh:mm.ss")]")
+		log = runtime_log // Note that, as you can see, this is misnamed: this simply moves world.log into the runtime log file.
 
 	if(byond_version < RECOMMENDED_VERSION)
 		to_world_log("Your server's byond version does not meet the recommended requirements for this server. Please update BYOND")
@@ -102,7 +110,7 @@ var/world_topic_spam_protect_ip = "0.0.0.0"
 var/world_topic_spam_protect_time = world.timeofday
 
 /world/Topic(T, addr, master, key)
-	diary << "TOPIC: \"[T]\", from:[addr], master:[master], key:[key][log_end]"
+	to_file(diary, "TOPIC: \"[T]\", from:[addr], master:[master], key:[key][log_end]")
 
 	/* * * * * * * *
 	* Public Topic Calls
@@ -137,7 +145,7 @@ var/world_topic_spam_protect_time = world.timeofday
 		s["players"] = 0
 		s["stationtime"] = stationtime2text()
 		s["roundduration"] = roundduration2text()
-		s["map"] = GLOB.using_map.full_name
+		s["map"] = replacetext(GLOB.using_map.full_name, "\improper", "") //Done to remove the non-UTF-8 text macros 
 
 		var/active = 0
 		var/list/players = list()
@@ -183,7 +191,9 @@ var/world_topic_spam_protect_time = world.timeofday
 		var/list/L = list()
 		L["gameid"] = game_id
 		L["dm_version"] = DM_VERSION // DreamMaker version compiled in
+		L["dm_build"] = DM_BUILD // DreamMaker build compiled in
 		L["dd_version"] = world.byond_version // DreamDaemon version running on
+		L["dd_build"] = world.byond_build // DreamDaemon build running on
 
 		if(revdata.revision)
 			L["revision"] = revdata.revision
@@ -474,9 +484,14 @@ var/world_topic_spam_protect_time = world.timeofday
 
 	Master.Shutdown()
 
+	var/datum/chatOutput/co
+	for(var/client/C in GLOB.clients)
+		co = C.chatOutput
+		if(co)
+			co.ehjax_send(data = "roundrestart")
 	if(config.server)	//if you set a server location in config.txt, it sends you there instead of trying to reconnect to the same world address. -- NeoFite
 		for(var/client/C in GLOB.clients)
-			to_chat(C, link("byond://[config.server]"))
+			send_link(C, "byond://[config.server]")
 
 	if(config.wait_for_sigusr1_reboot && reason != 3)
 		text2file("foo", "reboot_called")
@@ -506,7 +521,7 @@ var/world_topic_spam_protect_time = world.timeofday
 /world/proc/save_mode(var/the_mode)
 	var/F = file("data/mode.txt")
 	fdel(F)
-	F << the_mode
+	to_file(F, the_mode)
 
 /hook/startup/proc/loadMOTD()
 	world.load_motd()
@@ -520,6 +535,8 @@ var/world_topic_spam_protect_time = world.timeofday
 	config = new /datum/configuration()
 	config.load("config/config.txt")
 	config.load("config/game_options.txt","game_options")
+	if (GLOB.using_map?.config_path)
+		config.load(GLOB.using_map.config_path, "using_map")
 	config.loadsql("config/dbconfig.txt")
 	config.load_event("config/custom_event.txt")
 
@@ -549,13 +566,18 @@ var/world_topic_spam_protect_time = world.timeofday
 				D.associate(GLOB.ckey_directory[ckey])
 
 /world/proc/update_status()
-	var/s = "<b>[station_name()]</b>"
+	var/s = ""
 
-	if(config && config.discordurl)
-		s += " (<a href=\"[config.discordurl]\">Discord</a>)"
+	if (config && config.server_name)
+		s += "<b>[config.server_name]</b> &#8212; "
 
-	if(config && config.server_name)
-		s = "<b>[config.server_name]</b> &#8212; [s]"
+	s += "<b>[station_name()]</b>";
+	s += " ("
+	s += "<a href=\"https://forums.baystation12.net/\">" //Change this to wherever you want the hub to link to.
+//	s += "[game_version]"
+	s += "Forums"  //Replace this with something else. Or ever better, delete it and uncomment the game version.
+	s += "</a>"
+	s += ")"
 
 	var/list/features = list()
 
@@ -604,16 +626,7 @@ var/world_topic_spam_protect_time = world.timeofday
 		GLOB.log_directory += "[replacetext(time_stamp(), ":", ".")]"
 
 	GLOB.world_qdel_log = file("[GLOB.log_directory]/qdel.log")
-	WRITE_FILE(GLOB.world_qdel_log, "\n\nStarting up round ID [game_id]. [time_stamp()]\n---------------------")
-
-	GLOB.world_href_log = file("[GLOB.log_directory]/href.log") // Used for config-optional total href logging
-	diary = file("[GLOB.log_directory]/main.log") // This is the primary log, containing attack, admin, and game logs.
-	WRITE_FILE(diary, "[log_end]\n[log_end]\nStarting up. (ID: [game_id]) [time2text(world.timeofday, "hh:mm.ss")][log_end]\n---------------------[log_end]")
-
-	if(config && config.log_runtime)
-		var/runtime_log = file("[GLOB.log_directory]/runtime.log")
-		WRITE_FILE(runtime_log, "Game [game_id] starting up at [time2text(world.timeofday, "hh:mm.ss")]")
-		log = runtime_log // runtimes and some other output is logged directly to world.log, which is redirected here.
+	to_file(GLOB.world_qdel_log, "\n\nStarting up round ID [game_id]. [time_stamp()]\n---------------------")
 
 #define FAILED_DB_CONNECTION_CUTOFF 5
 var/failed_db_connections = 0
@@ -647,7 +660,6 @@ proc/setup_database_connection()
 	else
 		failed_db_connections++		//If it failed, increase the failed connections counter.
 		to_world_log(dbcon.ErrorMsg())
-
 	return .
 
 //This proc ensures that the connection to the feedback database (global variable dbcon) is established

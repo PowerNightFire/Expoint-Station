@@ -23,17 +23,13 @@
 
 	var/list/mixing_inputs = list()
 	build_icon_state = "omni_mixer"
-	base_type = /obj/machinery/atmospherics/omni/mixer/buildable
-
-/obj/machinery/atmospherics/omni/mixer/buildable
-	uncreated_component_parts = null
 
 /obj/machinery/atmospherics/omni/mixer/Initialize()
 	. = ..()
 	if(mapper_set())
 		var/con = 0
 		for(var/datum/omni_port/P in ports)
-			switch(P.direction)
+			switch(P.dir)
 				if(NORTH)
 					if(tag_north_con && tag_north == 1)
 						P.concentration = tag_north_con
@@ -113,8 +109,6 @@
 	var/transfer_moles_max = INFINITY
 
 	for (var/datum/omni_port/P in inputs)
-		if(!P.concentration)
-			continue
 		transfer_moles += (set_flow_rate*P.concentration/P.air.volume)*P.air.total_moles
 		transfer_moles_max = min(transfer_moles_max, calculate_transfer_moles(P.air, output.air, delta, (output && output.network && output.network.volume) ? output.network.volume : 0))
 	transfer_moles = between(0, transfer_moles, transfer_moles_max)
@@ -123,16 +117,16 @@
 	if (transfer_moles > MINIMUM_MOLES_TO_FILTER)
 		power_draw = mix_gas(src, mixing_inputs, output.air, transfer_moles, power_rating)
 
+	if (power_draw >= 0)
+		last_power_draw = power_draw
+		use_power_oneoff(power_draw)
+
 		for(var/datum/omni_port/P in inputs)
 			if(P.concentration && P.network)
 				P.network.update = 1
 
 		if(output.network)
 			output.network.update = 1
-
-	if (power_draw >= 0)
-		last_power_draw = power_draw
-		use_power_oneoff(power_draw)
 
 	return 1
 
@@ -170,7 +164,7 @@
 			if(ATM_OUTPUT)
 				output = 1
 
-		portData[++portData.len] = list("dir" = dir_name(P.direction, capitalize = 1), \
+		portData[++portData.len] = list("dir" = dir_name(P.dir, capitalize = 1), \
 										"concentration" = P.concentration, \
 										"input" = input, \
 										"output" = output, \
@@ -227,7 +221,7 @@
 
 	for(var/datum/omni_port/P in ports)
 		var/old_mode = P.mode
-		if(P.direction == port)
+		if(P.dir == port)
 			switch(mode)
 				if(ATM_INPUT)
 					if(P.mode == ATM_OUTPUT)
@@ -245,10 +239,10 @@
 		if(P.mode != old_mode)
 			switch(P.mode)
 				if(ATM_NONE)
-					initialize_directions &= ~P.direction
+					initialize_directions &= ~P.dir
 					P.disconnect()
 				else
-					initialize_directions |= P.direction
+					initialize_directions |= P.dir
 					P.connect()
 			P.update = 1
 
@@ -266,7 +260,7 @@
 	var/remain_con = 1
 
 	for(var/datum/omni_port/P in inputs)
-		if(P.direction == port)
+		if(P.dir == port)
 			old_con = P.concentration
 		else if(!P.con_lock)
 			non_locked++
@@ -291,7 +285,7 @@
 	remain_con /= max(1, non_locked)
 
 	for(var/datum/omni_port/P in inputs)
-		if(P.direction == port)
+		if(P.dir == port)
 			P.concentration = new_con
 		else if(!P.con_lock)
 			P.concentration = remain_con
@@ -305,5 +299,5 @@
 
 /obj/machinery/atmospherics/omni/mixer/proc/con_lock(var/port = NORTH)
 	for(var/datum/omni_port/P in inputs)
-		if(P.direction == port)
+		if(P.dir == port)
 			P.con_lock = !P.con_lock

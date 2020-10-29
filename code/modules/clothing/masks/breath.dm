@@ -4,7 +4,7 @@
 	icon_state = "breath"
 	item_state = "breath"
 	item_flags = ITEM_FLAG_AIRTIGHT|ITEM_FLAG_FLEXIBLEMATERIAL
-	body_parts_covered = SLOT_FACE
+	body_parts_covered = FACE
 	w_class = ITEM_SIZE_SMALL
 	gas_transfer_coefficient = 0.10
 	permeability_coefficient = 0.50
@@ -13,8 +13,11 @@
 	down_item_flags = ITEM_FLAG_THICKMATERIAL
 	down_icon_state = "breathdown"
 	pull_mask = 1
-	origin_tech = "{'materials':1}"
-	material = /decl/material/solid/plastic
+	sprite_sheets = list(
+		SPECIES_VOX = 'icons/mob/species/vox/onmob_mask_vox.dmi',
+		SPECIES_VOX_ARMALIS = 'icons/mob/species/vox/onmob_mask_vox_armalis.dmi',
+		SPECIES_UNATHI = 'icons/mob/species/unathi/generated/onmob_mask_unathi.dmi',
+		)
 
 /obj/item/clothing/mask/breath/medical
 	desc = "A close-fitting sterile mask that can be manually connected to an air supply for treatment."
@@ -45,6 +48,6 @@
 	down_icon_state = "scba_maskdown"
 	item_flags = ITEM_FLAG_AIRTIGHT|ITEM_FLAG_FLEXIBLEMATERIAL
 	flags_inv = HIDEEYES
-	body_parts_covered = SLOT_FACE|SLOT_EYES
+	body_parts_covered = FACE|EYES
 	gas_transfer_coefficient = 0.01
 

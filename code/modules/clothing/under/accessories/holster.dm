@@ -13,14 +13,14 @@
 	. = ..()
 	set_extension(src, /datum/extension/holster, hold, sound_in, sound_out, can_holster)
 
-/obj/item/clothing/accessory/storage/holster/attackby(obj/item/W, mob/user)
+/obj/item/clothing/accessory/storage/holster/attackby(obj/item/W as obj, mob/user as mob)
 	var/datum/extension/holster/H = get_extension(src, /datum/extension/holster)
 	if(H.holster(W, user))
 		return
 	else
 		. = ..(W, user)
 
-/obj/item/clothing/accessory/storage/holster/attack_hand(mob/user)
+/obj/item/clothing/accessory/storage/holster/attack_hand(mob/user as mob)
 	var/datum/extension/holster/H = get_extension(src, /datum/extension/holster)
 	if(H.unholster(user))
 		return
@@ -32,11 +32,11 @@
 	var/datum/extension/holster/H = get_extension(src, /datum/extension/holster)
 	H.examine_holster(user)
 
-/obj/item/clothing/accessory/storage/holster/on_attached(obj/item/clothing/under/S, mob/user)
+/obj/item/clothing/accessory/storage/holster/on_attached(obj/item/clothing/under/S, mob/user as mob)
 	..()
 	has_suit.verbs += /atom/proc/holster_verb
 
-/obj/item/clothing/accessory/storage/holster/on_removed(mob/user)
+/obj/item/clothing/accessory/storage/holster/on_removed(mob/user as mob)
 	if(has_suit)
 		var/remove_verb = TRUE
 		if(has_extension(has_suit, /datum/extension/holster))
@@ -76,14 +76,10 @@
 	sound_out = 'sound/effects/holster/tactiholsterout.ogg'
 
 /obj/item/clothing/accessory/storage/holster/machete
-	name = "blade sheath"
+	name = "machete sheath"
 	desc = "A handsome synthetic leather sheath with matching belt."
 	icon_state = "holster_machete"
-	can_holster = list(
-		/obj/item/hatchet/machete,
-		/obj/item/knife/kitchen/cleaver,
-		/obj/item/sword/katana
-	)
+	can_holster = list(/obj/item/weapon/material/hatchet/machete)
 	sound_in = 'sound/effects/holster/sheathin.ogg'
 	sound_out = 'sound/effects/holster/sheathout.ogg'
 
@@ -91,7 +87,7 @@
 	name = "leather knife sheath"
 	desc = "A synthetic leather knife sheath which you can strap on your leg."
 	icon_state = "sheath_leather"
-	can_holster = list(/obj/item/knife)
+	can_holster = list(/obj/item/weapon/material/knife)
 	sound_in = 'sound/effects/holster/sheathin.ogg'
 	sound_out = 'sound/effects/holster/sheathout.ogg'
 

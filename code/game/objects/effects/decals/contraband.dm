@@ -1,41 +1,45 @@
 
 //########################## CONTRABAND ;3333333333333333333 -Agouri ###################################################
 
-/obj/item/contraband
+/obj/item/weapon/contraband
 	name = "contraband item"
 	desc = "You probably shouldn't be holding this."
 	icon = 'icons/obj/contraband.dmi'
 	force = 0
 
 
-/obj/item/contraband/poster
+/obj/item/weapon/contraband/poster
 	name = "rolled-up poster"
 	desc = "The poster comes with its own automatic adhesive mechanism, for easy pinning to any vertical surface."
 	icon_state = "rolled_poster"
 	var/poster_type
 
-/obj/item/contraband/poster/Initialize(mapload, var/given_poster_type)
+/obj/item/weapon/contraband/poster/New(var/maploading, var/given_poster_type)
 	if(given_poster_type && !ispath(given_poster_type, /decl/poster))
-		. = INITIALIZE_HINT_QDEL
 		CRASH("Invalid poster type: [log_info_line(given_poster_type)]")
 
 	poster_type = given_poster_type || poster_type
 	if(!poster_type)
 		poster_type = pick(subtypesof(/decl/poster))
+	..()
 
+/obj/item/weapon/contraband/poster/Initialize()
 	var/list/posters = subtypesof(/decl/poster)
 	var/serial_number = posters.Find(poster_type)
 	name += " - No. [serial_number]"
 
-	return ..(mapload)
+	return ..()
 
 //Places the poster on a wall
-/obj/item/contraband/poster/afterattack(var/atom/A, var/mob/user, var/adjacent, var/clickparams)
+/obj/item/weapon/contraband/poster/afterattack(var/atom/A, var/mob/user, var/adjacent, var/clickparams)
 	if (!adjacent)
 		return
 
 	//must place on a wall and user must not be inside a closet/exosuit/whatever
 	var/turf/W = A
+	if(!isturf(W))
+		return
+
 	if (!W.is_wall() || !isturf(user.loc))
 		to_chat(user, "<span class='warning'>You can't place this here!</span>")
 		return
@@ -61,7 +65,7 @@
 		// We cannot rely on user being on the appropriate turf when placement fails
 		P.roll_and_drop(get_step(W, turn(placement_dir, 180)))
 
-/obj/item/contraband/poster/proc/ArePostersOnWall(var/turf/W, var/placed_poster)
+/obj/item/weapon/contraband/poster/proc/ArePostersOnWall(var/turf/W, var/placed_poster)
 	//just check if there is a poster on or adjacent to the wall
 	if (locate(/obj/structure/sign/poster) in W)
 		return TRUE
@@ -91,8 +95,9 @@
 /obj/structure/sign/poster/bay_50
 	poster_type = /decl/poster/bay_50
 
-/obj/structure/sign/poster/Initialize(mapload, var/placement_dir = null, var/give_poster_type = null)
-	. = ..(mapload)
+/obj/structure/sign/poster/New(var/newloc, var/placement_dir = null, var/give_poster_type = null)
+	..(newloc)
+
 	if(!poster_type)
 		if(give_poster_type)
 			poster_type = give_poster_type
@@ -120,7 +125,7 @@
 	desc = "[initial(desc)] [design.desc]"
 	icon_state = design.icon_state
 
-/obj/structure/sign/poster/attackby(obj/item/W, mob/user)
+/obj/structure/sign/poster/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isWirecutter(W))
 		playsound(loc, 'sound/items/Wirecutter.ogg', 100, 1)
 		if(ruined)
@@ -132,7 +137,7 @@
 		return
 
 
-/obj/structure/sign/poster/attack_hand(mob/user)
+/obj/structure/sign/poster/attack_hand(mob/user as mob)
 
 	if(ruined)
 		return
@@ -151,7 +156,7 @@
 		add_fingerprint(user)
 
 /obj/structure/sign/poster/proc/roll_and_drop(turf/newloc)
-	new/obj/item/contraband/poster(newloc, poster_type)
+	new/obj/item/weapon/contraband/poster(newloc, poster_type)
 	qdel(src)
 
 /decl/poster

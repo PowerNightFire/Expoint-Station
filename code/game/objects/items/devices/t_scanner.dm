@@ -1,15 +1,14 @@
 #define OVERLAY_CACHE_LEN 50
 
-/obj/item/t_scanner
+/obj/item/device/t_scanner
 	name = "\improper T-ray scanner"
 	desc = "A terahertz-ray emitter and scanner, capable of penetrating conventional hull materials."
-	icon = 'icons/obj/items/device/t_ray_scanner.dmi'
 	icon_state = "t-ray0"
-	slot_flags = SLOT_LOWER_BODY
+	slot_flags = SLOT_BELT
 	w_class = ITEM_SIZE_SMALL
 	item_state = "electronic"
-	material = /decl/material/solid/metal/aluminium
-	origin_tech = "{'magnets':1,'engineering':1}"
+	matter = list(MATERIAL_ALUMINIUM = 150)
+	origin_tech = list(TECH_MAGNET = 1, TECH_ENGINEERING = 1)
 	action_button_name = "Toggle T-Ray scanner"
 
 	var/scan_range = 3
@@ -20,28 +19,28 @@
 
 	var/global/list/overlay_cache = list() //cache recent overlays
 
-/obj/item/t_scanner/Destroy()
+/obj/item/device/t_scanner/Destroy()
 	. = ..()
 	if(on)
 		set_active(FALSE)
 
-/obj/item/t_scanner/on_update_icon()
+/obj/item/device/t_scanner/on_update_icon()
 	icon_state = "t-ray[on]"
 
-/obj/item/t_scanner/emp_act()
+/obj/item/device/t_scanner/emp_act()
 	audible_message(src, "<span class = 'notice'> \The [src] buzzes oddly.</span>")
 	set_active(FALSE)
 
-/obj/item/t_scanner/attack_self(mob/user)
+/obj/item/device/t_scanner/attack_self(mob/user)
 	set_active(!on)
 	user.update_action_buttons()
 
-/obj/item/t_scanner/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
+/obj/item/device/t_scanner/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
 	var/obj/structure/disposalpipe/D = target
 	if(D && istype(D))
 		to_chat(user, "<span class='info'>Pipe segment integrity: [(D.health / 10) * 100]%</span>")
 
-/obj/item/t_scanner/proc/set_active(var/active)
+/obj/item/device/t_scanner/proc/set_active(var/active)
 	on = active
 	if(on)
 		START_PROCESSING(SSfastprocess, src)
@@ -51,7 +50,7 @@
 	update_icon()
 
 //If reset is set, then assume the client has none of our overlays, otherwise we only send new overlays.
-/obj/item/t_scanner/Process()
+/obj/item/device/t_scanner/Process()
 	if(!on) return
 
 	//handle clients changing
@@ -81,7 +80,7 @@
 		active_scanned -= O
 
 //creates a new overlay for a scanned object
-/obj/item/t_scanner/proc/get_overlay(var/atom/movable/scanned)
+/obj/item/device/t_scanner/proc/get_overlay(var/atom/movable/scanned)
 	//Use a cache so we don't create a whole bunch of new images just because someone's walking back and forth in a room.
 	//Also means that images are reused if multiple people are using t-rays to look at the same objects.
 	if(scanned in overlay_cache)
@@ -103,7 +102,7 @@
 			if(ishuman(scanned))
 				var/mob/living/carbon/human/H = scanned
 				if(H.species.appearance_flags & HAS_SKIN_COLOR)
-					I.color = H.skin_colour
+					I.color = rgb(H.r_skin, H.g_skin, H.b_skin)
 					I.icon = 'icons/mob/mob.dmi'
 					I.icon_state = "phaseout"
 			var/mob/M = scanned
@@ -120,7 +119,7 @@
 	if(overlay_cache.len > OVERLAY_CACHE_LEN)
 		overlay_cache.Cut(1, overlay_cache.len-OVERLAY_CACHE_LEN-1)
 
-/obj/item/t_scanner/proc/get_scanned_objects(var/scan_dist)
+/obj/item/device/t_scanner/proc/get_scanned_objects(var/scan_dist)
 	. = list()
 
 	var/turf/center = get_turf(src.loc)
@@ -149,7 +148,7 @@
 
 
 
-/obj/item/t_scanner/proc/set_user_client(var/client/new_client)
+/obj/item/device/t_scanner/proc/set_user_client(var/client/new_client)
 	if(new_client == user_client)
 		return
 	if(user_client)
@@ -163,7 +162,7 @@
 
 	user_client = new_client
 
-/obj/item/t_scanner/dropped(mob/user)
+/obj/item/device/t_scanner/dropped(mob/user)
 	set_user_client(null)
 	..()
 

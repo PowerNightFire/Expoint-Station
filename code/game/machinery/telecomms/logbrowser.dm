@@ -16,7 +16,7 @@
 
 	var/universal_translate = 0 // set to 1 if it can translate nonhuman speech
 
-	initial_access = list(access_tcomsat)
+	req_access = list(access_tcomsat)
 
 /obj/machinery/computer/telecomms/server/interface_interact(mob/user)
 	interact(user)
@@ -106,7 +106,7 @@
 			dat += "</ol>"
 
 
-	var/datum/browser/written/popup = new(user, "comm_monitor", "Telecommunications Monitor", 575, 400)
+	var/datum/browser/popup = new(user, "comm_monitor", "Telecommunications Monitor", 575, 400)
 	popup.set_content(JOINTEXT(dat))
 	popup.open()
 

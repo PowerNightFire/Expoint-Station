@@ -1,23 +1,41 @@
 /obj/item/inflatable
 	name = "inflatable"
 	w_class = ITEM_SIZE_NORMAL
-	icon = 'icons/obj/structures/inflatable.dmi'
-	atmos_canpass = CANPASS_DENSITY
+	icon = 'icons/obj/inflatable.dmi'
 	var/deploy_path = null
 	var/inflatable_health
 
-/obj/item/inflatable/attack_self(mob/user)
+/obj/item/inflatable/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
 	if(!deploy_path)
 		return
-	if(!isturf(user.loc))
-		to_chat(user, SPAN_WARNING("\The [src] cannot be inflated here."))
+	if (loc != user)
 		return
-	user.visible_message("[user] starts inflating \the [src].", "You start inflating \the [src].")
-	if(!do_after(user, 1 SECOND, src))
+	var/turf/T = get_turf(target)
+	if (!user.TurfAdjacent(T))
 		return
+	var/obstruction = T.get_obstruction()
+	if (obstruction)
+		to_chat(user, SPAN_WARNING("\The [english_list(obstruction)] is blocking that spot."))
+		return
+	user.visible_message(
+		SPAN_ITALIC("\The [user] starts inflating \an [src]."),
+		SPAN_ITALIC("You start inflating \the [src]."),
+		SPAN_ITALIC("You can hear rushing air."),
+		range = 5
+	)
+	if (!do_after(user, 1 SECOND))
+		return
+	obstruction = T.get_obstruction()
+	if (obstruction)
+		to_chat(user, SPAN_WARNING("\The [english_list(obstruction)] is blocking that spot."))
+		return
+	user.visible_message(
+		SPAN_ITALIC("\The [user] finishes inflating \an [src]."),
+		SPAN_NOTICE("You inflate \the [src]."),
+		range = 5
+	)
 	playsound(loc, 'sound/items/zip.ogg', 75, 1)
-	user.visible_message(SPAN_NOTICE("[user] inflates \the [src]."), SPAN_NOTICE("You inflate \the [src]."))
-	var/obj/structure/inflatable/R = new deploy_path(user.loc)
+	var/obj/structure/inflatable/R = new deploy_path(T)
 	transfer_fingerprints_to(R)
 	R.add_fingerprint(user)
 	if(inflatable_health)
@@ -43,12 +61,12 @@
 	density = 1
 	anchored = 1
 	opacity = 0
-	icon = 'icons/obj/structures/inflatable.dmi'
+	icon = 'icons/obj/inflatable.dmi'
 	icon_state = "wall"
-	maxhealth = 20
-	hitsound = 'sound/effects/Glasshit.ogg'
+	atmos_canpass = CANPASS_DENSITY
 
 	var/undeploy_path = null
+	var/health = 10
 	var/taped
 
 	var/max_pressure_diff = RIG_MAX_PRESSURE
@@ -57,10 +75,14 @@
 /obj/structure/inflatable/wall
 	name = "inflatable wall"
 	undeploy_path = /obj/item/inflatable/wall
+	atmos_canpass = CANPASS_NEVER
+
+/obj/structure/inflatable/New(location)
+	..()
+	update_nearby_tiles(need_rebuild=1)
 
 /obj/structure/inflatable/Initialize()
 	. = ..()
-	update_nearby_tiles(need_rebuild=1)
 	START_PROCESSING(SSobj,src)
 
 /obj/structure/inflatable/Destroy()
@@ -68,21 +90,8 @@
 	STOP_PROCESSING(SSobj,src)
 	return ..()
 
-/obj/structure/inflatable/examine(mob/user, distance)
-	. = ..()
-	if(taped)
-		to_chat(user, SPAN_NOTICE("It's been duct taped in few places."))
-
 /obj/structure/inflatable/Process()
 	check_environment()
-
-/obj/structure/inflatable/show_examined_damage(mob/user, var/perc)
-	if(perc >= 1)
-		to_chat(user, SPAN_NOTICE("It's undamaged."))
-	else if(perc > 0.5)
-		to_chat(user, SPAN_WARNING("It's showing signs of damage."))
-	else if(perc > 0)
-		to_chat(user, SPAN_DANGER("It's heavily damaged!"))
 
 /obj/structure/inflatable/proc/check_environment()
 	var/min_pressure = INFINITY
@@ -99,53 +108,74 @@
 
 	if(prob(50) && (max_pressure - min_pressure > max_pressure_diff || max_local_temp > max_temp))
 		take_damage(1)
+		if(health == round(0.7*initial(health)))
+			visible_message(SPAN_WARNING("\The [src] is taking damage!"))
+		if(health == round(0.3*initial(health)))
+			visible_message(SPAN_WARNING("\The [src] is barely holding up!"))
+
+/obj/structure/inflatable/examine(mob/user)
+	. = ..()
+	if(health >= initial(health))
+		to_chat(user, SPAN_NOTICE("It's undamaged."))
+	else if(health >= 0.5 * initial(health))
+		to_chat(user, SPAN_WARNING("It's showing signs of damage."))
+	else if(health >= 0)
+		to_chat(user, SPAN_DANGER("It's heavily damaged!"))
+	to_chat(user, SPAN_NOTICE("It's been duct taped in few places."))
 
 /obj/structure/inflatable/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
 	return 0
 
 /obj/structure/inflatable/bullet_act(var/obj/item/projectile/Proj)
 	take_damage(Proj.get_structure_damage())
-	if(QDELETED(src))
+	if(health <= 0)
 		return PROJECTILE_CONTINUE
 
-/obj/structure/inflatable/explosion_act(severity)
-	..()
-	if(!QDELETED(src))
-		if(severity == 1)
-			physically_destroyed()
-		else if(severity == 2 || (severity == 3 && prob(50)))
-			deflate(TRUE)
+/obj/structure/inflatable/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			qdel(src)
+			return
+		if(2.0)
+			deflate(1)
+			return
+		if(3.0)
+			if(prob(50))
+				deflate(1)
+				return
 
-/obj/structure/inflatable/attack_hand(mob/user)
+/obj/structure/inflatable/attack_hand(mob/user as mob)
 	add_fingerprint(user)
+	return
 
-/obj/structure/inflatable/can_repair_with(obj/item/tool)
-	. = istype(tool, /obj/item/tape_roll) && (health < maxhealth)
+/obj/structure/inflatable/attackby(obj/item/weapon/W, mob/user)
+	if(!istype(W) || istype(W, /obj/item/weapon/inflatable_dispenser)) return
 
-/obj/structure/inflatable/handle_repair(mob/user, obj/item/tool)
-	if(taped)
-		to_chat(user, SPAN_WARNING("You cannot tape up \the [src] any further."))
-		return
-	last_damage_message = null
-	to_chat(user, SPAN_NOTICE("You tape up some of the damage to \the [src]."))
-	health = Clamp(health + 3, 0, maxhealth)
-	taped = TRUE
+	if(istype(W, /obj/item/weapon/tape_roll) && health < initial(health) - 3)
+		if(taped)
+			to_chat(user, SPAN_NOTICE("\The [src] can't be patched any more with \the [W]!"))
+			return TRUE
+		else
+			taped = TRUE
+			to_chat(user, SPAN_NOTICE("You patch some damage in \the [src] with \the [W]!"))
+			take_damage(-3)
+			return TRUE
+	else if((W.damtype == BRUTE || W.damtype == BURN) && (W.can_puncture() || W.force > 10))
+		..()
+		if(hit(W.force))
+			visible_message("<span class='danger'>[user] pierces [src] with [W]!</span>")
+	return
 
-/obj/structure/inflatable/attackby(obj/item/W, mob/user)
+/obj/structure/inflatable/proc/hit(var/damage, var/sound_effect = 1)
+	take_damage(damage)
+	if(sound_effect)
+		playsound(loc, 'sound/effects/Glasshit.ogg', 75, 1)
+	return health <= 0
 
-	if((W.damtype == BRUTE || W.damtype == BURN) && (W.can_puncture() || W.force > 10))
-		visible_message(SPAN_DANGER("\The [user] pierces \the [src] with \the [W]!"))
-		deflate(TRUE)
-		return TRUE
-
-	if(!istype(W, /obj/item/inflatable_dispenser))
-		return ..()
-
-	return FALSE
-
-/obj/structure/inflatable/physically_destroyed()
-	SHOULD_CALL_PARENT(FALSE)
-	. = deflate(1)
+/obj/structure/inflatable/take_damage(damage)
+	health = max(0, health - damage)
+	if(health <= 0)
+		deflate(1)
 
 /obj/structure/inflatable/CtrlClick()
 	return hand_deflate()
@@ -179,6 +209,16 @@
 	deflate()
 	return TRUE
 
+/obj/structure/inflatable/attack_generic(var/mob/user, var/damage, var/attack_verb)
+	health -= damage
+	attack_animation(user)
+	if(health <= 0)
+		user.visible_message("<span class='danger'>[user] [attack_verb] open the [src]!</span>")
+		spawn(1) deflate(1)
+	else
+		user.visible_message("<span class='danger'>[user] [attack_verb] at [src]!</span>")
+	return 1
+
 /obj/structure/inflatable/CanFluidPass(var/coming_from)
 	return !density
 
@@ -194,14 +234,14 @@
 	var/state = 0 //closed, 1 == open
 	var/isSwitchingStates = 0
 
-/obj/structure/inflatable/door/attack_ai(mob/user) //those aren't machinery, they're just big fucking slabs of a mineral
+/obj/structure/inflatable/door/attack_ai(mob/user as mob) //those aren't machinery, they're just big fucking slabs of a mineral
 	if(isAI(user)) //so the AI can't open it
 		return
 	else if(isrobot(user)) //but cyborgs can
 		if(get_dist(user,src) <= 1) //not remotely though
 			return TryToSwitchState(user)
 
-/obj/structure/inflatable/door/attack_hand(mob/user)
+/obj/structure/inflatable/door/attack_hand(mob/user as mob)
 	return TryToSwitchState(user)
 
 /obj/structure/inflatable/door/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
@@ -241,6 +281,13 @@
 	isSwitchingStates = 0
 
 /obj/structure/inflatable/door/proc/Close()
+	// If the inflatable is blocked, don't close
+	for(var/turf/A in locs)
+		var/turf/T = A
+		var/obstruction = T.get_obstruction()
+		if (obstruction)
+			return
+
 	isSwitchingStates = 1
 	flick("door_closing",src)
 	sleep(10)
@@ -273,7 +320,7 @@
 /obj/item/inflatable/torn
 	name = "torn inflatable wall"
 	desc = "A folded membrane which rapidly expands into a large cubical shape on activation. It is too torn to be usable."
-	icon = 'icons/obj/structures/inflatable.dmi'
+	icon = 'icons/obj/inflatable.dmi'
 	icon_state = "folded_wall_torn"
 
 	attack_self(mob/user)
@@ -283,17 +330,16 @@
 /obj/item/inflatable/door/torn
 	name = "torn inflatable door"
 	desc = "A folded membrane which rapidly expands into a simple door on activation. It is too torn to be usable."
-	icon = 'icons/obj/structures/inflatable.dmi'
+	icon = 'icons/obj/inflatable.dmi'
 	icon_state = "folded_door_torn"
 
 	attack_self(mob/user)
 		to_chat(user, "<span class='notice'>The inflatable door is too torn to be inflated!</span>")
 		add_fingerprint(user)
 
-/obj/item/storage/briefcase/inflatable
+/obj/item/weapon/storage/briefcase/inflatable
 	name = "inflatable barrier box"
 	desc = "Contains inflatable walls and doors."
-	icon = 'icons/obj/items/storage/inflatables.dmi'
 	icon_state = "inf_box"
 	item_state = "syringe_kit"
 	w_class = ITEM_SIZE_LARGE

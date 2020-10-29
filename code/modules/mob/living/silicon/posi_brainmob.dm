@@ -20,12 +20,12 @@
 	var/list/owner_channels = list()
 	var/list/law_channels = list()
 
-/mob/living/silicon/sil_brainmob/Initialize()
-	. = ..()
+/mob/living/silicon/sil_brainmob/New()
 	reagents = new/datum/reagents(1000, src)
 	if(istype(loc, /obj/item/organ/internal/posibrain))
 		container = loc
-	add_language(/decl/language/binary)
+	add_language(LANGUAGE_ROBOT_GLOBAL)
+	..()
 
 /mob/living/silicon/sil_brainmob/Destroy()
 	if(key)				//If there is a mob connected to this thing. Have to check key twice to avoid false death reporting.
@@ -63,10 +63,10 @@
 
 	owner_channels.Cut()
 
-	var/obj/item/radio/headset/R
-	if(owner.l_ear && istype(owner.l_ear,/obj/item/radio))
+	var/obj/item/device/radio/headset/R
+	if(owner.l_ear && istype(owner.l_ear,/obj/item/device/radio))
 		R = owner.l_ear
-	else if(owner.r_ear && istype(owner.r_ear,/obj/item/radio))
+	else if(owner.r_ear && istype(owner.r_ear,/obj/item/device/radio))
 		R = owner.r_ear
 
 	if(!R)	return 0

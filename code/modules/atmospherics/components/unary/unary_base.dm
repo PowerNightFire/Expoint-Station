@@ -17,16 +17,17 @@
 	air_contents.volume = 200
 	. = ..()
 
-/obj/machinery/atmospherics/unary/get_mass()
-	return ..() + air_contents.get_mass()
-
 // Housekeeping and pipe network stuff below
 /obj/machinery/atmospherics/unary/network_expand(datum/pipe_network/new_network, obj/machinery/atmospherics/pipe/reference)
-	if((reference == node) && (network != new_network))
-		qdel(network)
+	if(reference == node)
 		network = new_network
 
-	new_network.normal_members |= src
+	if(new_network.normal_members.Find(src))
+		return 0
+
+	new_network.normal_members += src
+
+	return null
 
 /obj/machinery/atmospherics/unary/Destroy()
 	if(node)

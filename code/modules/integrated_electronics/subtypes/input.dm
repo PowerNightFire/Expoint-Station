@@ -343,7 +343,7 @@
 	if(H in view(get_turf(src))) // Like medbot's analyzer it can be used in range..
 		if(H.seed)
 			for(var/chem_path in H.seed.chems)
-				var/decl/material/R = chem_path
+				var/datum/reagent/R = chem_path
 				greagents.Add(initial(R.name))
 
 	set_pin_data(IC_OUTPUT, 1, greagents)
@@ -809,7 +809,7 @@
 	. += "Please select a teleporter to lock in on:"
 	for(var/obj/machinery/teleport/hub/R in SSmachines.machinery)
 		var/obj/machinery/computer/teleporter/com = R.com
-		if (istype(com, /obj/machinery/computer/teleporter) && com.locked && !com.one_time_use && com.operable() && ARE_Z_CONNECTED(get_z(src), get_z(com)))
+		if (istype(com, /obj/machinery/computer/teleporter) && com.locked && !com.one_time_use && com.operable() && AreConnectedZLevels(get_z(src), get_z(com)))
 			.["[com.id] ([R.icon_state == "tele1" ? "Active" : "Inactive"])"] = "tport=[any2ref(com)]"
 	.["None (Dangerous)"] = "tport=random"
 
@@ -876,7 +876,7 @@
 	GLOB.listening_objects -= src
 	. = ..()
 
-/obj/item/integrated_circuit/input/microphone/hear_talk(var/mob/living/M, text, verb, decl/language/speaking)
+/obj/item/integrated_circuit/input/microphone/hear_talk(var/mob/living/M as mob, text, verb, datum/language/speaking)
 	var/translated = TRUE
 	if(M && text)
 		if(speaking && !speaking.machine_understands)
@@ -887,7 +887,7 @@
 
 	push_data()
 	activate_pin(1)
-	if(translated && !(speaking.type == /decl/language/human/common))
+	if(speaking && translated && !(speaking.name == LANGUAGE_HUMAN_EURO))
 		activate_pin(2)
 
 /obj/item/integrated_circuit/input/sensor
@@ -908,7 +908,7 @@
 	if(!check_then_do_work())
 		return FALSE
 	var/ignore_bags = get_pin_data(IC_INPUT, 1)
-	if(ignore_bags && istype(A, /obj/item/storage/))
+	if(ignore_bags && istype(A, /obj/item/weapon/storage/))
 		return FALSE
 	set_pin_data(IC_OUTPUT, 1, weakref(A))
 	push_data()
@@ -940,7 +940,7 @@
 	if(!check_then_do_work())
 		return FALSE
 	var/ignore_bags = get_pin_data(IC_INPUT, 1)
-	if(ignore_bags && istype(A, /obj/item/storage))
+	if(ignore_bags && istype(A, /obj/item/weapon/storage))
 		return FALSE
 	set_pin_data(IC_OUTPUT, 1, weakref(A))
 	push_data()
@@ -1034,7 +1034,7 @@
 	set_pin_data(IC_OUTPUT, 2, null)
 	set_pin_data(IC_OUTPUT, 3, null)
 	if(O)
-		var/obj/item/cell/C = O.get_cell()
+		var/obj/item/weapon/cell/C = O.get_cell()
 		if(C)
 			var/turf/A = get_turf(src)
 			if(get_turf(O) in view(A))
@@ -1056,9 +1056,11 @@
 		)
 	outputs = list(
 		"Steel"				 	= IC_PINTYPE_NUMBER,
+		"Glass"					= IC_PINTYPE_NUMBER,
 		"Silver"				= IC_PINTYPE_NUMBER,
 		"Gold"					= IC_PINTYPE_NUMBER,
 		"Diamond"				= IC_PINTYPE_NUMBER,
+		"Solid Phoron"			= IC_PINTYPE_NUMBER,
 		"Uranium"				= IC_PINTYPE_NUMBER,
 		"Plasteel"				= IC_PINTYPE_NUMBER,
 		"Titanium"				= IC_PINTYPE_NUMBER,
@@ -1072,17 +1074,7 @@
 		)
 	spawn_flags = IC_SPAWN_RESEARCH
 	power_draw_per_use = 40
-	var/list/mtypes = list(
-		/decl/material/solid/metal/steel,
-		/decl/material/solid/metal/silver, 
-		/decl/material/solid/metal/gold, 
-		/decl/material/solid/gemstone/diamond, 
-		/decl/material/solid/metal/uranium,
-		/decl/material/solid/metal/plasteel,
-		/decl/material/solid/metal/plasteel/titanium,
-		/decl/material/solid/glass,
-		/decl/material/solid/plastic
-	)
+	var/list/mtypes = list("steel", "glass", "silver", "gold", "diamond", "phoron", "uranium", "plasteel", "titanium", "glass", "plastic")
 
 /obj/item/integrated_circuit/input/matscan/do_work()
 	var/obj/O = get_pin_data_as_type(IC_INPUT, 1, /obj)
@@ -1148,9 +1140,10 @@
 	var/list/gas_names = list()
 	var/list/gas_amounts = list()
 	for(var/id in gases)
-		var/decl/material/mat = decls_repository.get_decl(id)
-		gas_names.Add(mat.gas_name)
-		gas_amounts.Add(round(gases[id], 0.001))
+		var/name = gas_data.name[id]
+		var/amt = round(gases[id], 0.001)
+		gas_names.Add(name)
+		gas_amounts.Add(amt)
 
 	set_pin_data(IC_OUTPUT, 1, gas_names)
 	set_pin_data(IC_OUTPUT, 2, gas_amounts)
@@ -1185,7 +1178,7 @@
 	)
 
 /obj/item/integrated_circuit/input/data_card_reader/attackby_react(obj/item/I, mob/living/user, intent)
-	var/obj/item/card/data/card = I
+	var/obj/item/weapon/card/data/card = I
 	var/write_mode = get_pin_data(IC_INPUT, 3)
 	if(istype(card))
 		if(write_mode == TRUE)

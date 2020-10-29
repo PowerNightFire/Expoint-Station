@@ -9,7 +9,6 @@
 	construct_state = /decl/machine_construction/default/panel_closed
 	uncreated_component_parts = null
 	stat_immune = 0
-	var/list/display_tags = list()
 	var/list/connected_displays = list()
 	var/list/data = list()
 	var/scan_data
@@ -24,10 +23,14 @@
 	else
 		icon_state = initial(icon_state)
 
-/obj/machinery/body_scanconsole/explosion_act(severity)
-	. = ..()
-	if(. && !QDELETED(src) && (severity == 1 || (severity == 2 && prob(50))))
-		qdel(src)
+/obj/machinery/body_scanconsole/ex_act(severity)
+
+	switch(severity)
+		if(1.0)
+			qdel(src)
+		if(2.0)
+			if (prob(50))
+				qdel(src)				
 
 /obj/machinery/body_scanconsole/proc/FindScanner()
 	for(var/D in GLOB.cardinal)
@@ -42,7 +45,7 @@
 
 /obj/machinery/body_scanconsole/proc/FindDisplays()
 	for(var/obj/machinery/body_scan_display/D in SSmachines.machinery)
-		if(D.tag in display_tags)
+		if (AreConnectedZLevels(D.z, z))
 			connected_displays += D
 			GLOB.destroyed_event.register(D, src, .proc/remove_display)
 	return !!connected_displays.len
@@ -90,10 +93,10 @@
 /obj/machinery/body_scanconsole/OnTopic(mob/user, href_list)
 	if(href_list["scan"])
 		if (!connected.occupant)
-			to_chat(user, "[html_icon(src)]<span class='warning'>The body scanner is empty.</span>")
+			to_chat(user, "[icon2html(src, user)]<span class='warning'>The body scanner is empty.</span>")
 			return TOPIC_REFRESH
 		if (!istype(connected.occupant))
-			to_chat(user, "[html_icon(src)]<span class='warning'>The body scanner cannot scan that lifeform.</span>")
+			to_chat(user, "[icon2html(src, user)]<span class='warning'>The body scanner cannot scan that lifeform.</span>")
 			return TOPIC_REFRESH
 		data["printEnabled"] = TRUE
 		data["eraseEnabled"] = TRUE
@@ -110,15 +113,15 @@
 
 	if (href_list["print"])
 		if (!data["scan"])
-			to_chat(user, "[html_icon(src)]<span class='warning'>Error: No scan stored.</span>")
+			to_chat(user, "[icon2html(src, user)]<span class='warning'>Error: No scan stored.</span>")
 			return TOPIC_REFRESH
 		var/list/scan = data["scan"]
-		new /obj/item/paper/bodyscan(loc, "Printout error.", "Body scan report - [stored_scan_subject]", scan.Copy())
+		new /obj/item/weapon/paper/bodyscan(loc, "Printout error.", "Body scan report - [stored_scan_subject]", scan.Copy())
 		return TOPIC_REFRESH
 
 	if(href_list["push"])		
 		if(!connected_displays.len && !FindDisplays())
-			to_chat(user, "[html_icon(src)]<span class='warning'>Error: No configured displays detected.</span>")
+			to_chat(user, "[icon2html(src, user)]<span class='warning'>Error: No configured displays detected.</span>")
 			return TOPIC_REFRESH
 		for(var/obj/machinery/body_scan_display/D in connected_displays)
 			D.add_new_scan(data["scan"])

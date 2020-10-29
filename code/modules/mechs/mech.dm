@@ -11,8 +11,8 @@
 	default_pixel_y = 0
 	status_flags = PASSEMOTES
 	a_intent =     I_HURT
-	mob_size =     MOB_SIZE_LARGE
-
+	mob_size =     MOB_LARGE
+	
 	meat_type = null
 	meat_amount = 0
 	skin_material = null
@@ -22,14 +22,14 @@
 
 	var/emp_damage = 0
 
-	var/obj/item/radio/exosuit/radio
+	var/obj/item/device/radio/exosuit/radio
 
 	var/wreckage_path = /obj/structure/mech_wreckage
 	var/mech_turn_sound = 'sound/mecha/mechturn.ogg'
 	var/mech_step_sound = 'sound/mecha/mechstep.ogg'
 
 	// Access updating/container.
-	var/obj/item/card/id/access_card
+	var/obj/item/weapon/card/id/access_card
 	var/list/saved_access = list()
 	var/sync_access = 1
 
@@ -54,7 +54,7 @@
 	var/maintenance_protocols
 
 	// Material
-	var/decl/material/material
+	var/material/material
 
 	// Cockpit access vars.
 	var/hatch_closed = FALSE
@@ -159,6 +159,9 @@
 
 	. = ..()
 
+/mob/living/exosuit/IsAdvancedToolUser()
+	return TRUE
+
 /mob/living/exosuit/examine(mob/user)
 	. = ..()
 	if(LAZYLEN(pilots) && (!hatch_closed || body.pilot_coverage < 100 || body.transparent_cabin))
@@ -191,6 +194,6 @@
 	if(.)
 		update_pilots()
 
-
+		
 
 

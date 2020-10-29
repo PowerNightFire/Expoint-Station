@@ -15,8 +15,8 @@
 	var/blood = 1
 	var/list/target_types = list()
 
-/mob/living/bot/cleanbot/Initialize()
-	. = ..()
+/mob/living/bot/cleanbot/New()
+	..()
 	get_targets()
 
 /mob/living/bot/cleanbot/handleIdle()
@@ -87,8 +87,8 @@
 	visible_message("<span class='danger'>[src] blows apart!</span>")
 	var/turf/Tsec = get_turf(src)
 
-	new /obj/item/chems/glass/bucket(Tsec)
-	new /obj/item/assembly/prox_sensor(Tsec)
+	new /obj/item/weapon/reagent_containers/glass/bucket(Tsec)
+	new /obj/item/device/assembly/prox_sensor(Tsec)
 	if(prob(50))
 		new /obj/item/robot_parts/l_arm(Tsec)
 
@@ -149,6 +149,7 @@
 	target_types += /obj/effect/decal/cleanable/blood/oil
 	target_types += /obj/effect/decal/cleanable/vomit
 	target_types += /obj/effect/decal/cleanable/crayon
+	target_types += /obj/effect/decal/cleanable/liquid_fuel
 	target_types += /obj/effect/decal/cleanable/mucus
 	target_types += /obj/effect/decal/cleanable/dirt
 	target_types += /obj/effect/decal/cleanable/filth

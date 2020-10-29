@@ -2,12 +2,11 @@
 /mob/living/carbon/alien/attack_ui(slot_id)
 	return
 
-/mob/living/carbon/alien/attack_hand(mob/living/carbon/M)
+/mob/living/carbon/alien/attack_hand(mob/living/carbon/M as mob)
+
+	..()
 
 	switch(M.a_intent)
-
-		if(I_GRAB)
-			return ..()
 
 		if (I_HELP)
 			help_shake_act(M)
@@ -38,3 +37,4 @@
 				for(var/mob/O in viewers(src, null))
 					if ((O.client && !( O.blinded )))
 						O.show_message("<span class='danger'>\The [M] has attempted to punch \the [src]!</span>", 1)
+	return

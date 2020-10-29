@@ -1,17 +1,19 @@
-/obj/item/nullrod
+/obj/item/weapon/nullrod
 	name = "null sceptre"
 	desc = "A sceptre of pure black obsidian capped at both ends with silver ferrules. Some religious groups claim it disrupts and dampens the powers of paranormal phenomenae."
-	icon = 'icons/obj/items/weapon/nullrod.dmi'
 	icon_state = "nullrod"
 	item_state = "nullrod"
-	slot_flags = SLOT_LOWER_BODY
+	slot_flags = SLOT_BELT
 	force = 10
 	throw_speed = 1
 	throw_range = 4
 	throwforce = 7
 	w_class = ITEM_SIZE_NORMAL
 
-/obj/item/nullrod/attack(mob/M, mob/living/user) //Paste from old-code to decult with a null rod.
+/obj/item/weapon/nullrod/disrupts_psionics()
+	return src
+
+/obj/item/weapon/nullrod/attack(mob/M as mob, mob/living/user as mob) //Paste from old-code to decult with a null rod.
 	admin_attack_log(user, M, "Attacked using \a [src]", "Was attacked with \a [src]", "used \a [src] to attack")
 
 	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
@@ -22,7 +24,8 @@
 		to_chat(M, "<span class='danger'>You've been silenced!</span>")
 		return
 
-	if (!user.check_dexterity(DEXTERITY_WEAPONS))
+	if (!user.IsAdvancedToolUser())
+		to_chat(user, "<span class='danger'>You don't have the dexterity to do this!</span>")
 		return
 
 	if ((MUTATION_CLUMSY in user.mutations) && prob(50))
@@ -38,29 +41,7 @@
 
 	..()
 
-/obj/item/nullrod/afterattack(var/atom/A, var/mob/user, var/proximity)
-	if(!proximity)
-		return
-
-	if(istype(A, /obj/structure/deity/altar))
-		var/obj/structure/deity/altar/altar = A
-		if(!altar.linked_god.silenced) //Don't want them to infinity spam it.
-			altar.linked_god.silence(10)
-			new /obj/effect/temporary(get_turf(altar),'icons/effects/effects.dmi',"purple_electricity_constant", 10)
-			altar.visible_message("<span class='notice'>\The [altar] groans in protest as reality settles around \the [src].</span>")
-
-	if(istype(A, /turf/simulated/wall/cult))
-		var/turf/simulated/wall/cult/W = A
-		user.visible_message("<span class='notice'>\The [user] touches \the [A] with \the [src], and the enchantment affecting it fizzles away.</span>", "<span class='notice'>You touch \the [A] with \the [src], and the enchantment affecting it fizzles away.</span>")
-		W.ChangeTurf(/turf/simulated/wall)
-
-	if(istype(A, /turf/simulated/floor/cult))
-		var/turf/simulated/floor/cult/F = A
-		user.visible_message("<span class='notice'>\The [user] touches \the [A] with \the [src], and the enchantment affecting it fizzles away.</span>", "<span class='notice'>You touch \the [A] with \the [src], and the enchantment affecting it fizzles away.</span>")
-		F.ChangeTurf(/turf/simulated/floor)
-
-
-/obj/item/energy_blade_net
+/obj/item/weapon/energy_net
 	name = "energy net"
 	desc = "It's a net made of green energy."
 	icon = 'icons/effects/effects.dmi'
@@ -69,22 +50,22 @@
 	force = 0
 	var/net_type = /obj/effect/energy_net
 
-/obj/item/energy_blade_net/safari
+/obj/item/weapon/energy_net/safari
 	name = "animal net"
 	desc = "An energized net meant to subdue animals."
 	net_type = /obj/effect/energy_net/safari
 
-/obj/item/energy_blade_net/dropped()
+/obj/item/weapon/energy_net/dropped()
 	..()
 	spawn(10)
 		if(src) qdel(src)
 
-/obj/item/energy_blade_net/throw_impact(atom/hit_atom)
+/obj/item/weapon/energy_net/throw_impact(atom/hit_atom)
 	..()
 	try_capture_mob(hit_atom)
 
 // This will validate the hit_atom, then spawn an energy_net effect and qdel itself
-/obj/item/energy_blade_net/proc/try_capture_mob(mob/living/M)
+/obj/item/weapon/energy_net/proc/try_capture_mob(mob/living/M)
 
 	if(!istype(M) || locate(/obj/effect/energy_net) in M.loc)
 		qdel(src)
@@ -199,11 +180,9 @@
 	healthcheck()
 	return 0
 
-/obj/effect/energy_net/explosion_act()
-	..()
-	if(!QDELETED(src))
-		health = 0
-		healthcheck()
+/obj/effect/energy_net/ex_act()
+	health = 0
+	healthcheck()
 
 /obj/effect/energy_net/attack_hand(var/mob/user)
 
@@ -225,7 +204,7 @@
 	healthcheck()
 	return
 
-/obj/effect/energy_net/attackby(obj/item/W, mob/user)
+/obj/effect/energy_net/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	health -= W.force
 	healthcheck()
 	..()
@@ -234,7 +213,7 @@ obj/effect/energy_net/user_unbuckle_mob(mob/user)
 	return escape_net(user)
 
 
-/obj/effect/energy_net/proc/escape_net(mob/user)
+/obj/effect/energy_net/proc/escape_net(mob/user as mob)
 	visible_message(
 		"<span class='warning'>\The [user] attempts to free themselves from \the [src]!</span>",
 		"<span class='warning'>You attempt to free yourself from \the [src]!</span>"

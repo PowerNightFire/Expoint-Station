@@ -15,10 +15,10 @@ GLOBAL_VAR_CONST(PREF_ALL, "All")
 GLOBAL_VAR_CONST(PREF_OFF, "Off")
 GLOBAL_VAR_CONST(PREF_BASIC, "Basic")
 GLOBAL_VAR_CONST(PREF_FULL, "Full")
-GLOBAL_VAR_CONST(PREF_MIDDLE_CLICK, "Middle click")
-GLOBAL_VAR_CONST(PREF_ALT_CLICK, "Alt click")
-GLOBAL_VAR_CONST(PREF_CTRL_CLICK, "Ctrl click")
-GLOBAL_VAR_CONST(PREF_CTRL_SHIFT_CLICK, "Ctrl+shift click")
+GLOBAL_VAR_CONST(PREF_MIDDLE_CLICK, "middle click")
+GLOBAL_VAR_CONST(PREF_ALT_CLICK, "alt click")
+GLOBAL_VAR_CONST(PREF_CTRL_CLICK, "ctrl click")
+GLOBAL_VAR_CONST(PREF_CTRL_SHIFT_CLICK, "ctrl shift click")
 GLOBAL_VAR_CONST(PREF_HEAR, "Hear")
 GLOBAL_VAR_CONST(PREF_SILENT, "Silent")
 GLOBAL_VAR_CONST(PREF_SHORTHAND, "Shorthand")
@@ -99,14 +99,6 @@ var/list/_client_preferences_by_type
 	else
 		sound_to(preference_mob, sound(null, repeat = 0, wait = 0, volume = 85, channel = GLOB.lobby_sound_channel))
 
-/datum/client_preference/play_game_music
-	description = "Play in-game music"
-	key = "SOUND_GAMEMUSIC"
-
-/datum/client_preference/play_instruments
-	description ="Play instruments"
-	key = "SOUND_INSTRUMENTS"
-
 /datum/client_preference/play_ambiance
 	description ="Play ambience"
 	key = "SOUND_AMBIENCE"
@@ -175,11 +167,6 @@ var/list/_client_preferences_by_type
 	key = "CHAT_DEAD"
 	options = list(GLOB.PREF_SHOW, GLOB.PREF_HIDE)
 
-/datum/client_preference/anon_say
-	description = "Anonymous Chat"
-	key = "CHAT_ANONSAY"
-	options = list(GLOB.PREF_NO, GLOB.PREF_YES)
-
 /datum/client_preference/show_progress_bar
 	description ="Progress Bar"
 	key = "SHOW_PROGRESS"
@@ -189,25 +176,6 @@ var/list/_client_preferences_by_type
 	description = "Fake NanoUI Browser Style"
 	key = "BROWSER_STYLED"
 	options = list(GLOB.PREF_FANCY, GLOB.PREF_PLAIN)
-
-/datum/client_preference/fullscreen_mode
-	description = "Fullscreen Mode"
-	key = "FULLSCREEN"
-	options = list(GLOB.PREF_BASIC, GLOB.PREF_FULL, GLOB.PREF_NO)
-	default_value = GLOB.PREF_NO
-
-/datum/client_preference/fullscreen_mode/changed(mob/preference_mob, new_value)
-	if(preference_mob.client)
-		preference_mob.client.toggle_fullscreen(new_value)
-
-/datum/client_preference/chat_position
-	description = "Alternative Chat Position"
-	key = "CHAT_ALT"
-	default_value = GLOB.PREF_NO
-
-/datum/client_preference/chat_position/changed(mob/preference_mob, new_value)
-	if(preference_mob.client)
-		preference_mob.client.update_chat_position(new_value == GLOB.PREF_YES)
 
 /datum/client_preference/autohiss
 	description = "Autohiss"
@@ -228,9 +196,13 @@ var/list/_client_preferences_by_type
 	key = "SHOW_CREDITS"
 
 /datum/client_preference/show_ckey_credits
-	description = "Show Ckey in End Credits"
+	description = "Show Ckey in End Credits/Special Role List"
 	key = "SHOW_CKEY_CREDITS"
 	options = list(GLOB.PREF_HIDE, GLOB.PREF_SHOW)
+
+/datum/client_preference/play_instruments
+	description ="Play instruments"
+	key = "SOUND_INSTRUMENTS"
 
 /datum/client_preference/give_personal_goals
 	description = "Give Personal Goals"
@@ -243,14 +215,24 @@ var/list/_client_preferences_by_type
 	options = list(GLOB.PREF_SHOW, GLOB.PREF_HIDE)
 
 /datum/client_preference/examine_messages
-	description = "Examining messages"
+	description ="Examining messages"
 	key = "EXAMINE_MESSAGES"
 	options = list(GLOB.PREF_SHOW, GLOB.PREF_HIDE)
 
-/datum/client_preference/floating_messages
-	description = "Floating chat messages"
-	key = "FLOATING_CHAT"
-	options = list(GLOB.PREF_SHOW, GLOB.PREF_HIDE)
+/datum/client_preference/goonchat
+	description = "Use Goon Chat"
+	key = "USE_GOONCHAT"
+
+/datum/client_preference/goonchat/changed(var/mob/preference_mob, var/new_value)
+	if(preference_mob && preference_mob.client)
+		var/client/C = preference_mob.client
+		if(new_value == GLOB.PREF_YES)
+			C.chatOutput.loaded = FALSE
+			C.chatOutput.start()
+		else
+			C.force_white_theme()
+			winset(C, "output", "is-visible=true;is-disabled=false")
+			winset(C, "browseroutput", "is-visible=false")
 
 /********************
 * General Staff Preferences *

@@ -1,7 +1,8 @@
 /mob/living/simple_animal/hostile/commanded
 	name = "commanded"
 	stance = COMMANDED_STOP
-	natural_weapon = /obj/item/natural_weapon
+	melee_damage_lower = 0
+	melee_damage_upper = 0
 	density = 0
 	var/list/command_buffer = list()
 	var/list/known_commands = list("stay", "stop", "attack", "follow")
@@ -9,13 +10,13 @@
 	var/list/allowed_targets = list() //WHO CAN I KILL D:
 	var/retribution = 1 //whether or not they will attack us if we attack them like some kinda dick.
 
-/mob/living/simple_animal/hostile/commanded/hear_say(var/message, var/verb = "says", var/decl/language/language = null, var/alt_name = "", var/italics = 0, var/mob/speaker = null, var/sound/speech_sound, var/sound_vol)
+/mob/living/simple_animal/hostile/commanded/hear_say(var/message, var/verb = "says", var/datum/language/language = null, var/alt_name = "", var/italics = 0, var/mob/speaker = null, var/sound/speech_sound, var/sound_vol)
 	if((weakref(speaker) in friends) || speaker == master)
 		command_buffer.Add(speaker)
 		command_buffer.Add(lowertext(html_decode(message)))
 	return 0
 
-/mob/living/simple_animal/hostile/commanded/hear_radio(var/message, var/verb="says", var/decl/language/language=null, var/part_a, var/part_b, var/part_c, var/mob/speaker = null, var/hard_to_hear = 0)
+/mob/living/simple_animal/hostile/commanded/hear_radio(var/message, var/verb="says", var/datum/language/language=null, var/part_a, var/part_b, var/part_c, var/mob/speaker = null, var/hard_to_hear = 0)
 	if((weakref(speaker) in friends) || speaker == master)
 		command_buffer.Add(speaker)
 		command_buffer.Add(lowertext(html_decode(message)))
@@ -84,7 +85,7 @@
 		if(findtext(text,command))
 			switch(command)
 				if("stay")
-					if(stay_command(speaker,text)) //find a valid command? Stop. Dont try and find more.
+					if(stay_command(speaker,text)) //find a valid command? Stop. Don't try and find more.
 						break
 				if("stop")
 					if(stop_command(speaker,text))
@@ -179,7 +180,7 @@
 			friends -= weakref(user)
 
 
-/mob/living/simple_animal/hostile/commanded/attack_hand(mob/living/carbon/human/M)
+/mob/living/simple_animal/hostile/commanded/attack_hand(mob/living/carbon/human/M as mob)
 	..()
 	if(M.a_intent == I_HURT && retribution) //assume he wants to hurt us.
 		target_mob = M

@@ -1,5 +1,5 @@
 //base human language
-/decl/language/human
+/datum/language/human
 	name = "proto-sapien"
 	desc = "This is the human root language. If you have this, please tell a developer."
 	speech_verb = "says"
@@ -8,9 +8,9 @@
 	flags = WHITELISTED
 	shorthand = "???"
 	space_chance = 40
-	category = /decl/language/human
+	category = /datum/language/human
 
-/decl/language/human/get_spoken_verb(var/msg_end)
+/datum/language/human/get_spoken_verb(var/msg_end)
 	switch(msg_end)
 		if("!")
 			return pick("exclaims","shouts","yells")
@@ -18,7 +18,7 @@
 			return ask_verb
 	return speech_verb
 
-/decl/language/human/get_random_name(var/gender)
+/datum/language/human/get_random_name(var/gender)
 	if (prob(80))
 		if(gender==FEMALE)
 			return capitalize(pick(GLOB.first_names_female)) + " " + capitalize(pick(GLOB.last_names))
@@ -26,29 +26,3 @@
 			return capitalize(pick(GLOB.first_names_male)) + " " + capitalize(pick(GLOB.last_names))
 	else
 		return ..()
-
-/*//////////////////////////////////////////////////////////////////////////////////////////////////////
-	Syllable list compiled in this file based on work by Stefan Trost, available at the following URLs
-						https://www.sttmedia.com/syllablefrequency-english
-						https://www.sttmedia.com/syllablefrequency-french
-						https://www.sttmedia.com/syllablefrequency-german
-*///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/decl/language/human/common
-	name = "Common"
-	desc = "The common language of most human settlements."
-	speech_verb = "says"
-	whisper_verb = "whispers"
-	colour = ""
-	key = "1"
-	flags = WHITELISTED
-	shorthand = "C"
-	partial_understanding = list()
-	syllables = list(
-		"al", "an", "ar", "as", "at", "ea", "ed", "en", "er", "es", "ha", "he", "hi", "in", "is", "it",
-		"le", "me", "nd", "ne", "ng", "nt", "on", "or", "ou", "re", "se", "st", "te", "th", "ti", "to",
-		"ve", "wa", "all", "and", "are", "but", "ent", "era", "ere", "eve", "for", "had", "hat", "hen", "her", "hin",
-		"ch", "de", "ge", "be", "ach", "abe", "ich", "ein", "die", "sch", "auf", "aus", "ber", "che", "ent", "que",
-		"ait", "les", "lle", "men", "ais", "ans", "ait", "ave", "con", "com", "des", "tre", "eta", "eur", "est",
-		"ing", "the", "ver", "was", "ith", "hin"
-	)

@@ -1,4 +1,4 @@
-/obj/item/beach_ball
+/obj/item/weapon/beach_ball
 	icon = 'icons/misc/beach.dmi'
 	icon_state = "ball"
 	name = "beach ball"
@@ -12,6 +12,6 @@
 	throw_range = 20
 	obj_flags = OBJ_FLAG_CONDUCTIBLE
 
-/obj/item/beach_ball/afterattack(atom/target, mob/user)
-	if(user.unEquip(src))
+/obj/item/weapon/beach_ball/afterattack(atom/target as mob|obj|turf|area, mob/user as mob)
+	if(user.unequip_item())
 		src.throw_at(target, throw_range, throw_speed, user)

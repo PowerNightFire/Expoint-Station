@@ -5,8 +5,11 @@
 	desc = "A nondescript pair of tough blue jeans."
 	icon_state = "jeans"
 	gender = PLURAL
-	body_parts_covered = SLOT_LOWER_BODY|SLOT_LEGS
+	body_parts_covered = LOWER_TORSO|LEGS
 	item_icons = list(slot_w_uniform_str = 'icons/mob/onmob/onmob_under_pants.dmi')
+	sprite_sheets = list(
+		SPECIES_UNATHI = 'icons/mob/species/unathi/generated/onmob_under_pants_unathi.dmi',
+		)
 
 /obj/item/clothing/under/casual_pants/classicjeans
 	name = "classic jeans"
@@ -42,9 +45,13 @@
 	name = "blue track pants"
 	icon_state = "trackpantsblue"
 
-/obj/item/clothing/under/casual_pants/track/navy
-	name = "navy track pants"
-	icon_state = "trackpantsnavy"
+/obj/item/clothing/under/casual_pants/track/green
+	name = "green track pants"
+	icon_state = "trackpantsgreen"
+
+/obj/item/clothing/under/casual_pants/track/white
+	name = "white track pants"
+	icon_state = "trackpantswhite"
 
 /obj/item/clothing/under/casual_pants/track/red
 	name = "red track pants"
@@ -86,6 +93,11 @@
 	name = "baggy young folks jeans"
 	desc = "For those tired of boring old jeans. Relive the passion of your youth!"
 	icon_state = "baggy_jeansyoungfolks"
+
+/obj/item/clothing/under/casual_pants/baggy/track
+	name = "baggy track pants"
+	desc = "A pair of track pants, for the athletic."
+	icon_state = "baggy_trackpants"
 
 /obj/item/clothing/under/casual_pants/baggy/camo
 	name = "baggy camo pants"

@@ -47,7 +47,7 @@ var/religion_name = null
 	return GLOB.using_map.system_name ? GLOB.using_map.system_name : generate_system_name()
 
 /proc/generate_system_name()
-	return "[pick("Gilese","GSC", "Luyten", "GJ", "HD")][prob(10) ? " Eridani" : ""] [rand(100,999)]"
+	return "[pick("Gilese","GSC", "Luyten", "GJ", "HD", "SCGECO")][prob(10) ? " Eridani" : ""] [rand(100,999)]"
 
 /proc/generate_planet_name()
 	return "[capitalize(pick(GLOB.last_names))]-[pick(GLOB.greek_letters)]"
@@ -65,35 +65,34 @@ var/religion_name = null
 	var/name = ""
 
 	//Rare: Pre-Prefix
-	if(prob(10))
+	if (prob(10))
 		name = pick(GLOB.station_prefixes)
 		GLOB.using_map.station_name = name + " "
 
-	var/holiday_prefix = length(global.current_holiday?.station_prefixes) && pick(global.current_holiday.station_prefixes)
-	if(holiday_prefix)
-		name = holiday_prefix
-		GLOB.using_map.station_name = "[GLOB.using_map.station_name][holiday_prefix] "
+	// Prefix
+	name = pick(GLOB.station_names)
+	if(name)
+		GLOB.using_map.station_name += name + " "
 
 	// Suffix
 	name = pick(GLOB.station_suffixes)
 	GLOB.using_map.station_name += name + " "
 
-	var/holiday_suffix = length(global.current_holiday?.station_suffixes) && pick(global.current_holiday.station_suffixes)
-	if(holiday_suffix)
-		GLOB.using_map.station_name += holiday_suffix
-	else
-		// ID Number
-		switch(random)
-			if(1)
-				GLOB.using_map.station_name += "[rand(1, 99)]"
-			if(2)
-				GLOB.using_map.station_name += pick(GLOB.greek_letters)
-			if(3)
-				GLOB.using_map.station_name += "\Roman[rand(1,99)]"
-			if(4)
-				GLOB.using_map.station_name += pick(GLOB.phonetic_alphabet)
-			if(5)
-				GLOB.using_map.station_name += pick(GLOB.numbers_as_words)
+	// ID Number
+	switch(random)
+		if(1)
+			GLOB.using_map.station_name += "[rand(1, 99)]"
+		if(2)
+			GLOB.using_map.station_name += pick(GLOB.greek_letters)
+		if(3)
+			GLOB.using_map.station_name += "\Roman[rand(1,99)]"
+		if(4)
+			GLOB.using_map.station_name += pick(GLOB.phonetic_alphabet)
+		if(5)
+			GLOB.using_map.station_name += pick(GLOB.numbers_as_words)
+		if(13)
+			GLOB.using_map.station_name += pick("13","XIII","Thirteen")
+
 
 	if (config && config.server_name)
 		world.name = "[config.server_name]: [name]"
@@ -173,8 +172,12 @@ var/syndicate_code_response//Code response for traitors.
 
 	var/safety[] = list(1,2,3)//Tells the proc which options to remove later on.
 	var/nouns[] = list("love","hate","anger","peace","pride","sympathy","bravery","loyalty","honesty","integrity","compassion","charity","success","courage","deceit","skill","beauty","brilliance","pain","misery","beliefs","dreams","justice","truth","faith","liberty","knowledge","thought","information","culture","trust","dedication","progress","education","hospitality","leisure","trouble","friendships", "relaxation")
-	var/drinks[] = list("vodka and tonic","gin fizz","bahama mama","manhattan","black Russian","whiskey soda","long island tea","margarita","Irish coffee"," manly dwarf","Irish cream","doctor's delight","Beepsky Smash","tequilla sunrise","brave bull","gargle blaster","bloody mary","whiskey cola","white Russian","vodka martini","martini","Cuba libre","kahlua","vodka","wine","moonshine")
+	var/drinks[] = list("vodka and tonic","gin fizz","bahama mama","manhattan","black Russian","whiskey soda","long island tea","margarita","Irish coffee"," manly dwarf","Irish cream","doctor's delight","Beepksy Smash","tequilla sunrise","brave bull","gargle blaster","bloody mary","whiskey cola","white Russian","vodka martini","martini","Cuba libre","kahlua","vodka","wine","moonshine")
 	var/locations[] = length(stationlocs) ? stationlocs : drinks//if null, defaults to drinks instead.
+
+	var/names[] = list()
+	for(var/datum/computer_file/report/crew_record/t in GLOB.all_crew_records)//Picks from crew manifest.
+		names += t.get_name()
 
 	var/maxwords = words//Extra var to check for duplicates.
 
@@ -189,9 +192,12 @@ var/syndicate_code_response//Code response for traitors.
 			if(1)//1 and 2 can only be selected once each to prevent more than two specific names/places/etc.
 				switch(rand(1,2))//Mainly to add more options later.
 					if(1)
-						code_phrase += pick(pick(GLOB.first_names_male,GLOB.first_names_female))
-						code_phrase += " "
-						code_phrase += pick(GLOB.last_names)
+						if(names.len&&prob(70))
+							code_phrase += pick(names)
+						else
+							code_phrase += pick(pick(GLOB.first_names_male,GLOB.first_names_female))
+							code_phrase += " "
+							code_phrase += pick(GLOB.last_names)
 					if(2)
 						code_phrase += pick(SSjobs.titles_to_datums) //Returns a job.
 				safety -= 1

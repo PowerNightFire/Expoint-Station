@@ -1,7 +1,6 @@
-/obj/item/radio/electropack
+/obj/item/device/radio/electropack
 	name = "electropack"
-	desc = "Dance, my monkeys! DANCE!"
-	icon = 'icons/obj/items/device/radio/electropack.dmi'
+	desc = "Dance my monkeys! DANCE!!!"
 	icon_state = "electropack0"
 	item_state = "electropack"
 	frequency = 1449
@@ -9,18 +8,17 @@
 	slot_flags = SLOT_BACK
 	w_class = ITEM_SIZE_HUGE
 
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
+	matter = list(MATERIAL_STEEL = 10000,MATERIAL_GLASS = 2500)
 
 	var/code = 2
 
-/obj/item/radio/electropack/attack_hand(mob/user)
+/obj/item/device/radio/electropack/attack_hand(mob/user as mob)
 	if(src == user.back)
 		to_chat(user, "<span class='notice'>You need help taking this off!</span>")
 		return
 	..()
 
-/obj/item/radio/electropack/attackby(obj/item/W, mob/user)
+/obj/item/device/radio/electropack/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	..()
 	if(istype(W, /obj/item/clothing/head/helmet))
 		if(!b_stat)
@@ -41,11 +39,11 @@
 
 		user.put_in_hands(A)
 
-/obj/item/radio/electropack/Topic(href, href_list)
+/obj/item/device/radio/electropack/Topic(href, href_list)
 	//..()
 	if(usr.stat || usr.restrained())
 		return
-	if(((istype(usr, /mob/living/carbon/human) && (usr.check_dexterity(DEXTERITY_COMPLEX_TOOLS) && usr.contents.Find(src))) || (usr.contents.Find(master) || (in_range(src, usr) && istype(loc, /turf)))))
+	if(((istype(usr, /mob/living/carbon/human) && (usr.IsAdvancedToolUser() && usr.contents.Find(src))) || (usr.contents.Find(master) || (in_range(src, usr) && istype(loc, /turf)))))
 		usr.set_machine(src)
 		if(href_list["freq"])
 			var/new_frequency = sanitize_frequency(frequency + text2num(href_list["freq"]))
@@ -79,7 +77,7 @@
 		return
 	return
 
-/obj/item/radio/electropack/receive_signal(datum/signal/signal)
+/obj/item/device/radio/electropack/receive_signal(datum/signal/signal)
 	if(!signal || signal.encryption != code)
 		return
 
@@ -104,7 +102,7 @@
 		master.receive_signal()
 	return
 
-/obj/item/radio/electropack/attack_self(mob/user, flag1)
+/obj/item/device/radio/electropack/attack_self(mob/user as mob, flag1)
 
 	if(!istype(user, /mob/living/carbon/human))
 		return

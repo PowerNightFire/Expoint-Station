@@ -1,6 +1,5 @@
 /decl/prefab/proc/create(var/atom/location)
 	if(!location)
-		. = FALSE
 		CRASH("Invalid location supplied: [log_info_line(location)]")
 	return TRUE
 
@@ -15,11 +14,11 @@
 		if(istext(result))
 			CRASH("Invalid prefab [type]: [result]")
 		else
-			var/obj/item/electronic_assembly/assembly = SScircuit.load_electronic_assembly(location, result)
+			var/obj/item/device/electronic_assembly/assembly = SScircuit.load_electronic_assembly(location, result)
 			assembly.opened = FALSE
 			assembly.update_icon()
 			if(power_cell_type)
-				var/obj/item/cell/cell = new power_cell_type(assembly)
+				var/obj/item/weapon/cell/cell = new power_cell_type(assembly)
 				assembly.battery = cell
 
 			return assembly

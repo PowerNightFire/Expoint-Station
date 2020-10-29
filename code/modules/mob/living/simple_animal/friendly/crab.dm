@@ -5,7 +5,7 @@
 	icon_state = "crab"
 	icon_living = "crab"
 	icon_dead = "crab_dead"
-	mob_size = MOB_SIZE_SMALL
+	mob_size = MOB_SMALL
 	speak_emote = list("clicks")
 	emote_hear = list("clicks")
 	emote_see = list("clacks")
@@ -24,7 +24,7 @@
 		)
 
 	meat_amount =   3
-	skin_material = /decl/material/solid/skin/insect
+	skin_material = MATERIAL_SKIN_CHITIN
 	skin_amount =   10
 	bone_material = null
 	bone_amount =   0

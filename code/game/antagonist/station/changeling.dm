@@ -6,6 +6,7 @@ GLOBAL_DATUM_INIT(changelings, /datum/antagonist/changeling, new)
 	role_text_plural = "Changelings"
 	feedback_tag = "changeling_objective"
 	blacklisted_jobs = list(/datum/job/ai, /datum/job/cyborg, /datum/job/submap)
+	protected_jobs = list(/datum/job/officer, /datum/job/warden, /datum/job/detective, /datum/job/captain, /datum/job/hos)
 	welcome_text = "Use say \"#g message\" to communicate with your fellow changelings. Remember: you get all of their absorbed DNA if you absorb them."
 	flags = ANTAG_SUSPICIOUS | ANTAG_RANDSPAWN | ANTAG_VOTABLE
 	antaghud_indicator = "hudchangeling"
@@ -75,7 +76,7 @@ GLOBAL_DATUM_INIT(changelings, /datum/antagonist/changeling, new)
 				return 1
 			else if(isnewplayer(player.current))
 				if(player.current.client && player.current.client.prefs)
-					var/datum/species/S = get_species_by_key(player.current.client.prefs.species)
+					var/datum/species/S = all_species[player.current.client.prefs.species]
 					if(S && (S.species_flags & SPECIES_FLAG_NO_SCAN))
 						return 0
 					if(player.current.client.prefs.organ_data[BP_CHEST] == "cyborg") // Full synthetic.

@@ -23,14 +23,11 @@
 	var/effective_gen = 0
 	var/lastgenlev = 0
 
-	uncreated_component_parts = null
-	construct_state = /decl/machine_construction/default/panel_closed
-	stat_immune = 0
-
-/obj/machinery/power/generator/Initialize()
-	. = ..()
+/obj/machinery/power/generator/New()
+	..()
 	desc = initial(desc) + " Rated for [round(max_power/1000)] kW."
-	reconnect()
+	spawn(1)
+		reconnect()
 
 //generators connect in dir and reverse_dir(dir) directions
 //mnemonic to determine circulator/generator directions: the cirulators orbit clockwise around the generator
@@ -137,6 +134,8 @@
 		s.set_up(3, 1, src)
 		s.start()
 		stored_energy *= 0.5
+		if (powernet)
+			powernet.apcs_overload(0, 2, 5)
 
 	//Power
 	last_circ1_gen = circ1.return_stored_energy()
@@ -155,7 +154,7 @@
 		update_icon()
 	add_avail(effective_gen)
 
-/obj/machinery/power/generator/attackby(obj/item/W, mob/user)
+/obj/machinery/power/generator/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isWrench(W))
 		playsound(src.loc, 'sound/items/Ratchet.ogg', 75, 1)
 		anchored = !anchored

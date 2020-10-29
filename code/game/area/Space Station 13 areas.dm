@@ -56,6 +56,7 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	var/list/forced_ambience = null
 	var/sound_env = STANDARD_STATION
 	var/turf/base_turf //The base turf type of the area, which can be used to override the z-level's base turf
+
 /*-----------------------------------------------------------------------------*/
 
 /////////
@@ -72,11 +73,11 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	power_equip = 0
 	power_environ = 0
 	has_gravity = 0
-	area_flags = AREA_FLAG_EXTERNAL | AREA_FLAG_IS_NOT_PERSISTENT | AREA_FLAG_IS_BACKGROUND
+	area_flags = AREA_FLAG_EXTERNAL | AREA_FLAG_IS_NOT_PERSISTENT
 	ambience = list('sound/ambience/ambispace1.ogg','sound/ambience/ambispace2.ogg','sound/ambience/ambispace3.ogg','sound/ambience/ambispace4.ogg','sound/ambience/ambispace5.ogg')
-	show_starlight = TRUE
+	secure = FALSE
 
-/area/space/atmosalert()
+area/space/atmosalert()
 	return
 
 /area/space/fire_alert()
@@ -118,19 +119,8 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 /area/medical
 	req_access = list(access_medical)
 
-/area/medical/virology
-	name = "\improper Virology"
-	icon_state = "virology"
-	req_access = list(access_virology)
-
-/area/medical/virologyaccess
-	name = "\improper Virology Access"
-	icon_state = "virology"
-	req_access = list() // This is like the lobby, needs low access to allow passing through in a different direction.
-
 /area/security
 	req_access = list(access_sec_doors)
-	secure = TRUE
 
 /area/security/brig
 	name = "\improper Security - Brig"
@@ -215,8 +205,8 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 	requires_power = 0
 	var/sound/mysound = null
 
-/area/beach/Initialize()
-	. = ..()
+/area/beach/New()
+	..()
 	var/sound/S = new/sound()
 	mysound = S
 	S.file = 'sound/ambience/shore.ogg'
@@ -262,7 +252,3 @@ NOTE: there are two lists of areas in the end of this file: centcom and station 
 					sound_to(H, S)
 
 	spawn(60) .()
-
-/area/ship
-	name = "\improper Generic Ship"
-	ambience = list('sound/ambience/ambigen3.ogg','sound/ambience/ambigen4.ogg','sound/ambience/ambigen5.ogg','sound/ambience/ambigen6.ogg','sound/ambience/ambigen7.ogg','sound/ambience/ambigen8.ogg','sound/ambience/ambigen9.ogg','sound/ambience/ambigen10.ogg','sound/ambience/ambigen11.ogg','sound/ambience/ambigen12.ogg')

@@ -1,7 +1,7 @@
 /proc/issmall(A)
 	if(A && istype(A, /mob/living))
 		var/mob/living/L = A
-		return L.mob_size <= MOB_SIZE_SMALL
+		return L.mob_size <= MOB_SMALL
 	return 0
 
 //returns the number of size categories between two mob_sizes, rounded. Positive means A is larger than B
@@ -20,11 +20,15 @@
 	if(isnull(full_prosthetic))
 		robolimb_count = 0
 		for(var/obj/item/organ/external/E in organs)
-			if(BP_IS_PROSTHETIC(E))
+			if(BP_IS_ROBOTIC(E))
 				robolimb_count++
 		full_prosthetic = (robolimb_count == organs.len)
 		update_emotes()
 	return full_prosthetic
+
+/mob/living/carbon/human/proc/isFBP()
+	return istype(internal_organs_by_name[BP_BRAIN], /obj/item/organ/internal/mmi_holder)
+
 
 /mob/living/silicon/isSynthetic()
 	return 1
@@ -110,21 +114,22 @@ var/list/global/organ_rel_size = list(
 	BP_R_FOOT = 10,
 )
 
-/proc/check_zone(zone, mob/target, var/base_zone_only)
-	. = zone || BP_CHEST
-	if(. == BP_EYES || . == BP_MOUTH)
-		. = BP_HEAD
-	if(ishuman(target) && !base_zone_only)
-		var/mob/living/carbon/human/H = target
-		. = H.species.get_limb_from_zone(.)
+/proc/check_zone(zone)
+	if(!zone)	return BP_CHEST
+	switch(zone)
+		if(BP_EYES)
+			zone = BP_HEAD
+		if(BP_MOUTH)
+			zone = BP_HEAD
+	return zone
 
 // Returns zone with a certain probability. If the probability fails, or no zone is specified, then a random body part is chosen.
 // Do not use this if someone is intentionally trying to hit a specific body part.
 // Use get_zone_with_miss_chance() for that.
-/proc/ran_zone(zone, probability, target)
-	if(zone)
-		zone = check_zone(zone, target)
-		if(prob(probability))
+/proc/ran_zone(zone, probability)
+	if (zone)
+		zone = check_zone(zone)
+		if (prob(probability))
 			return zone
 
 	var/ran_zone = zone
@@ -149,7 +154,7 @@ var/list/global/organ_rel_size = list(
 // May return null if missed
 // miss_chance_mod may be negative.
 /proc/get_zone_with_miss_chance(zone, var/mob/target, var/miss_chance_mod = 0, var/ranged_attack=0)
-	zone = check_zone(zone, target)
+	zone = check_zone(zone)
 
 	if(!ranged_attack)
 		// target isn't trying to fight
@@ -309,29 +314,33 @@ It's fairly easy to fix if dealing with single letters but not so much with comp
 		p=p+n_mod
 	return sanitize(t)
 
-#define TICKS_PER_RECOIL_ANIM 2
-#define PIXELS_PER_STRENGTH_VAL 16
 
 /proc/shake_camera(mob/M, duration, strength=1)
-	set waitfor = 0
 	if(!M || !M.client || M.shakecamera || M.stat || isEye(M) || isAI(M))
 		return
-	M.shakecamera = TRUE
-	strength = abs(strength)*PIXELS_PER_STRENGTH_VAL
-	var/steps = min(1, Floor(duration/TICKS_PER_RECOIL_ANIM))-1
-	animate(M.client, pixel_x = rand(-(strength), strength), pixel_y = rand(-(strength), strength), time = TICKS_PER_RECOIL_ANIM)
-	sleep(TICKS_PER_RECOIL_ANIM)
-	if(steps)
-		for(var/i = 1 to steps)
-			animate(M.client, pixel_x = (M.client?.default_pixel_x || 0) + rand(-(strength), strength), pixel_y = (M.client?.default_pixel_y || 0) + rand(-(strength), strength), time = TICKS_PER_RECOIL_ANIM)
-			sleep(TICKS_PER_RECOIL_ANIM)
-	if(M)
-		if(M.client)
-			animate(M.client, pixel_x = (M.client.default_pixel_x || 0), pixel_y = (M.client.default_pixel_y || 0), time = TICKS_PER_RECOIL_ANIM)
-		M.shakecamera = FALSE
+	M.shakecamera = 1
+	spawn(1)
+		if(!M.client)
+			return
 
-#undef TICKS_PER_RECOIL_ANIM
-#undef PIXELS_PER_STRENGTH_VAL
+		var/atom/oldeye=M.client.eye
+		var/aiEyeFlag = 0
+		if(istype(oldeye, /mob/observer/eye/aiEye))
+			aiEyeFlag = 1
+
+		var/x
+		for(x=0; x<duration, x++)
+			if(aiEyeFlag)
+				M.client.eye = locate(dd_range(1,oldeye.loc.x+rand(-strength,strength),world.maxx),dd_range(1,oldeye.loc.y+rand(-strength,strength),world.maxy),oldeye.loc.z)
+			else
+				M.client.eye = locate(dd_range(1,M.loc.x+rand(-strength,strength),world.maxx),dd_range(1,M.loc.y+rand(-strength,strength),world.maxy),M.loc.z)
+			sleep(1)
+			if(!M.client)
+				return
+
+		M.client.eye=oldeye
+		M.shakecamera = 0
+
 
 /proc/findname(msg)
 	for(var/mob/M in SSmobs.mob_list)
@@ -341,12 +350,13 @@ It's fairly easy to fix if dealing with single letters but not so much with comp
 
 
 /mob/proc/abiotic(var/full_body = FALSE)
-	. = FALSE
-	for(var/obj/item/thing in get_held_items())
-		if(thing.simulated)
-			return TRUE
-	if(full_body && (back || wear_mask))
+	if(full_body && ((src.l_hand && src.l_hand.simulated) || (src.r_hand && src.r_hand.simulated) || (src.back || src.wear_mask)))
 		return TRUE
+
+	if((src.l_hand && src.l_hand.simulated) || (src.r_hand && src.r_hand.simulated))
+		return TRUE
+
+	return FALSE
 
 //converts intent-strings into numbers and back
 var/list/intents = list(I_HELP,I_DISARM,I_GRAB,I_HURT)
@@ -414,7 +424,7 @@ var/list/intents = list(I_HELP,I_DISARM,I_GRAB,I_HURT)
 	var/turf/sourceturf = get_turf(broadcast_source)
 	for(var/mob/M in targets)
 		if(!sourceturf || (get_z(M) in GetConnectedZlevels(sourceturf.z)))
-			M.show_message("<span class='info'>[html_icon(icon)] [message]</span>", 1)
+			M.show_message("<span class='info'>[icon2html(icon, M)] [message]</span>", 1)
 
 /proc/mobs_in_area(var/area/A)
 	var/list/mobs = new
@@ -441,8 +451,6 @@ var/list/intents = list(I_HELP,I_DISARM,I_GRAB,I_HURT)
 			C = M.original.client
 
 	if(C)
-		if(C.get_preference_value(/datum/client_preference/anon_say) == GLOB.PREF_YES)
-			return
 		var/name
 		if(C.mob)
 			var/mob/M = C.mob
@@ -506,25 +514,27 @@ var/list/intents = list(I_HELP,I_DISARM,I_GRAB,I_HURT)
 		return SAFE_PERP
 
 	//Agent cards lower threatlevel.
-	var/obj/item/card/id/id = GetIdCard()
-	if(id && istype(id, /obj/item/card/id/syndicate))
+	var/obj/item/weapon/card/id/id = GetIdCard()
+	if(id && istype(id, /obj/item/weapon/card/id/syndicate))
 		threatcount -= 2
 	// A proper	CentCom id is hard currency.
-	else if(id && istype(id, /obj/item/card/id/centcom))
+	else if(id && istype(id, /obj/item/weapon/card/id/centcom))
 		return SAFE_PERP
 
 	if(check_access && !access_obj.allowed(src))
 		threatcount += 4
 
 	if(auth_weapons && !access_obj.allowed(src))
-		for(var/thing in get_held_items())
-			if(istype(thing, /obj/item/gun) || istype(thing, /obj/item/energy_blade) || istype(thing, /obj/item/baton))
-				threatcount += 4
+		if(istype(l_hand, /obj/item/weapon/gun) || istype(l_hand, /obj/item/weapon/melee))
+			threatcount += 4
 
-		if(istype(belt, /obj/item/gun) || istype(belt, /obj/item/energy_blade) || istype(belt, /obj/item/baton))
+		if(istype(r_hand, /obj/item/weapon/gun) || istype(r_hand, /obj/item/weapon/melee))
+			threatcount += 4
+
+		if(istype(belt, /obj/item/weapon/gun) || istype(belt, /obj/item/weapon/melee))
 			threatcount += 2
 
-		if(species.name != GLOB.using_map.default_species)
+		if(species.name != SPECIES_HUMAN)
 			threatcount += 2
 
 	if(check_records || check_arrest)
@@ -552,7 +562,7 @@ var/list/intents = list(I_HELP,I_DISARM,I_GRAB,I_HURT)
 
 #undef SAFE_PERP
 
-/mob/proc/get_multitool(var/obj/item/multitool/P)
+/mob/proc/get_multitool(var/obj/item/device/multitool/P)
 	if(istype(P))
 		return P
 
@@ -567,6 +577,12 @@ var/list/intents = list(I_HELP,I_DISARM,I_GRAB,I_HURT)
 
 /mob/living/silicon/ai/get_multitool()
 	return ..(aiMulti)
+
+/proc/get_both_hands(mob/living/carbon/M)
+	if(!istype(M))
+		return
+	var/list/hands = list(M.l_hand, M.r_hand)
+	return hands
 
 /mob/proc/refresh_client_images()
 	if(client)
@@ -612,7 +628,7 @@ var/list/intents = list(I_HELP,I_DISARM,I_GRAB,I_HURT)
 	var/obj/item/organ/internal/heart/L = internal_organs_by_name[BP_HEART]
 	if(!istype(L))
 		return 0
-	if(BP_IS_PROSTHETIC(L))
+	if(BP_IS_ROBOTIC(L))
 		return 0//Robotic hearts don't get jittery.
 	if(src.jitteriness >= 400 && prob(5)) //Kills people if they have high jitters.
 		if(prob(1))

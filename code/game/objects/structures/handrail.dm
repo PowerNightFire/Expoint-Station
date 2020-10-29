@@ -1,16 +1,13 @@
-/obj/structure/handrail
+/obj/structure/handrai
 	name = "handrail"
-	icon = 'icons/obj/structures/handrail.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "handrail"
 	desc = "A safety railing with buckles to secure yourself to when floor isn't stable enough."
-	density = FALSE
-	anchored = TRUE
-	can_buckle = TRUE
-	buckle_sound = 'sound/effects/buckle.ogg'
-	buckle_allow_rotation = TRUE
+	density = 0
+	anchored = 1
+	can_buckle = 1
 
-/obj/structure/handrail/attack_hand(mob/living/user)
-	if(can_buckle && !buckled_mob && istype(user))
-		user_buckle_mob(user, user)
-		return
+/obj/structure/handrai/buckle_mob(mob/living/M)
 	. = ..()
+	if(.)
+		playsound(src, 'sound/effects/buckle.ogg', 20)

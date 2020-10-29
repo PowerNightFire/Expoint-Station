@@ -20,7 +20,7 @@
 	active_power_cost = 6 KILOWATTS		// 30 min battery life /w best (3kWh) cell
 	passive_power_cost = 0
 	module_cooldown = 10 SECONDS
-	origin_tech = "{'materials':5,'powerstorage':6,'magnets':6,'esoteric':6,'engineering':7}"
+	origin_tech = list(TECH_MATERIAL = 5, TECH_POWER = 6, TECH_MAGNET = 6, TECH_ESOTERIC = 6, TECH_ENGINEERING = 7)
 	activate_string = "Enable Cloak"
 	deactivate_string = "Disable Cloak"
 
@@ -29,15 +29,6 @@
 
 	suit_overlay_active =   "stealth_active"
 	suit_overlay_inactive = "stealth_inactive"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/gemstone/diamond = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/metal/silver = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/metal/uranium = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE
-	)
 
 /obj/item/rig_module/stealth_field/activate()
 
@@ -130,7 +121,7 @@
 	H.forceMove(T)
 	phase_in(H,get_turf(H))
 
-	for(var/obj/item/grab/G in H.get_active_grabs())
+	for(var/obj/item/grab/G in H.contents)
 		if(G.affecting)
 			phase_out(G.affecting,get_turf(G.affecting))
 			G.affecting.forceMove(locate(T.x+rand(-1,1),T.y+rand(-1,1),T.z))
@@ -151,15 +142,9 @@
 
 	engage_string = "Fabricate Net"
 
-	fabrication_type = /obj/item/energy_blade_net
+	fabrication_type = /obj/item/weapon/energy_net
 	use_power_cost = 20 KILOWATTS
-	origin_tech = "{'materials':5,'powerstorage':6,'magnets':5,'esoteric':4,'engineering':6}"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/gemstone/diamond = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE
-	)
+	origin_tech = list(TECH_MATERIAL = 5, TECH_POWER = 6, TECH_MAGNET = 5, TECH_ESOTERIC = 4, TECH_ENGINEERING = 6)
 
 /obj/item/rig_module/fabricator/energy_net/engage(atom/target)
 

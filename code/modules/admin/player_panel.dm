@@ -81,7 +81,7 @@
 					body += "<a href='?src=\ref[src];traitor="+ref+"'>TP</a> - "
 					body += "<a href='?src=\ref[usr];priv_msg=\ref"+ref+"'>PM</a> - "
 					body += "<a href='?src=\ref[src];narrateto="+ref+"'>DN</a> - "
-					body += "<a href='?src=\ref[src];adminplayerobservejump="+ref+"'>JMP</a><br>"
+					body += "<a href='?src=\ref[src];adminplayerobservefollow="+ref+"'>JMP</a><br>"
 					if(antagonist > 0)
 						body += "<font size='2'><a href='?src=\ref[src];check_antagonist=1'><font color='red'><b>Antagonist</b></font></a></font>";
 
@@ -397,11 +397,11 @@
 		dat += "Current Game Mode: <B>[SSticker.mode.name]</B><BR>"
 		dat += "Round Duration: <B>[roundduration2text()]</B><BR>"
 		dat += "<B>Evacuation</B><BR>"
-		if (SSevac.evacuation_controller.is_idle())
+		if (evacuation_controller.is_idle())
 			dat += "<a href='?src=\ref[src];call_shuttle=1'>Call Evacuation</a><br>"
 		else
-			var/timeleft = SSevac.evacuation_controller.get_eta()
-			if (SSevac.evacuation_controller.waiting_to_leave())
+			var/timeleft = evacuation_controller.get_eta()
+			if (evacuation_controller.waiting_to_leave())
 				dat += "ETA: [(timeleft / 60) % 60]:[add_zero(num2text(timeleft % 60), 2)]<BR>"
 				dat += "<a href='?src=\ref[src];call_shuttle=2'>Send Back</a><br>"
 

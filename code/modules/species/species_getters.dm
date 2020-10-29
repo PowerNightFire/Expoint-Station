@@ -31,13 +31,11 @@
 /datum/species/proc/get_station_variant()
 	return name
 
-/datum/species/proc/get_icon_cache_uid(var/mob/H)
-	if(!icon_cache_uid)
-		icon_cache_uid = "[sequential_id(/datum/species)]"
-	return icon_cache_uid
+/datum/species/proc/get_race_key(var/mob/living/carbon/human/H)
+	return race_key
 
 /datum/species/proc/get_bodytype(var/mob/living/carbon/human/H)
-	return bodytype
+	return name
 
 /datum/species/proc/get_knockout_message(var/mob/living/carbon/human/H)
 	return ((H && H.isSynthetic()) ? "encounters a hardware fault and suddenly reboots!" : knockout_message)
@@ -60,11 +58,10 @@
 		return
 
 	var/covered = 0 // Basic coverage can help.
-	var/held_items = H.get_held_items()
 	for(var/obj/item/clothing/clothes in H)
-		if(clothes in held_items)
+		if(H.l_hand == clothes || H.r_hand == clothes)
 			continue
-		if((clothes.body_parts_covered & SLOT_UPPER_BODY) && (clothes.body_parts_covered & SLOT_LOWER_BODY))
+		if((clothes.body_parts_covered & UPPER_TORSO) && (clothes.body_parts_covered & LOWER_TORSO))
 			covered = 1
 			break
 
@@ -105,9 +102,3 @@
 
 /datum/species/proc/get_slowdown(var/mob/living/carbon/human/H)
 	. = (H && H.isSynthetic() ? 0 : slowdown)
-
-/datum/species/proc/get_root_species_name(var/mob/living/carbon/human/H)
-	return name
-
-/datum/species/proc/get_limb_from_zone(var/limb)
-	. = length(LAZYACCESS(limb_mapping, limb)) ? pick(limb_mapping[limb]) : limb

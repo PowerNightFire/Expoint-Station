@@ -12,7 +12,7 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 
 /obj/machinery/telecomms/broadcaster
 	name = "Subspace Broadcaster"
-	icon = 'icons/obj/machines/tcomms/broadcaster.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "broadcaster"
 	desc = "A dish-shaped machine used to broadcast processed subspace signals."
 	density = 1
@@ -21,7 +21,7 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 	machinetype = 5
 	produces_heat = 0
 	delay = 7
-	circuitboard = /obj/item/stock_parts/circuitboard/telecomms/broadcaster
+	circuitboard = /obj/item/weapon/stock_parts/circuitboard/telecomms/broadcaster
 	base_type = /obj/machinery/telecomms/broadcaster
 	outage_probability = 10
 
@@ -113,7 +113,7 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 
 /obj/machinery/telecomms/allinone
 	name = "Telecommunications Mainframe"
-	icon = 'icons/obj/machines/tcomms/comm_server.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "comm_server"
 	desc = "A compact machine used for portable subspace telecommuniations processing."
 	density = 1
@@ -122,13 +122,13 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 	idle_power_usage = 0
 	machinetype = 6
 	produces_heat = 0
-	circuitboard = /obj/item/stock_parts/circuitboard/telecomms/allinone
+	circuitboard = /obj/item/weapon/stock_parts/circuitboard/telecomms/allinone
 	construct_state = /decl/machine_construction/tcomms/panel_closed/cannot_print
 	var/listening_freqs
 	var/channel_color
 	var/channel_name
 	var/intercept = 0 // if nonzero, broadcasts all messages to syndicate channel
-	
+
 /obj/machinery/telecomms/allinone/Initialize()
 	if(!listening_freqs)
 		listening_freqs = ANTAG_FREQS	//Covers any updates to ANTAG_FREQS
@@ -141,37 +141,69 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 
 	if(is_freq_listening(signal)) // detect subspace signals
 
-		signal.data["done"] = 1 // mark the signal as being broadcasted
-		signal.data["compression"] = 0
+		if(freq_listening.len) //If we are actively listening to this frequency, go ahead and use the real signal
+			signal.data["done"] = 1 // mark the signal as being broadcasted
+			signal.data["compression"] = 0
 
-		// Search for the original signal and mark it as done as well
-		var/datum/signal/original = signal.data["original"]
-		if(original)
-			original.data["done"] = 1
+			// Search for the original signal and mark it as done as well
+			var/datum/signal/original = signal.data["original"]
+			if(original)
+				original.data["done"] = 1
 
-		if(signal.data["slow"] > 0)
-			sleep(signal.data["slow"]) // simulate the network lag if necessary
+			if(signal.data["slow"] > 0)
+				sleep(signal.data["slow"]) // simulate the network lag if necessary
 
-		/* ###### Broadcast a message using signal.data ###### */
+			/* ###### Broadcast a message using signal.data ###### */
 
-		var/datum/radio_frequency/connection = signal.data["connection"]
+			var/datum/radio_frequency/connection = signal.data["connection"]
 
-		if(connection.frequency in listening_freqs) // if antag broadcast, just
-			Broadcast_Message(signal.data["connection"], signal.data["mob"],
-							  signal.data["vmask"], signal.data["vmessage"],
-							  signal.data["radio"], signal.data["message"],
-							  signal.data["name"], signal.data["job"],
-							  signal.data["realname"], signal.data["vname"],, signal.data["compression"], list(0), connection.frequency,
-							  signal.data["verb"], signal.data["language"], channel_name ? channel_name : signal.data["channel_tag"], channel_color ? channel_color : signal.data["channel_color"])
-		else
-			if(intercept)
+			if(connection.frequency in listening_freqs) // if antag broadcast, just
 				Broadcast_Message(signal.data["connection"], signal.data["mob"],
-							  signal.data["vmask"], signal.data["vmessage"],
-							  signal.data["radio"], signal.data["message"],
-							  signal.data["name"], signal.data["job"],
-							  signal.data["realname"], signal.data["vname"], 3, signal.data["compression"], list(0), connection.frequency,
-							  signal.data["verb"], signal.data["language"], signal.data["channel_tag"], signal.data["channel_color"])
+								signal.data["vmask"], signal.data["vmessage"],
+								signal.data["radio"], signal.data["message"],
+								signal.data["name"], signal.data["job"],
+								signal.data["realname"], signal.data["vname"],, signal.data["compression"], list(0), connection.frequency,
+								signal.data["verb"], signal.data["language"], channel_name ? channel_name : signal.data["channel_tag"], channel_color ? channel_color : signal.data["channel_color"])
+			else
+				if(intercept)
+					Broadcast_Message(signal.data["connection"], signal.data["mob"],
+								signal.data["vmask"], signal.data["vmessage"],
+								signal.data["radio"], signal.data["message"],
+								signal.data["name"], signal.data["job"],
+								signal.data["realname"], signal.data["vname"], 3, signal.data["compression"], list(0), connection.frequency,
+								signal.data["verb"], signal.data["language"], signal.data["channel_tag"], signal.data["channel_color"])
 
+		else //If we are not actively listening and just pulling from every frequency, use a copy so that other telecomms networks aren't affected
+			var/datum/signal/copy = new
+			copy.transmission_method = 2
+			copy.frequency = signal.frequency
+			copy.data = signal.data.Copy()
+
+			copy.data["done"] = 1 // mark the signal as being broadcasted
+			copy.data["compression"] = 0
+
+			if(copy.data["slow"] > 0)
+				sleep(copy.data["slow"]) // simulate the network lag if necessary
+
+			/* ###### Broadcast a message using signal.data ###### */
+
+			var/datum/radio_frequency/connection = copy.data["connection"]
+
+			if(connection.frequency in listening_freqs) // if antag broadcast, just
+				Broadcast_Message(copy.data["connection"], copy.data["mob"],
+								copy.data["vmask"], copy.data["vmessage"],
+								copy.data["radio"], copy.data["message"],
+								copy.data["name"], copy.data["job"],
+								copy.data["realname"], copy.data["vname"],, copy.data["compression"], list(0), connection.frequency,
+								copy.data["verb"], copy.data["language"], channel_name ? channel_name : copy.data["channel_tag"], channel_color ? channel_color : copy.data["channel_color"])
+			else
+				if(intercept)
+					Broadcast_Message(copy.data["connection"], copy.data["mob"],
+								copy.data["vmask"], copy.data["vmessage"],
+								copy.data["radio"], copy.data["message"],
+								copy.data["name"], copy.data["job"],
+								copy.data["realname"], copy.data["vname"], 3, copy.data["compression"], list(0), connection.frequency,
+								copy.data["verb"], copy.data["language"], copy.data["channel_tag"], copy.data["channel_color"])
 
 
 /**
@@ -238,9 +270,9 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 **/
 
 /proc/Broadcast_Message(var/datum/radio_frequency/connection, var/mob/M,
-						var/vmask, var/vmessage, var/obj/item/radio/radio,
+						var/vmask, var/vmessage, var/obj/item/device/radio/radio,
 						var/message, var/name, var/job, var/realname, var/vname,
-						var/data, var/compression, var/list/level, var/freq, var/verbage = "says", var/decl/language/speaking = null,
+						var/data, var/compression, var/list/level, var/freq, var/verbage = "says", var/datum/language/speaking = null,
 						var/channel_tag, var/channel_color)
 
 
@@ -248,13 +280,13 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 
 	var/display_freq = freq
 
-	var/list/obj/item/radio/radios = list()
+	var/list/obj/item/device/radio/radios = list()
 
 	// --- Broadcast only to intercom devices ---
 
 	if(data == 1)
 
-		for (var/obj/item/radio/intercom/R in connection.devices["[RADIO_CHAT]"])
+		for (var/obj/item/device/radio/intercom/R in connection.devices["[RADIO_CHAT]"])
 			if(R.receive_range(display_freq, level) > -1)
 				radios += R
 
@@ -262,9 +294,9 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 
 	else if(data == 2)
 
-		for (var/obj/item/radio/R in connection.devices["[RADIO_CHAT]"])
+		for (var/obj/item/device/radio/R in connection.devices["[RADIO_CHAT]"])
 
-			if(istype(R, /obj/item/radio/headset))
+			if(istype(R, /obj/item/device/radio/headset))
 				continue
 
 			if(R.receive_range(display_freq, level) > -1)
@@ -275,18 +307,18 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 	else if(data == 3)
 		for(var/antag_freq in ANTAG_FREQS)
 			var/datum/radio_frequency/antag_connection = radio_controller.return_frequency(antag_freq)
-			for (var/obj/item/radio/R in antag_connection.devices["[RADIO_CHAT]"])
+			for (var/obj/item/device/radio/R in antag_connection.devices["[RADIO_CHAT]"])
 				if(R.intercept && R.receive_range(antag_freq, level) > -1)
 					radios += R
 
 	// --- Broadcast to ALL radio devices ---
 	else
 
-		for (var/obj/item/radio/R in connection.devices["[RADIO_CHAT]"])
+		for (var/obj/item/device/radio/R in connection.devices["[RADIO_CHAT]"])
 			if(R.receive_range(display_freq, level) > -1)
 				radios += R
 
-	for(var/obj/item/radio/R in radios)
+	for(var/obj/item/device/radio/R in radios)
 		if((R.last_radio_sound + 1 SECOND) < world.time && R != radio)
 			playsound(R.loc, 'sound/effects/radio_chatter.ogg', 10, 0, -6)
 			R.last_radio_sound = world.time
@@ -420,7 +452,7 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 	// --- Broadcast only to intercom devices ---
 
 	if(data == 1)
-		for (var/obj/item/radio/intercom/R in connection.devices["[RADIO_CHAT]"])
+		for (var/obj/item/device/radio/intercom/R in connection.devices["[RADIO_CHAT]"])
 			var/turf/position = get_turf(R)
 			if(position && position.z == level)
 				receive |= R.send_hear(display_freq, level)
@@ -429,9 +461,9 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 	// --- Broadcast only to intercoms and station-bounced radios ---
 
 	else if(data == 2)
-		for (var/obj/item/radio/R in connection.devices["[RADIO_CHAT]"])
+		for (var/obj/item/device/radio/R in connection.devices["[RADIO_CHAT]"])
 
-			if(istype(R, /obj/item/radio/headset))
+			if(istype(R, /obj/item/device/radio/headset))
 				continue
 			var/turf/position = get_turf(R)
 			if(position && position.z == level)
@@ -443,7 +475,7 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 	else if(data == 3)
 		for(var/freq in ANTAG_FREQS)
 			var/datum/radio_frequency/antag_connection = radio_controller.return_frequency(freq)
-			for (var/obj/item/radio/R in antag_connection.devices["[RADIO_CHAT]"])
+			for (var/obj/item/device/radio/R in antag_connection.devices["[RADIO_CHAT]"])
 				var/turf/position = get_turf(R)
 				if(position && position.z == level)
 					receive |= R.send_hear(freq)
@@ -452,7 +484,7 @@ var/message_delay = 0 // To make sure restarting the recentmessages list is kept
 	// --- Broadcast to ALL radio devices ---
 
 	else
-		for (var/obj/item/radio/R in connection.devices["[RADIO_CHAT]"])
+		for (var/obj/item/device/radio/R in connection.devices["[RADIO_CHAT]"])
 			var/turf/position = get_turf(R)
 			if(position && position.z == level)
 				receive |= R.send_hear(display_freq)

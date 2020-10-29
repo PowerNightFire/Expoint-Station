@@ -7,10 +7,10 @@
 	base_icon_state = "replicator"
 	has_recycler = FALSE
 	base_storage_capacity = list(
-		/decl/material/liquid/nutriment = 100
+		/datum/reagent/nutriment = 100
 	)
 
-/obj/machinery/fabricator/replicator/hear_talk(var/mob/M, var/text, var/verb, var/decl/language/speaking)
+/obj/machinery/fabricator/replicator/hear_talk(var/mob/M, var/text, var/verb, var/datum/language/speaking)
 	if(speaking && !speaking.machine_understands)
 		return ..()
 	var/true_text = lowertext(html_decode(text))
@@ -19,7 +19,7 @@
 	else if(findtext(true_text, "menu"))
 		addtimer(CALLBACK(src, /obj/machinery/fabricator/replicator/proc/state_menu), 2 SECONDS, TIMER_UNIQUE | TIMER_OVERRIDE)
 	else 
-		for(var/datum/fabricator_recipe/recipe in design_cache)
+		for(var/datum/fabricator_recipe/recipe in SSfabrication.get_recipes(fabricator_class))
 			if(recipe.hidden && !(fab_status_flags & FAB_HACKED))
 				continue
 			if(findtext(true_text, lowertext(recipe.name)))
@@ -33,7 +33,7 @@
 
 /obj/machinery/fabricator/replicator/proc/state_menu()
 	var/list/menu = list()
-	for(var/datum/fabricator_recipe/recipe in design_cache)
+	for(var/datum/fabricator_recipe/recipe in SSfabrication.get_recipes(fabricator_class))
 		if(recipe.hidden && !(fab_status_flags & FAB_HACKED))
 			continue
 		menu += recipe.name

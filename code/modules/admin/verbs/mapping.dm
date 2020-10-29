@@ -26,10 +26,9 @@ var/intercom_range_display_status = 0
 	icon = 'icons/480x480.dmi'
 	icon_state = "25percent"
 
-/obj/effect/debugging/camera_range/Initialize()
-	. = ..()
-	src.pixel_x = -224
-	src.pixel_y = -224
+	New()
+		src.pixel_x = -224
+		src.pixel_y = -224
 
 /obj/effect/debugging/marker
 	icon = 'icons/turf/areas.dmi'
@@ -96,7 +95,7 @@ var/intercom_range_display_status = 0
 					output += "<li><font color='red'>Camera not connected to wall at \[[C1.x], [C1.y], [C1.z]\] ([C1.loc.loc]) Network: [C1.network]</color></li>"
 
 	output += "</ul>"
-	show_browser(usr, output, "window=airreport;size=1000x500")
+	show_browser(usr, output,"window=airreport;size=1000x500")
 	SSstatistics.add_field_details("admin_verb","mCRP") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
 /client/proc/intercom_view()
@@ -112,7 +111,7 @@ var/intercom_range_display_status = 0
 		qdel(M)
 
 	if(intercom_range_display_status)
-		for(var/obj/item/radio/intercom/I in world)
+		for(var/obj/item/device/radio/intercom/I in world)
 			for(var/turf/T in orange(7,I))
 				var/obj/effect/debugging/marker/F = new/obj/effect/debugging/marker(T)
 				if (!(F in view(7,I.loc)))
@@ -150,7 +149,6 @@ var/list/debug_verbs = list (
 		,/client/proc/spawn_tanktransferbomb
 		,/client/proc/find_leaky_pipes
 		,/client/proc/analyze_openturf
-		,/client/proc/show_cargo_prices
 	)
 
 
@@ -343,18 +341,3 @@ var/list/debug_verbs = list (
 			baddies += "[P] ([P.x],[P.y],[P.z] - <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[P.x];Y=[P.y];Z=[P.z]'>JMP</a>)"
 
 	to_chat(usr,jointext(baddies, "<br>"))
-
-/client/proc/show_cargo_prices()
-	set category = "Debug"
-	set name = "Debug Cargo Prices"
-
-	var/list/cargo_packs = decls_repository.get_decls_of_subtype(/decl/hierarchy/supply_pack)
-	var/list/prices = list()
-	for(var/ptype in cargo_packs)
-		var/decl/hierarchy/supply_pack/pack = cargo_packs[ptype]
-		if(pack.name && !isnull(pack.cost))
-			prices += "<tr><td>[pack.name]</td><td>[pack.cost]</td></tr>"
-
-	var/datum/browser/popup = new(mob, "cargo_price_debug", "Cargo Prices")
-	popup.set_content("<table>[jointext(prices, "")]</table>")
-	popup.open()

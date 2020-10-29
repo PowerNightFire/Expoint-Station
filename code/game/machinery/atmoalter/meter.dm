@@ -9,7 +9,7 @@
 	idle_power_usage = 15
 
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc/buildable
+		/obj/item/weapon/stock_parts/power/apc
 	)
 	public_variables = list(
 		/decl/public_access/public_variable/gas,
@@ -18,9 +18,9 @@
 	)
 	stock_part_presets = list(/decl/stock_part_preset/radio/basic_transmitter/meter = 1)
 
-	frame_type = /obj/item/machine_chassis/pipe_meter/base
-	construct_state = /decl/machine_construction/default/panel_closed/item_chassis
-	base_type = /obj/machinery/meter/buildable
+	frame_type = /obj/item/machine_chassis/pipe_meter
+	construct_state = /decl/machine_construction/default/item_chassis
+	base_type = /obj/machinery/meter
 
 /obj/machinery/meter/Initialize()
 	. = ..()
@@ -78,6 +78,7 @@
 	else
 		icon_state = "meter4"
 
+
 /obj/machinery/meter/examine(mob/user, distance)
 	. = ..()
 
@@ -96,6 +97,12 @@
 	else
 		to_chat(user, "The connect error light is blinking.")
 
+
+/obj/machinery/meter/interface_interact(mob/user)
+	var/datum/gas_mixture/environment = target.return_air()
+	to_chat(user, "The pressure gauge reads [round(environment.return_pressure(), 0.01)] kPa; [round(environment.temperature,0.01)]K ([round(environment.temperature-T0C,0.01)]&deg;C)")
+	return TRUE
+
 // turf meter -- prioritizes turfs over pipes for target acquisition
 
 /obj/machinery/meter/turf/Initialize()
@@ -103,13 +110,10 @@
 		set_target(loc)
 	. = ..()
 
-/obj/machinery/meter/buildable
-	uncreated_component_parts = null
-
 /obj/machinery/meter/starts_with_radio
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/radio/transmitter/basic/buildable,
-		/obj/item/stock_parts/power/apc/buildable
+		/obj/item/weapon/stock_parts/radio/transmitter/basic/buildable,
+		/obj/item/weapon/stock_parts/power/apc/buildable
 	)
 
 /decl/stock_part_preset/radio/basic_transmitter/meter

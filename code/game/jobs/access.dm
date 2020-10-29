@@ -1,3 +1,7 @@
+//This file was auto-corrected by findeclaration.exe on 25.5.2012 20:42:31
+
+/obj/var/list/req_access = list()
+
 //returns 1 if this mob has sufficient access to use this object
 /atom/movable/proc/allowed(mob/M)
 	//check if it doesn't require any access at all
@@ -9,7 +13,7 @@
 
 /atom/movable/proc/GetAccess()
 	. = list()
-	var/obj/item/card/id/id = GetIdCard()
+	var/obj/item/weapon/card/id/id = GetIdCard()
 	if(id)
 		. += id.GetAccess()
 
@@ -123,7 +127,7 @@
 	if(!priv_all_access)
 		priv_all_access = get_access_ids()
 
-	return priv_all_access?.Copy()
+	return priv_all_access.Copy()
 
 /var/list/priv_station_access
 /proc/get_all_station_access()
@@ -159,7 +163,7 @@
 			priv_region_access["[A.region]"] += A.id
 
 	var/list/region = priv_region_access["[code]"]
-	return islist(region) ? region.Copy() : list()
+	return region.Copy()
 
 /proc/get_region_accesses_name(var/code)
 	switch(code)
@@ -209,7 +213,7 @@
 		"Emergency Response Team Leader")
 
 /mob/observer/ghost
-	var/static/obj/item/card/id/all_access/ghost_all_access
+	var/static/obj/item/weapon/card/id/all_access/ghost_all_access
 
 /mob/observer/ghost/GetIdCard()
 	if(!is_admin(src))
@@ -222,23 +226,27 @@
 /mob/living/bot/GetIdCard()
 	return botcard
 
-// Gets the ID card of a mob, but will not check types in the exceptions list
-/mob/living/carbon/human/GetIdCard(exceptions = null)
-	var/list/id_cards = get_held_items()
-	LAZYDISTINCTADD(id_cards, wear_id)
-	for(var/obj/item/I in id_cards)
-		if(is_type_in_list(I, exceptions))
-			continue
-		var/obj/item/card/id = I ? I.GetIdCard() : null
-		if(istype(id))
+#define HUMAN_ID_CARDS list(get_active_hand(), wear_id, get_inactive_hand())
+/mob/living/carbon/human/GetIdCard()
+	for(var/item_slot in HUMAN_ID_CARDS)
+		var/obj/item/I = item_slot
+		var/obj/item/weapon/card/id = I ? I.GetIdCard() : null
+		if(id)
 			return id
+	var/obj/item/organ/internal/controller/controller = locate() in internal_organs
+	if(istype(controller))
+		return controller.GetIdCard()
 
 /mob/living/carbon/human/GetAccess()
 	. = list()
-	var/list/id_cards = get_held_items()
-	LAZYDISTINCTADD(id_cards, wear_id)
-	for(var/obj/item/I in id_cards)
-		. |= I.GetAccess()
+	for(var/item_slot in HUMAN_ID_CARDS)
+		var/obj/item/I = item_slot
+		if(I)
+			. |= I.GetAccess()
+	var/obj/item/organ/internal/controller/controller = locate() in internal_organs
+	if(istype(controller))
+		. |= controller.GetAccess()
+#undef HUMAN_ID_CARDS
 
 /mob/living/silicon/GetIdCard()
 	if(stat || (ckey && !client))
@@ -246,7 +254,7 @@
 	return idcard
 
 /proc/FindNameFromID(var/mob/M, var/missing_id_name = "Unknown")
-	var/obj/item/card/id/C = M.GetIdCard()
+	var/obj/item/weapon/card/id/C = M.GetIdCard()
 	if(C)
 		return C.registered_name
 	return missing_id_name
@@ -255,7 +263,7 @@
 	return SSjobs.titles_to_datums + list("Prisoner")
 
 /obj/proc/GetJobName() //Used in secHUD icon generation
-	var/obj/item/card/id/I = GetIdCard()
+	var/obj/item/weapon/card/id/I = GetIdCard()
 
 	if(I)
 		var/job_icons = get_all_job_icons()
@@ -265,7 +273,7 @@
 			return I.rank
 
 		var/centcom = get_all_centcom_jobs()
-		if(I.assignment	in centcom)
+		if(I.assignment	in centcom) //Return with the NT logo if it is a Centcom job
 			return "Centcom"
 		if(I.rank in centcom)
 			return "Centcom"

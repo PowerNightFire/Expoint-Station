@@ -212,7 +212,7 @@
 /obj/structure/totem
 	name = "totem"
 	desc = "Some kind of post, pillar, plinth, column, or totem."
-	icon = 'icons/obj/structures/totem.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "totem"
 	density = 1
 	anchored = 1
@@ -228,8 +228,8 @@
 	to_chat(user, "It's been engraved with the symbols '<font face='Shage'>RWH QaG [number]</font>'.") //i am not a linguist
 
 
-/obj/item/stool/stone/Initialize(mapload)
-	. = ..(mapload, /decl/material/solid/stone/sandstone)
+/obj/item/weapon/stool/stone/New(var/newloc)
+	..(newloc,"sandstone")
 
 /turf/simulated/floor/airless/stone
 	name = "temple floor"

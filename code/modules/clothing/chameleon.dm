@@ -56,7 +56,7 @@
 	item_state = "jumpsuit"
 	worn_state = "jumpsuit"
 	desc = "It's a plain jumpsuit. It seems to have a small dial on the wrist."
-	origin_tech = "{'esoteric':3}"
+	origin_tech = list(TECH_ESOTERIC = 3)
 	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
 	var/global/list/clothing_choices
 
@@ -85,7 +85,7 @@
 	name = "grey cap"
 	icon_state = "greysoft"
 	desc = "It looks like a plain hat, but upon closer inspection, there's an advanced holographic array installed inside. It seems to have a small dial inside."
-	origin_tech = "{'esoteric':3}"
+	origin_tech = list(TECH_ESOTERIC = 3)
 	body_parts_covered = 0
 	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
 	var/global/list/clothing_choices
@@ -113,10 +113,10 @@
 
 /obj/item/clothing/suit/chameleon
 	name = "armor"
-
-	item_state = 'icons/clothing/suit/armor/vest.dmi'
+	icon_state = "armor"
+	item_state = "armor"
 	desc = "It appears to be a vest of standard armor, except this is embedded with a hidden holographic cloaker, allowing it to change it's appearance, but offering no protection.. It seems to have a small dial inside."
-	origin_tech = "{'esoteric':3}"
+	origin_tech = list(TECH_ESOTERIC = 3)
 	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
 	var/global/list/clothing_choices
 
@@ -145,7 +145,7 @@
 	icon_state = "black"
 	item_state = "black"
 	desc = "They're comfy black shoes, with clever cloaking technology built in. It seems to have a small dial on the back of each shoe."
-	origin_tech = "{'esoteric':3}"
+	origin_tech = list(TECH_ESOTERIC = 3)
 	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
 	var/global/list/clothing_choices
 
@@ -169,20 +169,21 @@
 //**********************
 //**Chameleon Backpack**
 //**********************
-/obj/item/storage/backpack/chameleon
+/obj/item/weapon/storage/backpack/chameleon
 	name = "backpack"
+	icon_state = "backpack"
+	item_state = "backpack"
 	desc = "A backpack outfitted with cloaking tech. It seems to have a small dial inside, kept away from the storage."
-	origin_tech = "{'esoteric':3}"
+	origin_tech = list(TECH_ESOTERIC = 3)
 	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
-	icon = 'icons/obj/items/storage/backpack/backpack.dmi'
 	var/global/list/clothing_choices
 
-/obj/item/storage/backpack/chameleon/Initialize()
+/obj/item/weapon/storage/backpack/chameleon/Initialize()
 	. = ..()
 	if(!clothing_choices)
-		clothing_choices = generate_chameleon_choices(/obj/item/storage/backpack)
+		clothing_choices = generate_chameleon_choices(/obj/item/weapon/storage/backpack)
 
-/obj/item/storage/backpack/chameleon/verb/change(picked in clothing_choices)
+/obj/item/weapon/storage/backpack/chameleon/verb/change(picked in clothing_choices)
 	set name = "Change Backpack Appearance"
 	set category = "Chameleon Items"
 	set src in usr
@@ -204,16 +205,15 @@
 
 /obj/item/clothing/gloves/chameleon
 	name = "black gloves"
-	icon_state = ICON_STATE_WORLD
-	color = COLOR_GRAY40
-	icon = 'icons/clothing/hands/gloves_generic.dmi'
+	icon_state = "black"
+	item_state = "bgloves"
 	desc = "It looks like a pair of gloves, but it seems to have a small dial inside."
-	origin_tech = "{'esoteric':3}"
+	origin_tech = list(TECH_ESOTERIC = 3)
 	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
 	var/global/list/clothing_choices
 
-/obj/item/clothing/gloves/chameleon/Initialize()
-	. = ..()
+/obj/item/clothing/gloves/chameleon/New()
+	..()
 	if(!clothing_choices)
 		clothing_choices = generate_chameleon_choices(/obj/item/clothing/gloves)
 
@@ -238,7 +238,7 @@
 	icon_state = "fullgas"
 	item_state = "gas_alt"
 	desc = "It looks like a plain gask mask, but on closer inspection, it seems to have a small dial inside."
-	origin_tech = "{'esoteric':3}"
+	origin_tech = list(TECH_ESOTERIC = 3)
 	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
 	var/global/list/clothing_choices
 
@@ -268,7 +268,7 @@
 	icon_state = "meson"
 	item_state = "glasses"
 	desc = "It looks like a plain set of mesons, but on closer inspection, it seems to have a small dial inside."
-	origin_tech = "{'esoteric':3}"
+	origin_tech = list(TECH_ESOTERIC = 3)
 	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
 	var/global/list/clothing_choices
 
@@ -293,21 +293,21 @@
 //**Chameleon Headset**
 //*********************
 
-/obj/item/radio/headset/chameleon
+/obj/item/device/radio/headset/chameleon
 	name = "radio headset"
 	icon_state = "headset"
 	item_state = "headset"
 	desc = "An updated, modular intercom that fits over the head. This one seems to have a small dial on it."
-	origin_tech = "{'esoteric':3}"
+	origin_tech = list(TECH_ESOTERIC = 3)
 	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
 	var/list/global/clothing_choices
 
-/obj/item/radio/headset/chameleon/Initialize()
+/obj/item/device/radio/headset/chameleon/Initialize()
 	. = ..()
 	if(!clothing_choices)
-		clothing_choices = generate_chameleon_choices(/obj/item/radio/headset)
+		clothing_choices = generate_chameleon_choices(/obj/item/device/radio/headset)
 
-/obj/item/radio/headset/chameleon/verb/change(picked in clothing_choices)
+/obj/item/device/radio/headset/chameleon/verb/change(picked in clothing_choices)
 	set name = "Change Headset Appearance"
 	set category = "Chameleon Items"
 	set src in usr
@@ -330,7 +330,7 @@
 	icon_state = "tie"
 	item_state = ""
 	desc = "A neosilk clip-on tie. It seems to have a small dial on its back."
-	origin_tech = "{'esoteric':3}"
+	origin_tech = list(TECH_ESOTERIC = 3)
 	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
 	var/global/list/clothing_choices
 
@@ -369,13 +369,13 @@
 //*****************
 //**Chameleon Gun**
 //*****************
-/obj/item/gun/energy/chameleon
+/obj/item/weapon/gun/energy/chameleon
 	name = "chameleon gun"
 	desc = "A hologram projector in the shape of a gun. There is a dial on the side to change the gun's disguise."
 	icon = 'icons/obj/guns/revolvers.dmi'
 	icon_state = "revolver"
 	w_class = ITEM_SIZE_SMALL
-	origin_tech = "{'combat':2,'materials':2,'esoteric':8}"
+	origin_tech = list(TECH_COMBAT = 2, TECH_MATERIAL = 2, TECH_ESOTERIC = 8)
 	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
 	matter = list()
 
@@ -388,12 +388,12 @@
 	var/obj/item/projectile/copy_projectile
 	var/global/list/gun_choices
 
-/obj/item/gun/energy/chameleon/Initialize()
+/obj/item/weapon/gun/energy/chameleon/Initialize()
 	. = ..()
 	if(!gun_choices)
-		gun_choices = generate_chameleon_choices(/obj/item/gun)
+		gun_choices = generate_chameleon_choices(/obj/item/weapon/gun)
 
-/obj/item/gun/energy/chameleon/consume_next_projectile()
+/obj/item/weapon/gun/energy/chameleon/consume_next_projectile()
 	var/obj/item/projectile/P = ..()
 	if(P && ispath(copy_projectile))
 		P.SetName(initial(copy_projectile.name))
@@ -407,7 +407,7 @@
 		P.impact_type = initial(copy_projectile.impact_type)
 	return P
 
-/obj/item/gun/energy/chameleon/OnDisguise(var/obj/item/gun/copy)
+/obj/item/weapon/gun/energy/chameleon/OnDisguise(var/obj/item/weapon/gun/copy)
 	if(!istype(copy))
 		return
 
@@ -416,7 +416,7 @@
 	fire_sound_text = copy.fire_sound_text
 	icon = copy.icon
 
-	var/obj/item/gun/energy/E = copy
+	var/obj/item/weapon/gun/energy/E = copy
 	if(istype(E))
 		copy_projectile = E.projectile_type
 		//charge_meter = E.charge_meter //does not work very well with icon_state changes, ATM
@@ -424,7 +424,7 @@
 		copy_projectile = null
 		//charge_meter = 0
 
-/obj/item/gun/energy/chameleon/verb/change(picked in gun_choices)
+/obj/item/weapon/gun/energy/chameleon/verb/change(picked in gun_choices)
 	set name = "Change Gun Appearance"
 	set category = "Chameleon Items"
 	set src in usr
@@ -438,4 +438,5 @@
 	//so our overlays update.
 	if (ismob(src.loc))
 		var/mob/M = src.loc
-		M.update_inv_hands()
+		M.update_inv_r_hand()
+		M.update_inv_l_hand()

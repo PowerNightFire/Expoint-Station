@@ -15,12 +15,26 @@
 	power_channel = LOCAL
 	active_power_usage = 10 KILOWATTS
 	base_type = /obj/machinery/mining/drill
-	var/list/generated_ore = list()
 	var/braces_needed = 2
 	var/list/supports = list()
 	var/supported = 0
 	var/active = FALSE
 	var/list/resource_field = list()
+
+	var/ore_types = list(
+		MATERIAL_IRON     = /obj/item/weapon/ore/iron,
+		MATERIAL_URANIUM =  /obj/item/weapon/ore/uranium,
+		MATERIAL_GOLD =     /obj/item/weapon/ore/gold,
+		MATERIAL_SILVER =   /obj/item/weapon/ore/silver,
+		MATERIAL_DIAMOND =  /obj/item/weapon/ore/diamond,
+		MATERIAL_PHORON =   /obj/item/weapon/ore/phoron,
+		MATERIAL_OSMIUM =   /obj/item/weapon/ore/osmium,
+		MATERIAL_HYDROGEN = /obj/item/weapon/ore/hydrogen,
+		MATERIAL_SAND =     /obj/item/weapon/ore/glass,
+		MATERIAL_GRAPHITE = /obj/item/weapon/ore/coal,
+		MATERIAL_ALUMINIUM = /obj/item/weapon/ore/aluminium,
+		MATERIAL_RUTILE = /obj/item/weapon/ore/rutile
+		)
 
 	//Upgrades
 	var/harvest_speed
@@ -56,54 +70,75 @@
 		return
 
 	//Drill through the flooring, if any.
-	var/turf/T = get_turf(src)
-	if(T)
-		T.drill_act()
+	if(istype(get_turf(src), /turf/simulated/floor/asteroid))
+		var/turf/simulated/floor/asteroid/T = get_turf(src)
+		if(!T.dug)
+			T.gets_dug()
+	else if(istype(get_turf(src), /turf/simulated/floor/exoplanet))
+		var/turf/simulated/floor/exoplanet/T = get_turf(src)
+		if(T.diggable)
+			new /obj/structure/pit(T)
+			T.diggable = 0
+	else if(istype(get_turf(src), /turf/simulated/floor))
+		var/turf/simulated/floor/T = get_turf(src)
+		T.ex_act(2.0)
 
-	while(length(resource_field))
-		var/turf/harvesting = pick(resource_field)
-		var/datum/extension/buried_resources/resources = get_extension(harvesting, /datum/extension/buried_resources)
-		if(!length(resources?.resources))
-			if(resources)
-				remove_extension(harvesting, /datum/extension/buried_resources)
+	//Dig out the tasty ores.
+	if(resource_field.len)
+		var/turf/simulated/harvesting = pick(resource_field)
+
+		while(resource_field.len && !harvesting.resources)
+			harvesting.has_resources = 0
+			harvesting.resources = null
 			resource_field -= harvesting
-			continue
-		break
+			if(resource_field.len)
+				harvesting = pick(resource_field)
 
-	if(!length(resource_field))
+		if(!harvesting || !harvesting.resources)
+			return
+
+		var/total_harvest = harvest_speed //Ore harvest-per-tick.
+		var/found_resource = 0 //If this doesn't get set, the area is depleted and the drill errors out.
+
+		for(var/metal in ore_types)
+
+			if(contents.len >= capacity)
+				system_error("insufficient storage space")
+				set_active(FALSE)
+				need_player_check = 1
+				update_icon()
+				return
+
+			if(contents.len + total_harvest >= capacity)
+				total_harvest = capacity - contents.len
+
+			if(total_harvest <= 0) break
+			if(harvesting.resources[metal])
+
+				found_resource  = 1
+
+				var/create_ore = 0
+				if(harvesting.resources[metal] >= total_harvest)
+					harvesting.resources[metal] -= total_harvest
+					create_ore = total_harvest
+					total_harvest = 0
+				else
+					total_harvest -= harvesting.resources[metal]
+					create_ore = harvesting.resources[metal]
+					harvesting.resources[metal] = 0
+
+				for(var/i=1, i <= create_ore, i++)
+					var/oretype = ore_types[metal]
+					new oretype(src)
+
+		if(!found_resource)
+			harvesting.has_resources = 0
+			harvesting.resources = null
+			resource_field -= harvesting
+	else
 		set_active(FALSE)
 		need_player_check = 1
 		update_icon()
-		return
-
-	var/turf/harvesting = pick(resource_field)
-	var/datum/extension/buried_resources/resources = get_extension(harvesting, /datum/extension/buried_resources)
-	var/harvested = 0
-	for(var/metal in resources.resources)
-
-		if(length(generated_ore) >= capacity)
-			system_error("insufficient storage space")
-			set_active(FALSE)
-			need_player_check = 1
-			update_icon()
-			return
-
-		var/generating_ore = min(capacity - length(generated_ore), resources.resources[metal])
-		resources.resources[metal] -= generating_ore
-		if(resources.resources[metal] <= 0)
-			resources.resources -= metal
-
-		for(var/i=1, i <= generating_ore, i++)
-			harvested++
-			if(harvested >= harvest_speed)
-				break
-			generated_ore += new /obj/item/ore(src, metal)
-		if(harvested >= harvest_speed)
-			break
-
-	if(!length(resources.resources))
-		remove_extension(harvesting, /datum/extension/buried_resources)
-		resource_field -= harvesting
 
 /obj/machinery/mining/drill/proc/set_active(var/new_active)
 	if(active != new_active)
@@ -118,7 +153,7 @@
 /obj/machinery/mining/drill/components_are_accessible(path)
 	return !active && ..()
 
-/obj/machinery/mining/drill/physical_attack_hand(mob/user)
+/obj/machinery/mining/drill/physical_attack_hand(mob/user as mob)
 	check_supports()
 	if(need_player_check)
 		if(can_use_power_oneoff(10 KILOWATTS))
@@ -149,7 +184,7 @@
 	if(need_player_check)
 		icon_state = "mining_drill_error"
 	else if(active)
-		var/status = Clamp(round( (length(generated_ore) / capacity) * 4 ), 0, 3)
+		var/status = Clamp(round( (contents.len / capacity) * 4 ), 0, 3)
 		icon_state = "mining_drill_active[status]"
 	else if(supported)
 		icon_state = "mining_drill_braced"
@@ -159,28 +194,25 @@
 
 /obj/machinery/mining/drill/RefreshParts()
 	..()
-	harvest_speed = Clamp(total_component_rating_of_type(/obj/item/stock_parts/micro_laser), 0, 10)
-	capacity = 200 * Clamp(total_component_rating_of_type(/obj/item/stock_parts/matter_bin), 0, 10)
-	var/charge_multiplier = Clamp(total_component_rating_of_type(/obj/item/stock_parts/capacitor), 0.1, 10)
+	harvest_speed = Clamp(total_component_rating_of_type(/obj/item/weapon/stock_parts/micro_laser), 0, 10)
+	capacity = 200 * Clamp(total_component_rating_of_type(/obj/item/weapon/stock_parts/matter_bin), 0, 10)
+	var/charge_multiplier = Clamp(total_component_rating_of_type(/obj/item/weapon/stock_parts/capacitor), 0.1, 10)
 	change_power_consumption(initial(active_power_usage) / charge_multiplier, POWER_USE_ACTIVE)
 
 /obj/machinery/mining/drill/proc/check_supports()
 
-	anchored = initial(anchored)
-	if(length(supports) <= 0)
+	supported = 0
+
+	if((!supports || !supports.len) && initial(anchored) == 0)
+		anchored = 0
 		set_active(FALSE)
 	else
-		anchored = TRUE
+		anchored = 1
 
-	var/last_supported = supported
-	supported = (length(supports) >= braces_needed)
-	if(supported != last_supported && !supported && can_fall())
-		fall()
+	if(supports && supports.len >= braces_needed)
+		supported = 1
 
 	update_icon()
-
-/obj/machinery/mining/drill/can_fall()
-	. = (length(supports) <= 0)
 
 /obj/machinery/mining/drill/proc/system_error(var/error)
 
@@ -191,23 +223,14 @@
 	update_icon()
 
 /obj/machinery/mining/drill/proc/get_resource_field()
-
 	resource_field = list()
 	need_update_field = 0
 
-	var/turf/T = get_turf(src)
-	if(!istype(T)) return
+	for (var/turf/simulated/T in range(2, src))
+		if (T.has_resources)
+			resource_field += T
 
-	var/tx = T.x - 2
-	var/ty = T.y - 2
-	var/turf/mine_turf
-	for(var/iy = 0,iy < 5, iy++)
-		for(var/ix = 0, ix < 5, ix++)
-			mine_turf = locate(tx + ix, ty + iy, T.z)
-			if(mine_turf && has_extension(mine_turf, /datum/extension/buried_resources))
-				resource_field += mine_turf
-
-	if(!resource_field.len)
+	if (!length(resource_field))
 		system_error("resources depleted")
 
 /obj/machinery/mining/drill/verb/unload()
@@ -219,9 +242,8 @@
 
 	var/obj/structure/ore_box/B = locate() in orange(1)
 	if(B)
-		for(var/obj/item/ore/O in generated_ore)
+		for(var/obj/item/weapon/ore/O in contents)
 			O.forceMove(B)
-		generated_ore.Cut()
 		to_chat(usr, "<span class='notice'>You unload the drill's storage cache into the ore box.</span>")
 	else
 		to_chat(usr, "<span class='notice'>You must move an ore box up to the drill before you can unload it.</span>")
@@ -241,7 +263,7 @@
 		return SPAN_NOTICE("You can't work with the brace of a running drill!")
 	return ..()
 
-/obj/machinery/mining/brace/attackby(obj/item/W, mob/user)
+/obj/machinery/mining/brace/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(connected && connected.active)
 		to_chat(user, "<span class='notice'>You can't work with the brace of a running drill!</span>")
 		return TRUE

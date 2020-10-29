@@ -5,30 +5,41 @@
 
 #define CHEM_TOUCH 1
 #define CHEM_INGEST 2
-#define CHEM_INJECT 3
+#define CHEM_BLOOD 3
 
 #define MINIMUM_CHEMICAL_VOLUME 0.01
+
+#define SOLID 1
+#define LIQUID 2
+#define GAS 3
 
 #define REAGENTS_OVERDOSE 30
 
 #define CHEM_SYNTH_ENERGY 500 // How much energy does it take to synthesize 1 unit of chemical, in Joules.
 
 // Some on_mob_life() procs check for alien races.
-#define IS_SLIME   1
+#define IS_DIONA   1
+#define IS_VOX     2
+#define IS_SKRELL  3
+#define IS_UNATHI  4
+#define IS_SLIME   5
+#define IS_NABBER  6
+#define IS_MANTID  7
 
-#define CE_STABLE        "stable"       // Stabilizing brain, pulse and breathing
+#define CE_STABLE        "stable"       // Inaprovaline
 #define CE_ANTIBIOTIC    "antibiotic"   // Spaceacilin
 #define CE_BLOODRESTORE  "bloodrestore" // Iron/nutriment
 #define CE_PAINKILLER    "painkiller"
 #define CE_ALCOHOL       "alcohol"      // Liver filtering
 #define CE_ALCOHOL_TOXIC "alcotoxic"    // Liver damage
-#define CE_SPEEDBOOST    "gofast"       // Stimulants
+#define CE_SPEEDBOOST    "gofast"       // Hyperzine
 #define CE_SLOWDOWN      "goslow"       // Slowdown
 #define CE_PULSE         "xcardic"      // increases or decreases heart rate
 #define CE_NOPULSE       "heartstop"    // stops heartbeat
-#define CE_ANTITOX       "antitox"      // Removes toxins
-#define CE_OXYGENATED    "oxygen"       // Helps oxygenate the brain.
-#define CE_BRAIN_REGEN   "brainfix"     // Allows the brain to recover after injury
+#define CE_ANTITOX       "antitox"      // Dylovene
+#define CE_OXYGENATED    "oxygen"       // Dexalin.
+#define CE_BRAIN_REGEN   "brainfix"     // Alkysine.
+#define CE_ANTIVIRAL     "antiviral"    // Anti-virus effect.
 #define CE_TOXIN         "toxins"       // Generic toxins, stops autoheal.
 #define CE_BREATHLOSS    "breathloss"   // Breathing depression, makes you need more air
 #define CE_MIND    		 "mindbending"  // Stabilizes or wrecks mind. Used for hallucinations
@@ -39,29 +50,10 @@
 #define CE_SEDATE        "sedate"       // Applies sedation effects, i.e. paralysis, inability to use items, etc.
 #define CE_ENERGETIC     "energetic"    // Speeds up stamina recovery.
 #define	CE_VOICELOSS     "whispers"     // Lowers the subject's voice to a whisper
-#define CE_GLOWINGEYES   "eyeglow"      // Causes eyes to glow.
 
 //reagent flags
-#define IGNORE_MOB_SIZE BITFLAG(0)
-#define AFFECTS_DEAD    BITFLAG(1)
+#define IGNORE_MOB_SIZE 0x1
+#define AFFECTS_DEAD    0x2
 
-#define HANDLE_REACTIONS(_reagents)  SSmaterials.active_holders[_reagents] = TRUE
-#define UNQUEUE_REACTIONS(_reagents) SSmaterials.active_holders -= _reagents
-
-#define REAGENT_LIST(R) (R.reagents?.get_reagents() || "No reagent holder")
-
-#define REAGENTS_FREE_SPACE(R) (R.maximum_volume - R.total_volume)
-#define REAGENT_VOLUME(REAGENT_HOLDER, REAGENT_TYPE) (REAGENT_HOLDER?.reagent_volumes && REAGENT_HOLDER.reagent_volumes[REAGENT_TYPE])
-#define REAGENT_DATA(REAGENT_HOLDER, REAGENT_TYPE)   (REAGENT_HOLDER?.reagent_data    && REAGENT_HOLDER.reagent_data[REAGENT_TYPE])
-
-#define MAT_SOLVENT_NONE     0
-#define MAT_SOLVENT_MILD     1
-#define MAT_SOLVENT_MODERATE 2
-#define MAT_SOLVENT_STRONG   3
-
-#define DIRTINESS_STERILE -2
-#define DIRTINESS_CLEAN   -1
-#define DIRTINESS_NEUTRAL  0
-
-#define DEFAULT_GAS_ACCELERANT /decl/material/gas/hydrogen
-#define DEFAULT_GAS_OXIDIZER   /decl/material/gas/oxygen
+#define HANDLE_REACTIONS(_reagents)  SSchemistry.active_holders[_reagents] = TRUE
+#define UNQUEUE_REACTIONS(_reagents) SSchemistry.active_holders -= _reagents

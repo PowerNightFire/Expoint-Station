@@ -1,18 +1,21 @@
 //base type for controllers of two-door systems
 /obj/machinery/embedded_controller/radio/airlock
 	// Setup parameters only
+	radio_filter = RADIO_AIRLOCK
 	program = /datum/computer/file/embedded_program/airlock
-	base_type = /obj/machinery/embedded_controller/radio/airlock/airlock_controller
 	var/tag_exterior_door
 	var/tag_interior_door
 	var/tag_airpump
 	var/tag_chamber_sensor
 	var/tag_exterior_sensor
 	var/tag_interior_sensor
+	var/tag_airlock_mech_sensor
+	var/tag_shuttle_mech_sensor
 	var/tag_secure = 0
 	var/tag_air_alarm
 	var/list/dummy_terminals = list()
 	var/cycle_to_external_air = 0
+	var/scrubber_assist = 0
 
 /obj/machinery/embedded_controller/radio/airlock/Destroy()
 	for(var/thing in dummy_terminals)

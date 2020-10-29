@@ -6,12 +6,13 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 	icon_screen = "helm"
 	light_color = "#7faaff"
 	core_skill = SKILL_PILOT
+	silicon_restriction = STATUS_UPDATE
 	var/autopilot = 0
 	var/list/known_sectors = list()
 	var/dx		//desitnation
 	var/dy		//coordinates
 	var/speedlimit = 1/(20 SECONDS) //top speed for autopilot, 5
-	var/accellimit = 1 //manual limiter for acceleration
+	var/accellimit = 0.001 //manual limiter for acceleration
 
 /obj/machinery/computer/ship/helm/Initialize()
 	. = ..()
@@ -20,7 +21,7 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 /obj/machinery/computer/ship/helm/proc/get_known_sectors()
 	var/area/overmap/map = locate() in world
 	for(var/obj/effect/overmap/visitable/sector/S in map)
-		if ((S.sector_flags & OVERMAP_SECTOR_KNOWN))
+		if (S.known)
 			var/datum/computer_file/data/waypoint/R = new()
 			R.fields["name"] = S.name
 			R.fields["x"] = S.x
@@ -35,17 +36,17 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 			if(linked.is_still())
 				autopilot = 0
 			else
-				linked.decelerate()
+				linked.decelerate(accellimit)
 		else
-			var/brake_path = linked.get_brake_path()
+			var/brake_path = linked.get_brake_path() / HALF_UNIT_DIAGONAL //get_dist is steps, not hypotenuse
 			var/direction = get_dir(linked.loc, T)
-			var/acceleration = min(linked.get_delta_v(), accellimit)
+			var/acceleration = min(linked.get_acceleration(), accellimit)
 			var/speed = linked.get_speed()
 			var/heading = linked.get_heading()
 
 			// Destination is current grid or speedlimit is exceeded
 			if ((get_dist(linked.loc, T) <= brake_path) || speed > speedlimit)
-				linked.decelerate()
+				linked.decelerate(accellimit)
 			// Heading does not match direction
 			else if (heading & ~direction)
 				linked.accelerate(turn(heading & ~direction, 180), accellimit)
@@ -71,6 +72,8 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 		var/turf/T = get_turf(linked)
 		var/obj/effect/overmap/visitable/sector/current_sector = locate() in T
 
+		data["viewing_silicon"] = issilicon(user)
+
 		data["sector"] = current_sector ? current_sector.name : "Deep Space"
 		data["sector_info"] = current_sector ? current_sector.desc : "Not Available"
 		data["landed"] = linked.get_landed_info()
@@ -79,18 +82,18 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 		data["dest"] = dy && dx
 		data["d_x"] = dx
 		data["d_y"] = dy
-		data["speedlimit"] = speedlimit ? speedlimit : "Halted"
-		data["accel"] = min(round(linked.get_delta_v(), 0.01),accellimit)
+		data["speedlimit"] = speedlimit ? speedlimit*1000 : "Halted"
+		data["accel"] = min(round(linked.get_acceleration()*1000, 0.01),accellimit*1000)
 		data["heading"] = linked.get_heading() ? dir2angle(linked.get_heading()) : 0
 		data["autopilot"] = autopilot
 		data["manual_control"] = viewing_overmap(user)
 		data["canburn"] = linked.can_burn()
-		data["accellimit"] = accellimit
+		data["accellimit"] = accellimit*1000
 
-		var/speed = round(linked.get_speed() * KM_OVERMAP_RATE, 0.01) // type abused
-		if(speed < SHIP_SPEED_SLOW)
+		var/speed = round(linked.get_speed()*1000, 0.01)
+		if(linked.get_speed() < SHIP_SPEED_SLOW)
 			speed = "<span class='good'>[speed]</span>"
-		else if(speed > SHIP_SPEED_FAST)
+		if(linked.get_speed() > SHIP_SPEED_FAST)
 			speed = "<span class='average'>[speed]</span>"
 		data["speed"] = speed
 
@@ -180,13 +183,14 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 		dy = 0
 
 	if (href_list["speedlimit"])
-		var/newlimit = input("Input new speed limit for autopilot (0 to brake)", "Autopilot speed limit", speedlimit) as num|null
-		if(newlimit)
-			speedlimit = Clamp(newlimit, 0, 100)
+		var/newlimit = input("Autopilot Speed Limit (0 ~ [round(linked.max_autopilot * 1000, 0.1)])", "Autopilot speed limit", speedlimit * 1000) as num|null
+		if (!isnull(newlimit))
+			speedlimit = round(Clamp(newlimit, 0, linked.max_autopilot * 1000), 0.1) * 0.001
+
 	if (href_list["accellimit"])
-		var/newlimit = input("Input new acceleration limit", "Acceleration limit", accellimit) as num|null
-		if(newlimit)
-			accellimit = max(newlimit, 0)
+		var/newlimit = input("Input new acceleration limit (0 ~ 10)", "Acceleration limit", accellimit * 1000) as num|null
+		if (!isnull(newlimit))
+			accellimit = round(Clamp(newlimit, 0, 10)) * 0.001
 
 	if (href_list["move"])
 		var/ndir = text2num(href_list["move"])
@@ -195,7 +199,7 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 		linked.relaymove(user, ndir, accellimit)
 
 	if (href_list["brake"])
-		linked.decelerate()
+		linked.decelerate(accellimit)
 
 	if (href_list["apilot"])
 		autopilot = !autopilot
@@ -211,6 +215,7 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 	name = "navigation console"
 	icon_keyboard = "generic_key"
 	icon_screen = "helm"
+	silicon_restriction = STATUS_UPDATE
 
 /obj/machinery/computer/ship/navigation/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
 	if(!linked)
@@ -223,12 +228,14 @@ LEGACY_RECORD_STRUCTURE(all_waypoints, waypoint)
 	var/turf/T = get_turf(linked)
 	var/obj/effect/overmap/visitable/sector/current_sector = locate() in T
 
+	data["viewing_silicon"] = issilicon(user)
+
 	data["sector"] = current_sector ? current_sector.name : "Deep Space"
 	data["sector_info"] = current_sector ? current_sector.desc : "Not Available"
 	data["s_x"] = linked.x
 	data["s_y"] = linked.y
-	data["speed"] = round(linked.get_speed() * KM_OVERMAP_RATE, 0.01)
-	data["accel"] = round(linked.get_delta_v(), 0.01)
+	data["speed"] = round(linked.get_speed()*1000, 0.01)
+	data["accel"] = round(linked.get_acceleration()*1000, 0.01)
 	data["heading"] = linked.get_heading() ? dir2angle(linked.get_heading()) : 0
 	data["viewing"] = viewing_overmap(user)
 

@@ -52,20 +52,29 @@ var/global/list/image/splatter_cache=list()
 
 /obj/effect/decal/cleanable/blood/Initialize(mapload)
 	. = ..()
-	if(merge_with_blood())
+	if(merge_with_blood(!mapload))
 		return INITIALIZE_HINT_QDEL
 	start_drying()
 
 // Returns true if overriden and needs deletion. If the argument is false, we will merge into any existing blood.
-/obj/effect/decal/cleanable/blood/proc/merge_with_blood()
-	if(!isturf(loc) || blood_size == BLOOD_SIZE_NO_MERGE)
+/obj/effect/decal/cleanable/blood/proc/merge_with_blood(var/override = TRUE)
+	. = FALSE
+	if(blood_size == BLOOD_SIZE_NO_MERGE)
 		return
-	for(var/obj/effect/decal/cleanable/blood/B in loc)
-		if(B != src && B.blood_size != BLOOD_SIZE_NO_MERGE)
+	if(isturf(loc))
+		for(var/obj/effect/decal/cleanable/blood/B in loc)
+			if(B == src)
+				continue
+			if(B.blood_size == BLOOD_SIZE_NO_MERGE)
+				continue
+			if(override && blood_size >= B.blood_size)
+				if (B.blood_DNA)
+					blood_DNA |= B.blood_DNA.Copy()
+				qdel(B)
+				continue
 			if(B.blood_DNA)
-				blood_size = BLOOD_SIZE_NO_MERGE
 				B.blood_DNA |= blood_DNA.Copy()
-			return TRUE
+			. = TRUE
 
 /obj/effect/decal/cleanable/blood/proc/start_drying()
 	drytime = world.time + DRYING_TIME * (amount+1)
@@ -188,8 +197,8 @@ var/global/list/image/splatter_cache=list()
 	scent_intensity = /decl/scent_intensity
 	scent_range = 1
 
-/obj/effect/decal/cleanable/blood/writing/Initialize()
-	. = ..()
+/obj/effect/decal/cleanable/blood/writing/New()
+	..()
 	if(LAZYLEN(random_icon_states))
 		for(var/obj/effect/decal/cleanable/blood/writing/W in loc)
 			random_icon_states.Remove(W.icon_state)
@@ -199,9 +208,7 @@ var/global/list/image/splatter_cache=list()
 
 /obj/effect/decal/cleanable/blood/writing/examine(mob/user)
 	. = ..()
-	var/processed_message = user.handle_reading_literacy(user, message)
-	if(processed_message)
-		to_chat(user, "It reads: <font color='[basecolor]'>\"[message]\"</font>")
+	to_chat(user, "It reads: <font color='[basecolor]'>\"[message]\"</font>")
 
 /obj/effect/decal/cleanable/blood/gibs
 	name = "gibs"
@@ -275,8 +282,8 @@ var/global/list/image/splatter_cache=list()
 	persistent = TRUE
 	var/dry=0 // Keeps the lag down
 
-/obj/effect/decal/cleanable/mucus/Initialize()
-	. = ..()
+/obj/effect/decal/cleanable/mucus/New()
+	..()
 	spawn(DRYING_TIME * 2)
 		dry=1
 

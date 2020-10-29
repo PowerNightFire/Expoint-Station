@@ -9,11 +9,11 @@
 
 	anchored = TRUE
 
-	var/obj/item/tank/tank
+	var/obj/item/weapon/tank/tank
 	var/mob/living/carbon/breather
 	var/obj/item/clothing/mask/breath/contained
 
-	var/spawn_type = /obj/item/tank/emergency/oxygen/engi
+	var/spawn_type = /obj/item/weapon/tank/emergency/oxygen/engi
 	var/mask_type = /obj/item/clothing/mask/breath/emergency
 	var/icon_state_open = "emerg_open"
 	var/icon_state_closed = "emerg"
@@ -22,8 +22,8 @@
 	idle_power_usage = 10
 	active_power_usage = 120 // No idea what the realistic amount would be.
 
-/obj/machinery/oxygen_pump/Initialize()
-	. = ..()
+/obj/machinery/oxygen_pump/New()
+	..()
 	tank = new spawn_type (src)
 	contained = new mask_type (src)
 
@@ -74,7 +74,7 @@
 /obj/machinery/oxygen_pump/proc/attach_mask(var/mob/living/carbon/C)
 	if(C && istype(C))
 		contained.dropInto(C.loc)
-		C.equip_to_slot(contained, slot_wear_mask_str)
+		C.equip_to_slot(contained, slot_wear_mask)
 		if(tank)
 			tank.forceMove(C)
 		breather = C
@@ -98,7 +98,7 @@
 	breather = null
 	update_use_power(POWER_USE_IDLE)
 
-/obj/machinery/oxygen_pump/proc/can_apply_to_target(var/mob/living/carbon/human/target, mob/user)
+/obj/machinery/oxygen_pump/proc/can_apply_to_target(var/mob/living/carbon/human/target, mob/user as mob)
 	if(!user)
 		user = target
 	// Check target validity
@@ -111,7 +111,7 @@
 	if(target.wear_mask && target != breather)
 		to_chat(user, "<span class='warning'>\The [target] is already wearing a mask.</span>")
 		return
-	if(target.head && (target.head.body_parts_covered & SLOT_FACE))
+	if(target.head && (target.head.body_parts_covered & FACE))
 		to_chat(user, "<span class='warning'>Remove their [target.head] first.</span>")
 		return
 	if(!tank)
@@ -133,7 +133,7 @@
 		return
 	return 1
 
-/obj/machinery/oxygen_pump/attackby(obj/item/W, mob/user)
+/obj/machinery/oxygen_pump/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isScrewdriver(W))
 		stat ^= MAINT
 		user.visible_message("<span class='notice'>\The [user] [stat & MAINT ? "opens" : "closes"] \the [src].</span>", "<span class='notice'>You [stat & MAINT ? "open" : "close"] \the [src].</span>")
@@ -142,7 +142,7 @@
 		if(!stat)
 			icon_state = icon_state_closed
 		//TO-DO: Open icon
-	if(istype(W, /obj/item/tank) && (stat & MAINT))
+	if(istype(W, /obj/item/weapon/tank) && (stat & MAINT))
 		if(tank)
 			to_chat(user, "<span class='warning'>\The [src] already has a tank installed!</span>")
 		else
@@ -151,7 +151,7 @@
 			tank = W
 			user.visible_message("<span class='notice'>\The [user] installs \the [tank] into \the [src].</span>", "<span class='notice'>You install \the [tank] into \the [src].</span>")
 			src.add_fingerprint(user)
-	if(istype(W, /obj/item/tank) && !stat)
+	if(istype(W, /obj/item/weapon/tank) && !stat)
 		to_chat(user, "<span class='warning'>Please open the maintenance hatch first.</span>")
 
 /obj/machinery/oxygen_pump/examine(mob/user)

@@ -1,14 +1,13 @@
-/obj/item/uv_light
+/obj/item/device/uv_light
 	name = "\improper UV light"
 	desc = "A small handheld black light."
-	icon = 'icons/obj/items/device/ultraviolet.dmi'
 	icon_state = "uv_off"
-	slot_flags = SLOT_LOWER_BODY
+	slot_flags = SLOT_BELT
 	w_class = ITEM_SIZE_SMALL
 	item_state = "electronic"
 	action_button_name = "Toggle UV light"
-	material = /decl/material/solid/metal/steel
-	origin_tech = "{'magnets':1,'engineering':1}"
+	matter = list(MATERIAL_STEEL = 150)
+	origin_tech = list(TECH_MAGNET = 1, TECH_ENGINEERING = 1)
 
 	var/list/scanned = list()
 	var/list/stored_alpha = list()
@@ -18,7 +17,7 @@
 	var/on = 0
 	var/step_alpha = 50
 
-/obj/item/uv_light/attack_self(var/mob/user)
+/obj/item/device/uv_light/attack_self(var/mob/user)
 	on = !on
 	if(on)
 		set_light(0.5, 0.1, range, 2, "#007fff")
@@ -30,7 +29,7 @@
 		STOP_PROCESSING(SSobj, src)
 		icon_state = "uv_off"
 
-/obj/item/uv_light/proc/clear_last_scan()
+/obj/item/device/uv_light/proc/clear_last_scan()
 	if(scanned.len)
 		for(var/atom/O in scanned)
 			O.set_invisibility(scanned[O])
@@ -47,7 +46,7 @@
 			if(I.fluorescent == 2) I.fluorescent = 1
 		reset_objects.Cut()
 
-/obj/item/uv_light/Process()
+/obj/item/device/uv_light/Process()
 	clear_last_scan()
 	if(on)
 		step_alpha = round(255/range)

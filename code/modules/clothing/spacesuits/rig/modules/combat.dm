@@ -32,19 +32,13 @@
 
 	interface_name = "mounted flash"
 	interface_desc = "Disorientates your target by blinding them with this intense palm-mounted light."
-	device = /obj/item/flash
-
-	origin_tech = "{'combat':2,'magnets':3,'engineering':5}"
-	material = /decl/material/solid/plastic
-	matter = list(
-		/decl/material/solid/metal/steel = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/glass = MATTER_AMOUNT_TRACE
-	)
+	device = /obj/item/device/flash
+	origin_tech = list(TECH_COMBAT = 2, TECH_MAGNET = 3, TECH_ENGINEERING = 5)
 
 /obj/item/rig_module/device/flash/advanced
 	name = "advanced mounted flash"
-	device = /obj/item/flash/advanced
-	origin_tech = "{'combat':3,'magnets':3,'engineering':5}"
+	device = /obj/item/device/flash/advanced
+	origin_tech = list(TECH_COMBAT = 3, TECH_MAGNET = 3, TECH_ENGINEERING = 5)
 
 /obj/item/rig_module/device/flash/installed()
 	. = ..()
@@ -102,9 +96,9 @@
 	var/fire_distance = 10
 
 	charges = list(
-		list("flashbang",   "flashbang",   /obj/item/grenade/flashbang,  3),
-		list("smoke bomb",  "smoke bomb",  /obj/item/grenade/smokebomb,  3),
-		list("EMP grenade", "EMP grenade", /obj/item/grenade/empgrenade, 3),
+		list("flashbang",   "flashbang",   /obj/item/weapon/grenade/flashbang,  3),
+		list("smoke bomb",  "smoke bomb",  /obj/item/weapon/grenade/smokebomb,  3),
+		list("EMP grenade", "EMP grenade", /obj/item/weapon/grenade/empgrenade, 3),
 		)
 
 /obj/item/rig_module/grenade_launcher/accepts_item(var/obj/item/input_device, var/mob/living/user)
@@ -126,7 +120,7 @@
 		to_chat(user, "<span class='danger'>Another grenade of that type will not fit into the module.</span>")
 		return 0
 
-	to_chat(user, "<font color='blue'><b>You slot \the [input_device] into the suit module.</b></font>")
+	to_chat(user, "<span class='info'><b>You slot \the [input_device] into the suit module.</b></span>")
 	qdel(input_device)
 	accepted_item.charges++
 	return 1
@@ -155,7 +149,7 @@
 		return 0
 
 	charge.charges--
-	var/obj/item/grenade/new_grenade = new charge.product_type(get_turf(H))
+	var/obj/item/weapon/grenade/new_grenade = new charge.product_type(get_turf(H))
 	H.visible_message("<span class='danger'>[H] launches \a [new_grenade]!</span>")
 	log_and_message_admins("fired a grenade ([new_grenade.name]) from a rigsuit grenade launcher.")
 	new_grenade.activate(H)
@@ -167,7 +161,7 @@
 	desc = "A shoulder-mounted micro-explosive dispenser designed only to accept standard cleaning foam grenades."
 
 	charges = list(
-		list("cleaning grenade",   "cleaning grenade",   /obj/item/grenade/chem_grenade/cleaner,  9),
+		list("cleaning grenade",   "cleaning grenade",   /obj/item/weapon/grenade/chem_grenade/cleaner,  9),
 		)
 
 /obj/item/rig_module/grenade_launcher/smoke
@@ -176,7 +170,7 @@
 	desc = "A shoulder-mounted micro-explosive dispenser designed only to accept standard smoke grenades."
 
 	charges = list(
-		list("smoke bomb",   "smoke bomb",   /obj/item/grenade/smokebomb,  6),
+		list("smoke bomb",   "smoke bomb",   /obj/item/weapon/grenade/smokebomb,  6),
 		)
 
 /obj/item/rig_module/grenade_launcher/mfoam
@@ -185,7 +179,7 @@
 	desc = "A shoulder-mounted micro-explosive dispenser designed only to accept standard metal foam grenades."
 
 	charges = list(
-		list("metal foam grenade",   "metal foam grenade",   /obj/item/grenade/chem_grenade/metalfoam,  4),
+		list("metal foam grenade",   "metal foam grenade",   /obj/item/weapon/grenade/chem_grenade/metalfoam,  4),
 		)
 
 /obj/item/rig_module/grenade_launcher/light
@@ -194,7 +188,7 @@
 	desc = "A shoulder-mounted micro-explosive dispenser designed only to accept standard illumination grenades."
 
 	charges = list(
-		list("illumination grenade",   "illumination grenade",   /obj/item/grenade/light,  6),
+		list("illumination grenade",   "illumination grenade",   /obj/item/weapon/grenade/light,  6),
 		)
 
 /obj/item/rig_module/mounted
@@ -213,21 +207,13 @@
 	interface_name = "mounted gun"
 	interface_desc = "A shoulder-mounted cell-powered laser gun."
 
-	var/obj/item/gun/gun
-
-/obj/item/rig_module/mounted/Destroy()
-	QDEL_NULL(gun)
-	. = ..()
+	var/obj/item/weapon/gun/gun
 
 /obj/item/rig_module/mounted/Initialize()
 	. = ..()
 	if(ispath(gun))
 		gun = new gun(src)
 		gun.canremove = 0
-
-/obj/item/rig_module/mounted/Destroy()
-	QDEL_NULL(gun)
-	. = ..()
 
 /obj/item/rig_module/mounted/engage(atom/target)
 
@@ -250,7 +236,7 @@
 	interface_name = "mounted laser cannon"
 	interface_desc = "A shoulder-mounted cell-powered laser cannon."
 
-	gun = /obj/item/gun/energy/lasercannon/mounted
+	gun = /obj/item/weapon/gun/energy/lasercannon/mounted
 
 /obj/item/rig_module/mounted/egun
 
@@ -262,16 +248,9 @@
 
 	interface_name = "mounted energy gun"
 	interface_desc = "A shoulder-mounted suit-powered energy gun."
-	origin_tech = "{'powerstorage':6,'combat':6,'engineering':6}"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/metal/silver = MATTER_AMOUNT_TRACE
-	)
+	origin_tech = list(TECH_POWER = 6, TECH_COMBAT = 6, TECH_ENGINEERING = 6)
 
-	gun = /obj/item/gun/energy/gun/mounted
+	gun = /obj/item/weapon/gun/energy/gun/mounted
 
 /obj/item/rig_module/mounted/taser
 
@@ -284,14 +263,9 @@
 
 	interface_name = "mounted electrolaser"
 	interface_desc = "A shoulder-mounted, cell-powered electrolaser."
-	origin_tech = "{'powerstorage':5,'combat':5,'engineering':6}"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/plastic = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/glass = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE
-	)
-	gun = /obj/item/gun/energy/taser/mounted
+	origin_tech = list(TECH_POWER = 5, TECH_COMBAT = 5, TECH_ENGINEERING = 6)
+
+	gun = /obj/item/weapon/gun/energy/taser/mounted
 
 /obj/item/rig_module/mounted/plasmacutter
 
@@ -304,17 +278,10 @@
 
 	interface_name = "mounted plasma cutter"
 	interface_desc = "A forearm-mounted suit-powered plasma cutter."
-	origin_tech = "{'materials':5,'exoticmatter':4,'engineering':7,'combat':5}"
+	origin_tech = list(TECH_MATERIAL = 5, TECH_PHORON = 4, TECH_ENGINEERING = 7, TECH_COMBAT = 5)
 
-	gun = /obj/item/gun/energy/plasmacutter/mounted
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE,
-		/decl/material/solid/metal/uranium = MATTER_AMOUNT_TRACE
-	)
-	
+	gun = /obj/item/weapon/gun/energy/plasmacutter/mounted
+
 /obj/item/rig_module/mounted/plasmacutter/engage(atom/target)
 
 	if(!check() || !gun)
@@ -350,12 +317,12 @@
 	active_power_cost = 0.5 KILOWATTS
 	passive_power_cost = 0
 
-	gun = /obj/item/gun/energy/crossbow/ninja/mounted
+	gun = /obj/item/weapon/gun/energy/crossbow/ninja/mounted
 
 /obj/item/rig_module/mounted/energy_blade/Process()
 
 	if(holder && holder.wearer)
-		if(!(locate(/obj/item/energy_blade/blade) in holder.wearer))
+		if(!(locate(/obj/item/weapon/melee/energy/blade) in holder.wearer))
 			deactivate()
 			return 0
 
@@ -364,12 +331,12 @@
 /obj/item/rig_module/mounted/energy_blade/activate()
 	var/mob/living/M = holder.wearer
 
-	if(!M.get_empty_hand_slot())
-		to_chat(M, SPAN_WARNING("Your hands are full."))
+	if(M.l_hand && M.r_hand)
+		to_chat(M, "<span class='danger'>Your hands are full.</span>")
 		deactivate()
 		return
 
-	var/obj/item/energy_blade/blade/blade = new(M)
+	var/obj/item/weapon/melee/energy/blade/blade = new(M)
 	blade.creator = M
 	M.put_in_hands(blade)
 
@@ -385,7 +352,7 @@
 	if(!M)
 		return
 
-	for(var/obj/item/energy_blade/blade/blade in M.contents)
+	for(var/obj/item/weapon/melee/energy/blade/blade in M.contents)
 		qdel(blade)
 
 /obj/item/rig_module/fabricator
@@ -402,7 +369,7 @@
 	interface_name = "death blossom launcher"
 	interface_desc = "An integrated microfactory that produces poisoned throwing stars from thin air and electricity."
 
-	var/fabrication_type = /obj/item/star/ninja
+	var/fabrication_type = /obj/item/weapon/material/star/ninja
 	var/fire_force = 30
 	var/fire_distance = 10
 
@@ -416,15 +383,15 @@
 	if(target)
 		var/obj/item/firing = new fabrication_type()
 		firing.dropInto(loc)
-		H.visible_message(SPAN_DANGER("\The [H] launches \a [firing]!"))
+		H.visible_message("<span class='danger'>[H] launches \a [firing]!</span>")
 		firing.throw_at(target,fire_force,fire_distance)
 	else
-		if(!H.get_empty_hand_slot())
-			to_chat(H, SPAN_WARNING("Your hands are full."))
+		if(H.l_hand && H.r_hand)
+			to_chat(H, "<span class='danger'>Your hands are full.</span>")
 		else
 			var/obj/item/new_weapon = new fabrication_type()
 			new_weapon.forceMove(H)
-			to_chat(H, "<font color='blue'><b>You quickly fabricate \a [new_weapon].</b></font>")
+			to_chat(H, "<span class='info'><b>You quickly fabricate \a [new_weapon].</b></span>")
 			H.put_in_hands(new_weapon)
 
 	return 1
@@ -437,4 +404,4 @@
 	interface_name = "work saftey launcher"
 	interface_desc = "An integrated microfactory that produces wet floor signs from thin air and electricity."
 
-	fabrication_type = /obj/item/caution
+	fabrication_type = /obj/item/weapon/caution

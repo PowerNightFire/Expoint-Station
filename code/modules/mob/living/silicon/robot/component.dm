@@ -113,7 +113,7 @@
 /datum/robot_component/cell
 	name = "power cell"
 	max_damage = 50
-	var/obj/item/cell/stored_cell = null
+	var/obj/item/weapon/cell/stored_cell = null
 
 /datum/robot_component/cell/destroy()
 	..()
@@ -224,8 +224,6 @@
 /obj/item/robot_parts/robot_component
 	icon = 'icons/obj/robot_component.dmi'
 	icon_state = "working"
-	material = /decl/material/solid/metal/steel
-
 	var/brute = 0
 	var/burn = 0
 	var/icon_state_broken = "broken"
@@ -237,7 +235,7 @@
 	burn += burn_amt
 	total_dam = brute+burn
 	if(total_dam >= max_dam)
-		var/obj/item/stock_parts/circuitboard/broken/broken_device = new (get_turf(src))
+		var/obj/item/weapon/stock_parts/circuitboard/broken/broken_device = new (get_turf(src))
 		if(icon_state_broken != "broken")
 			broken_device.icon = src.icon
 			broken_device.icon_state = icon_state_broken
@@ -265,7 +263,6 @@
 
 /obj/item/robot_parts/robot_component/armour/light
 	name = "light-weight armour plating"
-	material = /decl/material/solid/metal/steel
 
 /obj/item/robot_parts/robot_component/camera
 	name = "camera"

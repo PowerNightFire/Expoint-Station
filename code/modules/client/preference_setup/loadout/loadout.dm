@@ -48,12 +48,12 @@ var/list/gear_datums = list()
 	var/hide_unavailable_gear = 0
 
 /datum/category_item/player_setup_item/loadout/load_character(var/savefile/S)
-	from_file(S["gear_list"], pref.gear_list)
-	from_file(S["gear_slot"], pref.gear_slot)
+	from_save(S["gear_list"], pref.gear_list)
+	from_save(S["gear_slot"], pref.gear_slot)
 
 /datum/category_item/player_setup_item/loadout/save_character(var/savefile/S)
-	to_file(S["gear_list"], pref.gear_list)
-	to_file(S["gear_slot"], pref.gear_slot)
+	to_save(S["gear_list"], pref.gear_list)
+	to_save(S["gear_slot"], pref.gear_slot)
 
 /datum/category_item/player_setup_item/loadout/proc/valid_gear_choices(var/max_cost)
 	. = list()
@@ -127,7 +127,7 @@ var/list/gear_datums = list()
 		fcolor = "#e67300"
 	. += "<table align = 'center' width = 100%>"
 	. += "<tr><td colspan=3><center>"
-	. += "<a href='?src=\ref[src];prev_slot=1'>\<\<</a><b><font color = '[fcolor]'>\[[pref.gear_slot]\]</font> </b><a href='?src=\ref[src];next_slot=1'>\>\></a>"
+	. += "<a href='?src=\ref[src];prev_slot=1'>\<=</a><b><font color = '[fcolor]'>\[[pref.gear_slot]\]</font> </b><a href='?src=\ref[src];next_slot=1'>=\></a>"
 
 	if(config.max_gear_cost < INFINITY)
 		. += "<b><font color = '[fcolor]'>[total_cost]/[config.max_gear_cost]</font> loadout points spent.</b>"
@@ -350,13 +350,13 @@ var/list/gear_datums = list()
 	var/list/allowed_skills //Skills required to spawn with this item.
 	var/whitelisted        //Term to check the whitelist for..
 	var/sort_category = "General"
-	var/flags              //Special tweaks in new
+	var/flags              //Special tweaks in New
 	var/custom_setup_proc  //Special tweak in New
 	var/category
 	var/list/gear_tweaks = list() //List of datums which will alter the item after it has been spawned.
 
 /datum/gear/New()
-	if(FLAGS_EQUALS(flags, GEAR_HAS_TYPE_SELECTION|GEAR_HAS_SUBTYPE_SELECTION))
+	if(HAS_FLAGS(flags, GEAR_HAS_TYPE_SELECTION|GEAR_HAS_SUBTYPE_SELECTION))
 		CRASH("May not have both type and subtype selection tweaks")
 	if(!description)
 		var/obj/O = path
@@ -364,24 +364,11 @@ var/list/gear_datums = list()
 	if(flags & GEAR_HAS_COLOR_SELECTION)
 		gear_tweaks += gear_tweak_free_color_choice()
 	if(flags & GEAR_HAS_TYPE_SELECTION)
-		gear_tweaks += new /datum/gear_tweak/path/type(path)
+		gear_tweaks += new/datum/gear_tweak/path/type(path)
 	if(flags & GEAR_HAS_SUBTYPE_SELECTION)
-		gear_tweaks += new /datum/gear_tweak/path/subtype(path)
-	if(flags & GEAR_HAS_CUSTOM_SELECTION)
-		gear_tweaks += gear_tweak_free_name
-		gear_tweaks += gear_tweak_free_desc
+		gear_tweaks += new/datum/gear_tweak/path/subtype(path)
 	if(custom_setup_proc)
 		gear_tweaks += new/datum/gear_tweak/custom_setup(custom_setup_proc)
-	var/options = get_gear_tweak_options()
-	for(var/tweak in options)
-		var/optargs = options[tweak]
-		if(optargs)
-			gear_tweaks += new tweak(optargs)
-		else
-			gear_tweaks += new tweak
-
-/datum/gear/proc/get_gear_tweak_options()
-	. = list()
 
 /datum/gear/proc/get_description(var/metadata)
 	. = description

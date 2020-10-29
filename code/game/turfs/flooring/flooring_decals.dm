@@ -12,16 +12,13 @@ var/list/floor_decals = list()
 	var/detail_overlay
 	var/detail_color
 
-// Have to wait for turfs to set up their flooring, so we can better guess at our layers.
-/obj/effect/floor_decal/Initialize()
-	..()
-	return INITIALIZE_HINT_LATELOAD
-
-/obj/effect/floor_decal/LateInitialize(mapload, var/newdir, var/newcolour, var/newappearance)
+/obj/effect/floor_decal/New(var/newloc, var/newdir, var/newcolour, var/newappearance)
 	supplied_dir = newdir
 	if(newappearance) appearance = newappearance
 	if(newcolour) color = newcolour
+	..(newloc)
 
+/obj/effect/floor_decal/Initialize()
 	if(supplied_dir) set_dir(supplied_dir)
 	var/turf/T = get_turf(src)
 	if(istype(T, /turf/simulated/floor) || istype(T, /turf/unsimulated/floor))
@@ -40,29 +37,17 @@ var/list/floor_decals = list()
 			floor_decals[cache_key] = I
 		if(!T.decals) T.decals = list()
 		T.decals |= floor_decals[cache_key]
-		T.add_overlay(floor_decals[cache_key])
-	qdel(src)
+		T.overlays |= floor_decals[cache_key]
+	atom_flags |= ATOM_FLAG_INITIALIZED
+	return INITIALIZE_HINT_QDEL
 
 /obj/effect/floor_decal/reset
 	name = "reset marker"
 
 /obj/effect/floor_decal/reset/Initialize()
-	..()
 	var/turf/T = get_turf(src)
 	T.remove_decals()
 	T.update_icon()
-	atom_flags |= ATOM_FLAG_INITIALIZED
-	return INITIALIZE_HINT_QDEL
-
-/obj/effect/floor_decal/undo
-	name = "undo marker"
-
-/obj/effect/floor_decal/undo/Initialize()
-	SHOULD_CALL_PARENT(FALSE)
-	var/turf/T = get_turf(src)
-	if(length(T.decals))
-		T.decals.len--
-		T.update_icon()
 	atom_flags |= ATOM_FLAG_INITIALIZED
 	return INITIALIZE_HINT_QDEL
 
@@ -1033,9 +1018,9 @@ var/list/floor_decals = list()
 /obj/effect/floor_decal/beach/corner
 	icon_state = "beachbordercorner"
 
-/obj/effect/floor_decal/asteroid/Initialize()
-	. = ..()
+/obj/effect/floor_decal/asteroid/New()
 	icon_state = "asteroid[rand(0,9)]"
+	..()
 
 /obj/effect/floor_decal/chapel
 	name = "chapel"
@@ -1139,6 +1124,18 @@ var/list/floor_decals = list()
 /obj/effect/floor_decal/sign/p
 	icon_state = "white_p"
 
+/obj/effect/floor_decal/sign/or1
+	icon_state = "white_or1"
+
+/obj/effect/floor_decal/sign/or2
+	icon_state = "white_or2"
+
+/obj/effect/floor_decal/sign/tr
+	icon_state = "white_tr"
+
+/obj/effect/floor_decal/sign/pop
+	icon_state = "white_pop"
+
 /obj/effect/floor_decal/solarpanel
 	icon_state = "solarpanel"
 
@@ -1152,9 +1149,9 @@ var/list/floor_decals = list()
 	icon_state = "manydot"
 	appearance_flags = 0
 
-/obj/effect/floor_decal/floordetail/Initialize()
+/obj/effect/floor_decal/floordetail/New(var/newloc, var/newdir, var/newcolour)
 	color = null //color is here just for map preview, if left it applies both our and tile colors.
-	. = ..()
+	..()
 
 /obj/effect/floor_decal/floordetail/tiled
 	icon_state = "manydot_tiled"
@@ -1171,7 +1168,7 @@ var/list/floor_decals = list()
 /obj/effect/floor_decal/ntlogo
 	icon_state = "ntlogo"
 
-/obj/effect/floor_decal/exologo
+/obj/effect/floor_decal/torchltdlogo
 	alpha = 230
 	icon = 'icons/turf/flooring/corp_floor.dmi'
 	icon_state = "bottomleft"

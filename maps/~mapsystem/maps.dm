@@ -1,4 +1,4 @@
-GLOBAL_DATUM_INIT(using_map, /datum/map, new USING_MAP_DATUM)
+GLOBAL_DATUM_INIT(using_map, /datum/map, new using_map_DATUM)
 GLOBAL_LIST_EMPTY(all_maps)
 
 var/const/MAP_HAS_BRANCH = 1	//Branch system for occupations, togglable
@@ -23,19 +23,19 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 	var/name = "Unnamed Map"
 	var/full_name = "Unnamed Map"
 	var/path
+	var/config_path = null
 
 	var/list/station_levels = list() // Z-levels the station exists on
 	var/list/admin_levels = list()   // Z-levels for admin functionality (Centcom, shuttle transit, etc)
 	var/list/contact_levels = list() // Z-levels that can be contacted from the station, for eg announcements
 	var/list/player_levels = list()  // Z-levels a character can typically reach
 	var/list/sealed_levels = list()  // Z-levels that don't allow random transit at edge
-	var/list/empty_levels = null     // Empty Z-levels that may be used for various things (currently used by FTL jump)
+	var/list/empty_levels = null     // Empty Z-levels that may be used for various things (currently used by bluespace jump)
 
 	var/list/map_levels              // Z-levels available to various consoles, such as the crew monitor. Defaults to station_levels if unset.
 
 	var/list/base_turf_by_z = list() // Custom base turf by Z-level. Defaults to world.turf for unlisted Z-levels
 	var/list/usable_email_tlds = list("freemail.net")
-
 	var/base_floor_type = /turf/simulated/floor/airless // The turf type used when generating floors between Z-levels at startup.
 	var/base_floor_area                                 // Replacement area, if a base_floor_type is generated. Leave blank to skip.
 
@@ -57,9 +57,8 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 	var/company_name  = "BadMan"
 	var/company_short = "BM"
 	var/system_name = "Uncharted System"
-	var/ground_noun = "ground"
 
-	var/map_admin_faxes = list()
+	var/list/map_admin_faxes = list()
 
 	var/shuttle_docked_message
 	var/shuttle_leaving_dock
@@ -78,7 +77,7 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 	                                              // as defined in holodeck_programs
 	var/list/holodeck_restricted_programs = list() // as above... but EVIL!
 
-	var/allowed_spawns = list("Arrivals Shuttle","Gateway", "Cryogenic Storage", "Robot Storage")
+	var/allowed_spawns = list("Arrivals Shuttle","Gateway", "Cryogenic Storage", "Cyborg Storage")
 	var/default_spawn = "Arrivals Shuttle"
 	var/flags = 0
 	var/evac_controller_type = /datum/evacuation_controller
@@ -86,7 +85,6 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 	var/overmap_size = 20		//Dimensions of overmap zlevel if overmap is used.
 	var/overmap_z = 0		//If 0 will generate overmap zlevel on init. Otherwise will populate the zlevel provided.
 	var/overmap_event_areas = 0 //How many event "clouds" will be generated
-	var/pray_reward_type = /obj/item/chems/food/snacks/cookie // What reward should be given by admin when a prayer is received?
 
 	var/list/lobby_screens = list('icons/default_lobby.png')    // The list of lobby screen images to pick() from.
 	var/current_lobby_screen
@@ -94,15 +92,13 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 	var/list/lobby_tracks = list()                  // The list of lobby tracks to pick() from. If left unset will randomly select among all available /music_track subtypes.
 	var/welcome_sound = 'sound/AI/welcome.ogg'		// Sound played on roundstart
 
-	var/default_law_type = /datum/ai_laws/asimov  // The default lawset use by synth units, if not overriden by their laws var.
+	var/default_law_type = /datum/ai_laws/nanotrasen  // The default lawset use by synth units, if not overriden by their laws var.
 	var/security_state = /decl/security_state/default // The default security state system to use.
 
 	var/id_hud_icons = 'icons/mob/hud.dmi' // Used by the ID HUD (primarily sechud) overlay.
 
 	var/num_exoplanets = 0
-	//dimensions of planet zlevels, defaults to world size if smaller, INCREASES world size if larger. 
-	//Due to how maps are generated, must be (2^n+1) e.g. 17,33,65,129 etc. Map will just round up to those if set to anything other.
-	var/list/planet_size = list()
+	var/list/planet_size  //dimensions of planet zlevel, defaults to world size. Due to how maps are generated, must be (2^n+1) e.g. 17,33,65,129 etc. Map will just round up to those if set to anything other.
 	var/away_site_budget = 0
 
 	var/list/loadout_blacklist	//list of types of loadout items that will not be pickable
@@ -111,30 +107,92 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 	var/starting_money = 75000		//Money in station account
 	var/department_money = 5000		//Money in department accounts
 	var/salary_modifier	= 1			//Multiplier to starting character money
-	var/list/station_departments = list()//Gets filled automatically depending on jobs allowed
+	var/station_departments = list()//Gets filled automatically depending on jobs allowed
 
-	var/default_species = SPECIES_HUMAN
+	var/supply_currency_name = "Credits"
+	var/supply_currency_name_short = "Cr."
+	var/local_currency_name = "thalers"
+	var/local_currency_name_singular = "thaler"
+	var/local_currency_name_short = "T"
 
 	var/list/available_cultural_info = list(
 		TAG_HOMEWORLD = list(
+			HOME_SYSTEM_MARS,
+			HOME_SYSTEM_LUNA,
+			HOME_SYSTEM_EARTH,
+			HOME_SYSTEM_VENUS,
+			HOME_SYSTEM_CERES,
+			HOME_SYSTEM_PLUTO,
+			HOME_SYSTEM_TAU_CETI,
+			HOME_SYSTEM_HELIOS,
+			HOME_SYSTEM_TERRA,
+			HOME_SYSTEM_TERSTEN,
+			HOME_SYSTEM_LORRIMAN,
+			HOME_SYSTEM_CINU,
+			HOME_SYSTEM_YUKLID,
+			HOME_SYSTEM_LORDANIA,
+			HOME_SYSTEM_KINGSTON,
+			HOME_SYSTEM_GAIA,
+			HOME_SYSTEM_MAGNITKA,
 			HOME_SYSTEM_OTHER
 		),
 		TAG_FACTION = list(
+			FACTION_SOL_CENTRAL,
+			FACTION_INDIE_CONFED,
+			FACTION_CORPORATE,
+			FACTION_NANOTRASEN,
+			FACTION_FREETRADE,
+			FACTION_XYNERGY,
+			FACTION_HEPHAESTUS,
+			FACTION_DAIS,
+			FACTION_EXPEDITIONARY,
+			FACTION_FLEET,
+			FACTION_PCRC,
+			FACTION_SAARE,
 			FACTION_OTHER
 		),
 		TAG_CULTURE = list(
+			CULTURE_HUMAN_MARTIAN,
+			CULTURE_HUMAN_MARSTUN,
+			CULTURE_HUMAN_LUNAPOOR,
+			CULTURE_HUMAN_LUNARICH,
+			CULTURE_HUMAN_VENUSIAN,
+			CULTURE_HUMAN_VENUSLOW,
+			CULTURE_HUMAN_BELTER,
+			CULTURE_HUMAN_PLUTO,
+			CULTURE_HUMAN_EARTH,
+			CULTURE_HUMAN_CETI,
+			CULTURE_HUMAN_SPACER,
+			CULTURE_HUMAN_SPAFRO,
+			CULTURE_HUMAN_CONFED,
+			CULTURE_HUMAN_OTHER,
 			CULTURE_OTHER
 		),
 		TAG_RELIGION = list(
-			RELIGION_OTHER
+			RELIGION_OTHER,
+			RELIGION_JUDAISM,
+			RELIGION_HINDUISM,
+			RELIGION_BUDDHISM,
+			RELIGION_SIKHISM,
+			RELIGION_JAINISM,
+			RELIGION_ISLAM,
+			RELIGION_CHRISTIANITY,
+			RELIGION_BAHAI_FAITH,
+			RELIGION_AGNOSTICISM,
+			RELIGION_DEISM,
+			RELIGION_ATHEISM,
+			RELIGION_THELEMA,
+			RELIGION_SPIRITUALISM,
+			RELIGION_SHINTO,
+			RELIGION_TAOISM
 		)
 	)
 
 	var/list/default_cultural_info = list(
-		TAG_HOMEWORLD = HOME_SYSTEM_OTHER,
-		TAG_FACTION =   FACTION_OTHER,
-		TAG_CULTURE =   CULTURE_OTHER,
-		TAG_RELIGION =  RELIGION_OTHER
+		TAG_HOMEWORLD = HOME_SYSTEM_MARS,
+		TAG_FACTION =   FACTION_SOL_CENTRAL,
+		TAG_CULTURE =   CULTURE_HUMAN_MARTIAN,
+		TAG_RELIGION =  RELIGION_AGNOSTICISM
 	)
 
 	var/access_modify_region = list(
@@ -146,6 +204,12 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 		ACCESS_REGION_GENERAL = list(access_change_ids),
 		ACCESS_REGION_SUPPLY = list(access_change_ids)
 	)
+
+	// List of /datum/department types to instantiate at roundstart.
+	var/list/departments
+
+	// List of events specific to a map
+	var/list/map_event_container = list()
 
 /datum/map/New()
 	if(!map_levels)
@@ -162,17 +226,51 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 
 /datum/map/proc/get_lobby_track(var/exclude)
 	var/lobby_track_type
-	if(LAZYLEN(lobby_tracks) == 1)
-		lobby_track_type = lobby_tracks[1]
-	else if(LAZYLEN(lobby_tracks))
+	if(lobby_tracks.len)
 		lobby_track_type = pickweight(lobby_tracks - exclude)
 	else
 		lobby_track_type = pick(subtypesof(/music_track) - exclude)
 	return decls_repository.get_decl(lobby_track_type)
 
+/datum/map/proc/setup_config(name, value, filename)
+	switch (name)
+		if ("use_overmap") use_overmap = text2num_or_default(value, use_overmap)
+		if ("overmap_z") overmap_z = text2num_or_default(value, overmap_z)
+		if ("overmap_size") overmap_size = text2num_or_default(value, overmap_size)
+		if ("overmap_event_areas") overmap_event_areas = text2num_or_default(value, overmap_event_areas)
+		if ("num_exoplanets") num_exoplanets = text2num_or_default(value, num_exoplanets)
+		if ("away_site_budget") away_site_budget = text2num_or_default(value, away_site_budget)
+		if ("station_name") station_name = value
+		if ("station_short") station_short = value
+		if ("dock_name") dock_name = value
+		if ("boss_name") boss_name = value
+		if ("boss_short") boss_short = value
+		if ("company_name") company_name = value
+		if ("company_short") company_short = value
+		if ("shuttle_docked_message") shuttle_docked_message = value
+		if ("shuttle_leaving_dock") shuttle_leaving_dock = value
+		if ("shuttle_called_message") shuttle_called_message = value
+		if ("shuttle_recall_message") shuttle_recall_message = value
+		if ("emergency_shuttle_docked_message") emergency_shuttle_docked_message = value
+		if ("emergency_shuttle_leaving_dock") emergency_shuttle_leaving_dock = value
+		if ("emergency_shuttle_recall_message") emergency_shuttle_recall_message = value
+		if ("starting_money") starting_money = text2num_or_default(value, starting_money)
+		if ("department_money") department_money = text2num_or_default(value, department_money)
+		if ("salary_modifier") salary_modifier = text2num_or_default(value, salary_modifier)
+		if ("supply_currency_name") supply_currency_name = value
+		if ("supply_currency_name_short") supply_currency_name_short = value
+		if ("local_currency_name") local_currency_name = value
+		if ("local_currency_name_singular") local_currency_name_singular = value
+		if ("local_currency_name_short") local_currency_name_short = value
+		else log_misc("Unknown setting [name] in [filename].")
+
 /datum/map/proc/setup_map()
 	lobby_track = get_lobby_track()
 	world.update_status()
+	setup_events()
+
+/datum/map/proc/setup_events()
+	return
 
 /datum/map/proc/setup_job_lists()
 	return
@@ -183,48 +281,94 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 /datum/map/proc/perform_map_generation()
 	return
 
+
+/* It is perfectly possible to create loops with TEMPLATE_FLAG_ALLOW_DUPLICATES and force/allow. Don't. */
+/proc/resolve_site_selection(datum/map_template/ruin/away_site/site, list/selected, list/available, list/unavailable, list/by_type)
+	var/cost = 0
+	if (site in selected)
+		if (!(site.template_flags & TEMPLATE_FLAG_ALLOW_DUPLICATES))
+			return cost
+	if (!(site.template_flags & TEMPLATE_FLAG_ALLOW_DUPLICATES))
+		available -= site
+	cost += site.cost
+	selected += site
+
+	for (var/forced_type in site.force_ruins)
+		cost += resolve_site_selection(by_type[forced_type], selected, available, unavailable, by_type)
+
+	for (var/banned_type in site.ban_ruins)
+		var/datum/map_template/ruin/away_site/banned = by_type[banned_type]
+		if (banned in unavailable)
+			continue
+		unavailable += banned
+		available -= banned
+
+	for (var/allowed_type in site.allow_ruins)
+		var/datum/map_template/ruin/away_site/allowed = by_type[allowed_type]
+		if (allowed in available)
+			continue
+		if (allowed in unavailable)
+			continue
+		if (allowed in selected)
+			if (!(allowed.template_flags & TEMPLATE_FLAG_ALLOW_DUPLICATES))
+				continue
+		available[allowed] = allowed.spawn_weight
+
+	return cost
+
+
 /datum/map/proc/build_away_sites()
 #ifdef UNIT_TEST
 	report_progress("Unit testing, so not loading away sites")
 	return // don't build away sites during unit testing
 #else
 	report_progress("Loading away sites...")
-	var/list/sites_by_spawn_weight = list()
+
+	var/list/guaranteed = list()
+	var/list/selected = list()
+	var/list/available = list()
+	var/list/unavailable = list()
+	var/list/by_type = list()
+
 	for (var/site_name in SSmapping.away_sites_templates)
 		var/datum/map_template/ruin/away_site/site = SSmapping.away_sites_templates[site_name]
+		if (site.template_flags & TEMPLATE_FLAG_SPAWN_GUARANTEED)
+			guaranteed += site
+			if ((site.template_flags & TEMPLATE_FLAG_ALLOW_DUPLICATES) && !(site.template_flags & TEMPLATE_FLAG_RUIN_STARTS_DISALLOWED))
+				available[site] = site.spawn_weight
+		else if (!(site.template_flags & TEMPLATE_FLAG_RUIN_STARTS_DISALLOWED))
+			available[site] = site.spawn_weight
+		by_type[site.type] = site
 
-		if((site.template_flags & TEMPLATE_FLAG_SPAWN_GUARANTEED) && site.load_new_z()) // no check for budget, but guaranteed means guaranteed
-			report_progress("Loaded guaranteed away site [site]!")
-			away_site_budget -= site.cost
-			continue
+	var/budget = away_site_budget
+	for (var/datum/map_template/ruin/away_site/site in guaranteed)
+		budget -= resolve_site_selection(site, selected, available, unavailable, by_type)
 
-		sites_by_spawn_weight[site] = site.spawn_weight
-	while (away_site_budget > 0 && sites_by_spawn_weight.len)
-		var/datum/map_template/ruin/away_site/selected_site = pickweight(sites_by_spawn_weight)
-		if (!selected_site)
-			break
-		sites_by_spawn_weight -= selected_site
-		if(selected_site.cost > away_site_budget)
+	while (budget > 0 && length(available))
+		var/datum/map_template/ruin/away_site/site = pickweight(available)
+		if (site.cost > budget)
+			unavailable += site
+			available -= site
 			continue
-		if (selected_site.load_new_z())
-			report_progress("Loaded away site [selected_site]!")
-			away_site_budget -= selected_site.cost
-	report_progress("Finished loading away sites, remaining budget [away_site_budget], remaining sites [sites_by_spawn_weight.len]")
+		budget -= resolve_site_selection(site, selected, available, unavailable, by_type)
+
+	report_progress("Finished selecting away sites ([english_list(selected)]) for [away_site_budget - budget] cost of [away_site_budget] budget.")
+
+	for (var/datum/map_template/template in selected)
+		if (template.load_new_z())
+			report_progress("Loaded away site [template]!")
+		else
+			report_progress("Failed loading away site [template]!")
 #endif
 
 /datum/map/proc/build_exoplanets()
 	if(!use_overmap)
 		return
-	if(LAZYLEN(planet_size))
-		if(world.maxx < planet_size[1])
-			world.maxx = planet_size[1]
-		if(world.maxy < planet_size[2])
-			world.maxy = planet_size[2]
+
 	for(var/i = 0, i < num_exoplanets, i++)
 		var/exoplanet_type = pick(subtypesof(/obj/effect/overmap/visitable/sector/exoplanet))
-		INCREMENT_WORLD_Z_SIZE
-		var/obj/effect/overmap/visitable/sector/exoplanet/new_planet = new exoplanet_type(null, world.maxz)
-		new_planet.build_level(planet_size[1], planet_size[2])
+		var/obj/effect/overmap/visitable/sector/exoplanet/new_planet = new exoplanet_type(null, planet_size[1], planet_size[2])
+		new_planet.build_level()
 
 // Used to apply various post-compile procedural effects to the map.
 /datum/map/proc/refresh_mining_turfs(var/zlevel)
@@ -232,6 +376,9 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 	set background = 1
 	set waitfor = 0
 
+	for(var/thing in mining_walls["[zlevel]"])
+		var/turf/simulated/mineral/M = thing
+		M.update_icon()
 	for(var/thing in mining_floors["[zlevel]"])
 		var/turf/simulated/floor/asteroid/M = thing
 		if(istype(M))
@@ -251,28 +398,31 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 
 /datum/map/proc/get_empty_zlevel()
 	if(empty_levels == null)
-		INCREMENT_WORLD_Z_SIZE
+		world.maxz++
 		empty_levels = list(world.maxz)
 	return pick(empty_levels)
 
 
 /datum/map/proc/setup_economy()
-	news_network.CreateFeedChannel("News Daily", "Minister of Information", 1, 1)
+	news_network.CreateFeedChannel("Nyx Daily", "SolGov Minister of Information", 1, 1)
 	news_network.CreateFeedChannel("The Gibson Gazette", "Editor Mike Hammers", 1, 1)
+
+	for(var/loc_type in typesof(/datum/trade_destination) - /datum/trade_destination)
+		var/datum/trade_destination/D = new loc_type
+		weighted_randomevent_locations[D] = D.viable_random_events.len
+		weighted_mundaneevent_locations[D] = D.viable_mundane_events.len
 
 	if(!station_account)
 		station_account = create_account("[station_name()] Primary Account", "[station_name()]", starting_money, ACCOUNT_TYPE_DEPARTMENT)
 
 	for(var/job in allowed_jobs)
-		var/datum/job/J = SSjobs.get_by_path(job)
-		var/list/dept = J.department_refs
-		if(LAZYLEN(dept))
+		var/datum/job/J = job
+		var/dept = initial(J.department)
+		if(dept)
 			station_departments |= dept
 
 	for(var/department in station_departments)
-		var/datum/department/dept = SSdepartments.departments[department]
-		if(istype(dept))
-			department_accounts[department] = create_account("[dept.title] Account", "[dept.title]", department_money, ACCOUNT_TYPE_DEPARTMENT)
+		department_accounts[department] = create_account("[department] Account", "[department]", department_money, ACCOUNT_TYPE_DEPARTMENT)
 
 	department_accounts["Vendor"] = create_account("Vendor Account", "Vendor", 0, ACCOUNT_TYPE_DEPARTMENT)
 	vendor_account = department_accounts["Vendor"]
@@ -285,16 +435,16 @@ var/const/MAP_HAS_RANK = 2		//Rank system, also togglable
 	return "No map information available"
 
 /datum/map/proc/bolt_saferooms()
-	return
+	return // overriden by torch
 
 /datum/map/proc/unbolt_saferooms()
-	return
+	return // overriden by torch
 
-/datum/map/proc/make_maint_all_access(var/radstorm = 0)
+/datum/map/proc/make_maint_all_access(var/radstorm = 0) // parameter used by torch
 	maint_all_access = 1
 	priority_announcement.Announce("The maintenance access requirement has been revoked on all maintenance airlocks.", "Attention!")
 
-/datum/map/proc/revoke_maint_all_access(var/radstorm = 0)
+/datum/map/proc/revoke_maint_all_access(var/radstorm = 0) // parameter used by torch
 	maint_all_access = 0
 	priority_announcement.Announce("The maintenance access requirement has been readded on all maintenance airlocks.", "Attention!")
 

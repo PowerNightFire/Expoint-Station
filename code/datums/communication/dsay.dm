@@ -74,13 +74,12 @@
 
 	var/lname
 	var/mob/observer/ghost/DM
-	var/anon_say_pref = (C.get_preference_value(/datum/client_preference/anon_say) == GLOB.PREF_YES)
 	if(isghost(C.mob))
 		DM = C.mob
 	if(M.client.holder) 							// What admins see
-		lname = "[keyname][(DM && anon_say_pref) ? "*" : (DM ? "" : "^")] ([name])"
+		lname = "[keyname][(DM && DM.anonsay) ? "*" : (DM ? "" : "^")] ([name])"
 	else
-		if(DM && anon_say_pref)						// If the person is actually observer they have the option to be anonymous
+		if(DM && DM.anonsay)						// If the person is actually observer they have the option to be anonymous
 			lname = "Ghost of [name]"
 		else if(DM)									// Non-anons
 			lname = "[keyname] ([name])"
@@ -90,10 +89,10 @@
 
 /decl/dsay_communication/proc/get_message(var/client/C, var/mob/M, var/message)
 	var say_verb = pick("complains","moans","whines","laments","blubbers")
-	return "[get_name(C, M)] [say_verb], <span class='message'>\"[message]\"</span>"
+	return "[get_name(C, M)] [say_verb], <span class='message linkify'>\"[message]\"</span>"
 
 /decl/dsay_communication/emote/get_message(var/client/C, var/mob/M, var/message)
-	return "[get_name(C, M)] <span class='message'>[message]</span>"
+	return "[get_name(C, M)] <span class='message linkify'>[message]</span>"
 
 /decl/dsay_communication/proc/adjust_channel(var/decl/communication_channel/dsay)
 	dsay.flags |= COMMUNICATION_ADMIN_FOLLOW|COMMUNICATION_GHOST_FOLLOW // Add admin and ghost follow
@@ -116,7 +115,7 @@
 
 /decl/dsay_communication/admin/get_message(var/client/communicator, var/mob/M, var/message)
 	var/stafftype = uppertext(communicator.holder.rank)
-	return "<span class='name'>[stafftype]([communicator.key])</span> says, <span class='message'>\"[message]\"</span>"
+	return "<span class='name'>[stafftype]([communicator.key])</span> says, <span class='message linkify'>\"[message]\"</span>"
 
 /decl/dsay_communication/admin/adjust_channel(var/decl/communication_channel/dsay)
 	dsay.log_proc = /proc/log_say

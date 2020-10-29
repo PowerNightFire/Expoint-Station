@@ -1,6 +1,6 @@
 /obj/vehicle/train
 	name = "train"
-	dir = EAST
+	dir = 4
 
 	move_delay = 1
 
@@ -94,7 +94,7 @@
 
 	return 1
 
-/obj/vehicle/train/MouseDrop_T(var/atom/movable/C, mob/user)
+/obj/vehicle/train/MouseDrop_T(var/atom/movable/C, mob/user as mob)
 	if(!CanPhysicallyInteract(user) || !user.Adjacent(C) || !istype(C) || (user == C))
 		return
 	if(istype(C,/obj/vehicle/train))
@@ -103,7 +103,7 @@
 		if(!load(C))
 			to_chat(user, "<span class='warning'>You were unable to load [C] on [src].</span>")
 
-/obj/vehicle/train/attack_hand(mob/user)
+/obj/vehicle/train/attack_hand(mob/user as mob)
 	if(user.stat || user.restrained() || !Adjacent(user))
 		return 0
 
@@ -190,7 +190,7 @@
 
 	if(dir == T_dir) 	//if car is ahead
 		src.attach_to(T, user)
-	else if(GLOB.reverse_dir[dir] == T_dir)	//else if car is behind
+	else if(reverse_direction(dir) == T_dir)	//else if car is behind
 		T.attach_to(src, user)
 
 //returns 1 if this is the lead car of the train

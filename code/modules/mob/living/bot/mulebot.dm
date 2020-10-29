@@ -38,8 +38,8 @@
 
 	var/global/amount = 0
 
-/mob/living/bot/mulebot/Initialize()
-	. = ..()
+/mob/living/bot/mulebot/New()
+	..()
 
 	var/turf/T = get_turf(loc)
 	var/obj/machinery/navbeacon/N = locate() in T
@@ -232,7 +232,7 @@
 	visible_message("<span class='danger'>[src] blows apart!</span>")
 
 	var/turf/Tsec = get_turf(src)
-	new /obj/item/assembly/prox_sensor(Tsec)
+	new /obj/item/device/assembly/prox_sensor(Tsec)
 	new /obj/item/stack/material/rods(Tsec)
 	new /obj/item/stack/material/rods(Tsec)
 	new /obj/item/stack/cable_coil/cut(Tsec)

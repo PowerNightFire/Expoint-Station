@@ -1,12 +1,12 @@
-/mob/living/carbon/Initialize()
+/mob/living/carbon/New()
 	//setup reagent holders
-	bloodstr = new/datum/reagents/metabolism(120, src, CHEM_INJECT)
+	bloodstr = new/datum/reagents/metabolism(120, src, CHEM_BLOOD)
 	touching = new/datum/reagents/metabolism(1000, src, CHEM_TOUCH)
 	reagents = bloodstr
 
 	if (!default_language && species_language)
-		default_language = species_language
-	. = ..()
+		default_language = all_languages[species_language]
+	..()
 
 /mob/living/carbon/Destroy()
 	QDEL_NULL(touching)
@@ -30,11 +30,6 @@
 	set_nutrition(400)
 	set_hydration(400)
 	..()
-
-/mob/living/carbon/get_ai_type()
-	if(ispath(species?.ai))
-		return species.ai
-	return ..()
 
 /mob/living/carbon/Move(NewLoc, direct)
 	. = ..()
@@ -86,16 +81,18 @@
 		visible_message(SPAN_DANGER("\The [M] bursts out of \the [src]!"))
 	..()
 
-/mob/living/carbon/attack_hand(var/mob/living/carbon/human/M)
-	if(istype(M))
-		var/obj/item/organ/external/temp = M.organs_by_name[M.get_active_held_item_slot()]
-		if(!temp)
-			to_chat(M, SPAN_WARNING("You don't have a usable limb!"))
-			return TRUE
-		if(!temp.is_usable())
-			to_chat(M, SPAN_WARNING("You can't use your [temp.name]."))
-			return TRUE
-	. = ..()
+/mob/living/carbon/attack_hand(mob/M as mob)
+	if(!istype(M, /mob/living/carbon)) return
+	if (ishuman(M))
+		var/mob/living/carbon/human/H = M
+		var/obj/item/organ/external/temp = H.organs_by_name[BP_R_HAND]
+		if (H.hand)
+			temp = H.organs_by_name[BP_L_HAND]
+		if(temp && !temp.is_usable())
+			to_chat(H, "<span class='warning'>You can't use your [temp.name]</span>")
+			return
+
+	return
 
 /mob/living/carbon/electrocute_act(var/shock_damage, var/obj/source, var/siemens_coeff = 1.0, var/def_zone = null)
 	if(status_flags & GODMODE)	return 0	//godmode
@@ -151,7 +148,33 @@
 	return(shock_damage)
 
 /mob/proc/swap_hand()
-	SHOULD_CALL_PARENT(TRUE)
+	return
+
+/mob/living/carbon/swap_hand()
+	hand = !hand
+	if(hud_used.l_hand_hud_object && hud_used.r_hand_hud_object)
+		if(hand)	//This being 1 means the left hand is in use
+			hud_used.l_hand_hud_object.icon_state = "l_hand_active"
+			hud_used.r_hand_hud_object.icon_state = "r_hand_inactive"
+		else
+			hud_used.l_hand_hud_object.icon_state = "l_hand_inactive"
+			hud_used.r_hand_hud_object.icon_state = "r_hand_active"
+	var/obj/item/I = get_active_hand()
+	if(istype(I))
+		I.on_active_hand()
+
+/mob/living/carbon/proc/activate_hand(var/selhand) //0 or "r" or "right" for right hand; 1 or "l" or "left" for left hand.
+
+	if(istext(selhand))
+		selhand = lowertext(selhand)
+
+		if(selhand == "right" || selhand == "r")
+			selhand = 0
+		if(selhand == "left" || selhand == "l")
+			selhand = 1
+
+	if(selhand != src.hand)
+		swap_hand()
 
 /mob/living/carbon/proc/help_shake_act(mob/living/carbon/M)
 	if(!is_asystole())
@@ -294,16 +317,12 @@
 
 	if(!src.lastarea)
 		src.lastarea = get_area(src.loc)
-	if(!check_space_footing())
-		if(prob((itemsize * itemsize * 10) * MOB_SIZE_MEDIUM/src.mob_size))
-			var/direction = get_dir(target, src)
-			step(src,direction)
-			space_drift(direction)
+	if((istype(src.loc, /turf/space)) || (src.lastarea.has_gravity == 0))
+		if(prob((itemsize * itemsize * 10) * MOB_MEDIUM/src.mob_size))
+			src.inertia_dir = get_dir(target, src)
+			step(src, inertia_dir)
 
 	item.throw_at(target, throw_range, item.throw_speed * skill_mod, src)
-
-	playsound(src, 'sound/effects/throw.ogg', 50, 1)
-	animate_throw(src)
 
 /mob/living/carbon/fire_act(datum/gas_mixture/air, exposed_temperature, exposed_volume)
 	..()
@@ -322,14 +341,18 @@
 		return 1
 	return
 
-/mob/living/carbon/u_equip(obj/item/W)
-	. = ..()
-	if(!. && W == handcuffed)
+/mob/living/carbon/u_equip(obj/item/W as obj)
+	if(!W)	return 0
+
+	else if (W == handcuffed)
 		handcuffed = null
 		update_inv_handcuffed()
 		if(buckled && buckled.buckle_require_restraints)
 			buckled.unbuckle_mob()
-		return TRUE
+	else
+	 ..()
+
+	return
 
 /mob/living/carbon/verb/mob_sleep()
 	set name = "Sleep"
@@ -344,36 +367,37 @@
 	..()
 
 /mob/living/carbon/slip(slipped_on, stun_duration = 8)
-	if(!has_gravity())
+	var/area/A = get_area(src)
+	if(!A.has_gravity())
 		return FALSE
 	if(buckled)
 		return FALSE
+	stop_pulling()
 	to_chat(src, SPAN_WARNING("You slipped on [slipped_on]!"))
 	playsound(loc, 'sound/misc/slip.ogg', 50, 1, -3)
 	Weaken(Floor(stun_duration/2))
 	return TRUE
 
-/mob/living/carbon/add_chemical_effect(var/effect, var/magnitude = 1)
+/mob/living/carbon/proc/add_chemical_effect(var/effect, var/magnitude = 1)
 	if(effect in chem_effects)
 		chem_effects[effect] += magnitude
 	else
 		chem_effects[effect] = magnitude
 
-/mob/living/carbon/add_up_to_chemical_effect(var/effect, var/magnitude = 1)
+/mob/living/carbon/proc/add_up_to_chemical_effect(var/effect, var/magnitude = 1)
 	if(effect in chem_effects)
 		chem_effects[effect] = max(magnitude, chem_effects[effect])
 	else
 		chem_effects[effect] = magnitude
 
 /mob/living/carbon/get_default_language()
-	. = ..()
-	if(. && !can_speak(.))
-		. = null
+	if(default_language && can_speak(default_language))
+		return default_language
 
 /mob/living/carbon/proc/get_any_good_language(set_default=FALSE)
-	var/decl/language/result = get_default_language()
+	var/datum/language/result = get_default_language()
 	if (!result)
-		for (var/decl/language/L in languages)
+		for (var/datum/language/L in languages)
 			if (can_speak(L))
 				result = L
 				if (set_default)
@@ -381,19 +405,15 @@
 				break
 	return result
 
-/mob/living/carbon/show_inv(mob/user)
+/mob/living/carbon/show_inv(mob/user as mob)
 	user.set_machine(src)
 	var/dat = {"
 	<B><HR><FONT size=3>[name]</FONT></B>
 	<BR><HR>
-	<BR><B>Head(Mask):</B> <A href='?src=\ref[src];item=mask'>[(wear_mask ? wear_mask : "Nothing")]</A>"}
-
-	for(var/bp in held_item_slots)
-		var/datum/inventory_slot/inv_slot = held_item_slots[bp]
-		var/obj/item/organ/external/E = get_organ(bp)
-		dat += "<BR><b>[capitalize(E.name)]:</b> <A href='?src=\ref[src];item=[bp]'>[inv_slot.holding?.name || "nothing"]</A>"
-
-	dat += {"<BR><B>Back:</B> <A href='?src=\ref[src];item=back'>[(back ? back : "Nothing")]</A> [((istype(wear_mask, /obj/item/clothing/mask) && istype(back, /obj/item/tank) && !( internal )) ? text(" <A href='?src=\ref[];item=internal'>Set Internal</A>", src) : "")]
+	<BR><B>Head(Mask):</B> <A href='?src=\ref[src];item=mask'>[(wear_mask ? wear_mask : "Nothing")]</A>
+	<BR><B>Left Hand:</B> <A href='?src=\ref[src];item=l_hand'>[(l_hand ? l_hand  : "Nothing")]</A>
+	<BR><B>Right Hand:</B> <A href='?src=\ref[src];item=r_hand'>[(r_hand ? r_hand : "Nothing")]</A>
+	<BR><B>Back:</B> <A href='?src=\ref[src];item=back'>[(back ? back : "Nothing")]</A> [((istype(wear_mask, /obj/item/clothing/mask) && istype(back, /obj/item/weapon/tank) && !( internal )) ? text(" <A href='?src=\ref[];item=internal'>Set Internal</A>", src) : "")]
 	<BR>[(internal ? text("<A href='?src=\ref[src];item=internal'>Remove Internal</A>") : "")]
 	<BR><A href='?src=\ref[src];item=pockets'>Empty Pockets</A>
 	<BR><A href='?src=\ref[user];refresh=1'>Refresh</A>
@@ -438,7 +458,7 @@
 		return
 	stasis_sources[source] = factor
 
-/mob/living/carbon/proc/InStasis()
+/mob/living/carbon/InStasis()
 	if(!stasis_value)
 		return FALSE
 	return life_tick % stasis_value
@@ -458,19 +478,22 @@
 /mob/living/carbon/get_sex()
 	return species.get_sex(src)
 
+/mob/living/carbon/proc/get_ingested_reagents()
+	return reagents
+
 /mob/living/carbon/proc/set_nutrition(var/amt)
 	nutrition = Clamp(amt, 0, initial(nutrition))
 
-/mob/living/carbon/adjust_nutrition(var/amt)
+/mob/living/carbon/proc/adjust_nutrition(var/amt)
 	set_nutrition(nutrition + amt)
 
 /mob/living/carbon/proc/set_hydration(var/amt)
 	hydration = Clamp(amt, 0, initial(hydration))
 
-/mob/living/carbon/adjust_hydration(var/amt)
+/mob/living/carbon/proc/adjust_hydration(var/amt)
 	set_hydration(hydration + amt)
 
-/mob/living/carbon/proc/set_internals(obj/item/tank/source, source_string)
+/mob/living/carbon/proc/set_internals(obj/item/weapon/tank/source, source_string)
 	var/old_internal = internal
 
 	internal = source
@@ -484,13 +507,3 @@
 		to_chat(src, "<span class='warning'>You are no longer running on internals.</span>")
 	if(internals)
 		internals.icon_state = "internal[!!internal]"
-
-/mob/living/carbon/has_dexterity(var/dex_level)
-	. = ..() && (species.get_manual_dexterity() >= dex_level)
-
-/mob/living/carbon/fluid_act(var/datum/reagents/fluids)
-	var/saturation =  min(fluids.total_volume, round(mob_size * 1.5 * reagent_permeability()) - touching.total_volume)
-	if(saturation > 0)
-		fluids.trans_to_holder(touching, saturation)
-	if(fluids.total_volume)
-		..()

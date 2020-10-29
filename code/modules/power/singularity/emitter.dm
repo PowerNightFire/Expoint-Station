@@ -7,7 +7,7 @@
 	icon_state = "emitter"
 	anchored = 0
 	density = 1
-	initial_access = list(access_engine_equip)
+	req_access = list(access_engine_equip)
 	active_power_usage = 100 KILOWATTS
 
 	var/efficiency = 0.3	// Energy efficiency. 30% at this time, so 100kW load means 30kW laser pulses.
@@ -24,8 +24,8 @@
 	core_skill = SKILL_ENGINES
 
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/radio/receiver,
-		/obj/item/stock_parts/power/apc
+		/obj/item/weapon/stock_parts/radio/receiver,
+		/obj/item/weapon/stock_parts/power/apc
 	)
 	public_variables = list(
 		/decl/public_access/public_variable/emitter_active,
@@ -62,7 +62,7 @@
 	activate(user)
 	return TRUE
 
-/obj/machinery/power/emitter/proc/activate(mob/user)
+/obj/machinery/power/emitter/proc/activate(mob/user as mob)
 	if(!istype(user))
 		user = null // safety, as the proc is publicly available.
 
@@ -71,11 +71,12 @@
 			to_chat(user, "\The [src] isn't connected to a wire.")
 			return 1
 		if(!src.locked)
+			var/area/A = get_area(src)
 			if(src.active==1)
 				src.active = 0
 				to_chat(user, "You turn off \the [src].")
-				log_and_message_admins("turned off \the [src]")
-				investigate_log("turned <font color='red'>off</font> by [key_name_admin(user || usr)]","singulo")
+				log_and_message_admins("turned off \the [src] in [A.name]", user, src)
+				investigate_log("turned <font color='red'>off</font> by [key_name_admin(user || usr)] in [A.name]","singulo")
 			else
 				src.active = 1
 				if(user)
@@ -84,8 +85,8 @@
 				to_chat(user, "You turn on \the [src].")
 				src.shot_number = 0
 				src.fire_delay = get_initial_fire_delay()
-				log_and_message_admins("turned on \the [src]")
-				investigate_log("turned <font color='green'>on</font> by [key_name_admin(user || usr)]","singulo")
+				log_and_message_admins("turned on \the [src] in [A.name]", user, src)
+				investigate_log("turned <font color='green'>on</font> by [key_name_admin(user || usr)] in [A.name]","singulo")
 			update_icon()
 		else
 			to_chat(user, "<span class='warning'>The controls are locked!</span>")
@@ -173,7 +174,7 @@
 		return
 
 	if(isWelder(W))
-		var/obj/item/weldingtool/WT = W
+		var/obj/item/weapon/weldingtool/WT = W
 		if(active)
 			to_chat(user, "Turn off [src] first.")
 			return
@@ -208,7 +209,7 @@
 					to_chat(user, "<span class='warning'>You need more welding fuel to complete this task.</span>")
 		return
 
-	if(istype(W, /obj/item/card/id) || istype(W, /obj/item/modular_computer))
+	if(istype(W, /obj/item/weapon/card/id) || istype(W, /obj/item/modular_computer))
 		if(emagged)
 			to_chat(user, "<span class='warning'>The lock seems to be broken.</span>")
 			return

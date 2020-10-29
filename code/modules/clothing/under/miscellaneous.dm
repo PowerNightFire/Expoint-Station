@@ -57,7 +57,7 @@
 	icon_state = "sexyclown"
 	item_state = "clown"
 	worn_state = "sexyclown"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO
 
 /obj/item/clothing/under/rank/vice
 	name = "vice officer's jumpsuit"
@@ -66,7 +66,7 @@
 	item_state = "gy_suit"
 	worn_state = "vice"
 
-//This set of uniforms looks fairly fancy and is generally used for high-ranking personnel from what I've seen, so lets give them appropriate ranks.
+//This set of uniforms looks fairly fancy and is generally used for high-ranking NT personnel from what I've seen, so lets give them appropriate ranks.
 /obj/item/clothing/under/rank/centcom
 	desc = "Gold trim on space-black cloth, this uniform displays the rank of \"Captain.\"."
 	name = "\improper Officer's Dress Uniform"
@@ -91,6 +91,17 @@
 	worn_state = "centcom"
 	displays_id = 0
 
+/obj/item/clothing/under/ert
+	name = "ERT tactical uniform"
+	desc = "A short-sleeved black uniform, paired with grey digital-camo cargo pants. It looks very tactical."
+	icon_state = "ert_uniform"
+	item_state = "bl_suit"
+	worn_state = "ert_uniform"
+	armor = list(
+		melee = ARMOR_MELEE_SMALL
+		)
+	siemens_coefficient = 0.9
+
 /obj/item/clothing/under/space
 	name = "\improper NASA jumpsuit"
 	desc = "It has a NASA logo on it and is made of space-proofed materials."
@@ -100,8 +111,8 @@
 	w_class = ITEM_SIZE_HUGE//bulky item
 	gas_transfer_coefficient = 0.01
 	permeability_coefficient = 0.02
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_FEET|SLOT_ARMS|SLOT_HANDS
-	cold_protection = SLOT_UPPER_BODY | SLOT_LOWER_BODY | SLOT_LEGS | SLOT_ARMS //Needs gloves and shoes with cold protection to be fully protected.
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS|FEET|ARMS|HANDS
+	cold_protection = UPPER_TORSO | LOWER_TORSO | LEGS | ARMS //Needs gloves and shoes with cold protection to be fully protected.
 	min_cold_protection_temperature = SPACE_SUIT_MIN_COLD_PROTECTION_TEMPERATURE
 
 /obj/item/clothing/under/acj
@@ -112,17 +123,17 @@
 	desc = "it's a cybernetically enhanced jumpsuit used for administrative duties."
 	gas_transfer_coefficient = 0.01
 	permeability_coefficient = 0.01
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_FEET|SLOT_ARMS|SLOT_HANDS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS|FEET|ARMS|HANDS
 	armor = list(
-		melee = ARMOR_MELEE_SHIELDED, 
-		bullet = ARMOR_BALLISTIC_HEAVY, 
+		melee = ARMOR_MELEE_SHIELDED,
+		bullet = ARMOR_BALLISTIC_HEAVY,
 		laser = ARMOR_LASER_HEAVY,
-		energy = ARMOR_ENERGY_SHIELDED, 
-		bomb = ARMOR_BOMB_SHIELDED, 
-		bio = ARMOR_BIO_SHIELDED, 
+		energy = ARMOR_ENERGY_SHIELDED,
+		bomb = ARMOR_BOMB_SHIELDED,
+		bio = ARMOR_BIO_SHIELDED,
 		rad = ARMOR_RAD_SHIELDED
 		)
-	cold_protection = SLOT_UPPER_BODY | SLOT_LOWER_BODY | SLOT_LEGS | SLOT_FEET | SLOT_ARMS | SLOT_HANDS
+	cold_protection = UPPER_TORSO | LOWER_TORSO | LEGS | FEET | ARMS | HANDS
 	min_cold_protection_temperature = SPACE_SUIT_MIN_COLD_PROTECTION_TEMPERATURE
 	siemens_coefficient = 0
 
@@ -147,13 +158,19 @@
 	worn_state = "rainbow"
 	gender_icons = 1
 
+/obj/item/clothing/under/cloud
+	name = "cloud"
+	icon_state = "cloud"
+	worn_state = "cloud"
+	item_flags = ITEM_FLAG_INVALID_FOR_CHAMELEON
+
 /obj/item/clothing/under/psysuit
 	name = "dark undersuit"
 	desc = "A thick, layered grey undersuit lined with power cables. Feels a little like wearing an electrical storm."
 	icon_state = "psysuit"
 	item_state = "bl_suit"
 	worn_state = "psysuit"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_FEET|SLOT_ARMS|SLOT_HANDS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS|FEET|ARMS|HANDS
 
 /obj/item/clothing/under/gentlesuit
 	name = "gentlemans suit"
@@ -214,7 +231,7 @@
 	icon_state = "blackskirt"
 	item_state = "bl_suit"
 	worn_state = "blackskirt"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_ARMS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|ARMS
 
 /obj/item/clothing/under/schoolgirl
 	name = "schoolgirl uniform"
@@ -222,7 +239,7 @@
 	icon_state = "schoolgirl"
 	item_state = "b_suit"
 	worn_state = "schoolgirl"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO
 
 /obj/item/clothing/under/overalls
 	name = "laborer's overalls"
@@ -238,7 +255,7 @@
 	item_state = "sl_suit"
 	worn_state = "pirate"
 	gender_icons = 1
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS
 
 /obj/item/clothing/under/soviet
 	name = "soviet uniform"
@@ -260,7 +277,7 @@
 	icon_state = "kilt"
 	item_state = "kilt"
 	worn_state = "kilt"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_FEET
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|FEET
 
 /obj/item/clothing/under/sexymime
 	name = "sexy mime outfit"
@@ -268,7 +285,7 @@
 	icon_state = "sexymime"
 	item_state = "w_suit"
 	worn_state = "sexymime"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO
 
 /obj/item/clothing/under/gladiator
 	name = "gladiator uniform"
@@ -276,7 +293,7 @@
 	icon_state = "gladiator"
 	item_state = "o_suit"
 	worn_state = "gladiator"
-	body_parts_covered = SLOT_LOWER_BODY
+	body_parts_covered = LOWER_TORSO
 
 //dress
 /obj/item/clothing/under/dress
@@ -284,7 +301,7 @@
 	desc = "A fancy dress."
 	icon_state = "dress_fire"
 	worn_state = "dress_fire"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO
 
 /obj/item/clothing/under/dress/dress_fire
 	name = "flame dress"
@@ -342,7 +359,7 @@
 	icon_state = "dress_cap"
 	item_state = "b_suit"
 	worn_state = "dress_cap"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_ARMS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|ARMS
 
 /obj/item/clothing/under/dress/dress_hop
 	name = "head of personnel dress uniform"
@@ -350,7 +367,7 @@
 	icon_state = "dress_hop"
 	item_state = "b_suit"
 	worn_state = "dress_hop"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_ARMS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|ARMS
 
 /obj/item/clothing/under/dress/dress_hr
 	name = "human resources director uniform"
@@ -358,7 +375,7 @@
 	icon_state = "huresource"
 	item_state = "y_suit"
 	worn_state = "huresource"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_ARMS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|ARMS
 
 /obj/item/clothing/under/dress/plaid_blue
 	name = "blue plaid skirt"
@@ -382,7 +399,7 @@
 
 //wedding stuff
 /obj/item/clothing/under/wedding/
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS
 
 /obj/item/clothing/under/wedding/bride_orange
 	name = "orange wedding dress"
@@ -423,7 +440,7 @@
 	item_state = "nursesuit"
 	worn_state = "bride_white"
 	flags_inv = HIDESHOES
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO
 
 /obj/item/clothing/under/sundress
 	name = "sundress"
@@ -431,7 +448,7 @@
 	icon_state = "sundress"
 	item_state = "bl_suit"
 	worn_state = "sundress"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO
 
 /obj/item/clothing/under/sundress_white
 	name = "white sundress"
@@ -439,7 +456,7 @@
 	icon_state = "sundress_white"
 	item_state = "sundress_white"
 	worn_state = "sundress_white"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO
 
 /obj/item/clothing/under/blackjumpskirt
 	name = "black jumpskirt"
@@ -541,7 +558,7 @@
 	icon_state = "mai_yang"
 	item_state = "mai_yang"
 	worn_state = "mai_yang"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS
 
 /obj/item/clothing/under/abaya
 	name = "abaya"
@@ -549,7 +566,7 @@
 	icon_state = "abaya"
 	item_state = "abaya"
 	worn_state = "abaya"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_ARMS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS|ARMS
 
 /obj/item/clothing/under/blazer
 	name = "blue blazer"
@@ -563,8 +580,62 @@
 	desc = "How... minimalist."
 	icon_state = "gear_harness"
 	worn_state = "gear_harness"
-	bodytype_restricted = null
+	species_restricted = null
 	body_parts_covered = 0
+
+/obj/item/clothing/under/pcrc
+	name = "\improper PCRC uniform"
+	desc = "A uniform belonging to Proxima Centauri Risk Control, a private security firm."
+	icon_state = "pcrc"
+	item_state = "jensensuit"
+	worn_state = "pcrc"
+	gender_icons = 1
+
+/obj/item/clothing/under/pcrcsuit
+	name = "\improper PCRC suit"
+	desc = "A suit belonging to Proxima Centauri Risk Control, a private security firm. This one looks more formal than its utility counterpart."
+	icon_state = "pcrcsuit"
+	item_state = "jensensuit"
+	worn_state = "pcrcsuit"
+	gender_icons = 1
+
+/obj/item/clothing/under/grayson
+	name = "\improper Grayson overalls"
+	desc = "A set of overalls belonging to Grayson Manufactories, a manufacturing and mining company."
+	icon_state = "grayson"
+	worn_state = "grayson"
+
+/obj/item/clothing/under/wardt
+	name = "\improper Ward-Takahashi jumpsuit"
+	desc = "A jumpsuit belonging to Ward-Takahashi, a megacorp in the consumer goods and research market."
+	icon_state = "wardt"
+	worn_state = "wardt"
+	gender_icons = 1
+
+/obj/item/clothing/under/dais
+	name = "\improper Deimos Advanced Information Systems uniform"
+	desc = "The uniform of Deimos Advanced Information Systems, an IT company."
+	icon_state = "dais"
+	worn_state = "dais"
+
+/obj/item/clothing/under/mbill
+	name = "\improper Major Bill's uniform"
+	desc = "A uniform belonging to Major Bill's Transportation, a major shipping company."
+	icon_state = "mbill"
+	worn_state = "mbill"
+	gender_icons = 1
+
+/obj/item/clothing/under/morpheus
+	name = "\improper Morpheus Cyberkinetics uniform"
+	desc = "A pair of overalls belonging to Morpheus Cyberkinetics, an IPC manufacturing company. It doesn't look like it would be comfortable on a human."
+	icon_state = "morpheus"
+	worn_state = "morpheus"
+
+/obj/item/clothing/under/skinner
+	name = "\improper Skinner Catering uniform"
+	desc = "A uniform belonging to Skinner's Catering, a dining company."
+	icon_state = "skinner"
+	worn_state = "skinner"
 
 // Replace this with actual uniform when someone wants to sprite one
 /obj/item/clothing/under/confederacy
@@ -573,27 +644,54 @@
 	icon_state = "confed"
 	worn_state = "confed"
 
+/obj/item/clothing/under/saare
+	name = "\improper SAARE uniform"
+	desc = "A uniform belonging to Strategic Assault and Asset Retention Enterprises, a minor private military corporation."
+	icon_state = "saare"
+	worn_state = "saare"
+	gender_icons = 1
+
 /obj/item/clothing/under/frontier
 	name = "frontier clothes"
 	desc = "A rugged flannel shirt and denim overalls. A popular style among frontier colonists."
 	icon_state = "frontier"
 	worn_state = "frontier"
 
+/obj/item/clothing/under/aether
+	name = "\improper Aether jumpsuit"
+	desc = "A jumpsuit belonging to Aether Atmospherics and Recycling, a company that supplies recycling and atmospheric systems to colonies."
+	icon_state = "aether"
+	worn_state = "aether"
+	gender_icons = 1
+
+/obj/item/clothing/under/focal
+	name = "\improper Focal Point jumpsuit"
+	desc = "A jumpsuit belonging to Focal Point Energistics, an engineering corporation."
+	icon_state = "focal"
+	worn_state = "focal"
+
+/obj/item/clothing/under/hephaestus
+	name = "\improper Hephaestus jumpsuit"
+	desc = "A jumpsuit belonging to Hephaestus Industries, a megacorp best known for its arms production."
+	icon_state = "heph"
+	worn_state = "heph"
+	gender_icons = 1
+
 /obj/item/clothing/under/punpun
 	name = "fancy uniform"
 	desc = "It looks like it was tailored for a monkey."
 	icon_state = "punpun"
 	worn_state = "punpun"
-	bodytype_restricted = list(BODYTYPE_MONKEY)
-	sprite_sheets = list(BODYTYPE_MONKEY = 'icons/mob/species/monkey/onmob_under_monkey.dmi')
+	species_restricted = list("Monkey")
+	sprite_sheets = list("Monkey" = 'icons/mob/species/monkey/onmob_under_monkey.dmi')
 
 /obj/item/clothing/under/punpants
 	name = "monkey pants"
 	desc = "It looks like it was tailored for a monkey."
 	icon_state = "jeansmustang"
 	worn_state = "jeansmustang"
-	bodytype_restricted = list(BODYTYPE_MONKEY)
-	sprite_sheets = list(BODYTYPE_MONKEY = 'icons/mob/species/monkey/onmob_under_monkey.dmi')
+	species_restricted = list("Monkey")
+	sprite_sheets = list("Monkey" = 'icons/mob/species/monkey/onmob_under_monkey.dmi')
 
 /obj/item/clothing/under/rank/psych/turtleneck/sweater
 	desc = "A warm looking sweater and a pair of dark blue slacks."
@@ -607,13 +705,13 @@
 	icon_state = "hunterhide"
 	item_state = "hunter"
 	worn_state = "hunter"
-	body_parts_covered = SLOT_LOWER_BODY|SLOT_LEGS|SLOT_ARMS
+	body_parts_covered = LOWER_TORSO|LEGS|ARMS
 
 /obj/item/clothing/under/savage_hunter/female
 	name = "savage huntress's hides"
 	desc = "Makeshift hides bound together with the sinew, packwax, and leather of some alien creature. Includes a chestwrap so as not to leave one topless."
 	worn_state = "huntress"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_ARMS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS|ARMS
 
 /obj/item/clothing/under/wetsuit
 	name = "tactical wetsuit"
@@ -621,7 +719,7 @@
 	icon_state = "wetsuit"
 	item_state = "wetsuit"
 	worn_state = "wetsuit"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO
 
 /obj/item/clothing/under/hazard
 	name = "hazard jumpsuit"
@@ -632,7 +730,7 @@
 	gender_icons = 1
 	siemens_coefficient = 0.8
 	armor = list(
-		energy = ARMOR_ENERGY_SMALL, 
+		energy = ARMOR_ENERGY_SMALL,
 		rad = ARMOR_RAD_MINOR
 		)
 	max_heat_protection_temperature = FIRESUIT_MAX_HEAT_PROTECTION_TEMPERATURE
@@ -649,9 +747,16 @@
 		bio = ARMOR_BIO_SMALL
 		)
 
+/obj/item/clothing/under/sterile/emrs
+	name = "medical uniform"
+	desc = "An uniform worn in emergency medical and reanimation services across human space."
+	icon_state = "medical_Uniform"
+	item_state = "medical_Uniform"
+	worn_state = "medical_Uniform"
+
 /obj/item/clothing/under/kimono
 	desc = "A traditional robe with remarkably long sleeves, mostly worn by women. <i>Sugoi.</i>"
 	name = "kimono"
 	icon_state = "kimono"
 	worn_state = "kimono"
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_ARMS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS|ARMS

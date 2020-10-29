@@ -4,9 +4,6 @@
 
 /datum/antagonist/proc/update_antag_mob(var/datum/mind/player, var/preserve_appearance)
 
-	if(!valid_species)
-		valid_species = list(GLOB.using_map.default_species)
-
 	// Get the mob.
 	if((flags & ANTAG_OVERRIDE_MOB) && (!player.current || (mob_path && !istype(player.current, mob_path))))
 		var/mob/holder = player.current
@@ -21,7 +18,7 @@
 	return player.current
 
 /datum/antagonist/proc/update_access(var/mob/living/player)
-	for(var/obj/item/card/id/id in player.contents)
+	for(var/obj/item/weapon/card/id/id in player.contents)
 		player.set_id_info(id)
 
 /datum/antagonist/proc/clear_indicators(var/datum/mind/recipient)

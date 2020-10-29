@@ -7,7 +7,6 @@
 //	generic slime surgery step datum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/slime
-	hidden_from_codex = TRUE
 
 /decl/surgery_step/slime/is_valid_target(mob/living/carbon/slime/target)
 	return isslime(target)
@@ -27,9 +26,9 @@
 /decl/surgery_step/slime/cut_flesh
 	name = "Make incision in slime"
 	allowed_tools = list(
-		/obj/item/scalpel = 100,
-		/obj/item/knife = 75,
-		/obj/item/shard = 50
+		/obj/item/weapon/scalpel = 100,
+		/obj/item/weapon/material/knife = 75,
+		/obj/item/weapon/material/shard = 50
 	)
 	min_duration = 5
 	max_duration = 2 SECONDS
@@ -56,9 +55,9 @@
 /decl/surgery_step/slime/cut_innards
 	name = "Dissect innards"
 	allowed_tools = list(
-		/obj/item/scalpel = 100,
-		/obj/item/knife = 75,
-		/obj/item/shard = 50
+		/obj/item/weapon/scalpel = 100,
+		/obj/item/weapon/material/knife = 75,
+		/obj/item/weapon/material/shard = 50
 	)
 	min_duration = 5
 	max_duration = 2 SECONDS
@@ -85,10 +84,10 @@
 /decl/surgery_step/slime/saw_core
 	name = "Remove slime core"
 	allowed_tools = list(
-		/obj/item/scalpel/manager = 100,
-		/obj/item/circular_saw = 100,
-		/obj/item/knife = 75,
-		/obj/item/hatchet = 75
+		/obj/item/weapon/scalpel/manager = 100,
+		/obj/item/weapon/circular_saw = 100,
+		/obj/item/weapon/material/knife = 75,
+		/obj/item/weapon/material/hatchet = 75
 	)
 	min_duration = 1 SECOND
 	max_duration = 3 SECONDS

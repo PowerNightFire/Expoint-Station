@@ -27,12 +27,23 @@
 
 /obj/machinery/optable/examine(mob/user)
 	. = ..()
-	to_chat(user, SPAN_NOTICE("The neural suppressors are switched [suppressing ? "on" : "off"]."))
+	to_chat(user, "<span class='notice'>The neural suppressors are switched [suppressing ? "on" : "off"].</span>")
 
-/obj/machinery/optable/explosion_act(severity)
-	. = ..()
-	if(. && !QDELETED(src) && (severity == 1 || prob(100 - (25 * severity))))
-		physically_destroyed(src)
+/obj/machinery/optable/ex_act(severity)
+
+	switch(severity)
+		if(1.0)
+			//SN src = null
+			qdel(src)
+			return
+		if(2.0)
+			if (prob(50))
+				//SN src = null
+				qdel(src)
+				return
+		if(3.0)
+			if (prob(25))
+				src.set_density(0)
 
 /obj/machinery/optable/attackby(var/obj/item/O, var/mob/user)
 	if (istype(O, /obj/item/grab))
@@ -80,10 +91,10 @@
 		return 0
 
 
-/obj/machinery/optable/MouseDrop_T(obj/O, mob/user)
-	if ((!( istype(O, /obj/item) ) || user.get_active_hand() != O))
+/obj/machinery/optable/MouseDrop_T(obj/O as obj, mob/user as mob)
+	if ((!( istype(O, /obj/item/weapon) ) || user.get_active_hand() != O))
 		return
-	if(!user.unEquip(O))
+	if(!user.unequip_item())
 		return
 	if (O.loc != src.loc)
 		step(O, get_dir(O, src))
@@ -107,7 +118,7 @@
 /obj/machinery/optable/Process()
 	check_victim()
 
-/obj/machinery/optable/proc/take_victim(mob/living/carbon/C, mob/living/carbon/user)
+/obj/machinery/optable/proc/take_victim(mob/living/carbon/C, mob/living/carbon/user as mob)
 	if (C == user)
 		user.visible_message("[user] climbs on \the [src].","You climb on \the [src].")
 	else
@@ -140,7 +151,7 @@
 
 	take_victim(usr,usr)
 
-/obj/machinery/optable/proc/check_table(mob/living/carbon/patient)
+/obj/machinery/optable/proc/check_table(mob/living/carbon/patient as mob)
 	check_victim()
 	if(src.victim && get_turf(victim) == get_turf(src) && victim.lying)
 		to_chat(usr, "<span class='warning'>\The [src] is already occupied!</span>")

@@ -6,13 +6,18 @@
 	paint_color = COLOR_GUNMETAL
 
 /turf/simulated/wall/r_wall
-	icon_state = "reinforced_solid"
-	material = /decl/material/solid/metal/plasteel
-	reinf_material = /decl/material/solid/metal/plasteel
+	icon_state = "r_generic"
+
+/turf/simulated/wall/r_wall/New(var/newloc)
+	..(newloc, MATERIAL_PLASTEEL,MATERIAL_PLASTEEL) //3strong
 
 /turf/simulated/wall/r_wall/hull
 	name = "hull"
 	color = COLOR_HULL
+
+/turf/simulated/wall/r_wall/hull/vox
+	initial_gas = list("nitrogen" = 101.38)
+	color = COLOR_GREEN_GRAY
 
 /turf/simulated/wall/prepainted
 	paint_color = COLOR_WALL_GUNMETAL
@@ -37,70 +42,143 @@
 	update_icon()
 
 /turf/simulated/wall/titanium
-	color = COLOR_SILVER
-	material = /decl/material/solid/metal/plasteel/titanium
+	icon_state = "titanium"
+
+/turf/simulated/wall/titanium/New(var/newloc)
+	..(newloc,MATERIAL_TITANIUM)
 
 /turf/simulated/wall/r_titanium
-	icon_state = "reinforced_solid"
-	material = /decl/material/solid/metal/plasteel/titanium
-	reinf_material = /decl/material/solid/metal/plasteel/titanium
+	icon_state = "r_titanium"
+
+/turf/simulated/wall/r_titanium/New(var/newloc)
+	..(newloc, MATERIAL_TITANIUM,MATERIAL_TITANIUM)
 
 /turf/simulated/wall/ocp_wall
-	color = COLOR_GUNMETAL
-	material = /decl/material/solid/metal/plasteel/ocp
-	reinf_material = /decl/material/solid/metal/plasteel/ocp
+	icon_state = "r_ocp"
 
-/turf/simulated/wall/iron
-	icon_state = "metal"
-	material = /decl/material/solid/metal/iron
+/turf/simulated/wall/ocp_wall/New(var/newloc)
+	..(newloc, MATERIAL_OSMIUM_CARBIDE_PLASTEEL, MATERIAL_OSMIUM_CARBIDE_PLASTEEL)
 
-/turf/simulated/wall/sandstone
-	color = COLOR_GOLD
-	icon_state = "stone"
-	material = /decl/material/solid/stone/sandstone
+//Material walls
+
+/turf/simulated/wall/r_wall/rglass_wall/New(var/newloc)
+	..(newloc, MATERIAL_GLASS, MATERIAL_STEEL)
+	icon_state = "r_generic"
+
+/turf/simulated/wall/iron/New(var/newloc)
+	..(newloc,MATERIAL_IRON)
+
+/turf/simulated/wall/uranium/New(var/newloc)
+	..(newloc,MATERIAL_URANIUM)
+
+/turf/simulated/wall/diamond/New(var/newloc)
+	..(newloc,MATERIAL_DIAMOND)
+
+/turf/simulated/wall/gold/New(var/newloc)
+	..(newloc,MATERIAL_GOLD)
+
+/turf/simulated/wall/silver/New(var/newloc)
+	..(newloc,MATERIAL_SILVER)
+
+/turf/simulated/wall/phoron/New(var/newloc)
+	..(newloc,MATERIAL_PHORON)
+
+/turf/simulated/wall/sandstone/New(var/newloc)
+	..(newloc,MATERIAL_SANDSTONE)
+
+/turf/simulated/wall/rutile/New(var/newloc)
+	..(newloc,MATERIAL_RUTILE)
 
 /turf/simulated/wall/wood
-	color = COLOR_BROWN
-	icon_state = "wood"
-	material = /decl/material/solid/wood
+	blend_turfs = list(/turf/simulated/wall/cult, /turf/simulated/wall)
+	icon_state = "woodneric"
+
+/turf/simulated/wall/wood/New(var/newloc)
+	..(newloc,MATERIAL_WOOD)
+
+/turf/simulated/wall/mahogany
+	blend_turfs = list(/turf/simulated/wall/cult, /turf/simulated/wall)
+	icon_state = "woodneric"
+
+/turf/simulated/wall/mahogany/New(var/newloc)
+	..(newloc,MATERIAL_MAHOGANY)
+
+/turf/simulated/wall/maple
+	blend_turfs = list(/turf/simulated/wall/cult, /turf/simulated/wall)
+	icon_state = "woodneric"
+
+/turf/simulated/wall/maple/New(var/newloc)
+	..(newloc,MATERIAL_MAPLE)
+
+/turf/simulated/wall/ebony
+	blend_turfs = list(/turf/simulated/wall/cult, /turf/simulated/wall)
+	icon_state = "woodneric"
+
+/turf/simulated/wall/ebony/New(var/newloc)
+	..(newloc,MATERIAL_EBONY)
 
 /turf/simulated/wall/walnut
-	color = COLOR_BROWN_ORANGE
-	icon_state = "wood"
-	material = /decl/material/solid/wood/walnut
+	blend_turfs = list(/turf/simulated/wall/cult, /turf/simulated/wall)
+	icon_state = "woodneric"
 
-/turf/simulated/wall/voxshuttle
-	color = COLOR_GREEN_GRAY
-	icon_state = "metal"
-	material = /decl/material/solid/metal/voxalloy
+/turf/simulated/wall/walnut/New(var/newloc)
+	..(newloc,MATERIAL_WALNUT)
+
+/turf/simulated/wall/ironphoron/New(var/newloc)
+	..(newloc,MATERIAL_IRON,MATERIAL_PHORON)
+
+/turf/simulated/wall/golddiamond/New(var/newloc)
+	..(newloc,MATERIAL_GOLD,MATERIAL_DIAMOND)
+
+/turf/simulated/wall/silvergold/New(var/newloc)
+	..(newloc,MATERIAL_SILVER,MATERIAL_GOLD)
+
+/turf/simulated/wall/sandstonediamond/New(var/newloc)
+	..(newloc,MATERIAL_SANDSTONE,MATERIAL_DIAMOND)
+
+/turf/simulated/wall/crystal/New(var/newloc)
+	..(newloc,MATERIAL_CRYSTAL)
+
+/turf/simulated/wall/voxshuttle/New(var/newloc)
+	..(newloc, MATERIAL_VOX)
 
 /turf/simulated/wall/voxshuttle/attackby()
 	return
 
+/turf/simulated/wall/growth/New(var/newloc)
+	..(newloc, MATERIAL_GROWTH)
+
+/turf/simulated/wall/concrete/New(var/newloc)
+	..(newloc,MATERIAL_CONCRETE)
+
 //Alien metal walls
 /turf/simulated/wall/alium
-	color = COLOR_BLUE_GRAY
+	icon_state = "jaggy"
 	floor_type = /turf/simulated/floor/fixed/alium
-	material = /decl/material/solid/metal/aliumium
+	list/blend_objects = newlist()
 
-/turf/simulated/wall/alium/explosion_act(severity)
-	SHOULD_CALL_PARENT(TRUE)
+/turf/simulated/wall/alium/New(var/newloc)
+	..(newloc,MATERIAL_ALIENALLOY)
+
+/turf/simulated/wall/alium/ex_act(severity)
 	if(prob(explosion_resistance))
-		..()
+		return
+	..()
 
 //Cult wall
 /turf/simulated/wall/cult
 	icon_state = "cult"
-	color = COLOR_RED_GRAY
-	material = /decl/material/solid/stone/cult
+	blend_turfs = list(/turf/simulated/wall)
 
-/turf/simulated/wall/cult/reinf
-	icon_state = "reinforced_cult"
-	reinf_material = /decl/material/solid/stone/cult/reinforced
+/turf/simulated/wall/cult/New(var/newloc, var/reinforce = 0)
+	..(newloc, MATERIAL_CULT, reinforce ? MATERIAL_REINFORCED_CULT : null)
+
+/turf/simulated/wall/cult/reinf/New(var/newloc)
+	..(newloc, 1)
 
 /turf/simulated/wall/cult/dismantle_wall()
 	GLOB.cult.remove_cultiness(CULTINESS_PER_TURF)
-	. = ..()
+	..()
 
 /turf/simulated/wall/cult/can_join_with(var/turf/simulated/wall/W)
 	if(material && W.material && material.icon_base == W.material.icon_base)

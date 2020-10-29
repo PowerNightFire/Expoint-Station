@@ -103,7 +103,7 @@
 			B.fill()
 		update_icon()
 		return
-	else if(istype(I, /obj/item/scanner/plant))
+	else if(istype(I, /obj/item/device/scanner/plant))
 		to_chat(user, "<span class='notice'>Scan result of \the [src]...</span>")
 		to_chat(user, "Beehive is [bee_count ? "[round(bee_count)]% full" : "empty"].[bee_count > 90 ? " Colony is ready to split." : ""]")
 		if(frames)
@@ -183,7 +183,7 @@
 /obj/machinery/honey_extractor/cannot_transition_to(state_path, mob/user)
 	if(processing)
 		return SPAN_NOTICE("You must wait for \the [src] to finish first!")
-	return ..()
+	return ..()	
 
 /obj/machinery/honey_extractor/attackby(var/obj/item/I, var/mob/user)
 	if(processing)
@@ -206,13 +206,13 @@
 			honey += processing
 			processing = 0
 			icon_state = "centrifuge"
-	else if(istype(I, /obj/item/chems/glass))
+	else if(istype(I, /obj/item/weapon/reagent_containers/glass))
 		if(!honey)
 			to_chat(user, "<span class='notice'>There is no honey in \the [src].</span>")
 			return
-		var/obj/item/chems/glass/G = I
+		var/obj/item/weapon/reagent_containers/glass/G = I
 		var/transferred = min(G.reagents.maximum_volume - G.reagents.total_volume, honey)
-		G.reagents.add_reagent(/decl/material/liquid/nutriment/honey, transferred)
+		G.reagents.add_reagent(/datum/reagent/nutriment/honey, transferred)
 		honey -= transferred
 		user.visible_message("<span class='notice'>\The [user] collects honey from \the [src] into \the [G].</span>", "<span class='notice'>You collect [transferred] units of honey from \the [src] into \the [G].</span>")
 		return 1
@@ -220,7 +220,7 @@
 /obj/item/bee_smoker
 	name = "bee smoker"
 	desc = "A device used to calm down bees before harvesting honey."
-	icon = 'icons/obj/items/weapon/batterer.dmi'
+	icon = 'icons/obj/device.dmi'
 	icon_state = "battererburnt"
 	w_class = ITEM_SIZE_SMALL
 
@@ -238,8 +238,8 @@
 	desc = "A frame for the beehive that the bees have filled with honeycombs."
 	honey = 20
 
-/obj/item/honey_frame/filled/Initialize()
-	. = ..()
+/obj/item/honey_frame/filled/New()
+	..()
 	overlays += "honeycomb"
 
 /obj/item/beehive_assembly
@@ -262,10 +262,13 @@
 	icon = 'icons/obj/beekeeping.dmi'
 	icon_state = "wax"
 
-GLOBAL_LIST_INIT(wax_recipes, list(new /datum/stack_recipe/candle))
-/obj/item/stack/wax/Initialize()
-	. = ..()
-	recipes = GLOB.wax_recipes
+/obj/item/stack/wax/New()
+	..()
+	recipes = wax_recipes
+
+var/global/list/datum/stack_recipe/wax_recipes = list(
+	new/datum/stack_recipe/candle
+)
 
 /obj/item/bee_pack
 	name = "bee pack"
@@ -274,8 +277,8 @@ GLOBAL_LIST_INIT(wax_recipes, list(new /datum/stack_recipe/candle))
 	icon_state = "beepack"
 	var/full = 1
 
-/obj/item/bee_pack/Initialize()
-	. = ..()
+/obj/item/bee_pack/New()
+	..()
 	overlays += "beepack-full"
 
 /obj/item/bee_pack/proc/empty()
@@ -296,8 +299,8 @@ GLOBAL_LIST_INIT(wax_recipes, list(new /datum/stack_recipe/candle))
 	name = "beekeeping crate"
 	desc = "All you need to set up your own beehive."
 
-/obj/structure/closet/crate/hydroponics/beekeeping/Initialize()
-	. = ..()
+/obj/structure/closet/crate/hydroponics/beekeeping/New()
+	..()
 	new /obj/item/beehive_assembly(src)
 	new /obj/item/bee_smoker(src)
 	new /obj/item/honey_frame(src)
@@ -306,4 +309,4 @@ GLOBAL_LIST_INIT(wax_recipes, list(new /datum/stack_recipe/candle))
 	new /obj/item/honey_frame(src)
 	new /obj/item/honey_frame(src)
 	new /obj/item/bee_pack(src)
-	new /obj/item/crowbar(src)
+	new /obj/item/weapon/crowbar(src)

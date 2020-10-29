@@ -18,19 +18,21 @@
 	response_harm   = "kicks"
 	minbodytemp = 223		//Below -50 Degrees Celsius
 	maxbodytemp = 323	//Above 50 Degrees Celsius
-	holder_type = /obj/item/holder/cat
-	mob_size = MOB_SIZE_SMALL
+	holder_type = /obj/item/weapon/holder/cat
+	mob_size = MOB_SMALL
 	possession_candidate = 1
 	pass_flags = PASS_FLAG_TABLE
 
-	skin_material = /decl/material/solid/skin/fur/orange
+	skin_material = MATERIAL_SKIN_FUR_ORANGE
 
 	var/turns_since_scan = 0
 	var/mob/living/simple_animal/mouse/movement_target
 	var/mob/flee_target
 
-/mob/living/simple_animal/cat/do_delayed_life_action()
-	..()
+/mob/living/simple_animal/cat/Life()
+	. = ..()
+	if(!.)
+		return FALSE
 	//MICE!
 	if((src.loc) && isturf(src.loc))
 		if(!resting && !buckled)
@@ -112,12 +114,12 @@
 	if(O.force)
 		set_flee_target(user? user : src.loc)
 
-/mob/living/simple_animal/cat/attack_hand(mob/living/carbon/human/M)
+/mob/living/simple_animal/cat/attack_hand(mob/living/carbon/human/M as mob)
 	. = ..()
 	if(M.a_intent == I_HURT)
 		set_flee_target(M)
 
-/mob/living/simple_animal/cat/explosion_act()
+/mob/living/simple_animal/cat/ex_act()
 	. = ..()
 	set_flee_target(src.loc)
 
@@ -166,8 +168,10 @@
 	if (!friend || movement_target != friend)
 		..()
 
-/mob/living/simple_animal/cat/fluff/do_delayed_life_action()
-	..()
+/mob/living/simple_animal/cat/fluff/Life()
+	. = ..()
+	if(!.)
+		return FALSE 
 	if (stat || !friend)
 		return
 	if (get_dist(src, friend) <= 1)
@@ -218,7 +222,7 @@
 	item_state = "cat"
 	icon_living = "cat"
 	icon_dead = "cat_dead"
-	skin_material = /decl/material/solid/skin/fur/black
+	skin_material = MATERIAL_SKIN_FUR_BLACK
 
 /mob/living/simple_animal/cat/kitten
 	name = "kitten"
@@ -233,7 +237,7 @@
 	skin_amount = 3
 
 // Leaving this here for now.
-/obj/item/holder/cat/fluff/bones
+/obj/item/weapon/holder/cat/fluff/bones
 	name = "Bones"
 	desc = "It's Bones! Meow."
 	gender = MALE
@@ -247,28 +251,9 @@
 	item_state = "cat3"
 	icon_living = "cat3"
 	icon_dead = "cat3_dead"
-	holder_type = /obj/item/holder/cat/fluff/bones
+	holder_type = /obj/item/weapon/holder/cat/fluff/bones
 	var/friend_name = "Erstatz Vryroxes"
 
-/mob/living/simple_animal/cat/kitten/Initialize()
-	. = ..()
+/mob/living/simple_animal/cat/kitten/New()
 	gender = pick(MALE, FEMALE)
-
-/mob/living/simple_animal/cat/fluff/ran
-	name = "Runtime"
-	desc = "Under no circumstances is this feline allowed inside the atmospherics system."
-	gender = FEMALE
-	icon_state = "cat2"
-	item_state = "cat2"
-	icon_living = "cat2"
-	icon_dead = "cat2_dead"
-
-/mob/living/simple_animal/cat/harvest_skin()
-	. = ..()
-	. += new/obj/item/cat_hide(get_turf(src))
-
-/obj/item/cat_hide
-	name = "cat hide"
-	desc = "The by-product of cat farming."
-	icon = 'icons/obj/items/sheet_hide.dmi'
-	icon_state = "sheet-cat"
+	..()

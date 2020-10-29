@@ -24,15 +24,9 @@ var/list/ai_verbs_default = list(
 	/mob/living/silicon/ai/proc/toggle_camera_light,
 	/mob/living/silicon/ai/proc/multitool_mode,
 	/mob/living/silicon/ai/proc/toggle_hologram_movement,
-	/mob/living/silicon/ai/proc/ai_view_images,
-	/mob/living/silicon/ai/proc/ai_take_image,
-	/mob/living/silicon/ai/proc/change_floor,
-	/mob/living/silicon/ai/proc/show_crew_monitor,
-	/mob/living/silicon/proc/access_computer,
 	/mob/living/silicon/ai/proc/ai_power_override,
 	/mob/living/silicon/ai/proc/ai_shutdown,
-	/mob/living/silicon/ai/proc/ai_reset_radio_keys,
-	/mob/living/silicon/ai/proc/run_program
+	/mob/living/silicon/ai/proc/ai_reset_radio_keys
 )
 
 //Not sure why this is necessary...
@@ -64,11 +58,11 @@ var/list/ai_verbs_default = list(
 	var/icon/holo_icon//Blue hologram. Face is assigned when AI is created.
 	var/icon/holo_icon_longrange //Yellow hologram.
 	var/holo_icon_malf = FALSE // for new hologram system
-	var/obj/item/multitool/aiMulti = null
+	var/obj/item/device/multitool/aiMulti = null
 
-	silicon_camera = /obj/item/camera/siliconcam/ai_camera
-	silicon_radio = /obj/item/radio/headset/heads/ai_integrated
-	var/obj/item/radio/headset/heads/ai_integrated/ai_radio
+	silicon_camera = /obj/item/device/camera/siliconcam/ai_camera
+	silicon_radio = /obj/item/device/radio/headset/heads/ai_integrated
+	var/obj/item/device/radio/headset/heads/ai_integrated/ai_radio
 
 	var/camera_light_on = 0	//Defines if the AI toggled the light on the camera it's looking through.
 	var/datum/trackable/track = null
@@ -87,6 +81,7 @@ var/list/ai_verbs_default = list(
 	var/datum/malf_research/research = null		// Malfunction research datum.
 	var/obj/machinery/power/apc/hack = null		// APC that is currently being hacked.
 	var/list/hacked_apcs = null					// List of all hacked APCs
+	var/APU_power = 0							// If set to 1 AI runs on APU power
 	var/hacking = 0								// Set to 1 if AI is hacking APC, cyborg, other AI, or running system override.
 	var/system_override = 0						// Set to 1 if system override is initiated, 2 if succeeded.
 	var/hack_can_fail = 1						// If 0, all abilities have zero chance of failing.
@@ -118,7 +113,7 @@ var/list/ai_verbs_default = list(
 	src.verbs -= ai_verbs_default
 	src.verbs += /mob/living/verb/ghost
 
-/mob/living/silicon/ai/Initialize(mapload, var/datum/ai_laws/L, var/obj/item/mmi/B, var/safety = 0)
+/mob/living/silicon/ai/New(loc, var/datum/ai_laws/L, var/obj/item/device/mmi/B, var/safety = 0)
 	announcement = new()
 	announcement.title = "A.I. Announcement"
 	announcement.announcement_type = "A.I. Announcement"
@@ -152,14 +147,23 @@ var/list/ai_verbs_default = list(
 		add_ai_verbs(src)
 
 	//Languages
-	add_language(/decl/language/binary, 1)
-	add_language(/decl/language/machine, 1)
-	add_language(/decl/language/human/common, 1)
-	add_language(/decl/language/sign, 0)
+	add_language(LANGUAGE_ROBOT_GLOBAL, 1)
+	add_language(LANGUAGE_EAL, 1)
+	add_language(LANGUAGE_HUMAN_EURO, 1)
+	add_language(LANGUAGE_HUMAN_ARABIC, 1)
+	add_language(LANGUAGE_HUMAN_CHINESE, 1)
+	add_language(LANGUAGE_HUMAN_IBERIAN, 1)
+	add_language(LANGUAGE_HUMAN_INDIAN, 1)
+	add_language(LANGUAGE_HUMAN_RUSSIAN, 1)
+	add_language(LANGUAGE_HUMAN_SELENIAN, 1)
+	add_language(LANGUAGE_UNATHI_SINTA, 1)
+	add_language(LANGUAGE_SKRELLIAN, 1)
+	add_language(LANGUAGE_SPACER, 1)
+	add_language(LANGUAGE_SIGN, 0)
 
 	if(!safety)//Only used by AIize() to successfully spawn an AI.
 		if (!B)//If there is no player/brain inside.
-			empty_playable_ai_cores += new/obj/structure/aicore/deactivated(loc)//New empty terminal.
+			empty_playable_ai_cores += new/obj/structure/AIcore/deactivated(loc)//New empty terminal.
 			qdel(src)//Delete AI.
 			return
 		else
@@ -179,7 +183,7 @@ var/list/ai_verbs_default = list(
 	hud_list[SPECIALROLE_HUD] = new /image/hud_overlay('icons/mob/hud.dmi', src, "hudblank")
 
 	ai_list += src
-	. = ..()
+	..()
 	ai_radio = silicon_radio
 	ai_radio.myAi = src
 
@@ -200,17 +204,18 @@ var/list/ai_verbs_default = list(
 			radio_text += ", "
 
 	to_chat(src, radio_text)
-	show_laws()
-	to_chat(src, "<b>These laws may be changed by other players or by other random events.</b>")
 
 	//Prevents more than one active core spawning on the same tile. Technically just a sanitization for roundstart join
-	for(var/obj/structure/aicore/C in src.loc)
+	for(var/obj/structure/AIcore/deactivated/C in src.loc)
 		qdel(C)
+
+	if (GLOB.malf && !(mind in GLOB.malf.current_antagonists))
+		show_laws()
+		to_chat(src, "<b>These laws may be changed by other players or by other random events.</b>")
 
 	job = "AI"
 	setup_icon()
 	eyeobj.possess(src)
-	CreateModularRecord(src, /datum/computer_file/report/crew_record/synth)
 
 /mob/living/silicon/ai/Destroy()
 	for(var/robot in connected_robots)
@@ -365,10 +370,10 @@ var/list/ai_verbs_default = list(
 	if(check_unable(AI_CHECK_WIRELESS))
 		return
 	if(!is_relay_online())
-		to_chat(usr, "<span class='warning'>No emergency communication relay detected. Unable to transmit message.</span>")
+		to_chat(usr, "<span class='warning'>No Emergency Bluespace Relay detected. Unable to transmit message.</span>")
 		return
 	if(emergency_message_cooldown)
-		to_chat(usr, "<span class='warning'>Arrays cycling. Please stand by.</span>")
+		to_chat(usr, "<span class='warning'>Arrays recycling. Please stand by.</span>")
 		return
 	var/input = sanitize(input(usr, "Please choose a message to transmit to [GLOB.using_map.boss_short] via quantum entanglement.  Please be aware that this process is very expensive, and abuse will lead to... termination.  Transmission does not guarantee a response. There is a 30 second delay before you may send another message, be clear, full and concise.", "To abort, send an empty message.", ""))
 	if(!input)
@@ -381,13 +386,16 @@ var/list/ai_verbs_default = list(
 		emergency_message_cooldown = 0
 
 
-/mob/living/silicon/ai/check_eye(var/mob/user)
+/mob/living/silicon/ai/check_eye(var/mob/user as mob)
 	if (!camera)
 		return -1
 	return 0
 
 /mob/living/silicon/ai/restrained()
 	return 0
+
+/mob/living/silicon/ai/can_be_floored()
+	return FALSE
 
 /mob/living/silicon/ai/emp_act(severity)
 	if (prob(30))
@@ -601,10 +609,10 @@ var/list/ai_verbs_default = list(
 		camera_light_on = world.timeofday + 1 * 20 // Update the light every 2 seconds.
 
 
-/mob/living/silicon/ai/attackby(obj/item/W, mob/user)
-	if(istype(W, /obj/item/aicard))
+/mob/living/silicon/ai/attackby(obj/item/weapon/W as obj, mob/user as mob)
+	if(istype(W, /obj/item/weapon/aicard))
 
-		var/obj/item/aicard/card = W
+		var/obj/item/weapon/aicard/card = W
 		card.grab_ai(src, user)
 
 	else if(isWrench(W))
@@ -624,10 +632,6 @@ var/list/ai_verbs_default = list(
 			user.visible_message("<span class='notice'>\The [user] finishes fastening down \the [src]!</span>")
 			anchored = 1
 			return
-	if(try_stock_parts_install(W, user))
-		return
-	if(try_stock_parts_removal(W, user))
-		return
 	else
 		return ..()
 
@@ -716,56 +720,9 @@ var/list/ai_verbs_default = list(
 	set category = "IC"
 
 	resting = 0
-	var/obj/item/rig/rig = src.get_rig()
+	var/obj/item/weapon/rig/rig = src.get_rig()
 	if(rig)
 		rig.force_rest(src)
 
-/mob/living/silicon/ai/handle_reading_literacy(var/mob/user, var/text_content, var/skip_delays, var/ai_show)
-	. = ai_show ? ..(user, text_content, skip_delays) : stars(text_content)
-
-/mob/living/silicon/ai/proc/ai_take_image()
-	set name = "Take Photo"
-	set desc = "Activates the given subsystem"
-	set category = "Silicon Commands"
-
-	silicon_camera.toggle_camera_mode()
-
-/mob/living/silicon/ai/proc/ai_view_images()
-	set name = "View Photo"
-	set desc = "Activates the given subsystem"
-	set category = "Silicon Commands"
-
-	silicon_camera.viewpictures()
-
-/mob/living/silicon/ai/proc/change_floor()
-	set name = "Change Grid Color"
-	set category = "Silicon Commands"
-
-	var/f_color = input("Choose your color, dark colors are not recommended!") as color|null
-	if(!length(f_color))
-		return
-
-	var/area/A = get_area(src)
-	if(!A)
-		return
-
-	for(var/turf/simulated/floor/bluegrid/F in A)
-		F.color = f_color
-
-	to_chat(usr, SPAN_NOTICE("Proccessing strata color was changed to \"<font color='[f_color]'>[f_color]</font>\""))
-
-/mob/living/silicon/ai/proc/show_crew_monitor()
-	set category = "Silicon Commands"
-	set name = "Show Crew Lifesigns Monitor"
-
-	run_program("sensormonitor")
-
-/mob/living/silicon/ai/proc/run_program(var/filename)
-	var/datum/extension/interactive/ntos/os = get_extension(src, /datum/extension/interactive/ntos)
-	if(!istype(os))
-		to_chat(src, SPAN_WARNING("You seem to be lacking an NTOS capable device!"))
-		return
-	if(!os.on)
-		os.system_boot()
-	if(os.run_program(filename))
-		os.ui_interact(src)
+#undef AI_CHECK_WIRELESS
+#undef AI_CHECK_RADIO

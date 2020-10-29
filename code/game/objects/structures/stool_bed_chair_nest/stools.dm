@@ -1,5 +1,7 @@
 //Todo: add leather and cloth for arbitrary coloured stools.
-/obj/item/stool
+var/global/list/stool_cache = list() //haha stool
+
+/obj/item/weapon/stool
 	name = "stool"
 	desc = "Apply butt."
 	icon = 'icons/obj/furniture.dmi'
@@ -9,69 +11,78 @@
 	force = 10
 	throwforce = 10
 	w_class = ITEM_SIZE_HUGE
-	material = DEFAULT_FURNITURE_MATERIAL
 	var/base_icon = "stool"
-	var/decl/material/padding_material
+	var/material/material
+	var/material/padding_material
 
-/obj/item/stool/padded
+/obj/item/weapon/stool/padded
 	icon_state = "stool_padded_preview" //set for the map
-	padding_material = /decl/material/solid/carpet
 
-/obj/item/stool/Initialize()
-	. = ..()
+/obj/item/weapon/stool/New(newloc, new_material = DEFAULT_FURNITURE_MATERIAL, new_padding_material)
+	..(newloc)
+	material = SSmaterials.get_material_by_name(new_material)
+	if(new_padding_material)
+		padding_material = SSmaterials.get_material_by_name(new_padding_material)
 	if(!istype(material))
-		return INITIALIZE_HINT_QDEL
-	if(ispath(padding_material, /decl/material))
-		padding_material = decls_repository.get_decl(padding_material)
+		qdel(src)
+		return
 	force = round(material.get_blunt_damage()*0.4)
 	update_icon()
 
-/obj/item/stool/padded
-	padding_material = /decl/material/solid/carpet
+/obj/item/weapon/stool/padded/New(newloc, new_material = DEFAULT_FURNITURE_MATERIAL)
+	..(newloc, new_material, MATERIAL_CARPET)
 
-/obj/item/stool/bar
+/obj/item/weapon/stool/bar
 	name = "bar stool"
 	icon_state = "bar_stool_preview" //set for the map
 	item_state = "bar_stool"
 	base_icon = "bar_stool"
 
-/obj/item/stool/bar/padded
+/obj/item/weapon/stool/bar/padded
 	icon_state = "bar_stool_padded_preview"
-	padding_material = /decl/material/solid/carpet
 
-/obj/item/stool/on_update_icon()
+/obj/item/weapon/stool/bar/padded/New(newloc, new_material = DEFAULT_FURNITURE_MATERIAL)
+	..(newloc, new_material, MATERIAL_CARPET)
+
+/obj/item/weapon/stool/on_update_icon()
 	// Prep icon.
 	icon_state = ""
 	// Base icon.
 	var/list/noverlays = list()
-	var/image/I = image(icon, "[base_icon]_base")
-	I.color = material.color
-	noverlays |= I
+	var/cache_key = "[base_icon]-[material.name]"
+	if(isnull(stool_cache[cache_key]))
+		var/image/I = image(icon, "[base_icon]_base")
+		I.color = material.icon_colour
+		stool_cache[cache_key] = I
+	noverlays |= stool_cache[cache_key]
 	// Padding overlay.
 	if(padding_material)
-		I =  image(icon, "[base_icon]_padding")
-		I.color = padding_material.color
-		noverlays += I
+		var/padding_cache_key = "[base_icon]-padding-[padding_material.name]"
+		if(isnull(stool_cache[padding_cache_key]))
+			var/image/I =  image(icon, "[base_icon]_padding")
+			I.color = padding_material.icon_colour
+			stool_cache[padding_cache_key] = I
+		noverlays |= stool_cache[padding_cache_key]
 	overlays = noverlays
 	// Strings.
 	if(padding_material)
-		SetName("[padding_material.solid_name] [initial(name)]") //this is not perfect but it will do for now.
+		SetName("[padding_material.display_name] [initial(name)]") //this is not perfect but it will do for now.
 		desc = "A padded stool. Apply butt. It's made of [material.use_name] and covered with [padding_material.use_name]."
 	else
-		SetName("[material.solid_name] [initial(name)]")
+		SetName("[material.display_name] [initial(name)]")
 		desc = "A stool. Apply butt with care. It's made of [material.use_name]."
 
-/obj/item/stool/proc/add_padding(var/padding_type)
-	padding_material = decls_repository.get_decl(padding_type)
+/obj/item/weapon/stool/proc/add_padding(var/padding_type)
+	padding_material = SSmaterials.get_material_by_name(padding_type)
 	update_icon()
 
-/obj/item/stool/proc/remove_padding()
+/obj/item/weapon/stool/proc/remove_padding()
 	if(padding_material)
 		padding_material.place_sheet(get_turf(src))
 		padding_material = null
 	update_icon()
 
-/obj/item/stool/apply_hit_effect(mob/living/target, mob/living/user, var/hit_zone)
+/obj/item/weapon/stool/apply_hit_effect(mob/living/target, mob/living/user, var/hit_zone)
 	if (prob(5))
 		user.visible_message("<span class='danger'>[user] breaks [src] over [target]'s back!</span>")
 		user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
@@ -85,19 +96,28 @@
 
 	return ..()
 
-/obj/item/stool/explosion_act(severity)
-	. = ..()
-	if(. && !QDELETED(src) && (severity == 1 || (severity == 2 && prob(50)) || (severity == 3 && prob(5))))
-		physically_destroyed(src)
+/obj/item/weapon/stool/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			qdel(src)
+			return
+		if(2.0)
+			if (prob(50))
+				qdel(src)
+				return
+		if(3.0)
+			if (prob(5))
+				qdel(src)
+				return
 
-/obj/item/stool/proc/dismantle()
+/obj/item/weapon/stool/proc/dismantle()
 	if(material)
 		material.place_sheet(get_turf(src))
 	if(padding_material)
 		padding_material.place_sheet(get_turf(src))
 	qdel(src)
 
-/obj/item/stool/attackby(obj/item/W, mob/user)
+/obj/item/weapon/stool/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isWrench(W))
 		playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
 		dismantle()
@@ -112,11 +132,11 @@
 			return
 		var/padding_type //This is awful but it needs to be like this until tiles are given a material var.
 		if(istype(W,/obj/item/stack/tile/carpet))
-			padding_type = /decl/material/solid/carpet
+			padding_type = MATERIAL_CARPET
 		else if(istype(W,/obj/item/stack/material))
 			var/obj/item/stack/material/M = W
-			if(M.material && (M.material.flags & MAT_FLAG_PADDING))
-				padding_type = "[M.material.type]"
+			if(M.material && (M.material.flags & MATERIAL_PADDING))
+				padding_type = "[M.material.name]"
 		if(!padding_type)
 			to_chat(user, "You cannot pad \the [src] with that.")
 			return
@@ -138,5 +158,6 @@
 		..()
 
 //Generated subtypes for mapping porpoises
-/obj/item/stool/wood
-	material = /decl/material/solid/wood
+
+/obj/item/weapon/stool/wood/New(var/newloc)
+	..(newloc,MATERIAL_WOOD)

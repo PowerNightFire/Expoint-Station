@@ -18,7 +18,7 @@
 	if (occupant && user.Adjacent(src))
 		occupant.examine(arglist(args))
 
-/obj/machinery/bodyscanner/relaymove(mob/user)
+/obj/machinery/bodyscanner/relaymove(mob/user as mob)
 	..()
 	src.go_out()
 
@@ -29,8 +29,14 @@
 
 	if (usr.incapacitated())
 		return
-	src.go_out()
+	go_out()
 	add_fingerprint(usr)
+
+/obj/machinery/bodyscanner/AltClick(mob/user)
+	if(CanPhysicallyInteract(user))
+		eject()
+	else
+		..()
 
 /obj/machinery/bodyscanner/verb/move_inside()
 	set src in oview(1)
@@ -39,6 +45,8 @@
 
 	if(!user_can_move_target_inside(usr,usr))
 		return
+	move_target_inside(usr,usr)
+	usr.pulling = null
 	usr.client.perspective = EYE_PERSPECTIVE
 	usr.client.eye = src
 
@@ -64,17 +72,22 @@
 	if(istype(new_state))
 		updateUsrDialog()
 
-/obj/machinery/bodyscanner/attackby(obj/item/grab/G, user)
+/obj/machinery/bodyscanner/attackby(obj/item/grab/normal/G, user as mob)
 	if(istype(G))
-		var/mob/M = G.get_affecting_mob()
-		if(!M || !user_can_move_target_inside(M, user))
+		var/mob/M = G.affecting
+		if(!user_can_move_target_inside(M, user))
 			return
+		move_target_inside(M,user)
 		qdel(G)
 		return TRUE
 	return ..()
 
 /obj/machinery/bodyscanner/proc/user_can_move_target_inside(var/mob/target, var/mob/user)
 	if(!istype(user) || !istype(target))
+		return FALSE
+	if(user.incapacitated())
+		return FALSE
+	if(!target.simulated)
 		return FALSE
 	if(occupant)
 		to_chat(user, "<span class='warning'>The scanner is already occupied!</span>")
@@ -85,7 +98,9 @@
 	if(target.buckled)
 		to_chat(user, "<span class='warning'>Unbuckle the subject before attempting to move them.</span>")
 		return FALSE
+	return TRUE
 
+/obj/machinery/bodyscanner/proc/move_target_inside(var/mob/target, var/mob/user)
 	target.forceMove(src)
 	src.occupant = target
 
@@ -95,7 +110,6 @@
 	SetName("[name] ([occupant])")
 
 	src.add_fingerprint(user)
-	return TRUE
 
 /obj/machinery/bodyscanner/on_update_icon()
 	if(!occupant)
@@ -109,16 +123,33 @@
 /obj/machinery/bodyscanner/MouseDrop_T(var/mob/target, var/mob/user)
 	if(!CanMouseDrop(target, user) || !istype(target))
 		return FALSE
-	user.visible_message("<span class='notice'>\The [user] begins placing \the [target] into \the [src].</span>", "<span class='notice'>You start placing \the [target] into \the [src].</span>")
-	if(!do_after(user, 30, src))
-		return
 	if(!user_can_move_target_inside(target, user))
 		return
+	user.visible_message("<span class='notice'>\The [user] begins placing \the [target] into \the [src].</span>", "<span class='notice'>You start placing \the [target] into \the [src].</span>")
+	if(!do_after(user, 30, src) || !user_can_move_target_inside(target, user))
+		return
+	move_target_inside(target,user)
 
-/obj/machinery/bodyscanner/explosion_act(severity)
-	. = ..()
-	if(. && !QDELETED(src) && prob(severity == 1 ? 100 : (100 - (25 * severity))))
-		physically_destroyed(src)
+/obj/machinery/bodyscanner/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			for(var/atom/movable/A as mob|obj in src)
+				A.dropInto(loc)
+				A.ex_act(severity)
+			qdel(src)
+		if(2.0)
+			if (prob(50))
+				for(var/atom/movable/A as mob|obj in src)
+					A.dropInto(loc)
+					A.ex_act(severity)
+				qdel(src)
+		if(3.0)
+			if (prob(25))
+				for(var/atom/movable/A as mob|obj in src)
+					A.dropInto(loc)
+					A.ex_act(severity)
+				qdel(src)
+
 
 /obj/machinery/bodyscanner/Destroy()
 	if(occupant)

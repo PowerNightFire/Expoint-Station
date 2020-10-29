@@ -22,9 +22,10 @@
 	. = ..()
 	if(!scrubbing_gas)
 		scrubbing_gas = list()
-		for(var/g in subtypesof(/decl/material/gas))
-			if(g != /decl/material/gas/oxygen && g != /decl/material/gas/nitrogen)
+		for(var/g in gas_data.gases)
+			if(g != GAS_OXYGEN && g != GAS_NITROGEN)
 				scrubbing_gas += g
+
 
 /obj/machinery/portable_atmospherics/powered/scrubber/emp_act(severity)
 	if(stat & (BROKEN|NOPOWER))
@@ -92,7 +93,7 @@
 
 /obj/machinery/portable_atmospherics/powered/scrubber/ui_interact(mob/user, ui_key = "rcon", datum/nanoui/ui=null, force_open=1)
 	var/list/data[0]
-	var/obj/item/cell/cell = get_cell()
+	var/obj/item/weapon/cell/cell = get_cell()
 	data["portConnected"] = connected_port ? 1 : 0
 	data["tankPressure"] = round(air_contents.return_pressure() > 0 ? air_contents.return_pressure() : 0)
 	data["rate"] = round(volume_rate)
@@ -140,7 +141,7 @@
 
 /obj/machinery/portable_atmospherics/powered/scrubber/broken/Initialize()
 	. = ..()
-	var/part = uninstall_component(/obj/item/stock_parts/power/battery/buildable/stock)
+	var/part = uninstall_component(/obj/item/weapon/stock_parts/power/battery/buildable/stock)
 	if(part)
 		qdel(part)
 
@@ -153,16 +154,16 @@
 	volume_rate = 5000
 	base_type = /obj/machinery/portable_atmospherics/powered/scrubber/huge
 
-	uncreated_component_parts = list(/obj/item/stock_parts/power/apc)
-	maximum_component_parts = list(/obj/item/stock_parts = 15)
+	uncreated_component_parts = list(/obj/item/weapon/stock_parts/power/apc)
+	maximum_component_parts = list(/obj/item/weapon/stock_parts = 15)
 	idle_power_usage = 500		//internal circuitry, friction losses and stuff
 	power_rating = 100000 //100 kW ~ 135 HP
 
 	var/global/gid = 1
 	var/id = 0
 
-/obj/machinery/portable_atmospherics/powered/scrubber/huge/Initialize()
-	. = ..()
+/obj/machinery/portable_atmospherics/powered/scrubber/huge/New()
+	..()
 
 	id = gid
 	gid++
@@ -183,7 +184,7 @@
 	else
 		icon_state = "scrubber:0"
 
-/obj/machinery/portable_atmospherics/powered/scrubber/huge/attackby(var/obj/item/I, var/mob/user)
+/obj/machinery/portable_atmospherics/powered/scrubber/huge/attackby(var/obj/item/I as obj, var/mob/user as mob)
 	if(isWrench(I))
 		if(use_power == POWER_USE_ACTIVE)
 			to_chat(user, "<span class='warning'>Turn \the [src] off first!</span>")
@@ -195,7 +196,7 @@
 
 		return
 	//doesn't hold tanks
-	if(istype(I, /obj/item/tank))
+	if(istype(I, /obj/item/weapon/tank))
 		return
 
 	return ..()
@@ -205,7 +206,7 @@
 	name = "Stationary Air Scrubber"
 	base_type = /obj/machinery/portable_atmospherics/powered/scrubber/huge/stationary
 
-/obj/machinery/portable_atmospherics/powered/scrubber/huge/stationary/attackby(var/obj/item/I, var/mob/user)
+/obj/machinery/portable_atmospherics/powered/scrubber/huge/stationary/attackby(var/obj/item/I as obj, var/mob/user as mob)
 	if(isWrench(I))
 		to_chat(user, "<span class='warning'>The bolts are too tight for you to unscrew!</span>")
 		return

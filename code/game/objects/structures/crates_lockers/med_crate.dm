@@ -7,9 +7,9 @@
 	return list(
 		/obj/item/stack/medical/splint = 2,
 		/obj/item/stack/medical/advanced/bruise_pack = 10,
-		/obj/item/chems/pill/sugariron = 6,
-		/obj/item/storage/pill_bottle/painkillers = 2,
-		/obj/item/storage/pill_bottle/adrenaline
+		/obj/item/weapon/reagent_containers/pill/sugariron = 6,
+		/obj/item/weapon/storage/pill_bottle/paracetamol = 2,
+		/obj/item/weapon/storage/pill_bottle/inaprovaline
 		)
 
 /obj/structure/closet/crate/med_crate/burn
@@ -19,11 +19,11 @@
 
 /obj/structure/closet/crate/med_crate/burn/WillContain()
 	return list(
-		/obj/item/defibrillator/loaded,
+		/obj/item/weapon/defibrillator/loaded,
 		/obj/item/stack/medical/advanced/ointment = 10,
-		/obj/item/storage/pill_bottle/burn_meds,
-		/obj/item/storage/pill_bottle/painkillers = 2,
-		/obj/item/storage/pill_bottle/antibiotics
+		/obj/item/weapon/storage/pill_bottle/kelotane,
+		/obj/item/weapon/storage/pill_bottle/tramadol = 2,
+		/obj/item/weapon/storage/pill_bottle/spaceacillin
 	)
 
 /obj/structure/closet/crate/med_crate/oxyloss
@@ -33,9 +33,9 @@
 
 /obj/structure/closet/crate/med_crate/oxyloss/WillContain()
 	return list(
-		/obj/item/scanner/health = 2,
-		/obj/item/storage/pill_bottle/oxygen = 2,
-		/obj/item/storage/pill_bottle/adrenaline
+		/obj/item/device/scanner/health = 2,
+		/obj/item/weapon/storage/pill_bottle/dexalin = 2,
+		/obj/item/weapon/storage/pill_bottle/inaprovaline
 	)
 /obj/structure/closet/crate/med_crate/toxin
 	name = "\improper Toxin crate"
@@ -44,7 +44,7 @@
 
 /obj/structure/closet/crate/med_crate/toxin/WillContain()
 	return list(
-		/obj/item/storage/firstaid/surgery,
-		/obj/item/storage/pill_bottle/antitoxins = 2,
-		/obj/item/chems/pill/antirads = 12
+		/obj/item/weapon/storage/firstaid/surgery,
+		/obj/item/weapon/storage/pill_bottle/dylovene = 2,
+		/obj/item/weapon/reagent_containers/pill/hyronalin = 12
 			)

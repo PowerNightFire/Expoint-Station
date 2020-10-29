@@ -2,12 +2,12 @@
 /datum/gear/clothing/
 	sort_category = "Clothing Pieces"
 	category = /datum/gear/clothing/
-	slot = slot_tie_str
+	slot = slot_tie
 
 /datum/gear/clothing/flannel
 	display_name = "flannel (colorable)"
 	path = /obj/item/clothing/accessory/toggleable/flannel
-	slot = slot_tie_str
+	slot = slot_tie
 	flags = GEAR_HAS_COLOR_SELECTION
 
 /datum/gear/clothing/scarf
@@ -19,14 +19,13 @@
 	display_name = "hawaii shirt"
 	path = /obj/item/clothing/accessory/toggleable/hawaii
 
-/datum/gear/clothing/hawaii/get_gear_tweak_options()
-	. = ..()
-	LAZYINITLIST(.[/datum/gear_tweak/path])
-	.[/datum/gear_tweak/path] |= list(
-		"blue hawaii shirt" =           /obj/item/clothing/accessory/toggleable/hawaii,
-		"red hawaii shirt" =            /obj/item/clothing/accessory/toggleable/hawaii/red,
-		"random colored hawaii shirt" = /obj/item/clothing/accessory/toggleable/hawaii/random
-	)
+/datum/gear/clothing/hawaii/New()
+	..()
+	var/list/shirts = list()
+	shirts["blue hawaii shirt"] = /obj/item/clothing/accessory/toggleable/hawaii
+	shirts["red hawaii shirt"] = /obj/item/clothing/accessory/toggleable/hawaii/red
+	shirts["random colored hawaii shirt"] = /obj/item/clothing/accessory/toggleable/hawaii/random
+	gear_tweaks += new/datum/gear_tweak/path(shirts)
 
 /datum/gear/clothing/vest
 	display_name = "suit vest, colour select"

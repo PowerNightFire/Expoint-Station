@@ -49,7 +49,7 @@
 		return 100
 	return round((oxygen_deprivation/species.total_health)*100)
 
-/obj/item/organ/internal/lungs/robotize(var/company, var/skip_prosthetics, var/keep_organs, var/apply_material = /decl/material/solid/metal/steel)
+/obj/item/organ/internal/lungs/robotize()
 	. = ..()
 	icon_state = "lungs-prosthetic"
 
@@ -67,9 +67,9 @@
  */
 /obj/item/organ/internal/lungs/proc/sync_breath_types()
 	min_breath_pressure = species.breath_pressure
-	breath_type = species.breath_type ? species.breath_type : /decl/material/gas/oxygen
-	poison_types = species.poison_types ? species.poison_types : list(/decl/material/gas/chlorine = TRUE)
-	exhale_type = species.exhale_type ? species.exhale_type : /decl/material/gas/carbon_dioxide
+	breath_type = species.breath_type ? species.breath_type : GAS_OXYGEN
+	poison_types = species.poison_types ? species.poison_types : list(GAS_PHORON = TRUE)
+	exhale_type = species.exhale_type ? species.exhale_type : GAS_CO2
 
 /obj/item/organ/internal/lungs/Process()
 	..()
@@ -118,12 +118,12 @@
 	if(isnull(last_int_pressure))
 		last_int_pressure = breath_pressure
 		return
-	var/datum/gas_mixture/environment = loc.return_air()
+	var/datum/gas_mixture/environment = loc.return_air_for_internal_lifeform()
 	var/ext_pressure = environment && environment.return_pressure() // May be null if, say, our owner is in nullspace
 	var/int_pressure_diff = abs(last_int_pressure - breath_pressure)
 	var/ext_pressure_diff = abs(last_ext_pressure - ext_pressure) * owner.get_pressure_weakness(ext_pressure)
 	if(int_pressure_diff > max_pressure_diff && ext_pressure_diff > max_pressure_diff)
-		var/lung_rupture_prob = BP_IS_PROSTHETIC(src) ? prob(30) : prob(60) //Robotic lungs are less likely to rupture.
+		var/lung_rupture_prob = BP_IS_ROBOTIC(src) ? prob(30) : prob(60) //Robotic lungs are less likely to rupture.
 		if(!is_bruised() && lung_rupture_prob) //only rupture if NOT already ruptured
 			rupture()
 
@@ -140,7 +140,7 @@
 	var/breath_pressure = breath.return_pressure()
 	check_rupturing(breath_pressure)
 
-	var/datum/gas_mixture/environment = loc.return_air()
+	var/datum/gas_mixture/environment = loc.return_air_for_internal_lifeform()
 	last_ext_pressure = environment && environment.return_pressure()
 	last_int_pressure = breath_pressure
 	if(breath.total_moles == 0)
@@ -178,7 +178,7 @@
 	var/inhaled_gas_used = inhaling / 4
 	breath.adjust_gas(breath_type, -inhaled_gas_used, update = 0) //update afterwards
 
-	owner.toxins_alert = 0 // Reset our toxins alert for now.
+	owner.phoron_alert = 0 // Reset our toxins alert for now.
 	if(!failed_inhale) // Enough gas to tell we're being poisoned via chemical burns or whatever.
 		var/poison_total = 0
 		if(poison_types)
@@ -186,22 +186,20 @@
 				if(poison_types[gname])
 					poison_total += breath.gas[gname]
 		if(((poison_total/breath.total_moles)*breath_pressure) > safe_toxins_max)
-			owner.toxins_alert = 1
+			owner.phoron_alert = 1
 
 	// Pass reagents from the gas into our body.
 	// Presumably if you breathe it you have a specialized metabolism for it, so we drop/ignore breath_type. Also avoids
 	// humans processing thousands of units of oxygen over the course of a round for the sole purpose of poisoning vox.
-	var/ratio = BP_IS_PROSTHETIC(src)? 0.66 : 1
+	var/ratio = BP_IS_ROBOTIC(src)? 0.66 : 1
 	for(var/gasname in breath.gas - breath_type)
-		var/decl/material/gas = decls_repository.get_decl(gasname)
-		if(gas.gas_metabolically_inert)
-			continue
-		// Little bit of sanity so we aren't trying to add 0.0000000001 units of CO2, and so we don't end up with 99999 units of CO2.
-		var/reagent_amount = breath.gas[gasname] * REAGENT_UNITS_PER_GAS_MOLE * ratio
-		if(reagent_amount < 0.05)
-			continue
-		owner.reagents.add_reagent(gasname, reagent_amount)
-		breath.adjust_gas(gasname, -breath.gas[gasname], update = 0) //update after
+		var/breathed_product = gas_data.breathed_product[gasname]
+		if(breathed_product)
+			var/reagent_amount = breath.gas[gasname] * REAGENT_GAS_EXCHANGE_FACTOR * ratio
+			 // Little bit of sanity so we aren't trying to add 0.0000000001 units of CO2, and so we don't end up with 99999 units of CO2.
+			if(reagent_amount >= 0.05)
+				owner.reagents.add_reagent(breathed_product, reagent_amount)
+				breath.adjust_gas(gasname, -breath.gas[gasname], update = 0) //update after
 
 	// Moved after reagent injection so we don't instantly poison ourselves with CO2 or whatever.
 	if(exhale_type && (!istype(owner.wear_mask) || !(exhale_type in owner.wear_mask.filtered_gases)))
@@ -212,7 +210,7 @@
 	if(!failed_breath)
 		last_successful_breath = world.time
 		owner.adjustOxyLoss(-5 * inhale_efficiency)
-		if(!BP_IS_PROSTHETIC(src) && species.breathing_sound && is_below_sound_pressure(get_turf(owner)))
+		if(!BP_IS_ROBOTIC(src) && species.breathing_sound && is_below_sound_pressure(get_turf(owner)))
 			if(breathing || owner.shock_stage >= 10)
 				sound_to(owner, sound(species.breathing_sound,0,0,0,5))
 				breathing = 0
@@ -304,7 +302,7 @@
 	if(owner.failed_last_breath || !active_breathing)
 		return "no respiration"
 
-	if(BP_IS_PROSTHETIC(src))
+	if(BP_IS_ROBOTIC(src))
 		if(is_bruised())
 			return "malfunctioning fans"
 		else

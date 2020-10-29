@@ -7,7 +7,7 @@
 	idle_power_usage = 2
 	var/acknowledged = 0
 	var/last_paged
-	var/department = DEPT_COMMAND
+	var/department = COM
 	var/location
 
 /obj/machinery/pager/Initialize()
@@ -16,7 +16,7 @@
 		var/area/A = get_area(src)
 		location = A.name
 
-/obj/machinery/pager/attackby(obj/item/W, mob/user)
+/obj/machinery/pager/attackby(obj/item/weapon/W, mob/user as mob)
 	return attack_hand(user)
 
 /obj/machinery/pager/interface_interact(mob/living/user)
@@ -59,16 +59,19 @@
 		MS.send_to_department(department,"Page to <b>[location]</b> was acknowledged.", "*ack*")
 
 /obj/machinery/pager/medical
-	department = DEPT_MEDICAL
+	department = MED
 
-/obj/machinery/pager/cargo 
-	department = DEPT_SUPPLY
+/obj/machinery/pager/cargo //supply
+	department = SUP
 
-/obj/machinery/pager/security 
-	department = DEPT_SECURITY
+/obj/machinery/pager/security //torch security
+	department = SEC
 
 /obj/machinery/pager/science
-	department = DEPT_SCIENCE
+	department = SCI
 
 /obj/machinery/pager/engineering
-	department = DEPT_ENGINEERING
+	department = ENG
+
+/obj/machinery/pager/robotics
+	department = ROB

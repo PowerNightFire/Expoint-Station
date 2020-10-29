@@ -33,18 +33,9 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 	var/turn = DISPOSAL_FLIP_NONE
 	throwpass = TRUE
 
-	construct_state = /decl/machine_construction/default/panel_closed/item_chassis
-	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc/buildable
-	)
-	frame_type = /obj/structure/disposalconstruct/machine
-	base_type = /obj/machinery/disposal/buildable
-
-/obj/machinery/disposal/buildable
-	uncreated_component_parts = null
-
 // create a new disposal
 // find the attached trunk (if present) and init gas resvr.
+// initializes the reagents datum for storing vomit reagents
 /obj/machinery/disposal/Initialize()
 	. = ..()
 	spawn(5)
@@ -57,6 +48,7 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 
 		air_contents = new/datum/gas_mixture(PRESSURE_TANK_VOLUME)
 		update_icon()
+	src.create_reagents(500)
 
 /obj/machinery/disposal/Destroy()
 	eject()
@@ -64,29 +56,54 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 		trunk.linked = null
 	return ..()
 
-/obj/machinery/disposal/bash()
-	return FALSE
-
-/obj/machinery/disposal/cannot_transition_to(state_path, mob/user)
-	if(mode > 0)
-		return SPAN_NOTICE("Turn off the pump first.")
-	if(contents.len > LAZYLEN(component_parts))
-		return SPAN_NOTICE("Eject the items first!")
-	return ..()
-
 // attack by item places it in to disposal
 /obj/machinery/disposal/attackby(var/obj/item/I, var/mob/user)
-	if((. = ..()))
-		return
 	if(stat & BROKEN || !I || !user)
 		return
 
-	if(istype(I, /obj/item/energy_blade/blade))
+	add_fingerprint(user, 0, I)
+	if(mode<=0) // It's off
+		if(isScrewdriver(I))
+			if(contents.len > LAZYLEN(component_parts))
+				to_chat(user, "Eject the items first!")
+				return
+			if(mode==0) // It's off but still not unscrewed
+				mode=-1 // Set it to doubleoff l0l
+				playsound(src.loc, 'sound/items/Screwdriver.ogg', 50, 1)
+				to_chat(user, "You remove the screws around the power connection.")
+				return
+			else if(mode==-1)
+				mode=0
+				playsound(src.loc, 'sound/items/Screwdriver.ogg', 50, 1)
+				to_chat(user, "You attach the screws around the power connection.")
+				return
+		else if(isWelder(I) && mode==-1)
+			if(contents.len > LAZYLEN(component_parts))
+				to_chat(user, "Eject the items first!")
+				return
+			var/obj/item/weapon/weldingtool/W = I
+			if(W.remove_fuel(0,user))
+				playsound(src.loc, 'sound/items/Welder2.ogg', 100, 1)
+				to_chat(user, "You start slicing the floorweld off the disposal unit.")
+
+				if(do_after(user,20,src))
+					if(!src || !W.isOn()) return
+					to_chat(user, "You sliced the floorweld off the disposal unit.")
+					var/obj/structure/disposalconstruct/machine/C = new (loc, src)
+					src.transfer_fingerprints_to(C)
+					C.update()
+					qdel(src)
+				return
+			else
+				to_chat(user, "You need more welding fuel to complete this task.")
+				return
+
+	if(istype(I, /obj/item/weapon/melee/energy/blade))
 		to_chat(user, "You can't place that item inside the disposal unit.")
 		return
 
-	if(istype(I, /obj/item/storage/bag/trash))
-		var/obj/item/storage/bag/trash/T = I
+	if(istype(I, /obj/item/weapon/storage/bag/trash))
+		var/obj/item/weapon/storage/bag/trash/T = I
 		to_chat(user, "<span class='notice'>You empty the bag.</span>")
 		for(var/obj/item/O in T.contents)
 			T.remove_from_storage(O,src, 1)
@@ -96,8 +113,8 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 
 	var/obj/item/grab/G = I
 	if(istype(G))	// handle grabbed mob
-		var/mob/GM = G.get_affecting_mob()
-		if(GM)
+		if(ismob(G.affecting))
+			var/mob/GM = G.affecting
 			usr.visible_message(SPAN_DANGER("\The [usr] starts putting [GM.name] into the disposal."))
 			if(do_after(usr, 20, src))
 				if (GM.client)
@@ -107,6 +124,11 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 				usr.visible_message(SPAN_DANGER("\The [GM] has been placed in the [src] by \the [user]."))
 				qdel(G)
 				admin_attack_log(usr, GM, "Placed the victim into \the [src].", "Was placed into \the [src] by the attacker.", "stuffed \the [src] with")
+		return
+
+	if(isrobot(user))
+		return
+	if(!I)
 		return
 
 	if(!user.unEquip(I, src))
@@ -168,7 +190,7 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 	if(AM == user)
 		user.visible_message("<span class='danger'>[user] climbs into [src].</span>", \
 							 "<span class='notice'>You climb into [src].</span>")
-		log_and_message_admins("has stuffed themselves into [src].", AM)
+		log_and_message_admins("has stuffed themselves into [src].", AM)		 
 	else
 		user.visible_message("<span class='[is_dangerous ? "danger" : "notice"]'>[user] stuffs [AM] into [src][is_dangerous ? "!" : "."]</span>", \
 							 "<span class='notice'>You stuff [AM] into [src].</span>")
@@ -183,7 +205,7 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 	return
 
 // attempt to move while inside
-/obj/machinery/disposal/relaymove(mob/user)
+/obj/machinery/disposal/relaymove(mob/user as mob)
 	if(user.stat || src.flushing)
 		return
 	if(user.loc == src)
@@ -201,11 +223,12 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 	return
 
 /obj/machinery/disposal/DefaultTopicState()
-	return GLOB.outside_state
+	return GLOB.outside_state	
 
 // human interact with machine
 /obj/machinery/disposal/physical_attack_hand(mob/user)
-	if(!user.check_dexterity(DEXTERITY_KEYBOARDS))
+	// Clumsy folks can only flush it.
+	if(!user.IsAdvancedToolUser(1))
 		flush = !flush
 		update_icon()
 		return TRUE
@@ -255,9 +278,9 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 	if(user.loc == src)
 		to_chat(user, "<span class='warning'>You cannot reach the controls from inside.</span>")
 		return STATUS_CLOSE
-	if(isAI(user) && (href_list["handle"] || href_list["eject"]))
+	if(isAI(user) && href_list && (href_list["handle"] || href_list["eject"]))
 		return min(STATUS_UPDATE, ..())
-	if(mode==-1 && !href_list["eject"]) // only allow ejecting if mode is -1
+	if(mode==-1 && href_list && !href_list["eject"]) // only allow ejecting if mode is -1
 		to_chat(user, "<span class='warning'>The disposal units power is disabled.</span>")
 		return min(STATUS_UPDATE, ..())
 	if(flushing)
@@ -294,6 +317,14 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 	for(var/atom/movable/AM in (contents - component_parts))
 		AM.forceMove(src.loc)
 		AM.pipe_eject(0)
+	if(reagents.total_volume)
+		visible_message(SPAN_DANGER("Vomit spews out of the disposal unit!"))
+		playsound(loc, 'sound/effects/splat.ogg', 50, 1)
+		if(istype(src.loc, /turf/simulated))
+			var/obj/effect/decal/cleanable/vomit/splat = new /obj/effect/decal/cleanable/vomit(src.loc)
+			reagents.trans_to_obj(splat, reagents.total_volume)
+			splat.update_icon()
+	reagents.clear_reagents()
 	update_icon()
 
 // update the icon & overlays to reflect mode & status
@@ -312,8 +343,8 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 	if(stat & NOPOWER || mode == -1)
 		return
 
-	// 	check for items in disposal - occupied light
-	if(contents.len > LAZYLEN(component_parts))
+	// 	check for items/vomit in disposal - occupied light
+	if(contents.len > LAZYLEN(component_parts) || reagents.total_volume)
 		overlays += image('icons/obj/pipes/disposal.dmi', "dispover-full")
 
 	// charging and ready light
@@ -331,7 +362,7 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 
 	flush_count++
 	if( flush_count >= flush_every_ticks )
-		if( contents.len > LAZYLEN(component_parts))
+		if( contents.len > LAZYLEN(component_parts) || reagents.total_volume)
 			if(mode == 2)
 				spawn(0)
 					SSstatistics.add_field("disposal_auto_flush",1)
@@ -376,6 +407,11 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 	var/wrapcheck = 0
 	var/obj/structure/disposalholder/H = new()	// virtual holder object which actually
 												// travels through the pipes.
+
+	// handle vomit transportation
+	// flush the vomit out and put vomit into the disposalholder
+	reagents.trans_to_holder(H.create_reagents(500), reagents.total_volume)
+
 	var/list/stuff = contents - component_parts
 	//Hacky test to get drones to mail themselves through disposals.
 	for(var/mob/living/silicon/robot/drone/D in stuff)
@@ -387,6 +423,10 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 	if(wrapcheck == 1)
 		H.tomail = 1
 
+	for(var/mob/living/L in stuff)
+		if (L.ckey)
+			log_and_message_admins("has been flushed down [src].", L)
+
 	sleep(10)
 	if(last_sound < world.time + 1)
 		playsound(src, 'sound/machines/disposalflush.ogg', 50, 0, 0)
@@ -396,10 +436,6 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 
 	H.init(src, air_contents)	// copy the contents of disposer to holder
 	air_contents = new(PRESSURE_TANK_VOLUME)	// new empty gas resv.
-
-	for(var/mob/M in H.check_mob(stuff))
-		if(M.ckey)
-			log_and_message_admins("has been flushed down [src].", M)
 
 	H.start(src) // start the holder processing movement
 	flushing = 0
@@ -508,12 +544,12 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 	if(!proximity || !istype(A, /turf/simulated/floor) || istype(A, /area/shuttle) || user.incapacitated() || !id_tag)
 		return
 	var/found = 0
-	for(var/obj/structure/disposalpipe/diversion_junction/D in GLOB.diversion_junctions)
+	for(var/obj/structure/disposalpipe/diversion_junction/D in world)
 		if(D.id_tag == src.id_tag)
 			found = 1
 			break
 	if(!found)
-		to_chat(user, "[html_icon(src)]<span class=notice>\The [src] is not linked to any junctions!</span>")
+		to_chat(user, "[icon2html(src, user)]<span class=notice>\The [src] is not linked to any junctions!</span>")
 		return
 	var/obj/machinery/disposal_switch/NC = new/obj/machinery/disposal_switch(A, id_tag)
 	transfer_fingerprints_to(NC)
@@ -546,6 +582,14 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 /obj/structure/disposaloutlet/proc/expel(var/obj/structure/disposalholder/H)
 	animate_expel()
 	if(H)
+		if(H.reagents?.total_volume)
+			visible_message(SPAN_DANGER("Vomit seeps out of the disposal outlet!"))
+			playsound(loc, 'sound/effects/splat.ogg', 50, 1)
+			if(istype(src.loc, /turf/simulated))
+				var/obj/effect/decal/cleanable/vomit/splat = new /obj/effect/decal/cleanable/vomit(src.loc)
+				H.reagents.trans_to_obj(splat, H.reagents.total_volume)
+				splat.update_icon()
+
 		for(var/atom/movable/AM in H)
 			AM.forceMove(src.loc)
 			AM.pipe_eject(dir)
@@ -578,8 +622,8 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 			playsound(src.loc, 'sound/items/Screwdriver.ogg', 50, 1)
 			to_chat(user, "You attach the screws around the power connection.")
 			return
-	else if(istype(I,/obj/item/weldingtool) && mode==1)
-		var/obj/item/weldingtool/W = I
+	else if(istype(I,/obj/item/weapon/weldingtool) && mode==1)
+		var/obj/item/weapon/weldingtool/W = I
 		if(W.remove_fuel(0,user))
 			playsound(src.loc, 'sound/items/Welder2.ogg', 100, 1)
 			to_chat(user, "You start slicing the floorweld off the disposal outlet.")
@@ -587,7 +631,7 @@ GLOBAL_LIST_EMPTY(diversion_junctions)
 				if(!src || !W.isOn()) return
 				to_chat(user, "You sliced the floorweld off the disposal outlet.")
 				var/obj/structure/disposalconstruct/machine/outlet/C = new (loc, src)
-				src.transfer_fingerprints_to(C)
+				src.transfer_fingerprints_to(C)								
 				C.anchored = 1
 				C.set_density(1)
 				C.update()

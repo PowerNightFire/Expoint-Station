@@ -10,21 +10,10 @@
 	var/list/free_languages
 
 /datum/category_item/player_setup_item/background/languages/load_character(var/savefile/S)
-	pref.alternate_languages = list()
-	var/list/language_names = list()
-	from_file(S["language"], language_names)
-	for(var/lang in language_names)
-		var/decl/language/lang_decl = SSlore.get_language_by_name(lang)
-		if(istype(lang_decl))
-			pref.alternate_languages |= lang_decl.type
+	from_save(S["language"], pref.alternate_languages)
 
 /datum/category_item/player_setup_item/background/languages/save_character(var/savefile/S)
-	var/list/language_names = list()
-	for(var/lang in pref.alternate_languages)
-		var/decl/language/lang_decl = decls_repository.get_decl(lang)
-		if(istype(lang_decl))
-			language_names |= lang_decl.name
-	to_file(S["language"], language_names)
+	to_save(S["language"],   pref.alternate_languages)
 
 /datum/category_item/player_setup_item/background/languages/sanitize_character()
 	if(!islist(pref.alternate_languages))
@@ -51,21 +40,18 @@
 
 	else if(href_list["add_language"])
 
-		if(length(pref.alternate_languages) >= MAX_LANGUAGES)
+		if(pref.alternate_languages.len >= MAX_LANGUAGES)
 			alert(user, "You have already selected the maximum number of languages!")
 			return
 
 		sanitize_alt_languages()
-		var/list/available_languages = list()
-		for(var/lang in (allowed_languages - free_languages))
-			available_languages |= decls_repository.get_decl(lang)
-
-		if(!length(available_languages))
+		var/list/available_languages = allowed_languages - free_languages
+		if(!LAZYLEN(available_languages))
 			alert(user, "There are no additional languages available to select.")
 		else
-			var/decl/language/new_lang = input(user, "Select an additional language", "Character Generation", null) as null|anything in available_languages
+			var/new_lang = input(user, "Select an additional language", "Character Generation", null) as null|anything in available_languages
 			if(new_lang)
-				pref.alternate_languages |= new_lang.type
+				pref.alternate_languages |= new_lang
 				return TOPIC_REFRESH
 	. = ..()
 
@@ -78,7 +64,7 @@
 		return
 
 	for(var/thing in pref.cultural_info)
-		var/decl/cultural_info/culture = SSlore.get_culture(pref.cultural_info[thing])
+		var/decl/cultural_info/culture = SSculture.get_culture(pref.cultural_info[thing])
 		if(istype(culture))
 			var/list/langs = culture.get_spoken_languages()
 			if(LAZYLEN(langs))
@@ -89,28 +75,25 @@
 				for(var/checklang in culture.secondary_langs)
 					allowed_languages[checklang] = TRUE
 
-	var/list/language_types = decls_repository.get_decls_of_subtype(/decl/language)
-	for(var/thing in language_types)
-		var/decl/language/lang = language_types[thing]
+	for(var/thing in all_languages)
+		var/datum/language/lang = all_languages[thing]
 		if(user.has_admin_rights() || (!(lang.flags & RESTRICTED) && (lang.flags & WHITELISTED) && is_alien_whitelisted(user, lang)))
 			allowed_languages[thing] = TRUE
 
-/datum/category_item/player_setup_item/background/languages/proc/is_allowed_language(var/mob/user, var/decl/language/lang)
-	if(ispath(lang, /decl/language))
-		lang = decls_repository.get_decl(lang)
+/datum/category_item/player_setup_item/background/languages/proc/is_allowed_language(var/mob/user, var/datum/language/lang)
 	if(isnull(allowed_languages) || isnull(free_languages))
 		rebuild_language_cache(user)
 	if(!user || ((lang.flags & RESTRICTED) && is_alien_whitelisted(user, lang)))
 		return TRUE
-	return allowed_languages[lang.type]
+	return allowed_languages[lang.name]
 
 /datum/category_item/player_setup_item/background/languages/proc/sanitize_alt_languages()
-	if(!islist(pref.alternate_languages))
+	if(!istype(pref.alternate_languages))
 		pref.alternate_languages = list()
 	var/preference_mob = preference_mob()
 	rebuild_language_cache(preference_mob)
 	for(var/L in pref.alternate_languages)
-		var/decl/language/lang = decls_repository.get_decl(L)
+		var/datum/language/lang = all_languages[L]
 		if(!lang || !is_allowed_language(preference_mob, lang))
 			pref.alternate_languages -= L
 	if(LAZYLEN(free_languages))
@@ -119,19 +102,18 @@
 			pref.alternate_languages.Insert(1, lang)
 
 	pref.alternate_languages = uniquelist(pref.alternate_languages)
-	if(length(pref.alternate_languages) > MAX_LANGUAGES)
+	if(pref.alternate_languages.len > MAX_LANGUAGES)
 		pref.alternate_languages.Cut(MAX_LANGUAGES + 1)
 
 /datum/category_item/player_setup_item/background/languages/proc/get_language_text()
 	sanitize_alt_languages()
 	if(LAZYLEN(pref.alternate_languages))
-		for(var/i = 1 to length(pref.alternate_languages))
+		for(var/i = 1 to pref.alternate_languages.len)
 			var/lang = pref.alternate_languages[i]
-			var/decl/language/lang_instance = decls_repository.get_decl(lang)
 			if(free_languages[lang])
-				LAZYADD(., "- [lang_instance.name] (required).<br>")
+				LAZYADD(., "- [lang] (required).<br>")
 			else
-				LAZYADD(., "- [lang_instance.name] <a href='?src=\ref[src];remove_language=[i]'>Remove</a> <span style='color:#ff0000;font-style:italic;'>[lang_instance.warning]</span><br>")
+				LAZYADD(., "- [lang] <a href='?src=\ref[src];remove_language=[i]'>Remove.</a> <span style='color:#ff0000;font-style:italic;'>[all_languages[lang].warning]</span><br>")
 	if(pref.alternate_languages.len < MAX_LANGUAGES)
 		var/remaining_langs = MAX_LANGUAGES - pref.alternate_languages.len
 		LAZYADD(., "- <a href='?src=\ref[src];add_language=1'>add</a> ([remaining_langs] remaining)<br>")

@@ -43,30 +43,32 @@ note dizziness decrements automatically in the mob's Life() proc.
 		client.pixel_y = 0
 
 // jitteriness - copy+paste of dizziness
-/mob/var/is_jittery = FALSE
+/mob/var/is_jittery = 0
 /mob/var/jitteriness = 0//Carbon
 
 /mob/proc/make_jittery(var/amount)
 	return //Only for living/carbon/human/
 
 /mob/living/carbon/human/make_jittery(var/amount)
-	if(jittery_damage())
-		jitteriness = Clamp(jitteriness + amount, 0, 1000)
-		if(jitteriness > 100)
+	if(!istype(src, /mob/living/carbon/human)) // for the moment, only humans get jittery
+		return
+	if(!jittery_damage())
+		return //Robotic hearts don't get jittery.
+	jitteriness = min(1000, jitteriness + amount)	// store what will be new value
+													// clamped to max 1000
+	if(jitteriness > 100 && !is_jittery)
+		spawn(0)
 			jittery_process()
 
 // Typo from the original coder here, below lies the jitteriness process. So make of his code what you will, the previous comment here was just a copypaste of the above.
 /mob/proc/jittery_process()
-	set waitfor = 0
-	if(is_jittery)
-		return
-	is_jittery = TRUE
+	is_jittery = 1
 	while(jitteriness > 100)
 		var/amplitude = min(4, jitteriness / 100)
 		do_jitter(amplitude)
 		sleep(1)
 	//endwhile - reset the pixel offsets to zero
-	is_jittery = FALSE
+	is_jittery = 0
 	do_jitter(0)
 
 /mob/proc/do_jitter(amplitude)
@@ -79,11 +81,11 @@ note dizziness decrements automatically in the mob's Life() proc.
 
 /mob/proc/update_floating()
 
-	if(anchored || buckled || has_gravity())
+	if(anchored || buckled || check_solid_ground())
 		make_floating(0)
 		return
 
-	if(check_space_footing())
+	if(Check_Shoegrip() && Check_Dense_Object())
 		make_floating(0)
 		return
 
@@ -103,7 +105,7 @@ note dizziness decrements automatically in the mob's Life() proc.
 	is_floating = 1
 
 	var/amplitude = 2 //maximum displacement from original position
-	var/period = 36 //time taken for the mob to go up >> down >> original position, in deciseconds. Should be multiple of 4
+	var/period = 36 //time taken for the mob to go up -> down -> original position, in deciseconds. Should be multiple of 4
 
 	var/top = default_pixel_z + amplitude
 	var/bottom = default_pixel_z - amplitude
@@ -119,25 +121,32 @@ note dizziness decrements automatically in the mob's Life() proc.
 	//reset the pixel offsets to zero
 	is_floating = 0
 
-/atom/movable/proc/do_attack_animation(atom/A, atom/movable/weapon)
+/atom/movable/proc/do_attack_animation(atom/A)
 
 	var/pixel_x_diff = 0
 	var/pixel_y_diff = 0
-	var/turn_dir = 1
-
 	var/direction = get_dir(src, A)
-	if(direction & NORTH)
-		pixel_y_diff = 8
-		turn_dir = rand(50) ? -1 : 1
-	else if(direction & SOUTH)
-		pixel_y_diff = -8
-		turn_dir = rand(50) ? -1 : 1
-
-	if(direction & EAST)
-		pixel_x_diff = 8
-	else if(direction & WEST)
-		pixel_x_diff = -8
-		turn_dir = -1
+	switch(direction)
+		if(NORTH)
+			pixel_y_diff = 8
+		if(SOUTH)
+			pixel_y_diff = -8
+		if(EAST)
+			pixel_x_diff = 8
+		if(WEST)
+			pixel_x_diff = -8
+		if(NORTHEAST)
+			pixel_x_diff = 8
+			pixel_y_diff = 8
+		if(NORTHWEST)
+			pixel_x_diff = -8
+			pixel_y_diff = 8
+		if(SOUTHEAST)
+			pixel_x_diff = 8
+			pixel_y_diff = -8
+		if(SOUTHWEST)
+			pixel_x_diff = -8
+			pixel_y_diff = -8
 
 	var/default_pixel_x = initial(pixel_x)
 	var/default_pixel_y = initial(pixel_y)
@@ -146,37 +155,26 @@ note dizziness decrements automatically in the mob's Life() proc.
 		default_pixel_x = mob.default_pixel_x
 		default_pixel_y = mob.default_pixel_y
 
-	var/matrix/initial_transform = matrix(transform)
-	var/matrix/rotated_transform = transform.Turn(15 * turn_dir)
+	animate(src, pixel_x = pixel_x + pixel_x_diff, pixel_y = pixel_y + pixel_y_diff, time = 2)
+	animate(pixel_x = default_pixel_x, pixel_y = default_pixel_y, time = 2)
 
-	animate(src, pixel_x = pixel_x + pixel_x_diff, pixel_y = pixel_y + pixel_y_diff, transform = rotated_transform, time = 2, easing = BACK_EASING | EASE_IN)
-	animate(pixel_x = default_pixel_x, pixel_y = default_pixel_y, transform = initial_transform, time = 2, easing = SINE_EASING)
-
-/mob/do_attack_animation(atom/A, atom/movable/weapon)
+/mob/do_attack_animation(atom/A)
 	..()
 	is_floating = 0 // If we were without gravity, the bouncing animation got stopped, so we make sure we restart the bouncing after the next movement.
 
-	// What are we attacking with?
-	if(!weapon)
-		weapon = get_active_hand()
-		if(!weapon)
-			return
-
-	// Create an image to show to viewers.
-	// Reset plane and layer so that it doesn't inherit the UI settings from equipped items.
-	var/image/I = new(loc = A)
-	I.appearance = weapon
-	I.plane = DEFAULT_PLANE
-	I.layer = A.layer + 0.1
-	I.pixel_x = 0
-	I.pixel_y = 0
-	I.pixel_z = 0
-	I.pixel_w = 0
+	// What icon do we use for the attack?
+	var/image/I
+	if(hand && l_hand) // Attacked with item in left hand.
+		I = image(l_hand.icon, A, l_hand.icon_state, A.layer + 1)
+	else if (!hand && r_hand) // Attacked with item in right hand.
+		I = image(r_hand.icon, A, r_hand.icon_state, A.layer + 1)
+	else // Attacked with a fist?
+		return
 
 	// Who can see the attack?
 	var/list/viewing = list()
-	for(var/mob/M in viewers(A))
-		if(M.client)
+	for (var/mob/M in viewers(A))
+		if (M.client)
 			viewing |= M.client
 	flick_overlay(I, viewing, 5) // 5 ticks/half a second
 
@@ -233,27 +231,16 @@ note dizziness decrements automatically in the mob's Life() proc.
 	anim(src,'icons/mob/mob.dmi',,"phaseout",,dir)
 
 /mob/living/proc/on_structure_offset(var/offset = 0)
-
-	var/next_x = default_pixel_x
-	var/next_y = default_pixel_y
-	var/next_z = default_pixel_z
-
 	if(offset)
-		next_z += offset
+		var/check = default_pixel_z + offset
+		if(pixel_z != check)
+			animate(src, pixel_z = check, time = 2, easing = SINE_EASING)
 	else if(pixel_z != default_pixel_z)
 		var/turf/T = get_turf(src)
 		for(var/obj/structure/S in T.contents)
 			if(S && S.mob_offset)
 				return
-
-	if(buckled && buckled.buckle_pixel_shift)
-		var/list/pixel_shift = cached_json_decode(buckled.buckle_pixel_shift)
-		next_x = default_pixel_x + pixel_shift["x"]
-		next_y = default_pixel_y + pixel_shift["y"]
-		next_z = default_pixel_z + pixel_shift["z"]
-
-	if(pixel_x != next_x || pixel_y != next_y || pixel_z != next_z)
-		animate(src, pixel_x = next_x, pixel_y = next_y, pixel_z = next_z, 2, 1, SINE_EASING)
+		animate(src, pixel_z = default_pixel_z, time = 2, easing = SINE_EASING)
 
 /mob/living/Move()
 	. = ..()

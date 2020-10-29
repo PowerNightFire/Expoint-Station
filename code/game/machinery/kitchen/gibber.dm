@@ -6,7 +6,7 @@
 	icon_state = "grinder"
 	density = 1
 	anchored = 1
-	initial_access = list(list(access_kitchen, access_morgue))
+	req_access = list(access_kitchen,access_morgue)
 	construct_state = /decl/machine_construction/default/panel_closed
 	uncreated_component_parts = null
 	stat_immune = 0
@@ -43,7 +43,7 @@
 	else
 		src.overlays += image('icons/obj/kitchen.dmi', "gridle")
 
-/obj/machinery/gibber/relaymove(mob/user)
+/obj/machinery/gibber/relaymove(mob/user as mob)
 	src.go_out()
 	return
 
@@ -152,7 +152,7 @@
 	update_icon()
 	return
 
-/obj/machinery/gibber/proc/startgibbing(mob/user)
+/obj/machinery/gibber/proc/startgibbing(mob/user as mob)
 	if(src.operating)
 		return
 	if(!src.occupant)
@@ -195,10 +195,10 @@
 			qdel(thing)
 		else
 			thing.forceMove(src)
-			if(istype(thing, /obj/item/chems/food/snacks/meat))
-				var/obj/item/chems/food/snacks/meat/slab = thing
+			if(istype(thing, /obj/item/weapon/reagent_containers/food/snacks/meat))
+				var/obj/item/weapon/reagent_containers/food/snacks/meat/slab = thing
 				slab.SetName("[slab_name] [slab.name]")
-				slab.reagents.add_reagent(/decl/material/liquid/nutriment,slab_nutrition)
+				slab.reagents.add_reagent(/datum/reagent/nutriment,slab_nutrition)
 
 /obj/machinery/gibber/proc/finish_gibbing()
 	operating = 0

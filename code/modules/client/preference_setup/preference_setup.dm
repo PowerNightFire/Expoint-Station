@@ -28,11 +28,6 @@ var/const/CHARACTER_PREFERENCE_INPUT_TITLE = "Character Preference"
 	sort_order = 4
 	category_item_type = /datum/category_item/player_setup_item/antagonism
 
-/datum/category_group/player_setup_category/relations_preferences
-	name = "Matchmaking"
-	sort_order = 5
-	category_item_type = /datum/category_item/player_setup_item/relations
-
 /datum/category_group/player_setup_category/loadout_preferences
 	name = "Loadout"
 	sort_order = 6
@@ -272,4 +267,4 @@ var/const/CHARACTER_PREFERENCE_INPUT_TITLE = "Character Preference"
 		return pref.client.mob
 
 /datum/category_item/player_setup_item/proc/preference_species()
-	return get_species_by_key(pref.species || GLOB.using_map.default_species)
+	return all_species[pref.species] || all_species[SPECIES_HUMAN]

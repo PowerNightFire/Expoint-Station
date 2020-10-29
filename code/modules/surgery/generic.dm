@@ -22,12 +22,11 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/generic/cut_with_laser
 	name = "Make laser incision"
-	description = "This procedure uses a laser to quickly and cleanly make an incision."
 	allowed_tools = list(
-		/obj/item/scalpel/laser3 = 95,
-		/obj/item/scalpel/laser2 = 85,
-		/obj/item/scalpel/laser1 = 75,
-		/obj/item/energy_blade/sword = 5
+		/obj/item/weapon/scalpel/laser3 = 95,
+		/obj/item/weapon/scalpel/laser2 = 85,
+		/obj/item/weapon/scalpel/laser1 = 75,
+		/obj/item/weapon/melee/energy/sword = 5
 	)
 	min_duration = 90
 	max_duration = 110
@@ -59,9 +58,8 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/generic/managed
 	name = "Make managed incision"
-	description = "This procedure uses a laser scalpel to construct a pre-clamped incision into a patient's body."
 	allowed_tools = list(
-		/obj/item/scalpel/manager = 100
+		/obj/item/weapon/scalpel/manager = 100
 	)
 	min_duration = 80
 	max_duration = 120
@@ -92,12 +90,11 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/generic/cut_open
 	name = "Make incision"
-	description = "This procedure cuts a small wound that allows access to deeper tissue."
 	allowed_tools = list(
-		/obj/item/scalpel = 100,
-		/obj/item/knife = 75,
-		/obj/item/broken_bottle = 50,
-		/obj/item/shard = 50
+		/obj/item/weapon/scalpel = 100,
+		/obj/item/weapon/material/knife = 75,
+		/obj/item/weapon/broken_bottle = 50,
+		/obj/item/weapon/material/shard = 50
 	)
 	min_duration = 90
 	max_duration = 110
@@ -145,11 +142,10 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/generic/clamp_bleeders
 	name = "Clamp bleeders"
-	description = "This procedure clamps off veins within an incision, preventing it from bleeding excessively."
 	allowed_tools = list(
-		/obj/item/hemostat = 100,
+		/obj/item/weapon/hemostat = 100,
 		/obj/item/stack/cable_coil = 75,
-		/obj/item/assembly/mousetrap = 20
+		/obj/item/device/assembly/mousetrap = 20
 	)
 	min_duration = 40
 	max_duration = 60
@@ -187,12 +183,11 @@
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/generic/retract_skin
 	name = "Widen incision"
-	description = "This procedure is used to widen an incision when it is too small to access the interior."
 	allowed_tools = list(
-		/obj/item/retractor = 100,
-		/obj/item/crowbar = 75,
-		/obj/item/knife = 50,
-		/obj/item/kitchen/utensil/fork = 50
+		/obj/item/weapon/retractor = 100,
+		/obj/item/weapon/crowbar = 75,
+		/obj/item/weapon/material/knife = 50,
+		/obj/item/weapon/material/kitchen/utensil/fork = 50
 	)
 	min_duration = 30
 	max_duration = 40
@@ -234,10 +229,10 @@
 /decl/surgery_step/generic/cauterize
 	name = "Cauterize incision"
 	allowed_tools = list(
-		/obj/item/cautery = 100,
+		/obj/item/weapon/cautery = 100,
 		/obj/item/clothing/mask/smokable/cigarette = 75,
-		/obj/item/flame/lighter = 50,
-		/obj/item/weldingtool = 25
+		/obj/item/weapon/flame/lighter = 50,
+		/obj/item/weapon/weldingtool = 25
 	)
 	min_duration = 70
 	max_duration = 100
@@ -301,8 +296,8 @@
 /decl/surgery_step/generic/amputate
 	name = "Amputate limb"
 	allowed_tools = list(
-		/obj/item/circular_saw = 100,
-		/obj/item/hatchet = 75
+		/obj/item/weapon/circular_saw = 100,
+		/obj/item/weapon/material/hatchet = 75
 	)
 	min_duration = 110
 	max_duration = 160
@@ -316,7 +311,7 @@
 /decl/surgery_step/generic/amputate/get_skill_reqs(mob/living/user, mob/living/carbon/human/target, obj/item/tool)
 	var/target_zone = user.zone_sel.selecting
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
-	if(BP_IS_PROSTHETIC(affected))
+	if(BP_IS_ROBOTIC(affected))
 		return SURGERY_SKILLS_ROBOTIC
 	else
 		return ..()

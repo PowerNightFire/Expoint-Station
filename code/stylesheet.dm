@@ -58,12 +58,14 @@ em						{font-style: normal;font-weight: bold;}
 .supradio				{color: #7f6539;}
 .srvradio				{color: #709b00;}
 .expradio				{color: #929820;}
+.seciradio				{color: #935050;}
+.mediradio				{color: #509190;}
 
 /* Miscellaneous */
 .name					{font-weight: bold;}
 .say					{}
 .alert					{color: #ff0000;}
-h1.alert, h2.alert		{color: #000000;}
+h1.alert, h2.alert		{color: #000080;}
 
 .emote					{font-style: italic;}
 
@@ -96,9 +98,10 @@ h1.alert, h2.alert		{color: #000000;}
 /* Languages */
 
 .alien					{color: #543354;}
+.skrell					{color: #00ced1;}
 .soghun					{color: #228b22;}
 .yeosa					{color: #218b89;}
-.serpentid_lang			{color: #525252;}
+.nabber_lang			{color: #525252;}
 .changeling				{color: #800080;}
 .vox					{color: #aa00aa;}
 .rough					{font-family: "Trebuchet MS", cursive, sans-serif;}
@@ -115,7 +118,7 @@ h1.alert, h2.alert		{color: #000000;}
 
 .interface				{color: #330033;}
 
-.good                   {color: #00ff00; font-weight: bold;}
+.good                   {color: #4f7529; font-weight: bold;}
 .bad                    {color: #ee0000; font-weight: bold;}
 
 BIG IMG.icon 			{width: 32px; height: 32px;}

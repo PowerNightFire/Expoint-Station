@@ -14,13 +14,7 @@ somewhere on that shuttle. Subtypes of these can be then used to perform ship ov
 		return
 	if(sector.check_ownership(src))
 		linked = sector
-		LAZYSET(linked.consoles, src, TRUE)
 		return 1
-
-/obj/machinery/computer/ship/Destroy()
-	if(linked)
-		LAZYREMOVE(linked.consoles, src)
-	. = ..()
 
 /obj/machinery/computer/ship/proc/sync_linked()
 	var/obj/effect/overmap/visitable/ship/sector = map_sectors["[z]"]
@@ -36,7 +30,7 @@ somewhere on that shuttle. Subtypes of these can be then used to perform ship ov
 			return
 
 /obj/machinery/computer/ship/proc/display_reconnect_dialog(var/mob/user, var/flavor)
-	var/datum/browser/written/popup = new (user, "[src]", "[src]")
+	var/datum/browser/popup = new (user, "[src]", "[src]")
 	popup.set_content("<center><strong><font color = 'red'>Error</strong></font><br>Unable to connect to [flavor].<br><a href='?src=\ref[src];sync=1'>Reconnect</a></center>")
 	popup.open()
 
@@ -57,18 +51,12 @@ somewhere on that shuttle. Subtypes of these can be then used to perform ship ov
 	return TOPIC_NOACTION
 
 // Management of mob view displacement. look to shift view to the ship on the overmap; unlook to shift back.
-/obj/machinery/computer/ship/on_user_login(var/mob/M)
-	unlook(M)
 
 /obj/machinery/computer/ship/proc/look(var/mob/user)
 	if(linked)
 		user.reset_view(linked)
 	if(user.client)
 		user.client.view = world.view + extra_view
-	if(linked)
-		for(var/obj/machinery/computer/ship/sensors/sensor in linked.consoles)
-			sensor.reveal_contacts(user)
-
 	GLOB.moved_event.register(user, src, /obj/machinery/computer/ship/proc/unlook)
 	GLOB.stat_set_event.register(user, src, /obj/machinery/computer/ship/proc/unlook)
 	LAZYDISTINCTADD(viewers, weakref(user))
@@ -77,12 +65,6 @@ somewhere on that shuttle. Subtypes of these can be then used to perform ship ov
 	user.reset_view()
 	if(user.client)
 		user.client.view = world.view
-		user.client.OnResize()
-		user.reset_view()
-	if(linked)
-		for(var/obj/machinery/computer/ship/sensors/sensor in linked.consoles)
-			sensor.hide_contacts(user)
-
 	GLOB.moved_event.unregister(user, src, /obj/machinery/computer/ship/proc/unlook)
 	GLOB.stat_set_event.unregister(user, src, /obj/machinery/computer/ship/proc/unlook)
 	LAZYREMOVE(viewers, weakref(user))
@@ -105,10 +87,6 @@ somewhere on that shuttle. Subtypes of these can be then used to perform ship ov
 		return -1
 	else
 		return 0
-
-/obj/machinery/computer/ship/Destroy()
-	linked.consoles -= src
-	. = ..()
 
 /obj/machinery/computer/ship/sensors/Destroy()
 	sensors = null

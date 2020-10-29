@@ -1,44 +1,43 @@
 /obj/structure/lattice
 	name = "lattice"
 	desc = "A lightweight support lattice."
-	icon = 'icons/obj/structures/smoothlattice.dmi'
+	icon = 'icons/obj/smoothlattice.dmi'
 	icon_state = "lattice0"
 	density = 0
 	anchored = 1
 	w_class = ITEM_SIZE_NORMAL
 	layer = LATTICE_LAYER
 	color = COLOR_STEEL
-	material = /decl/material/solid/metal/steel
+	var/init_material = MATERIAL_STEEL
 	obj_flags = OBJ_FLAG_NOFALL
-	material_alteration = MAT_FLAG_ALTERATION_ALL
 
-/obj/structure/lattice/Initialize()
+/obj/structure/lattice/get_material()
+	return material
+
+/obj/structure/lattice/Initialize(mapload, var/new_material)
 	. = ..()
-	if(. != INITIALIZE_HINT_QDEL)
-		DELETE_IF_DUPLICATE_OF(/obj/structure/lattice)
-		if(!istype(material))
-			return INITIALIZE_HINT_QDEL
-		if(!istype(src.loc, /turf/space) && !istype(src.loc, /turf/simulated/open))
-			return INITIALIZE_HINT_QDEL
-		. = INITIALIZE_HINT_LATELOAD
+	DELETE_IF_DUPLICATE_OF(/obj/structure/lattice)
+	if(!(istype(src.loc, /turf/space) || istype(src.loc, /turf/simulated/open)))
+		return INITIALIZE_HINT_QDEL
+	if(!new_material)
+		new_material = init_material
+	material = SSmaterials.get_material_by_name(new_material)
+	if(!istype(material))
+		return INITIALIZE_HINT_QDEL
 
-/obj/structure/lattice/LateInitialize()
-	. = ..()
-	update_neighbors()
+	SetName("[material.display_name] lattice")
+	desc = "A lightweight support [material.display_name] lattice."
+	color =  material.icon_colour
 
-/obj/structure/lattice/update_material_desc()
-	if(material)
-		desc = "A lightweight support [material.solid_name] lattice."
-	else
-		desc = "A lightweight support [material.solid_name] lattice."
+	update_icon()
+	if(!mapload)
+		update_neighbors()
 
 /obj/structure/lattice/Destroy()
 	var/turf/old_loc = get_turf(src)
 	. = ..()
-	if(istype(old_loc))
+	if(old_loc)
 		update_neighbors(old_loc)
-		for(var/atom/movable/AM in old_loc)
-			AM.fall(old_loc)
 
 /obj/structure/lattice/proc/update_neighbors(var/location = loc)
 	for (var/dir in GLOB.cardinal)
@@ -46,53 +45,44 @@
 		if(L)
 			L.update_icon()
 
-/obj/structure/lattice/explosion_act(severity)
-	..()
-	if(!QDELETED(src) && severity <= 2)
-		physically_destroyed()
+/obj/structure/lattice/ex_act(severity)
+	if(severity <= 2)
+		qdel(src)
 
 /obj/structure/lattice/proc/deconstruct(var/mob/user)
-	to_chat(user, SPAN_NOTICE("Slicing lattice joints..."))
-	new /obj/item/stack/material/rods(loc, 1, material.type)
+	to_chat(user, "<span class='notice'>Slicing lattice joints ...</span>")
+	new /obj/item/stack/material/rods(loc, 1, material.name)
 	qdel(src)
 
-/obj/structure/lattice/attackby(obj/item/C, mob/user)
+/obj/structure/lattice/attackby(obj/item/C as obj, mob/user as mob)
 
 	if (istype(C, /obj/item/stack/tile/floor))
 		var/turf/T = get_turf(src)
 		T.attackby(C, user) //BubbleWrap - hand this off to the underlying turf instead
 		return
 	if(isWelder(C))
-		var/obj/item/weldingtool/WT = C
+		var/obj/item/weapon/weldingtool/WT = C
 		if(WT.remove_fuel(0, user))
 			deconstruct(user)
 		return
-	if(istype(C, /obj/item/gun/energy/plasmacutter))
-		var/obj/item/gun/energy/plasmacutter/cutter = C
+	if(istype(C, /obj/item/weapon/gun/energy/plasmacutter))
+		var/obj/item/weapon/gun/energy/plasmacutter/cutter = C
 		if(!cutter.slice(user))
 			return
 		deconstruct(user)
 		return
 	if (istype(C, /obj/item/stack/material/rods))
-
-		var/ladder = (locate(/obj/structure/ladder) in loc)
-		if(ladder)
-			to_chat(user, SPAN_WARNING("\The [ladder] is in the way."))
-			return TRUE
-
 		var/obj/item/stack/material/rods/R = C
-		if(locate(/obj/structure/catwalk) in get_turf(src))
-			to_chat(user, SPAN_WARNING("There is already a catwalk here."))
-			return
-		else if(R.use(2))
+		if(R.use(2))
+			src.alpha = 0
 			playsound(src, 'sound/weapons/Genhit.ogg', 50, 1)
-			new /obj/structure/catwalk(src.loc, R.material.type)
+			new /obj/structure/catwalk(src.loc)
+			qdel(src)
 			return
 		else
-			to_chat(user, SPAN_WARNING("You require at least two rods to complete the catwalk."))
+			to_chat(user, "<span class='notice'>You require at least two rods to complete the catwalk.</span>")
 
 /obj/structure/lattice/on_update_icon()
-	..()
 	var/dir_sum = 0
 	for (var/direction in GLOB.cardinal)
 		var/turf/T = get_step(src, direction)
@@ -101,4 +91,5 @@
 		else
 			if(!(istype(get_step(src, direction), /turf/space)) && !(istype(get_step(src, direction), /turf/simulated/open)))
 				dir_sum += direction
+
 	icon_state = "lattice[dir_sum]"

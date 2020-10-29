@@ -6,9 +6,9 @@
 	icon = 'icons/misc/buildmode.dmi'
 	var/datum/click_handler/build_mode/host
 
-/obj/effect/bmode/Initialize(mapload, _host)
-	. = ..(mapload)
-	host = _host
+/obj/effect/bmode/New(var/host)
+	..()
+	src.host = host
 
 /obj/effect/bmode/Destroy()
 	host = null
@@ -19,11 +19,11 @@
 
 /obj/effect/bmode/dir
 	icon_state = "build"
-	screen_loc = "TOP,LEFT"
+	screen_loc = "NORTH,WEST"
 
-/obj/effect/bmode/dir/Initialize()
-	. = ..()
-	set_dir(host.direction)
+/obj/effect/bmode/dir/New()
+	..()
+	set_dir(host.dir)
 
 /obj/effect/bmode/dir/OnClick(var/list/parameters)
 	switch(dir)
@@ -37,20 +37,20 @@
 			set_dir(NORTHWEST)
 		else
 			set_dir(SOUTH)
-	host.direction = dir
+	host.dir = dir
 
 /obj/effect/bmode/help
 	icon_state = "buildhelp"
-	screen_loc = "TOP,LEFT+1"
+	screen_loc = "NORTH,WEST+1"
 
 /obj/effect/bmode/help/OnClick()
 	host.current_build_mode.Help()
 
 /obj/effect/bmode/mode
-	screen_loc = "TOP,LEFT+2"
+	screen_loc = "NORTH,WEST+2"
 
-/obj/effect/bmode/mode/Initialize()
-	. = ..()
+/obj/effect/bmode/mode/New()
+	..()
 	icon_state = host.current_build_mode.icon_state
 
 /obj/effect/bmode/mode/OnClick(var/list/parameters)
@@ -67,7 +67,7 @@
 
 /obj/effect/bmode/quit
 	icon_state = "buildquit"
-	screen_loc = "TOP,LEFT+3"
+	screen_loc = "NORTH,WEST+3"
 
 /obj/effect/bmode/quit/OnClick()
 	usr.RemoveClickHandler(/datum/click_handler/build_mode)

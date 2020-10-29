@@ -1,5 +1,6 @@
 /mob/living/carbon/
 	gender = MALE
+	var/datum/species/species //Contains icon generation and language information, set during New().
 
 	var/life_tick = 0      // The amount of life ticks that have processed on this mob.
 	var/obj/item/handcuffed = null //Whether or not the mob is handcuffed
@@ -14,14 +15,14 @@
 	var/losebreath = 0 //if we failed to breathe last tick
 
 	var/coughedtime = null
-	var/ignore_rads = FALSE
+
 	var/cpr_time = 1.0
 	var/lastpuke = 0
 	var/nutrition = 400
 	var/hydration = 400
 
-	var/obj/item/tank/internal = null//Human/Monkey
-	var/datum/species/species //Contains icon generation and language information, set during New().
+	var/obj/item/weapon/tank/internal = null//Human/Monkey
+
 
 	//these two help govern taste. The first is the last time a taste message was shown to the plaer.
 	//the second is the message in question.

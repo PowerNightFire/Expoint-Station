@@ -14,17 +14,14 @@
 	var/head_content = ""
 	var/content = ""
 	var/title_buttons = ""
-	var/written_text = FALSE
 
-/datum/browser/written
-	written_text = TRUE
 
 /datum/browser/New(nuser, nwindow_id, ntitle = 0, nwidth = 0, nheight = 0, var/atom/nref = null)
 
 	user = nuser
 	window_id = nwindow_id
 	if (ntitle)
-		set_title(ntitle)
+		title = format_text(ntitle)
 	if (nwidth)
 		width = nwidth
 	if (nheight)
@@ -37,7 +34,7 @@
 	add_stylesheet("common", 'html/browser/common.css') // this CSS sheet is common to all UIs
 
 /datum/browser/proc/set_title(ntitle)
-	title = replacetext(replacetext(ntitle,"\proper ",""),"\improper ","")
+	title = format_text(ntitle)
 
 /datum/browser/proc/add_head_content(nhead_content)
 	head_content = nhead_content
@@ -101,13 +98,11 @@
 </html>"}
 
 /datum/browser/proc/get_content()
-	. = {"
+	return {"
 	[get_header()]
 	[content]
 	[get_footer()]
 	"}
-	if(written_text)
-		. = user.handle_reading_literacy(user, .)
 
 /datum/browser/proc/open(var/use_onclose = 1)
 	var/window_size = ""
@@ -129,16 +124,16 @@
 // This will allow you to show an icon in the browse window
 // This is added to mob so that it can be used without a reference to the browser object
 // There is probably a better place for this...
-/mob/proc/browse_rsc_icon(icon, icon_state, direction = -1)
+/mob/proc/browse_rsc_icon(icon, icon_state, dir = -1)
 	/*
 	var/icon/I
-	if (direction >= 0)
-		I = new /icon(icon, icon_state, direction)
+	if (dir >= 0)
+		I = new /icon(icon, icon_state, dir)
 	else
 		I = new /icon(icon, icon_state)
-		direction = "default"
+		dir = "default"
 
-	var/filename = "[ckey("[icon]_[icon_state]_[direction]")].png"
+	var/filename = "[ckey("[icon]_[icon_state]_[dir]")].png"
 	send_rsc(src, I, filename)
 	return filename
 	*/

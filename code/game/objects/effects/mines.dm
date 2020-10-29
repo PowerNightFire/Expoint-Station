@@ -4,25 +4,24 @@
 	density = 1
 	anchored = 1
 	layer = OBJ_LAYER
-	icon = 'icons/obj/items/weapon/landmine.dmi'
+	icon = 'icons/obj/weapons.dmi'
 	icon_state = "uglymine"
 	var/triggerproc = "explode" //name of the proc thats called when the mine is triggered
 	var/triggered = 0
 
-/obj/effect/mine/Initialize()
-	. = ..()
+/obj/effect/mine/New()
 	icon_state = "uglyminearmed"
 
-/obj/effect/mine/Crossed(atom/movable/AM)
+/obj/effect/mine/Crossed(AM as mob|obj)
 	Bumped(AM)
 
-/obj/effect/mine/Bumped(mob/M)
+/obj/effect/mine/Bumped(mob/M as mob|obj)
 
 	if(triggered) return
 
 	if(istype(M, /mob/living/carbon/human))
 		for(var/mob/O in viewers(world.view, src.loc))
-			to_chat(O, "<span class='warning'>\The [M] triggered the [html_icon(src)] [src]</span>")
+			to_chat(O, "<span class='warning'>\The [M] triggered the [icon2html(src, O)] [src]</span>")
 		triggered = 1
 		call(src,triggerproc)(M)
 
@@ -52,15 +51,16 @@
 
 	for (var/turf/simulated/floor/target in range(1,src))
 		if(!target.blocks_air)
-			target.assume_gas(/decl/material/gas/nitrous_oxide, 30)
+			target.assume_gas(GAS_N2O, 30)
 
 	spawn(0)
 		qdel(src)
 
-/obj/effect/mine/proc/triggerflame(obj)
+/obj/effect/mine/proc/triggerphoron(obj)
 	for (var/turf/simulated/floor/target in range(1,src))
 		if(!target.blocks_air)
-			target.assume_gas(/decl/material/gas/hydrogen, 30)
+			target.assume_gas(GAS_PHORON, 30)
+
 			target.hotspot_expose(1000, CELL_VOLUME)
 
 	spawn(0)
@@ -84,10 +84,10 @@
 	icon_state = "uglymine"
 	triggerproc = "triggerrad"
 
-/obj/effect/mine/flame
-	name = "Incendiary Mine"
+/obj/effect/mine/phoron
+	name = "Phoron Mine"
 	icon_state = "uglymine"
-	triggerproc = "triggerflame"
+	triggerproc = "triggerphoron"
 
 /obj/effect/mine/kick
 	name = "Kick Mine"

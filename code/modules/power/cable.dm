@@ -70,21 +70,28 @@ By design, d1 is the smallest direction and d2 is the highest
 /obj/structure/cable/white
 	color = COLOR_SILVER
 
-/obj/structure/cable/Initialize(var/ml)
-	. = ..(ml)
+/obj/structure/cable/New()
+	..()
+
 	// ensure d1 & d2 reflect the icon_state for entering and exiting cable
+
 	var/dash = findtext(icon_state, "-")
-	d1 = text2num(copytext(icon_state, 1, dash))
-	d2 = text2num(copytext(icon_state, dash+1))
+
+	d1 = text2num( copytext( icon_state, 1, dash ) )
+
+	d2 = text2num( copytext( icon_state, dash+1 ) )
+
 	var/turf/T = src.loc			// hide if turf is not intact
-	if(level==1 && T) hide(!T.is_plating())
+	if(level==1) hide(!T.is_plating())
 	cable_list += src //add it to the global cable list
+
 
 /obj/structure/cable/Destroy()     // called when a cable is deleted
 	if(powernet)
 		cut_cable_from_powernet()  // update the powernets
 	cable_list -= src              // remove it from global cable list
 	. = ..()                       // then go ahead and delete the cable
+
 
 // Ghost examining the cable -> tells him the power
 /obj/structure/cable/attack_ghost(mob/user)
@@ -215,14 +222,20 @@ By design, d1 is the smallest direction and d2 is the highest
 			return 1
 	return 0
 
-/obj/structure/cable/create_dismantled_products(turf/T)
-	new /obj/item/stack/cable_coil(loc, (d1 ? 2 : 1), color)
-
 //explosion handling
-/obj/structure/cable/explosion_act(severity)
-	. = ..()
-	if(. && (severity == 1 || (severity == 2 && prob(50)) || (severity == 3 && prob(25))))
-		physically_destroyed()
+/obj/structure/cable/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			qdel(src)
+		if(2.0)
+			if (prob(50))
+				new/obj/item/stack/cable_coil(src.loc, src.d1 ? 2 : 1, color)
+				qdel(src)
+
+		if(3.0)
+			if (prob(25))
+				new/obj/item/stack/cable_coil(src.loc, src.d1 ? 2 : 1, color)
+				qdel(src)
 
 obj/structure/cable/proc/cableColor(var/colorC)
 	var/color_n = "#dd0000"
@@ -467,19 +480,18 @@ obj/structure/cable/proc/cableColor(var/colorC)
 	w_class = ITEM_SIZE_NORMAL
 	throw_speed = 2
 	throw_range = 5
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE
-	)
+	matter = list(MATERIAL_STEEL = 50, MATERIAL_GLASS = 20, MATERIAL_PLASTIC = 20)
 	obj_flags = OBJ_FLAG_CONDUCTIBLE
-	slot_flags = SLOT_LOWER_BODY
+	slot_flags = SLOT_BELT
 	item_state = "coil"
 	attack_verb = list("whipped", "lashed", "disciplined", "flogged")
 	stacktype = /obj/item/stack/cable_coil
 
 /obj/item/stack/cable_coil/single
 	amount = 1
+
+/obj/item/stack/cable_coil/single/New(var/loc, var/length = 1, var/param_color = null)
+	..(loc, length, param_color)
 
 /obj/item/stack/cable_coil/cyborg
 	name = "cable coil synthesizer"
@@ -489,8 +501,8 @@ obj/structure/cable/proc/cableColor(var/colorC)
 	uses_charge = 1
 	charge_costs = list(1)
 
-/obj/item/stack/cable_coil/Initialize(mapload, length = MAXCOIL, var/param_color = null)
-	. = ..(mapload, length)
+/obj/item/stack/cable_coil/New(loc, length = MAXCOIL, var/param_color = null)
+	..()
 	src.amount = length
 	if (param_color) // It should be red by default, so only recolor it if parameter was specified.
 		color = param_color
@@ -508,7 +520,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		var/obj/item/organ/external/S = H.organs_by_name[user.zone_sel.selecting]
 
 		if (!S) return
-		if(!BP_IS_PROSTHETIC(S) || user.a_intent != I_HELP)
+		if(!BP_IS_ROBOTIC(S) || user.a_intent != I_HELP)
 			return ..()
 
 		if(BP_IS_BRITTLE(S))
@@ -579,7 +591,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		if(!src.use(15))
 			to_chat(usr, "<span class='warning'>You need at least 15 lengths to make restraints!</span>")
 			return
-		var/obj/item/handcuffs/cable/B = new /obj/item/handcuffs/cable(usr.loc)
+		var/obj/item/weapon/handcuffs/cable/B = new /obj/item/weapon/handcuffs/cable(usr.loc)
 		B.color = color
 		to_chat(usr, "<span class='notice'>You wind some cable together to make some restraints.</span>")
 	else
@@ -780,8 +792,8 @@ obj/structure/cable/proc/cableColor(var/colorC)
 /obj/item/stack/cable_coil/cut
 	item_state = "coil2"
 
-/obj/item/stack/cable_coil/cut/Initialize()
-	. = ..()
+/obj/item/stack/cable_coil/cut/New(loc)
+	..()
 	src.amount = rand(1,2)
 	update_icon()
 	update_wclass()
@@ -807,9 +819,9 @@ obj/structure/cable/proc/cableColor(var/colorC)
 /obj/item/stack/cable_coil/white
 	color = COLOR_SILVER
 
-/obj/item/stack/cable_coil/random/Initialize()
+/obj/item/stack/cable_coil/random/New()
 	color = GLOB.possible_cable_colours[pick(GLOB.possible_cable_colours)]
-	. = ..()
+	..()
 
 // Produces cable coil from a rig power cell.
 /obj/item/stack/cable_coil/fabricator
@@ -828,13 +840,13 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		return R.get_cell()
 
 /obj/item/stack/cable_coil/fabricator/use(var/used)
-	var/obj/item/cell/cell = get_cell()
+	var/obj/item/weapon/cell/cell = get_cell()
 	if(cell) cell.use(used * cost_per_cable)
 
 /obj/item/stack/cable_coil/fabricator/get_amount()
-	var/obj/item/cell/cell = get_cell()
+	var/obj/item/weapon/cell/cell = get_cell()
 	. = (cell ? Floor(cell.charge / cost_per_cable) : 0)
 
 /obj/item/stack/cable_coil/fabricator/get_max_amount()
-	var/obj/item/cell/cell = get_cell()
+	var/obj/item/weapon/cell/cell = get_cell()
 	. = (cell ? Floor(cell.maxcharge / cost_per_cable) : 0)

@@ -1,8 +1,8 @@
-/obj/item/clothing/under/Initialize()
-	. = ..()
+/obj/item/clothing/under/New()
 	set_extension(src, /datum/extension/interactive/multitool/items/clothing)
+	..()
 
-/datum/extension/interactive/multitool/items/clothing/interact(var/obj/item/multitool/M, var/mob/user)
+/datum/extension/interactive/multitool/items/clothing/interact(var/obj/item/device/multitool/M, var/mob/user)
 	if(extension_status(user) != STATUS_INTERACTIVE)
 		return
 	var/obj/item/clothing/under/u = holder

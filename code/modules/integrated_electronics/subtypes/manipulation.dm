@@ -23,7 +23,7 @@
 		"switch mode" = IC_PINTYPE_PULSE_IN
 
 	)
-	var/obj/item/gun/energy/installed_gun = null
+	var/obj/item/weapon/gun/energy/installed_gun = null
 	spawn_flags = IC_SPAWN_RESEARCH
 	action_flags = IC_ACTION_COMBAT
 	power_draw_per_use = 30
@@ -35,8 +35,8 @@
 	return ..()
 
 /obj/item/integrated_circuit/manipulation/weapon_firing/attackby(var/obj/O, var/mob/user)
-	if(istype(O, /obj/item/gun/energy))
-		var/obj/item/gun/energy/gun = O
+	if(istype(O, /obj/item/weapon/gun/energy))
+		var/obj/item/weapon/gun/energy/gun = O
 		if(installed_gun)
 			to_chat(user, "<span class='warning'>There's already a weapon installed.</span>")
 			return
@@ -165,7 +165,7 @@
 	activators = list("prime grenade" = IC_PINTYPE_PULSE_IN)
 	spawn_flags = IC_SPAWN_RESEARCH
 	action_flags = IC_ACTION_COMBAT
-	var/obj/item/grenade/attached_grenade
+	var/obj/item/weapon/grenade/attached_grenade
 	var/pre_attached_grenade_type
 
 /obj/item/integrated_circuit/manipulation/grenade/Initialize()
@@ -180,7 +180,7 @@
 	detach_grenade()
 	return ..()
 
-/obj/item/integrated_circuit/manipulation/grenade/attackby(var/obj/item/grenade/G, var/mob/user)
+/obj/item/integrated_circuit/manipulation/grenade/attackby(var/obj/item/weapon/grenade/G, var/mob/user)
 	if(istype(G))
 		if(attached_grenade)
 			to_chat(user, "<span class='warning'>There is already a grenade attached!</span>")
@@ -207,12 +207,12 @@
 			dt = Clamp(detonation_time.data, 1, 12)*10
 		else
 			dt = 15
-		addtimer(CALLBACK(attached_grenade, /obj/item/grenade.proc/activate), dt)
+		addtimer(CALLBACK(attached_grenade, /obj/item/weapon/grenade.proc/activate), dt)
 		var/atom/holder = loc
 		log_and_message_admins("activated a grenade assembly. Last touches: Assembly: [holder.fingerprintslast] Circuit: [fingerprintslast] Grenade: [attached_grenade.fingerprintslast]")
 
 // These procs do not relocate the grenade, that's the callers responsibility
-/obj/item/integrated_circuit/manipulation/grenade/proc/attach_grenade(var/obj/item/grenade/G)
+/obj/item/integrated_circuit/manipulation/grenade/proc/attach_grenade(var/obj/item/weapon/grenade/G)
 	attached_grenade = G
 	G.forceMove(src)
 	desc += " \An [attached_grenade] is attached to it!"
@@ -312,7 +312,7 @@
 
 /obj/item/integrated_circuit/manipulation/seed_extractor/do_work()
 	..()
-	var/obj/item/chems/food/snacks/grown/O = get_pin_data_as_type(IC_INPUT, 1, /obj/item/chems/food/snacks/grown)
+	var/obj/item/weapon/reagent_containers/food/snacks/grown/O = get_pin_data_as_type(IC_INPUT, 1, /obj/item/weapon/reagent_containers/food/snacks/grown)
 	if(!check_target(O))
 		push_data()
 		activate_pin(2)
@@ -351,7 +351,7 @@
 	var/atom/movable/acting_object = get_object()
 	var/turf/T = get_turf(acting_object)
 	var/obj/item/AM = get_pin_data_as_type(IC_INPUT, 1, /obj/item)
-	if(!QDELETED(AM) && !istype(AM, /obj/item/electronic_assembly) && !istype(AM, /obj/item/transfer_valve) && !istype(AM, /obj/item/twohanded) && !istype(assembly.loc, /obj/item/implant))
+	if(!QDELETED(AM) && !istype(AM, /obj/item/device/electronic_assembly) && !istype(AM, /obj/item/device/transfer_valve) && !istype(AM, /obj/item/weapon/material/twohanded) && !istype(assembly.loc, /obj/item/weapon/implant))
 		var/mode = get_pin_data(IC_INPUT, 2)
 		if(mode == 1)
 			if(check_target(AM))
@@ -495,10 +495,10 @@
 	var/target_y_rel = round(get_pin_data(IC_INPUT, 2))
 	var/obj/item/A = get_pin_data_as_type(IC_INPUT, 3, /obj/item)
 
-	if(!A || A.anchored || A.throwing || A == assembly || istype(A, /obj/item/twohanded) || istype(A, /obj/item/transfer_valve))
+	if(!A || A.anchored || A.throwing || A == assembly || istype(A, /obj/item/weapon/material/twohanded) || istype(A, /obj/item/device/transfer_valve))
 		return
 
-	if (istype(assembly.loc, /obj/item/implant/compressed)) //Prevents the more abusive form of chestgun.
+	if (istype(assembly.loc, /obj/item/weapon/implant/compressed)) //Prevents the more abusive form of chestgun.
 		return
 
 	if(A.w_class > assembly.w_class)
@@ -537,9 +537,9 @@
 	if(istype(G))
 		G.update_outputs()
 
-/obj/item/integrated_circuit/manipulation/wormhole
-	name = "wormhole generator"
-	desc = "This powerful circuit can open micro-length wormholes between two points in space."
+/obj/item/integrated_circuit/manipulation/bluespace_rift
+	name = "bluespace rift generator"
+	desc = "This powerful circuit can open rifts to another realspace location through bluespace."
 	extended_desc = "If a valid teleporter console is supplied as input then its selected teleporter beacon will be used as destination point, \
 					and if not an undefined destination point is selected. \
 					Rift direction is a cardinal value determening in which direction the rift will be opened, relative the local north. \
@@ -552,21 +552,16 @@
 	inputs = list("teleporter", "rift direction")
 	outputs = list()
 	activators = list("open rift" = IC_PINTYPE_PULSE_IN)
-	spawn_flags = IC_SPAWN_RESEARCH
 	action_flags = IC_ACTION_LONG_RANGE
 
-	origin_tech = "{'magnets':1,'wormholes':3}"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/metal/silver = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE
-	)
+	origin_tech = list(TECH_MAGNET = 1, TECH_BLUESPACE = 3)
+	matter = list(MATERIAL_STEEL = 10000, MATERIAL_SILVER = 2000, MATERIAL_GOLD = 200)
 
-/obj/item/integrated_circuit/manipulation/wormhole/do_work()
+/obj/item/integrated_circuit/manipulation/bluespace_rift/do_work()
 	var/obj/machinery/computer/teleporter/tporter = get_pin_data_as_type(IC_INPUT, 1, /obj/machinery/computer/teleporter)
 	var/step_dir = get_pin_data(IC_INPUT, 2)
 
-	if(!ARE_Z_CONNECTED(get_z(src), get_z(tporter)))
+	if(!AreConnectedZLevels(get_z(src), get_z(tporter)))
 		tporter = null
 
 	var/turf/rift_location = get_turf(src)
@@ -577,7 +572,7 @@
 	if(isnum(step_dir) && (!step_dir || (step_dir in GLOB.cardinal)))
 		rift_location = get_step(rift_location, step_dir) || rift_location
 	else
-		var/obj/item/electronic_assembly/assembly = get_object()
+		var/obj/item/device/electronic_assembly/assembly = get_object()
 		if(assembly)
 			rift_location = get_step(rift_location, assembly.dir) || rift_location
 
@@ -603,7 +598,7 @@
 	power_draw_per_use = 20
 	var/obj/item/aicard
 	activators = list("Upwards" = IC_PINTYPE_PULSE_OUT, "Downwards" = IC_PINTYPE_PULSE_OUT, "Left" = IC_PINTYPE_PULSE_OUT, "Right" = IC_PINTYPE_PULSE_OUT)
-	origin_tech = "{'programming':4}"
+	origin_tech = list(TECH_DATA = 4)
 	spawn_flags = IC_SPAWN_RESEARCH
 
 /obj/item/integrated_circuit/manipulation/ai/verb/open_menu()
@@ -612,7 +607,7 @@
 	set category = "Object"
 	set src = usr.loc
 
-	var/obj/item/electronic_assembly/assembly = get_object()
+	var/obj/item/device/electronic_assembly/assembly = get_object()
 	assembly.closed_interact(usr)
 
 /obj/item/integrated_circuit/manipulation/ai/relaymove(var/mob/user, var/direction)
@@ -651,7 +646,7 @@
 
 
 /obj/item/integrated_circuit/manipulation/ai/attackby(var/obj/item/I, var/mob/user)
-	if(is_type_in_list(I, list(/obj/item/aicard, /obj/item/paicard, /obj/item/mmi)))
+	if(is_type_in_list(I, list(/obj/item/weapon/aicard, /obj/item/device/paicard, /obj/item/device/mmi)))
 		load_ai(user, I)
 	else return ..()
 
@@ -678,7 +673,7 @@
 	cooldown_per_use = 2 SECOND
 	power_draw_per_use = 50
 	spawn_flags = IC_SPAWN_DEFAULT
-	origin_tech = "{'engineering':2}"
+	origin_tech = list(TECH_ENGINEERING = 2)
 
 /obj/item/integrated_circuit/manipulation/anchoring/do_work(ord)
 	if(!isturf(assembly.loc))
@@ -721,7 +716,7 @@
 	cooldown_per_use = 2 SECOND
 	power_draw_per_use = 50
 	spawn_flags = IC_SPAWN_DEFAULT
-	origin_tech = "{'engineering':2}"
+	origin_tech = list(TECH_ENGINEERING = 2)
 
 	var/lock_enabled = FALSE
 

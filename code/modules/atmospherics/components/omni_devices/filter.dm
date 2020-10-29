@@ -18,11 +18,6 @@
 
 	var/list/filtering_outputs = list()	//maps gasids to gas_mixtures
 	build_icon_state = "omni_filter"
-	base_type = /obj/machinery/atmospherics/omni/filter/buildable
-
-/obj/machinery/atmospherics/omni/filter/buildable
-	uncreated_component_parts = null
-
 /obj/machinery/atmospherics/omni/filter/Initialize()
 	. = ..()
 	rebuild_filtering_list()
@@ -82,6 +77,10 @@
 	if (transfer_moles > MINIMUM_MOLES_TO_FILTER)
 		power_draw = filter_gas_multi(src, filtering_outputs, input_air, output_air, transfer_moles, power_rating)
 
+	if (power_draw >= 0)
+		last_power_draw = power_draw
+		use_power_oneoff(power_draw)
+
 		if(input.network)
 			input.network.update = 1
 		if(output.network)
@@ -89,10 +88,6 @@
 		for(var/datum/omni_port/P in gas_filters)
 			if(P.network)
 				P.network.update = 1
-
-	if (power_draw >= 0)
-		last_power_draw = power_draw
-		use_power_oneoff(power_draw)
 
 	return 1
 
@@ -136,7 +131,7 @@
 			if(ATM_O2 to ATM_H2)
 				f_type = mode_send_switch(P.mode)
 
-		portData[++portData.len] = list("dir" = dir_name(P.direction, capitalize = 1), \
+		portData[++portData.len] = list("dir" = dir_name(P.dir, capitalize = 1), \
 										"input" = input, \
 										"output" = output, \
 										"filter" = is_filter, \
@@ -158,6 +153,8 @@
 			return "Nitrogen"
 		if(ATM_CO2)
 			return "Carbon Dioxide"
+		if(ATM_P)
+			return "Phoron" //*cough* Plasma *cough*
 		if(ATM_N2O)
 			return "Nitrous Oxide"
 		if(ATM_H2)
@@ -187,7 +184,7 @@
 			if("switch_mode")
 				switch_mode(dir_flag(href_list["dir"]), mode_return_switch(href_list["mode"]))
 			if("switch_filter")
-				var/new_filter = input(usr,"Select filter mode:","Change filter",href_list["mode"]) in list("None", "Oxygen", "Nitrogen", "Carbon Dioxide", "Nitrous Oxide", "Hydrogen")
+				var/new_filter = input(usr,"Select filter mode:","Change filter",href_list["mode"]) in list("None", "Oxygen", "Nitrogen", "Carbon Dioxide", "Phoron", "Nitrous Oxide", "Hydrogen")
 				switch_filter(dir_flag(href_list["dir"]), mode_return_switch(new_filter))
 
 	update_icon()
@@ -202,6 +199,8 @@
 			return ATM_N2
 		if("Carbon Dioxide")
 			return ATM_CO2
+		if("Phoron")
+			return ATM_P
 		if("Nitrous Oxide")
 			return ATM_N2O
 		if("Hydrogen")
@@ -218,7 +217,7 @@
 /obj/machinery/atmospherics/omni/filter/proc/switch_filter(var/dir, var/mode)
 	//check they aren't trying to disable the input or output ~this can only happen if they hack the cached tmpl file
 	for(var/datum/omni_port/P in ports)
-		if(P.direction == dir)
+		if(P.dir == dir)
 			if(P.mode == ATM_INPUT || P.mode == ATM_OUTPUT)
 				return
 
@@ -231,7 +230,7 @@
 	var/list/other_ports = new()
 
 	for(var/datum/omni_port/P in ports)
-		if(P.direction == port)
+		if(P.dir == port)
 			target_port = P
 		else
 			other_ports += P
@@ -267,9 +266,9 @@
 /obj/machinery/atmospherics/omni/filter/proc/handle_port_change(var/datum/omni_port/P)
 	switch(P.mode)
 		if(ATM_NONE)
-			initialize_directions &= ~P.direction
+			initialize_directions &= ~P.dir
 			P.disconnect()
 		else
-			initialize_directions |= P.direction
+			initialize_directions |= P.dir
 			P.connect()
 	P.update = 1

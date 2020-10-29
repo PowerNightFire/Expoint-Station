@@ -33,14 +33,11 @@ var/global/list/default_pai_software = list()
 			default_pai_software[P.id] = P
 	return r
 
-/mob/living/silicon/pai/Initialize()
-	. = ..()
+/mob/living/silicon/pai/New()
+	..()
 	software = default_pai_software.Copy()
 
-/mob/living/silicon/pai/verb/paiInterface()
-	set category = "pAI Commands"
-	set name = "Software Interface"
-
+/mob/living/silicon/pai/proc/paiInterface()
 	ui_interact(src)
 
 /mob/living/silicon/pai/ui_interact(mob/user, ui_key = "main", datum/nanoui/ui = null, force_open = 1)

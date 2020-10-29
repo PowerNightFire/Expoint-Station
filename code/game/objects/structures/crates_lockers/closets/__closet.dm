@@ -4,13 +4,14 @@
 	icon = 'icons/obj/closets/bases/closet.dmi'
 	icon_state = "base"
 	density = 1
-	maxhealth = 100
+	w_class = ITEM_SIZE_NO_CONTAINER
 
 	var/welded = 0
 	var/large = 1
 	var/wall_mounted = 0 //never solid (You can always pass over it)
+	var/health = 100
 	var/breakout = 0 //if someone is currently breaking out. mutex
-	var/storage_capacity = 2 * MOB_SIZE_MEDIUM //This is so that someone can't pack hundreds of items in a locker/crate
+	var/storage_capacity = 2 * MOB_MEDIUM //This is so that someone can't pack hundreds of items in a locker/crate
 							  //then open it in a populated area to crash clients.
 	var/open_sound = 'sound/effects/closet_open.ogg'
 	var/close_sound = 'sound/effects/closet_close.ogg'
@@ -85,6 +86,16 @@
 			return 0
 	return 1
 
+/obj/structure/closet/proc/dump_contents()
+	for(var/mob/M in src)
+		M.dropInto(loc)
+		if(M.client)
+			M.client.eye = M.client.mob
+			M.client.perspective = MOB_PERSPECTIVE
+
+	for(var/atom/movable/AM in src)
+		AM.dropInto(loc)
+
 /obj/structure/closet/proc/store_contents()
 	var/stored_units = 0
 
@@ -94,7 +105,7 @@
 		stored_units += store_mobs(stored_units)
 	if(storage_types & CLOSET_STORAGE_STRUCTURES)
 		stored_units += store_structures(stored_units)
-		
+
 /obj/structure/closet/proc/open()
 	if(src.opened)
 		return 0
@@ -102,7 +113,7 @@
 	if(!src.can_open())
 		return 0
 
-	dump_contents()
+	src.dump_contents()
 
 	src.opened = 1
 	playsound(src.loc, open_sound, 50, 1, -3)
@@ -197,10 +208,10 @@
 		var/obj/item/I = AM
 		return (I.w_class / 2)
 	if(istype(AM, /obj/structure) || istype(AM, /obj/machinery))
-		return MOB_SIZE_LARGE
+		return MOB_LARGE
 	return 0
 
-/obj/structure/closet/proc/toggle(mob/user)
+/obj/structure/closet/proc/toggle(mob/user as mob)
 	if(locked)
 		togglelock(user)
 	else if(!(src.opened ? src.close() : src.open()))
@@ -208,49 +219,66 @@
 		update_icon()
 
 // this should probably use dump_contents()
-/obj/structure/closet/explosion_act(severity)
-	..()
-	if(!QDELETED(src) && (severity == 1 || (severity == 2 && prob(50)) || (severity == 3 && prob(5))))
-		physically_destroyed()
+/obj/structure/closet/ex_act(severity)
+	switch(severity)
+		if(1)
+			for(var/atom/movable/A in src)//pulls everything out of the locker and hits it with an explosion
+				A.forceMove(src.loc)
+				A.ex_act(severity + 1)
+			qdel(src)
+		if(2)
+			if(prob(50))
+				for (var/atom/movable/A in src)
+					A.forceMove(src.loc)
+					A.ex_act(severity + 1)
+				qdel(src)
+		if(3)
+			if(prob(5))
+				for(var/atom/movable/A in src)
+					A.forceMove(src.loc)
+				qdel(src)
+
+/obj/structure/closet/proc/damage(var/damage)
+	health -= damage
+	if(health <= 0)
+		for(var/atom/movable/A in src)
+			A.forceMove(src.loc)
+		qdel(src)
 
 /obj/structure/closet/bullet_act(var/obj/item/projectile/Proj)
+	var/proj_damage = Proj.get_structure_damage()
+	if(proj_damage)
+		..()
+		damage(proj_damage)
+
 	if(Proj.penetrating)
 		var/distance = get_dist(Proj.starting, get_turf(loc))
 		for(var/mob/living/L in contents)
 			Proj.attack_mob(L, distance)
 			if(!(--Proj.penetrating))
 				break
-	var/proj_damage = Proj.get_structure_damage()
-	if(proj_damage)
-		..()
-		take_damage(proj_damage)
 
-/obj/structure/closet/attackby(obj/item/W, mob/user)
-	
-	if(user.a_intent == I_HURT && W.force)
-		return ..()
+	return
 
-	if(!opened && istype(W, /obj/item/stack/material))
-		return ..()
-
+/obj/structure/closet/attackby(obj/item/W as obj, mob/user as mob)
 	if(src.opened)
 		if(istype(W, /obj/item/grab))
 			var/obj/item/grab/G = W
 			src.MouseDrop_T(G.affecting, user)      //act like they were dragged onto the closet
 			return 0
 		if(isWelder(W))
-			var/obj/item/weldingtool/WT = W
+			var/obj/item/weapon/weldingtool/WT = W
 			if(WT.remove_fuel(0,user))
 				slice_into_parts(WT, user)
 				return
-		if(istype(W, /obj/item/gun/energy/plasmacutter))
-			var/obj/item/gun/energy/plasmacutter/cutter = W
+		if(istype(W, /obj/item/weapon/gun/energy/plasmacutter))
+			var/obj/item/weapon/gun/energy/plasmacutter/cutter = W
 			if(!cutter.slice(user))
 				return
 			slice_into_parts(W, user)
 			return
-		if(istype(W, /obj/item/storage/laundry_basket) && W.contents.len)
-			var/obj/item/storage/laundry_basket/LB = W
+		if(istype(W, /obj/item/weapon/storage/laundry_basket) && W.contents.len)
+			var/obj/item/weapon/storage/laundry_basket/LB = W
 			var/turf/T = get_turf(src)
 			for(var/obj/item/I in LB.contents)
 				LB.remove_from_storage(I, T, 1)
@@ -266,7 +294,7 @@
 			W.pixel_z = 0
 			W.pixel_w = 0
 		return
-	else if(istype(W, /obj/item/energy_blade/blade))
+	else if(istype(W, /obj/item/weapon/melee/energy/blade))
 		if(emag_act(INFINITY, user, "<span class='danger'>The locker has been sliced open by [user] with \an [W]</span>!", "<span class='danger'>You hear metal being sliced and sparks flying.</span>"))
 			var/datum/effect/effect/system/spark_spread/spark_system = new /datum/effect/effect/system/spark_spread()
 			spark_system.set_up(5, 0, src.loc)
@@ -277,7 +305,7 @@
 	else if(istype(W, /obj/item/stack/package_wrap))
 		return
 	else if(isWelder(W) && (setup & CLOSET_CAN_BE_WELDED))
-		var/obj/item/weldingtool/WT = W
+		var/obj/item/weapon/weldingtool/WT = W
 		if(!WT.remove_fuel(0,user))
 			if(!WT.isOn())
 				return
@@ -297,9 +325,11 @@
 	user.visible_message("<span class='notice'>\The [src] has been cut apart by [user] with \the [W].</span>", \
 						 "<span class='notice'>You have cut \the [src] apart with \the [W].</span>", \
 						 "You hear welding.")
-	dismantle(src)
+	qdel(src)
 
-/obj/structure/closet/MouseDrop_T(atom/movable/O, mob/user)
+/obj/structure/closet/MouseDrop_T(atom/movable/O as mob|obj, mob/user as mob)
+	if (!O)
+		return
 	if(istype(O, /obj/screen))	//fix for HUD elements making their way into the world	-Pete
 		return
 	if(O.loc == user)
@@ -326,14 +356,14 @@
 	if(istype(user, /mob/living/silicon/robot) && Adjacent(user)) // Robots can open/close it, but not the AI.
 		attack_hand(user)
 
-/obj/structure/closet/relaymove(mob/user)
+/obj/structure/closet/relaymove(mob/user as mob)
 	if(user.stat || !isturf(src.loc))
 		return
 
 	if(!src.open())
 		to_chat(user, "<span class='notice'>It won't budge!</span>")
 
-/obj/structure/closet/attack_hand(mob/user)
+/obj/structure/closet/attack_hand(mob/user as mob)
 	src.add_fingerprint(user)
 	src.toggle(user)
 
@@ -370,6 +400,12 @@
 			else
 				icon_state = "closed_unlocked[welded ? "_welded" : ""]"
 			overlays.Cut()
+
+/obj/structure/closet/take_damage(damage)
+	health -= damage
+	if(health <= 0)
+		dump_contents()
+		qdel(src)
 
 /obj/structure/closet/proc/req_breakout()
 	if(opened)
@@ -421,7 +457,7 @@
 	if((setup & CLOSET_HAS_LOCK) && locked)
 		make_broken()
 
-	//Do this to prevent contents from being opened into nullspace
+	//Do this to prevent contents from being opened into nullspace (read: bluespace)
 	if(istype(loc, /obj/structure/bigDelivery))
 		var/obj/structure/bigDelivery/BD = loc
 		BD.unwrap()
@@ -438,7 +474,7 @@
 
 	return togglelock(usr)
 
-/obj/structure/closet/proc/togglelock(var/mob/user, var/obj/item/card/id/id_card)
+/obj/structure/closet/proc/togglelock(var/mob/user, var/obj/item/weapon/card/id/id_card)
 	if(!(setup & CLOSET_HAS_LOCK))
 		return FALSE
 	if(!CanPhysicallyInteract(user))
@@ -458,7 +494,8 @@
 	if(!id_card)
 		id_card = user.GetIdCard()
 
-	if(!user.check_dexterity(DEXTERITY_COMPLEX_TOOLS))
+	if(!user.IsAdvancedToolUser())
+		to_chat(user, FEEDBACK_YOU_LACK_DEXTERITY)
 		return FALSE
 
 	if(CanToggleLock(user, id_card))
@@ -470,7 +507,7 @@
 		to_chat(user, "<span class='warning'>Access denied!</span>")
 		return FALSE
 
-/obj/structure/closet/proc/CanToggleLock(var/mob/user, var/obj/item/card/id/id_card)
+/obj/structure/closet/proc/CanToggleLock(var/mob/user, var/obj/item/weapon/card/id/id_card)
 	return allowed(user) || (istype(id_card) && check_access_list(id_card.GetAccess()))
 
 /obj/structure/closet/AltClick(var/mob/user)
@@ -481,6 +518,7 @@
 
 /obj/structure/closet/CtrlAltClick(var/mob/user)
 	verb_toggleopen()
+	return 1
 
 /obj/structure/closet/emp_act(severity)
 	for(var/obj/O in src)
@@ -493,7 +531,8 @@
 			if(!locked)
 				open()
 			else
-				req_access = list(pick(get_all_station_access()))
+				src.req_access = list()
+				src.req_access += pick(get_all_station_access())
 	..()
 
 /obj/structure/closet/emag_act(var/remaining_charges, var/mob/user, var/emag_source, var/visual_feedback = "", var/audible_feedback = "")

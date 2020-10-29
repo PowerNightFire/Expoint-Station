@@ -28,12 +28,11 @@
 	name = "heavy arms"
 	exosuit_desc_string = "super-heavy reinforced manipulators"
 	icon_state = "heavy_arms"
-	desc = "Designed to function where any other piece of equipment would have long fallen apart, the Superheavy Lifter series can take a beating and excel at delivering it."
+	desc = "Designed to function where any other piece of equipment would have long fallen apart, the Hephaestus Superheavy Lifter series can take a beating and excel at delivering it."
 	melee_damage = 25
 	action_delay = 15
 	max_damage = 90
 	power_use = 60
-	material = /decl/material/solid/metal/steel
 
 /obj/item/mech_component/propulsion/heavy
 	name = "heavy legs"
@@ -44,7 +43,6 @@
 	turn_delay = 5
 	max_damage = 160
 	power_use = 100
-	material = /decl/material/solid/metal/steel
 
 /obj/item/mech_component/sensors/heavy
 	name = "heavy sensors"
@@ -53,7 +51,6 @@
 	icon_state = "heavy_head"
 	max_damage = 120
 	power_use = 0
-	material = /decl/material/solid/metal/steel
 
 /obj/item/mech_component/sensors/heavy/prebuild()
 	..()
@@ -71,8 +68,6 @@
 	mech_health = 500
 	power_use = 50
 	has_hardpoints = list(HARDPOINT_BACK)
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/metal/uranium = MATTER_AMOUNT_REINFORCEMENT)
 
 /obj/item/mech_component/chassis/heavy/prebuild()
 	. = ..()

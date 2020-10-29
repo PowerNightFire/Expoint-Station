@@ -19,12 +19,11 @@ var/global/list/protected_objects = list(/obj/machinery,
 /mob/living/simple_animal/hostile/mimic
 	name = "crate"
 	desc = "A rectangular steel crate."
-	icon =  'icons/obj/closets/bases/crate.dmi'
-	color = COLOR_STEEL
+	icon = 'icons/obj/storage.dmi'
 	icon_state = "crate"
 	icon_living = "crate"
 
-	meat_type = /obj/item/chems/food/snacks/fish
+	meat_type = /obj/item/weapon/reagent_containers/food/snacks/fish
 	response_help = "touches"
 	response_disarm = "pushes"
 	response_harm = "hits"
@@ -33,7 +32,10 @@ var/global/list/protected_objects = list(/obj/machinery,
 	health = 100
 
 	harm_intent_damage = 5
-	natural_weapon = /obj/item/natural_weapon/bite
+	melee_damage_lower = 8
+	melee_damage_upper = 12
+	attacktext = "attacked"
+	attack_sound = 'sound/weapons/bite.ogg'
 
 	min_gas = null
 	max_gas = null
@@ -48,11 +50,11 @@ var/global/list/protected_objects = list(/obj/machinery,
 	var/knockdown_people = 0
 	pass_flags = PASS_FLAG_TABLE
 
-/mob/living/simple_animal/hostile/mimic/Initialize(mapload, var/obj/o, var/mob/living/creator)
-	. = ..()
+/mob/living/simple_animal/hostile/mimic/New(newloc, var/obj/o, var/mob/living/creator)
+	..()
 	if(o)
 		if(ispath(o))
-			o = new o(loc)
+			o = new o(newloc)
 		CopyObject(o,creator)
 
 /mob/living/simple_animal/hostile/mimic/FindTarget()
@@ -73,17 +75,19 @@ var/global/list/protected_objects = list(/obj/machinery,
 		copy_of = weakref(O)
 		appearance = O
 		icon_living = icon_state
-		var/obj/item/W = get_natural_weapon()
+
 		if(istype(O, /obj/structure))
 			health = (anchored * 50) + 50
 			destroy_objects = 1
 			if(O.density && O.anchored)
 				knockdown_people = 1
-				W.force = 2 * initial(W.force)
+				melee_damage_lower *= 2
+				melee_damage_upper *= 2
 		else if(istype(O, /obj/item))
 			var/obj/item/I = O
 			health = 15 * I.w_class
-			W.force = 2 + initial(I.force)
+			melee_damage_lower = 2 + I.force
+			melee_damage_upper = 2 + I.force
 			move_to_delay = 2 * I.w_class
 
 		maxHealth = health
@@ -105,8 +109,8 @@ var/global/list/protected_objects = list(/obj/machinery,
 			for(var/atom/movable/M in src)
 				M.forceMove(C)
 
-		if(istype(C,/obj/item/storage))
-			var/obj/item/storage/S = C
+		if(istype(C,/obj/item/weapon/storage))
+			var/obj/item/weapon/storage/S = C
 			for(var/atom/movable/M in src)
 				if(S.can_be_inserted(M,null,1))
 					S.handle_item_insertion(M)

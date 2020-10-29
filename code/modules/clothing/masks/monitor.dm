@@ -4,7 +4,7 @@
 	name = "display monitor"
 	desc = "A rather clunky old CRT-style display screen, fit for mounting on an optical output."
 	flags_inv = HIDEEYES
-	body_parts_covered = SLOT_EYES
+	body_parts_covered = EYES
 	dir = SOUTH
 
 	icon = 'icons/obj/clothing/obj_head_ipc.dmi'
@@ -45,8 +45,8 @@
 		)
 
 /obj/item/clothing/mask/monitor/set_dir()
-	SHOULD_CALL_PARENT(FALSE)
-	return FALSE
+	dir = SOUTH
+	return
 
 /obj/item/clothing/mask/monitor/equipped()
 	..()
@@ -64,9 +64,9 @@
 		return 0
 	if(istype(user))
 		var/obj/item/organ/external/E = user.organs_by_name[BP_HEAD]
-		if(istype(E) && BP_IS_PROSTHETIC(E))
+		if(istype(E) && BP_IS_ROBOTIC(E))
 			return 1
-		to_chat(user, "<span class='warning'>You must have a prosthetic head to install this upgrade.</span>")
+		to_chat(user, "<span class='warning'>You must have a robotic head to install this upgrade.</span>")
 	return 0
 
 /obj/item/clothing/mask/monitor/verb/set_monitor_state()
@@ -92,3 +92,6 @@
 	icon_state = monitor_states[monitor_state_index]
 	var/mob/living/carbon/human/H = loc
 	if(istype(H)) H.update_inv_wear_mask()
+
+/obj/item/clothing/mask/monitor/AltClick(var/mob/user)
+	set_monitor_state(user)

@@ -5,17 +5,18 @@
 	program_icon_state = "generic"
 	program_key_state = "generic_key"
 	size = 14
-	available_on_network = 1
-	nanomodule_path = /datum/nano_module/program/records
+	requires_ntnet = 1
+	available_on_ntnet = 1
+	nanomodule_path = /datum/nano_module/records
 	usage_flags = PROGRAM_ALL
 	category = PROG_OFFICE
 
-/datum/nano_module/program/records
+/datum/nano_module/records
 	name = "Crew Records"
 	var/datum/computer_file/report/crew_record/active_record
 	var/message = null
 
-/datum/nano_module/program/records/ui_interact(mob/user, ui_key = "main", datum/nanoui/ui = null, force_open = 1, state = GLOB.default_state)
+/datum/nano_module/records/ui_interact(mob/user, ui_key = "main", datum/nanoui/ui = null, force_open = 1, state = GLOB.default_state)
 	var/list/data = host.initial_data()
 	var/list/user_access = get_record_access(user)
 
@@ -28,8 +29,7 @@
 	else
 		var/list/all_records = list()
 
-		data["show_milrank"] = (GLOB.using_map.flags & MAP_HAS_BRANCH)
-		for(var/datum/computer_file/report/crew_record/R in get_records())
+		for(var/datum/computer_file/report/crew_record/R in GLOB.all_crew_records)
 			all_records.Add(list(list(
 				"name" = R.get_name(),
 				"rank" = R.get_job(),
@@ -49,18 +49,18 @@
 		ui.open()
 
 
-/datum/nano_module/program/records/proc/get_record_access(var/mob/user)
+/datum/nano_module/records/proc/get_record_access(var/mob/user)
 	var/list/user_access = using_access || user.GetAccess()
 
 	var/obj/PC = nano_host()
 	var/datum/extension/interactive/ntos/os = get_extension(PC, /datum/extension/interactive/ntos)
 	if(os && os.emagged())
-		user_access = user_access ? user_access.Copy() : list()
+		user_access = user_access.Copy()
 		user_access |= access_syndicate
 
 	return user_access
 
-/datum/nano_module/program/records/proc/edit_field(var/mob/user, var/field_ID)
+/datum/nano_module/records/proc/edit_field(var/mob/user, var/field_ID)
 	var/datum/computer_file/report/crew_record/R = active_record
 	if(!R)
 		return
@@ -72,7 +72,7 @@
 		return
 	F.ask_value(user)
 
-/datum/nano_module/program/records/Topic(href, href_list)
+/datum/nano_module/records/Topic(href, href_list)
 	if(..())
 		return 1
 	if(href_list["clear_active"])
@@ -83,22 +83,17 @@
 		return 1
 	if(href_list["set_active"])
 		var/ID = text2num(href_list["set_active"])
-		for(var/datum/computer_file/report/crew_record/R in get_records())
+		for(var/datum/computer_file/report/crew_record/R in GLOB.all_crew_records)
 			if(R.uid == ID)
 				active_record = R
 				break
 		return 1
 	if(href_list["new_record"])
-		var/datum/computer_network/network = get_network()
-		if(!network)
-			to_chat(usr, SPAN_WARNING("Network error."))
-			return
 		if(!check_access(usr, access_bridge))
 			to_chat(usr, "Access Denied.")
 			return
 		active_record = new/datum/computer_file/report/crew_record()
 		GLOB.all_crew_records.Add(active_record)
-		network.store_file(active_record, MF_ROLE_CREW_RECORDS)
 		return 1
 	if(href_list["print_active"])
 		if(!active_record)
@@ -106,15 +101,11 @@
 		print_text(record_to_html(active_record, get_record_access(usr)), usr)
 		return 1
 	if(href_list["search"])
-		var/datum/computer_network/network = get_network()
-		if(!network)
-			to_chat(usr, SPAN_WARNING("Network error."))
-			return
 		var/field_name = href_list["search"]
 		var/search = sanitize(input("Enter the value for search for.") as null|text)
 		if(!search)
 			return
-		for(var/datum/computer_file/report/crew_record/R in get_records())
+		for(var/datum/computer_file/report/crew_record/R in GLOB.all_crew_records)
 			var/datum/report_field/field = R.field_from_name(field_name)
 			if(findtext(lowertext(field.get_value()), lowertext(search)))
 				active_record = R
@@ -125,10 +116,6 @@
 	var/datum/computer_file/report/crew_record/R = active_record
 	if(!istype(R))
 		return 1
-	var/datum/computer_network/network = get_network()
-	if(!network)
-		to_chat(usr, SPAN_WARNING("Network error."))
-		return
 	if(href_list["edit_photo_front"])
 		var/photo = get_photo(usr)
 		if(photo && active_record)
@@ -143,12 +130,12 @@
 		edit_field(usr, text2num(href_list["edit_field"]))
 		return 1
 
-/datum/nano_module/program/records/proc/get_photo(var/mob/user)
-	if(istype(user.get_active_hand(), /obj/item/photo))
-		var/obj/item/photo/photo = user.get_active_hand()
+/datum/nano_module/records/proc/get_photo(var/mob/user)
+	if(istype(user.get_active_hand(), /obj/item/weapon/photo))
+		var/obj/item/weapon/photo/photo = user.get_active_hand()
 		return photo.img
 	if(istype(user, /mob/living/silicon))
 		var/mob/living/silicon/tempAI = usr
-		var/obj/item/photo/selection = tempAI.GetPicture()
+		var/obj/item/weapon/photo/selection = tempAI.GetPicture()
 		if (selection)
 			return selection.img

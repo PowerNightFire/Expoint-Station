@@ -36,5 +36,6 @@
 
 /decl/maneuver/leap/grab/end_leap(var/mob/living/user, var/atom/target)
 	. = ..()
-	if(!user.lying && ismob(target) && user.Adjacent(target))
-		user.make_grab(target)
+	if(ishuman(user) && !user.lying && ismob(target) && user.Adjacent(target))
+		var/mob/living/carbon/human/H = user
+		H.species.attempt_grab(H, target)

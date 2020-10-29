@@ -21,30 +21,44 @@
 	atom_flags = ATOM_FLAG_NO_TEMP_CHANGE | ATOM_FLAG_CLIMBABLE
 	clicksound = "keyboard"
 
+/obj/machinery/computer/New()
+	overlay_layer = layer
+	..()
+
 /obj/machinery/computer/Initialize()
 	. = ..()
-	overlay_layer = layer
 	update_icon()
 
-/obj/machinery/computer/get_codex_value()
-	return "computer"
-	
 /obj/machinery/computer/emp_act(severity)
 	if(prob(20/severity)) set_broken(TRUE)
 	..()
 
-/obj/machinery/computer/explosion_act(severity)
-	..()
-	if(!QDELETED(src))
-		if(severity == 1 || (severity == 2 && prob(25)))
+/obj/machinery/computer/ex_act(severity)
+	switch(severity)
+		if(1.0)
 			qdel(src)
-		else if(prob(100 - (severity * 25)))
-			verbs.Cut()
-			set_broken(TRUE)
+			return
+		if(2.0)
+			if (prob(25))
+				qdel(src)
+				return
+			if (prob(50))
+				for(var/x in verbs)
+					verbs -= x
+				set_broken(TRUE)
+		if(3.0)
+			if (prob(25))
+				for(var/x in verbs)
+					verbs -= x
+				set_broken(TRUE)
+
+/obj/machinery/computer/bullet_act(var/obj/item/projectile/Proj)
+	if(prob(Proj.get_structure_damage()))
+		set_broken(TRUE)
+	..()
 
 /obj/machinery/computer/on_update_icon()
-
-	cut_overlays()
+	overlays.Cut()
 	icon = initial(icon)
 	icon_state = initial(icon_state)
 
@@ -52,43 +66,35 @@
 		set_light(0)
 		icon = 'icons/obj/computer.dmi'
 		icon_state = "wired"
-		var/screen = get_component_of_type(/obj/item/stock_parts/console_screen)
-		var/keyboard = get_component_of_type(/obj/item/stock_parts/keyboard)
+		var/screen = get_component_of_type(/obj/item/weapon/stock_parts/console_screen)
+		var/keyboard = get_component_of_type(/obj/item/weapon/stock_parts/keyboard)
 		if(screen)
-			add_overlay("comp_screen")
+			overlays += "comp_screen"
 		if(keyboard)
-			add_overlay(icon_keyboard ? "[icon_keyboard]_off" : "keyboard")
+			overlays += icon_keyboard ? "[icon_keyboard]_off" : "keyboard"
 		return
 
 	if(stat & NOPOWER)
 		set_light(0)
 		if(icon_keyboard)
-			add_overlay(image(icon,"[icon_keyboard]_off", overlay_layer))
+			overlays += image(icon,"[icon_keyboard]_off", overlay_layer)
 		return
 	else
 		set_light(light_max_bright_on, light_inner_range_on, light_outer_range_on, 2, light_color)
 
 	if(stat & BROKEN)
-		add_overlay(image(icon,"[icon_state]_broken", overlay_layer))
+		overlays += image(icon,"[icon_state]_broken", overlay_layer)
 	else
-		var/screen_overlay = get_screen_overlay()
-		if(screen_overlay)
-			add_overlay(screen_overlay)
-	var/keyboard_overlay = get_keyboard_overlay()
-	if(keyboard_overlay)
-		add_overlay(keyboard_overlay)
+		overlays += get_screen_overlay()
+
+	overlays += get_keyboard_overlay()
 
 /obj/machinery/computer/proc/get_screen_overlay()
-	if(icon_screen)
-		var/image/I = image(icon, icon_screen, overlay_layer)
-		I.appearance_flags |= RESET_COLOR
-		return I
+	return image(icon,icon_screen, overlay_layer)
 
 /obj/machinery/computer/proc/get_keyboard_overlay()
 	if(icon_keyboard)
-		var/image/I = image(icon, icon_keyboard, overlay_layer)
-		I.appearance_flags |= RESET_COLOR
-		return I
+		overlays += image(icon, icon_keyboard, overlay_layer)
 
 /obj/machinery/computer/proc/decode(text)
 	// Adds line breaks
@@ -98,9 +104,9 @@
 /obj/machinery/computer/dismantle(mob/user)
 	if(stat & BROKEN)
 		to_chat(user, "<span class='notice'>The broken glass falls out.</span>")
-		for(var/obj/item/stock_parts/console_screen/screen in component_parts)
+		for(var/obj/item/weapon/stock_parts/console_screen/screen in component_parts)
 			qdel(screen)
-			new /obj/item/shard(loc)
+			new /obj/item/weapon/material/shard(loc)
 	else
 		to_chat(user, "<span class='notice'>You disconnect the monitor.</span>")
 	return ..()

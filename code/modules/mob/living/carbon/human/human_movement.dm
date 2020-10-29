@@ -10,7 +10,8 @@
 
 	tally += species.handle_movement_delay_special(src)
 
-	if(!has_gravity())
+	var/area/a = get_area(src)
+	if(a && !a.has_gravity())
 		if(skill_check(SKILL_EVA, SKILL_PROF))
 			tally -= 2
 		tally -= 1
@@ -33,13 +34,20 @@
 			tally += E ? E.movement_delay(4) : 4
 	else
 		var/total_item_slowdown = -1
-		for(var/slot in global.all_inventory_slots)
+		for(var/slot = slot_first to slot_last)
 			var/obj/item/I = get_equipped_item(slot)
 			if(istype(I))
 				var/item_slowdown = 0
 				item_slowdown += I.slowdown_general
-				item_slowdown += LAZYACCESS(I.slowdown_per_slot, slot)
+				item_slowdown += I.slowdown_per_slot[slot]
 				item_slowdown += I.slowdown_accessory
+
+				if(item_slowdown >= 0)
+					var/size_mod = size_strength_mod()
+					if(size_mod + 1 > 0)
+						item_slowdown = item_slowdown / (size_mod + 1)
+					else
+						item_slowdown = item_slowdown - size_mod
 				total_item_slowdown += max(item_slowdown, 0)
 		tally += total_item_slowdown
 
@@ -50,18 +58,12 @@
 	if(shock_stage >= 10 || get_stamina() <= 0)
 		tally += 3
 
-	if(is_asystole())
-		tally += 10 // Heart attacks are kinda distracting.
+	if(is_asystole()) tally += 10  //heart attacks are kinda distracting
 
-	if(aiming && aiming.aiming_at)
-		tally += 5 // Iron sights make you slower, it's a well-known fact.
-
-	if(facing_dir)
-		tally += 3 // Locking direction will slow you down.
+	if(aiming && aiming.aiming_at) tally += 5 // Iron sights make you slower, it's a well-known fact.
 
 	if(MUTATION_FAT in src.mutations)
 		tally += 1.5
-
 	if (bodytemperature < species.cold_discomfort_level)
 		tally += (species.cold_discomfort_level - bodytemperature) / 10 * 1.75
 
@@ -76,50 +78,49 @@
 	. = ..()
 	. += species.strength
 
-/mob/living/carbon/human/Process_Spacemove(var/allow_movement)
-	var/obj/item/tank/jetpack/thrust = get_jetpack()
-
-	if(thrust && thrust.on && (allow_movement || thrust.stabilization_on) && thrust.allow_thrust(0.01, src))
-		return 1
-
+/mob/living/carbon/human/Allow_Spacemove(var/check_drift = 0)
 	. = ..()
+	if(.)
+		return
 
+	// This is horrible but short of spawning a jetpack inside the organ than locating
+	// it, I don't really see another viable approach short of a total jetpack refactor.
+	for(var/obj/item/organ/internal/powered/jets/jet in internal_organs)
+		if(!jet.is_broken() && jet.active)
+			inertia_dir = 0
+			return 1
+	// End 'eugh'
 
-/mob/living/carbon/human/space_do_move(var/allow_move, var/direction)
-	if(allow_move == 1)
-		var/obj/item/tank/jetpack/thrust = get_jetpack()
-		if(thrust && thrust.on && prob(skill_fail_chance(SKILL_EVA, 10, SKILL_ADEPT)))
+	//Do we have a working jetpack?
+	var/obj/item/weapon/tank/jetpack/thrust
+	if(back)
+		if(istype(back,/obj/item/weapon/tank/jetpack))
+			thrust = back
+		else if(istype(back,/obj/item/weapon/rig))
+			var/obj/item/weapon/rig/rig = back
+			for(var/obj/item/rig_module/maneuvering_jets/module in rig.installed_modules)
+				thrust = module.jets
+				break
+
+	if(thrust && thrust.on)
+		if(prob(skill_fail_chance(SKILL_EVA, 10, SKILL_ADEPT)))
 			to_chat(src, "<span class='warning'>You fumble with [thrust] controls!</span>")
-			if(prob(50))
-				thrust.toggle()
-			if(prob(50))
-				thrust.stabilization_on = 0
-			SetMoveCooldown(15)	//2 seconds of random rando panic drifting
-			step(src, pick(GLOB.alldirs))
+			inertia_dir = pick(GLOB.cardinal)
 			return 0
 
-	. = ..()
-
-/mob/living/carbon/human/proc/get_jetpack()
-	if(back)
-		if(istype(back,/obj/item/tank/jetpack))
-			return back
-		else if(istype(back,/obj/item/rig))
-			var/obj/item/rig/rig = back
-			for(var/obj/item/rig_module/maneuvering_jets/module in rig.installed_modules)
-				return module.jets
+		if(((!check_drift) || (check_drift && thrust.stabilization_on)) && (!lying) && (thrust.allow_thrust(0.01, src)))
+			inertia_dir = 0
+			return 1
 
 /mob/living/carbon/human/slip_chance(var/prob_slip = 5)
 	if(!..())
 		return 0
 
 	//Check hands and mod slip
-	for(var/bp in held_item_slots)
-		var/datum/inventory_slot/inv_slot = held_item_slots[bp]
-		if(!inv_slot.holding)
-			prob_slip -= 2
-		else if(inv_slot.holding.w_class <= ITEM_SIZE_SMALL)
-			prob_slip -= 1
+	if(!l_hand)	prob_slip -= 2
+	else if(l_hand.w_class <= ITEM_SIZE_SMALL)	prob_slip -= 1
+	if (!r_hand)	prob_slip -= 2
+	else if(r_hand.w_class <= ITEM_SIZE_SMALL)	prob_slip -= 1
 
 	return prob_slip
 
@@ -133,32 +134,16 @@
 /mob/living/carbon/human/Move()
 	. = ..()
 	if(.) //We moved
-		handle_exertion()
+		species.handle_exertion(src)
 		handle_leg_damage()
-
-		if(client)
-			var/turf/B = GetAbove(src)
-			up_hint.icon_state = "uphint[(B ? B.is_open() : 0)]"
-
-/mob/living/carbon/human/proc/handle_exertion()
-	if(isSynthetic())
-		return
-	var/lac_chance =  10 * encumbrance()
-	if(lac_chance && prob(skill_fail_chance(SKILL_HAULING, lac_chance)))
-		make_reagent(1, /decl/material/liquid/lactate)
-		adjust_hydration(-DEFAULT_THIRST_FACTOR)
-		switch(rand(1,20))
-			if(1)
-				visible_message("<span class='notice'>\The [src] is sweating heavily!</span>", "<span class='notice'>You are sweating heavily!</span>")
-			if(2)
-				visible_message("<span class='notice'>\The [src] looks out of breath!</span>", "<span class='notice'>You are out of breath!</span>")
 
 /mob/living/carbon/human/proc/handle_leg_damage()
 	if(!can_feel_pain())
 		return
 	var/crutches = 0
-	for(var/obj/item/cane/C in get_held_items())
-		crutches++
+	for(var/obj/item/weapon/cane/C in list(l_hand, r_hand))
+		if(istype(C))
+			crutches++
 	for(var/organ_name in list(BP_L_LEG, BP_R_LEG, BP_L_FOOT, BP_R_FOOT))
 		var/obj/item/organ/external/E = get_organ(organ_name)
 		if(E && (E.is_dislocated() || E.is_broken()))

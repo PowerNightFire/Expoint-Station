@@ -31,7 +31,7 @@ var/total_unit_tests = 0
 
 // For console out put in Linux/Bash makes the output green or red.
 // Should probably only be used for unit tests/Travis since some special folks use winders to host servers.
-// if you want plain output, use dm.sh -DUNIT_TEST -DUNIT_TEST_PLAIN nebula.dme
+// if you want plain output, use dm.sh -DUNIT_TEST -DUNIT_TEST_PLAIN baystation12.dme
 #ifdef UNIT_TEST_PLAIN
 var/ascii_esc = ""
 var/ascii_red = ""
@@ -82,18 +82,12 @@ var/ascii_reset = "[ascii_esc]\[0m"
 	reported = 1
 	log_unit_test("[ascii_yellow]--- SKIPPED --- \[[name]\]: [message][ascii_reset]")
 
-/datum/unit_test/proc/setup_test()
-	// Executed before the test runs - Primarily intended for shared setup (generally in templates)
-
 /datum/unit_test/proc/start_test()
 	fail("No test proc - [type]")
 
 /datum/unit_test/proc/check_result()
 	fail("No check results proc - [type]")
 	return 1
-
-/datum/unit_test/proc/teardown_test()
-	// Executed after the test has run - Primarily intended for shared cleanup (generally in templates)
 
 /datum/unit_test/proc/get_safe_turf()
 	if(!safe_landmark)
@@ -138,7 +132,6 @@ var/ascii_reset = "[ascii_esc]\[0m"
 	if(world.time > end_time)
 		test.fail("Unit Tests Ran out of time")   // This should never happen, and if it does either fix your unit tests to be faster or if you can make them async checks.
 		return
-	test.setup_test()
 	if (test.start_test() == null)	// Runtimed.
 		test.fail("Test Runtimed")
 	return 1
@@ -182,7 +175,6 @@ var/ascii_reset = "[ascii_esc]\[0m"
 	if(test.async)
 		while(!check_unit_test(test, end_unit_tests))
 			sleep(20)
-	test.teardown_test()
 	unit_test_final_message()
 
 /obj/effect/landmark/test/safe_turf

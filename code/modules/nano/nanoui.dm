@@ -122,7 +122,6 @@ nanoui is used to open and update nano browser uis
 	add_script("nano_base_callbacks.js") // The NanoBaseCallbacks JS, this is used to set up (before and after update) callbacks which are common to all UIs
 	add_script("nano_base_helpers.js") // The NanoBaseHelpers JS, this is used to set up template helpers which are common to all UIs
 	add_stylesheet("shared.css") // this CSS sheet is common to all UIs
-	add_stylesheet("tgui.css") // this CSS sheet is common to all UIs
 	add_stylesheet("icons.css") // this CSS sheet is common to all UIs
 
  /**
@@ -193,7 +192,6 @@ nanoui is used to open and update nano browser uis
 /datum/nanoui/proc/get_config_data()
 	var/name = "[src_object]"
 	name = sanitize(name)
-	var/decl/currency/cur = decls_repository.get_decl(GLOB.using_map.default_currency)
 	var/list/config_data = list(
 			"title" = title,
 			"srcObject" = list("name" = name),
@@ -206,7 +204,7 @@ nanoui is used to open and update nano browser uis
 			"mapZLevel" = map_z_level,
 			"mapZLevels" = GLOB.using_map.map_levels,
 			"user" = list("name" = user.name),
-			"currency" = cur.name,
+			"currency" = GLOB.using_map.local_currency_name,
 		)
 	return config_data
 
@@ -420,7 +418,7 @@ nanoui is used to open and update nano browser uis
   * @return nothing
   */
 /datum/nanoui/proc/open()
-	if(!user.client)
+	if(!user?.client)
 		return
 
 	if(!src_object)

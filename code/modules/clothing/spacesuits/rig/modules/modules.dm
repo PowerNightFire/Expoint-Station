@@ -13,14 +13,10 @@
 	desc = "It looks pretty sciency."
 	icon = 'icons/obj/rig_modules.dmi'
 	icon_state = "module"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/plastic = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/glass = MATTER_AMOUNT_TRACE
-	)
+	matter = list(MATERIAL_STEEL = 20000, MATERIAL_PLASTIC = 30000, MATERIAL_GLASS = 5000)
 
 	var/damage = 0
-	var/obj/item/rig/holder
+	var/obj/item/weapon/rig/holder
 	var/list/banned_modules = list()
 
 	var/module_cooldown = 10
@@ -70,7 +66,7 @@
 		if(2)
 			to_chat(user, "It is almost completely destroyed.")
 
-/obj/item/rig_module/attackby(obj/item/W, mob/user)
+/obj/item/rig_module/attackby(obj/item/W as obj, mob/user as mob)
 
 	if(istype(W,/obj/item/stack/nanopaste))
 
@@ -142,11 +138,10 @@
 
 /obj/item/rig_module/Destroy()
 	deactivate()
-	QDEL_NULL_LIST(stat_modules)
 	. = ..()
 
 // Called when the module is installed into a suit.
-/obj/item/rig_module/proc/installed(var/obj/item/rig/new_holder)
+/obj/item/rig_module/proc/installed(var/obj/item/weapon/rig/new_holder)
 	holder = new_holder
 	return
 
@@ -267,11 +262,11 @@
 /mob/living/carbon/human/Stat()
 	. = ..()
 
-	if(. && istype(back,/obj/item/rig))
-		var/obj/item/rig/R = back
+	if(. && istype(back,/obj/item/weapon/rig))
+		var/obj/item/weapon/rig/R = back
 		SetupStat(R)
 
-/mob/proc/SetupStat(var/obj/item/rig/R)
+/mob/proc/SetupStat(var/obj/item/weapon/rig/R)
 	if(R && !R.canremove && R.installed_modules.len && statpanel("Hardsuit Modules"))
 		var/cell_status = R.cell ? "[R.cell.charge]/[R.cell.maxcharge]" : "ERROR"
 		stat("Suit Charge:", cell_status)
@@ -293,13 +288,6 @@
 	parent_type = /atom/movable
 	var/module_mode = ""
 	var/obj/item/rig_module/module
-
-/stat_rig_module/Destroy()
-	if(module)
-		if(module.stat_modules)
-			module.stat_modules -= src
-		module = null
-	. = ..()
 
 /stat_rig_module/New(var/obj/item/rig_module/module)
 	..()
@@ -325,10 +313,9 @@
 
 /stat_rig_module/activate/New(var/obj/item/rig_module/module)
 	..()
-	if(module)
-		name = module.activate_string
-		if(module.active_power_cost)
-			name += " ([module.active_power_cost*10]A)"
+	name = module.activate_string
+	if(module.active_power_cost)
+		name += " ([module.active_power_cost*10]A)"
 	module_mode = "activate"
 
 /stat_rig_module/activate/CanUse()
@@ -336,11 +323,11 @@
 
 /stat_rig_module/deactivate/New(var/obj/item/rig_module/module)
 	..()
-	if(module)
-		name = module.deactivate_string
-		// Show cost despite being 0, if it means changing from an active cost.
-		if(module.active_power_cost || module.passive_power_cost)
-			name += " ([module.passive_power_cost*10]P)"
+	name = module.deactivate_string
+	// Show cost despite being 0, if it means changing from an active cost.
+	if(module.active_power_cost || module.passive_power_cost)
+		name += " ([module.passive_power_cost*10]P)"
+
 	module_mode = "deactivate"
 
 /stat_rig_module/deactivate/CanUse()
@@ -348,10 +335,9 @@
 
 /stat_rig_module/engage/New(var/obj/item/rig_module/module)
 	..()
-	if(module)
-		name = module.engage_string
-		if(module.use_power_cost)
-			name += " ([module.use_power_cost*10]E)"
+	name = module.engage_string
+	if(module.use_power_cost)
+		name += " ([module.use_power_cost*10]E)"
 	module_mode = "engage"
 
 /stat_rig_module/engage/CanUse()

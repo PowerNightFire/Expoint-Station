@@ -1,6 +1,6 @@
 /obj/effect/wallframe_spawn
 	name = "wall frame window grille spawner"
-	icon = 'icons/obj/structures/grille.dmi'
+	icon = 'icons/obj/structures.dmi'
 	icon_state = "wingrille"
 	density = 1
 	anchored = 1.0
@@ -14,9 +14,12 @@
 	return 0
 
 /obj/effect/wallframe_spawn/attack_hand()
-	activate()
+	attack_generic()
 
 /obj/effect/wallframe_spawn/attack_ghost()
+	attack_generic()
+
+/obj/effect/wallframe_spawn/attack_generic()
 	activate()
 
 /obj/effect/wallframe_spawn/Initialize(mapload)
@@ -109,26 +112,33 @@
 	name = "reinforced hull wall frame window spawner"
 	frame_path = /obj/structure/wall_frame/hull
 
+/obj/effect/wallframe_spawn/reinforced/hull/vox
+	name = "reinforced vox hull wall frame window spawner"
+	frame_path = /obj/structure/wall_frame/hull/vox
+
 /obj/effect/wallframe_spawn/reinforced/bare //standard type is used most often so its in the master type, this one is for away sites etc with unpainted walls
 	name = "bare metal reinforced wall frame window spawner"
 	icon_state = "r-wingrille"
 	frame_path = /obj/structure/wall_frame
 
-/obj/effect/wallframe_spawn/borosilicate
-	name = "borosilicate wall frame window spawner"
+
+/obj/effect/wallframe_spawn/phoron
+	name = "phoron wall frame window spawner"
 	icon_state = "p-wingrille"
-	win_path = /obj/structure/window/borosilicate/full
+	win_path = /obj/structure/window/phoronbasic/full
 
-/obj/effect/wallframe_spawn/reinforced_borosilicate
-	name = "reinforced borosilicate wall frame window spawner"
+
+/obj/effect/wallframe_spawn/reinforced_phoron
+	name = "reinforced phoron wall frame window spawner"
 	icon_state = "pr-wingrille"
-	win_path = /obj/structure/window/borosilicate_reinforced/full
+	win_path = /obj/structure/window/phoronreinforced/full
 
-/obj/effect/wallframe_spawn/reinforced_borosilicate/titanium
+/obj/effect/wallframe_spawn/reinforced_phoron/titanium
 	frame_path = /obj/structure/wall_frame/titanium
 
-/obj/effect/wallframe_spawn/reinforced_borosilicate/hull
+/obj/effect/wallframe_spawn/reinforced_phoron/hull
 	frame_path = /obj/structure/wall_frame/hull
+
 
 /obj/effect/wallframe_spawn/reinforced/polarized
 	name = "polarized reinforced wall frame window spawner"

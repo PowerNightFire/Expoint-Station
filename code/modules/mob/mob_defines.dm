@@ -39,6 +39,7 @@
 	var/obj/screen/cells = null
 
 	var/obj/screen/hands = null
+	var/obj/screen/pullin = null
 	var/obj/screen/purged = null
 	var/obj/screen/internals = null
 	var/obj/screen/oxygen = null
@@ -53,7 +54,6 @@
 	var/obj/screen/hydration_icon = null
 	var/obj/screen/pressure = null
 	var/obj/screen/pain = null
-	var/obj/screen/up_hint = null
 	var/obj/screen/gun/item/item_use_icon = null
 	var/obj/screen/gun/radio/radio_use_icon = null
 	var/obj/screen/gun/move/gun_move_icon = null
@@ -77,12 +77,15 @@
 	var/sdisabilities = 0	//Carbon
 	var/disabilities = 0	//Carbon
 
+	var/atom/movable/pulling = null
+	var/other_mobs = null
 	var/next_move = null
+	var/hand = null
 	var/real_name = null
 
 	var/bhunger = 0			//Carbon
 
-	var/drugged = 0			//Carbon
+	var/druggy = 0			//Carbon
 	var/confused = 0		//Carbon
 	var/sleeping = 0		//Carbon
 	var/resting = 0			//Carbon
@@ -120,15 +123,22 @@
 	var/decl/move_intent/default_run_intent
 
 	var/obj/buckled = null//Living
-	var/obj/item/back = null//Human/Monkey
-	var/obj/item/storage/s_active = null//Carbon
+	var/obj/item/l_hand = null//Living
+	var/obj/item/r_hand = null//Living
+	var/obj/item/weapon/back = null//Human/Monkey
+	var/obj/item/weapon/storage/s_active = null//Carbon
 	var/obj/item/clothing/mask/wear_mask = null//Carbon
+
+	var/list/grabbed_by = list()
+
 	var/in_throw_mode = 0
+
+	var/inertia_dir = 0
 
 //	var/job = null//Living
 
-	var/can_pull_size = ITEM_SIZE_STRUCTURE // Maximum w_class the mob can pull.
-	var/can_pull_mobs = MOB_PULL_SAME       // Whether or not the mob can pull other mobs.
+	var/can_pull_size = ITEM_SIZE_NO_CONTAINER // Maximum w_class the mob can pull.
+	var/can_pull_mobs = MOB_PULL_SAME          // Whether or not the mob can pull other mobs.
 
 	var/datum/dna/dna = null//Carbon
 	var/list/active_genes=list()
@@ -169,7 +179,7 @@
 	var/turf/listed_turf = null  	//the current turf being examined in the stat panel
 	var/list/shouldnt_see = list()	//list of objects that this mob shouldn't see in the stat panel. this silliness is needed because of AI alt+click and cult blood runes
 
-	var/mob_size = MOB_SIZE_MEDIUM
+	var/mob_size = MOB_MEDIUM
 
 	var/paralysis = 0
 	var/stunned = 0
@@ -180,8 +190,5 @@
 
 	var/datum/skillset/skillset = /datum/skillset
 
+
 	var/list/additional_vision_handlers = list() //Basically a list of atoms from which additional vision data is retrieved
-
-	var/list/progressbars = null //for stacking do_after bars
-
-	var/datum/ai/ai						// Type abused. Define with path and will automagically create. Determines behaviour for clientless mobs.

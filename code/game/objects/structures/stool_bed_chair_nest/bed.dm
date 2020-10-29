@@ -13,40 +13,59 @@
 	desc = "This is used to lie in, sleep in or strap on."
 	icon = 'icons/obj/furniture.dmi'
 	icon_state = "bed"
-	anchored = TRUE
-	can_buckle = TRUE
+	anchored = 1
+	can_buckle = 1
 	buckle_dir = SOUTH
-	buckle_lying = TRUE
-	buckle_sound = 'sound/effects/buckle.ogg'
-	material = DEFAULT_FURNITURE_MATERIAL
-	material_alteration = MAT_FLAG_ALTERATION_ALL
-	tool_interaction_flags = TOOL_INTERACTION_DECONSTRUCT
+	buckle_lying = 1
+	var/material/padding_material
+	var/base_icon = "bed"
+	var/material_alteration = MATERIAL_ALTERATION_ALL
+	var/buckling_sound = 'sound/effects/buckle.ogg'
 
-/obj/structure/bed/update_material_name()
-	if(reinf_material)
-		SetName("[reinf_material.adjective_name] [initial(name)]")
-	else if(material)
-		SetName("[material.adjective_name] [initial(name)]")
-	else
-		SetName(initial(name))
+/obj/structure/bed/New(newloc, new_material = DEFAULT_FURNITURE_MATERIAL, new_padding_material)
+	..(newloc)
+	color = null
+	material = SSmaterials.get_material_by_name(new_material)
+	if(!istype(material))
+		qdel(src)
+		return
+	if(new_padding_material)
+		padding_material = SSmaterials.get_material_by_name(new_padding_material)
+	update_icon()
 
-/obj/structure/bed/update_material_desc()
-	if(reinf_material)
-		desc = "[initial(desc)] It's made of [material.use_name] and covered with [reinf_material.use_name]."
-	else
-		desc = "[initial(desc)] It's made of [material.use_name]."
+/obj/structure/bed/get_material()
+	return material
 
 // Reuse the cache/code from stools, todo maybe unify.
 /obj/structure/bed/on_update_icon()
-	..()
-	var/new_overlays
-	if(istype(reinf_material))
-		var/image/I = image(icon, "[icon_state]_padding")
-		if(material_alteration & MAT_FLAG_ALTERATION_COLOR)
-			I.appearance_flags |= RESET_COLOR
-			I.color = reinf_material.color
-		LAZYADD(new_overlays, I)
-	overlays = new_overlays
+	// Prep icon.
+	icon_state = ""
+	overlays.Cut()
+	// Base icon.
+	var/cache_key = "[base_icon]-[material.name]"
+	if(isnull(stool_cache[cache_key]))
+		var/image/I = image('icons/obj/furniture.dmi', base_icon)
+		if(material_alteration & MATERIAL_ALTERATION_COLOR)
+			I.color = material.icon_colour
+		stool_cache[cache_key] = I
+	overlays |= stool_cache[cache_key]
+	// Padding overlay.
+	if(padding_material)
+		var/padding_cache_key = "[base_icon]-padding-[padding_material.name]"
+		if(isnull(stool_cache[padding_cache_key]))
+			var/image/I =  image(icon, "[base_icon]_padding")
+			if(material_alteration & MATERIAL_ALTERATION_COLOR)
+				I.color = padding_material.icon_colour
+			stool_cache[padding_cache_key] = I
+		overlays |= stool_cache[padding_cache_key]
+
+	// Strings.
+	if(material_alteration & MATERIAL_ALTERATION_NAME)
+		SetName(padding_material ? "[padding_material.adjective_name] [initial(name)]" : "[material.adjective_name] [initial(name)]") //this is not perfect but it will do for now.
+
+	if(material_alteration & MATERIAL_ALTERATION_DESC)
+		desc = initial(desc)
+		desc += padding_material ? " It's made of [material.use_name] and covered with [padding_material.use_name]." : " It's made of [material.use_name]."
 
 /obj/structure/bed/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
 	if(istype(mover) && mover.checkpass(PASS_FLAG_TABLE))
@@ -54,55 +73,72 @@
 	else
 		return ..()
 
-/obj/structure/bed/explosion_act(severity)
-	. = ..()
-	if(. && !QDELETED(src) && (severity == 1 || (severity == 2 && prob(50)) || (severity == 3 && prob(5))))
-		physically_destroyed(src)
-
-/obj/structure/bed/attackby(obj/item/W, mob/user)
-	. = ..()
-	if(!.)
-		if(istype(W,/obj/item/stack))
-			if(reinf_material)
-				to_chat(user, "\The [src] is already padded.")
-				return
-			var/obj/item/stack/C = W
-			if(C.get_amount() < 1) // How??
-				qdel(C)
-				return
-			var/padding_type //This is awful but it needs to be like this until tiles are given a material var.
-			if(istype(W,/obj/item/stack/tile/carpet))
-				padding_type = /decl/material/solid/carpet
-			else if(istype(W,/obj/item/stack/material))
-				var/obj/item/stack/material/M = W
-				if(M.material && (M.material.flags & MAT_FLAG_PADDING))
-					padding_type = "[M.material.type]"
-			if(!padding_type)
-				to_chat(user, "You cannot pad \the [src] with that.")
-				return
-			C.use(1)
-			if(!istype(src.loc, /turf))
-				src.forceMove(get_turf(src))
-			to_chat(user, "You add padding to \the [src].")
-			add_padding(padding_type)
+/obj/structure/bed/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			qdel(src)
 			return
-
-		else if(isWirecutter(W))
-			if(!reinf_material)
-				to_chat(user, "\The [src] has no padding to remove.")
+		if(2.0)
+			if (prob(50))
+				qdel(src)
 				return
-			to_chat(user, "You remove the padding from \the [src].")
-			playsound(src, 'sound/items/Wirecutter.ogg', 100, 1)
-			remove_padding()
+		if(3.0)
+			if (prob(5))
+				qdel(src)
+				return
 
-		else if(istype(W, /obj/item/grab))
-			var/obj/item/grab/G = W
-			var/mob/living/affecting = G.get_affecting_mob()
-			if(affecting)
-				user.visible_message("<span class='notice'>[user] attempts to buckle [affecting] into \the [src]!</span>")
-				if(do_after(user, 20, src))
-					if(user_buckle_mob(affecting, user))
-						qdel(W)
+/obj/structure/bed/attackby(obj/item/weapon/W as obj, mob/user as mob)
+	if(isWrench(W))
+		playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
+		dismantle()
+		qdel(src)
+	else if(istype(W,/obj/item/stack))
+		if(padding_material)
+			to_chat(user, "\The [src] is already padded.")
+			return
+		var/obj/item/stack/C = W
+		if(C.get_amount() < 1) // How??
+			qdel(C)
+			return
+		var/padding_type //This is awful but it needs to be like this until tiles are given a material var.
+		if(istype(W,/obj/item/stack/tile/carpet))
+			padding_type = MATERIAL_CARPET
+		else if(istype(W,/obj/item/stack/material))
+			var/obj/item/stack/material/M = W
+			if(M.material && (M.material.flags & MATERIAL_PADDING))
+				padding_type = "[M.material.name]"
+		if(!padding_type)
+			to_chat(user, "You cannot pad \the [src] with that.")
+			return
+		C.use(1)
+		if(!istype(src.loc, /turf))
+			src.forceMove(get_turf(src))
+		to_chat(user, "You add padding to \the [src].")
+		add_padding(padding_type)
+		return
+
+	else if(isWirecutter(W))
+		if(!padding_material)
+			to_chat(user, "\The [src] has no padding to remove.")
+			return
+		to_chat(user, "You remove the padding from \the [src].")
+		playsound(src, 'sound/items/Wirecutter.ogg', 100, 1)
+		remove_padding()
+
+	else if(istype(W, /obj/item/grab))
+		var/obj/item/grab/G = W
+		var/mob/living/affecting = G.affecting
+		user.visible_message("<span class='notice'>[user] attempts to buckle [affecting] into \the [src]!</span>")
+		if(do_after(user, 20, src))
+			if(user_buckle_mob(affecting, user))
+				qdel(W)
+	else
+		..()
+
+/obj/structure/bed/buckle_mob(mob/living/M)
+	. = ..()
+	if(. && buckling_sound)
+		playsound(src, buckling_sound, 20)
 
 /obj/structure/bed/Move()
 	. = ..()
@@ -118,39 +154,43 @@
 			unbuckle_mob()
 
 /obj/structure/bed/proc/remove_padding()
-	if(reinf_material)
-		reinf_material.place_sheet(get_turf(src))
-		reinf_material = null
+	if(padding_material)
+		padding_material.place_sheet(get_turf(src))
+		padding_material = null
 	update_icon()
 
 /obj/structure/bed/proc/add_padding(var/padding_type)
-	reinf_material = decls_repository.get_decl(padding_type)
+	padding_material = SSmaterials.get_material_by_name(padding_type)
 	update_icon()
+
+/obj/structure/bed/proc/dismantle()
+	material.place_sheet(get_turf(src))
+	if(padding_material)
+		padding_material.place_sheet(get_turf(src))
 
 /obj/structure/bed/psych
 	name = "psychiatrist's couch"
 	desc = "For prime comfort during psychiatric evaluations."
 	icon_state = "psychbed"
+	base_icon = "psychbed"
 
-/obj/structure/bed/psych
-	material = /decl/material/solid/wood/walnut
-	reinf_material = /decl/material/solid/leather
+/obj/structure/bed/psych/New(var/newloc)
+	..(newloc,MATERIAL_WALNUT, MATERIAL_LEATHER_GENERIC)
 
-/obj/structure/bed/padded
-	material = /decl/material/solid/metal/aluminium
-	reinf_material = /decl/material/solid/cloth
+/obj/structure/bed/padded/New(var/newloc)
+	..(newloc,MATERIAL_ALUMINIUM,MATERIAL_CLOTH)
 
 /*
  * Roller beds
  */
 /obj/structure/bed/roller
 	name = "roller bed"
-	icon = 'icons/obj/structures/rollerbed.dmi'
+	icon = 'icons/obj/rollerbed.dmi'
 	icon_state = "down"
 	anchored = 0
-	buckle_pixel_shift = @"{'x':0,'y':0,'z':6}"
+	buckle_pixel_shift = "x=0;y=0;z=6"
 	var/item_form_type = /obj/item/roller	//The folded-up object path.
-	var/obj/item/chems/beaker
+	var/obj/item/weapon/reagent_containers/beaker
 	var/iv_attached = 0
 	var/iv_stand = TRUE
 
@@ -175,7 +215,7 @@
 /obj/structure/bed/roller/attackby(obj/item/I, mob/user)
 	if(isWrench(I) || istype(I, /obj/item/stack) || isWirecutter(I))
 		return 1
-	if(iv_stand && !beaker && istype(I, /obj/item/chems))
+	if(iv_stand && !beaker && istype(I, /obj/item/weapon/reagent_containers))
 		if(!user.unEquip(I, src))
 			return
 		to_chat(user, "You attach \the [I] to \the [src].")
@@ -215,7 +255,7 @@
 		return
 
 	if(beaker.volume > 0)
-		beaker.reagents.trans_to_mob(buckled_mob, beaker.amount_per_transfer_from_this, CHEM_INJECT)
+		beaker.reagents.trans_to_mob(buckled_mob, beaker.amount_per_transfer_from_this, CHEM_BLOOD)
 		queue_icon_update()
 
 /obj/structure/bed/roller/proc/remove_beaker(mob/user)
@@ -262,7 +302,7 @@
 /obj/item/roller
 	name = "roller bed"
 	desc = "A collapsed roller bed that can be carried around."
-	icon = 'icons/obj/structures/rollerbed.dmi'
+	icon = 'icons/obj/rollerbed.dmi'
 	icon_state = "folded"
 	item_state = "rbed"
 	slot_flags = SLOT_BACK
@@ -277,7 +317,7 @@
 /obj/item/robot_rack/roller
 	name = "roller bed rack"
 	desc = "A rack for carrying collapsed roller beds. Can also be used for carrying ironing boards."
-	icon = 'icons/obj/structures/rollerbed.dmi'
+	icon = 'icons/obj/rollerbed.dmi'
 	icon_state = "folded"
 	object_type = /obj/item/roller
 	interact_type = /obj/structure/bed/roller

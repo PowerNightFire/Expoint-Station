@@ -16,7 +16,7 @@ GLOBAL_DATUM_INIT(raiders, /datum/antagonist/raider, new)
 	initial_spawn_target = 6
 	min_player_age = 14
 
-	id_type = /obj/item/card/id/syndicate
+	id_type = /obj/item/weapon/card/id/syndicate
 
 	faction = "pirate"
 	base_to_load = /datum/map_template/ruin/antag_spawn/heist
@@ -34,8 +34,8 @@ GLOBAL_DATUM_INIT(raiders, /datum/antagonist/raider, new)
 	var/list/raider_shoes = list(
 		/obj/item/clothing/shoes/jackboots,
 		/obj/item/clothing/shoes/workboots,
-		/obj/item/clothing/shoes/color/brown,
-		/obj/item/clothing/shoes/dress
+		/obj/item/clothing/shoes/brown,
+		/obj/item/clothing/shoes/laceup
 		)
 
 	var/list/raider_glasses = list(
@@ -60,28 +60,39 @@ GLOBAL_DATUM_INIT(raiders, /datum/antagonist/raider, new)
 		/obj/item/clothing/suit/storage/toggle/brown_jacket,
 		/obj/item/clothing/suit/storage/toggle/hoodie,
 		/obj/item/clothing/suit/storage/toggle/hoodie/black,
+		/obj/item/clothing/suit/unathi/mantle,
 		/obj/item/clothing/suit/poncho/colored,
 		)
 
 	var/list/raider_guns = list(
-		/obj/item/gun/energy/laser,
-		/obj/item/gun/projectile/revolver/lasvolver,
-		/obj/item/gun/energy/xray,
-		/obj/item/gun/energy/toxgun,
-		/obj/item/gun/energy/ionrifle,
-		/obj/item/gun/energy/taser,
-		/obj/item/gun/energy/crossbow/largecrossbow,
-		/obj/item/gun/launcher/crossbow,
-		/obj/item/gun/launcher/grenade/loaded,
-		/obj/item/gun/launcher/pneumatic,
-		/obj/item/gun/projectile/automatic/smg,
-		/obj/item/gun/projectile/automatic/assault_rifle,
-		/obj/item/gun/projectile/shotgun/pump,
-		/obj/item/gun/projectile/shotgun/doublebarrel,
-		/obj/item/gun/projectile/shotgun/doublebarrel/sawn,
-		/obj/item/gun/projectile/pistol/holdout,
-		/obj/item/gun/projectile/revolver,
-		/obj/item/gun/projectile/zipgun
+		/obj/item/weapon/gun/energy/laser,
+		/obj/item/weapon/gun/energy/retro,
+		/obj/item/weapon/gun/energy/xray,
+		/obj/item/weapon/gun/energy/xray/pistol,
+		/obj/item/weapon/gun/energy/mindflayer,
+		/obj/item/weapon/gun/energy/toxgun,
+		/obj/item/weapon/gun/energy/stunrevolver,
+		/obj/item/weapon/gun/energy/ionrifle,
+		/obj/item/weapon/gun/energy/taser,
+		/obj/item/weapon/gun/energy/crossbow/largecrossbow,
+		/obj/item/weapon/gun/launcher/crossbow,
+		/obj/item/weapon/gun/launcher/grenade/loaded,
+		/obj/item/weapon/gun/launcher/pneumatic,
+		/obj/item/weapon/gun/projectile/automatic/machine_pistol,
+		/obj/item/weapon/gun/projectile/automatic/merc_smg,
+		/obj/item/weapon/gun/projectile/automatic/sec_smg,
+		/obj/item/weapon/gun/projectile/automatic/assault_rifle,
+		/obj/item/weapon/gun/projectile/shotgun/pump,
+		/obj/item/weapon/gun/projectile/shotgun/pump/combat,
+		/obj/item/weapon/gun/projectile/shotgun/doublebarrel,
+		/obj/item/weapon/gun/projectile/shotgun/doublebarrel/pellet,
+		/obj/item/weapon/gun/projectile/shotgun/doublebarrel/sawn,
+		/obj/item/weapon/gun/projectile/pistol/sec,
+		/obj/item/weapon/gun/projectile/pistol/holdout,
+		/obj/item/weapon/gun/projectile/revolver,
+		/obj/item/weapon/gun/projectile/pirate,
+		/obj/item/weapon/gun/projectile/revolver/medium,
+		/obj/item/weapon/gun/projectile/pistol/throwback
 		)
 
 	var/list/raider_holster = list(
@@ -91,8 +102,8 @@ GLOBAL_DATUM_INIT(raiders, /datum/antagonist/raider, new)
 		)
 
 /datum/antagonist/raider/update_access(var/mob/living/player)
-	for(var/obj/item/storage/wallet/W in player.contents)
-		for(var/obj/item/card/id/id in W.contents)
+	for(var/obj/item/weapon/storage/wallet/W in player.contents)
+		for(var/obj/item/weapon/card/id/id in W.contents)
 			id.SetName("[player.real_name]'s Passport")
 			id.registered_name = player.real_name
 			W.SetName("[initial(W.name)] ([id.name])")
@@ -140,33 +151,34 @@ GLOBAL_DATUM_INIT(raiders, /datum/antagonist/raider, new)
 	if(!..())
 		return 0
 
-	var/new_shoes =   pick(raider_shoes)
-	var/new_uniform = pick(raider_uniforms)
-	var/new_glasses = pick(raider_glasses)
-	var/new_helmet =  pick(raider_helmets)
-	var/new_suit =    pick(raider_suits)
+	if(player.species && player.species.get_bodytype(player) == SPECIES_VOX)
+		equip_vox(player)
+	else
+		var/new_shoes =   pick(raider_shoes)
+		var/new_uniform = pick(raider_uniforms)
+		var/new_glasses = pick(raider_glasses)
+		var/new_helmet =  pick(raider_helmets)
+		var/new_suit =    pick(raider_suits)
 
-	player.equip_to_slot_or_del(new new_shoes(player),slot_shoes_str)
-	if(!player.shoes)
-		//If equipping shoes failed, fall back to equipping sandals
-		var/fallback_type = pick(/obj/item/clothing/shoes/sandal)
-		player.equip_to_slot_or_del(new fallback_type(player), slot_shoes_str)
+		player.equip_to_slot_or_del(new new_shoes(player),slot_shoes)
+		if(!player.shoes)
+			//If equipping shoes failed, fall back to equipping sandals
+			var/fallback_type = pick(/obj/item/clothing/shoes/sandal, /obj/item/clothing/shoes/jackboots/unathi)
+			player.equip_to_slot_or_del(new fallback_type(player), slot_shoes)
 
-	player.equip_to_slot_or_del(new new_uniform(player),slot_w_uniform_str)
-	player.equip_to_slot_or_del(new new_glasses(player),slot_glasses_str)
-	player.equip_to_slot_or_del(new new_helmet(player),slot_head_str)
-	player.equip_to_slot_or_del(new new_suit(player),slot_wear_suit_str)
-	equip_weapons(player)
+		player.equip_to_slot_or_del(new new_uniform(player),slot_w_uniform)
+		player.equip_to_slot_or_del(new new_glasses(player),slot_glasses)
+		player.equip_to_slot_or_del(new new_helmet(player),slot_head)
+		player.equip_to_slot_or_del(new new_suit(player),slot_wear_suit)
+		equip_weapons(player)
 
-	var/obj/item/card/id/id = create_id("Visitor", player, equip = 0)
+	var/obj/item/weapon/card/id/id = create_id("Visitor", player, equip = 0)
 	id.SetName("[player.real_name]'s Passport")
 	id.assignment = "Visitor"
-	var/obj/item/storage/wallet/W = new(player)
+	var/obj/item/weapon/storage/wallet/W = new(player)
 	W.handle_item_insertion(id)
-	if(player.equip_to_slot_or_del(W, slot_wear_id_str))
-		var/obj/item/cash/cash = new(get_turf(player))
-		cash.adjust_worth(rand(50,150)*10)
-		player.put_in_hands(cash)
+	if(player.equip_to_slot_or_del(W, slot_wear_id))
+		spawn_money(rand(50,150)*10,W)
 	create_radio(RAID_FREQ, player)
 
 	return 1
@@ -181,26 +193,24 @@ GLOBAL_DATUM_INIT(raiders, /datum/antagonist/raider, new)
 
 	//Give some of the raiders a pirate gun as a secondary
 	if(prob(60))
-		var/obj/item/secondary = new /obj/item/gun/projectile/zipgun(T)
+		var/obj/item/secondary = new /obj/item/weapon/gun/projectile/pirate(T)
 		if(!(primary.slot_flags & SLOT_HOLSTER))
 			holster = new new_holster(T)
 			var/datum/extension/holster/H = get_extension(holster, /datum/extension/holster)
-			H.holstered = secondary
-			secondary.forceMove(holster)
+			H.holster(secondary, player)
 		else
-			player.equip_to_slot_or_del(secondary, slot_belt_str)
+			player.equip_to_slot_or_del(secondary, slot_belt)
 
 	if(primary.slot_flags & SLOT_HOLSTER)
 		holster = new new_holster(T)
 		var/datum/extension/holster/H = get_extension(holster, /datum/extension/holster)
-		H.holstered = primary
-		primary.forceMove(holster)
-	else if(!player.belt && (primary.slot_flags & SLOT_LOWER_BODY))
-		player.equip_to_slot_or_del(primary, slot_belt_str)
+		H.holster(primary, player)
+	else if(!player.belt && (primary.slot_flags & SLOT_BELT))
+		player.equip_to_slot_or_del(primary, slot_belt)
 	else if(!player.back && (primary.slot_flags & SLOT_BACK))
-		player.equip_to_slot_or_del(primary, slot_back_str)
+		player.equip_to_slot_or_del(primary, slot_back)
 	else
-		player.put_in_hands(primary)
+		player.put_in_any_hand_if_possible(primary)
 
 	//If they got a projectile gun, give them a little bit of spare ammo
 	equip_ammo(player, primary)
@@ -210,18 +220,44 @@ GLOBAL_DATUM_INIT(raiders, /datum/antagonist/raider, new)
 		if(istype(uniform) && uniform.can_attach_accessory(holster))
 			uniform.attackby(holster, player)
 		else
-			player.put_in_hands(holster)
+			player.put_in_any_hand_if_possible(holster)
 
-/datum/antagonist/raider/proc/equip_ammo(var/mob/living/carbon/human/player, var/obj/item/gun/gun)
-	if(istype(gun, /obj/item/gun/projectile))
-		var/obj/item/gun/projectile/bullet_thrower = gun
+/datum/antagonist/raider/proc/equip_ammo(var/mob/living/carbon/human/player, var/obj/item/weapon/gun/gun)
+	if(istype(gun, /obj/item/weapon/gun/projectile))
+		var/obj/item/weapon/gun/projectile/bullet_thrower = gun
 		if(bullet_thrower.magazine_type)
-			player.equip_to_slot_or_del(new bullet_thrower.magazine_type(player), slot_l_store_str)
+			player.equip_to_slot_or_del(new bullet_thrower.magazine_type(player), slot_l_store)
 			if(prob(20)) //don't want to give them too much
-				player.equip_to_slot_or_del(new bullet_thrower.magazine_type(player), slot_r_store_str)
+				player.equip_to_slot_or_del(new bullet_thrower.magazine_type(player), slot_r_store)
 		else if(bullet_thrower.ammo_type)
-			var/obj/item/storage/box/ammobox = new(get_turf(player.loc))
+			var/obj/item/weapon/storage/box/ammobox = new(get_turf(player.loc))
 			for(var/i in 1 to rand(3,5) + rand(0,2))
 				new bullet_thrower.ammo_type(ammobox)
-			player.put_in_hands(ammobox)
+			player.put_in_any_hand_if_possible(ammobox)
 		return
+
+/datum/antagonist/raider/proc/equip_vox(var/mob/living/carbon/human/player)
+
+	var/uniform_type = pick(list(/obj/item/clothing/under/vox/vox_robes,/obj/item/clothing/under/vox/vox_casual))
+	var/new_glasses = pick(raider_glasses)
+	var/new_holster = pick(raider_holster)
+
+	player.equip_to_slot_or_del(new uniform_type(player), slot_w_uniform)
+	player.equip_to_slot_or_del(new /obj/item/clothing/shoes/magboots/vox(player), slot_shoes) // REPLACE THESE WITH CODED VOX ALTERNATIVES.
+	player.equip_to_slot_or_del(new /obj/item/clothing/gloves/vox(player), slot_gloves) // AS ABOVE.
+	player.equip_to_slot_or_del(new /obj/item/clothing/mask/gas/swat/vox(player), slot_wear_mask)
+	player.equip_to_slot_or_del(new /obj/item/weapon/tank/nitrogen(player), slot_back)
+	player.equip_to_slot_or_del(new /obj/item/device/flashlight(player), slot_r_store)
+	player.equip_to_slot_or_del(new new_glasses(player),slot_glasses)
+
+	var/obj/item/clothing/accessory/storage/holster/holster = new new_holster
+	if(holster)
+		var/obj/item/clothing/under/uniform = player.w_uniform
+		if(istype(uniform) && uniform.can_attach_accessory(holster))
+			uniform.attackby(holster, player)
+		else
+			player.put_in_any_hand_if_possible(holster)
+
+	player.set_internals(locate(/obj/item/weapon/tank) in player.contents)
+	return 1
+

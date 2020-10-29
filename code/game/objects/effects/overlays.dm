@@ -8,10 +8,9 @@
 	icon='icons/effects/beam.dmi'
 	icon_state= "b_beam"
 	var/tmp/atom/BeamSource
-
-/obj/effect/overlay/beam/Initialize()
-	. = ..()
-	QDEL_IN(src, 1 SECOND)
+	New()
+		..()
+		spawn(10) qdel(src)
 
 /obj/effect/overlay/palmtree_r
 	name = "Palm tree"
@@ -35,7 +34,7 @@
 	icon_state = "coconuts"
 
 /obj/effect/overlay/bluespacify
-	name = "subspace"
+	name = "Bluespace"
 	icon = 'icons/turf/space.dmi'
 	icon_state = "bluespacify"
 	layer = SUPERMATTER_WALL_LAYER
@@ -49,7 +48,7 @@
 	layer = ABOVE_TILE_LAYER
 	mouse_opacity = 0
 
-/obj/effect/overlay/wallrot/Initialize()
-	. = ..()
+/obj/effect/overlay/wallrot/New()
+	..()
 	pixel_x += rand(-10, 10)
 	pixel_y += rand(-10, 10)

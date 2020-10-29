@@ -31,43 +31,6 @@
 <div class="itemContent">
 	{{:data.power_usage}}W
 </div>
-<h2>Network</h2>
-<div class="itemLabel">
-	Network Status:
-</div>
-{{if data.nic_exists}}
-	<div class="itemContent">
-		Active
-	</div>
-	<div class="itemLabel">
-		Signal Strength:
-	</div>
-	<div class="itemContent">
-		{{:data.signal_strength}}
-	</div>
-	<div class="itemLabel">
-		Network ID:
-	</div>
-	<div class="itemContent">
-		{{:helper.link(data.net_id, null, { "PRG_newid" : 1 })}}
-	</div>
-	<div class="itemLabel">
-		Network KEY:
-	</div>
-	<div class="itemContent">
-		{{:helper.link(data.key, null, { "PRG_newkey" : 1 })}}
-	</div>
-	<div class="itemLabel">
-		Network TAG:
-	</div>
-	<div class="itemContent">
-		{{:helper.link(data.tag, null, { "PRG_newtag" : 1 })}}
-	</div>
-{{else}}
-	<div class="itemContent">
-		Not Available
-	</div>
-{{/if}}
 <h2>File System</h2>	
 <div class="itemLabel">
 	Used Capacity:
@@ -92,12 +55,6 @@
 	<div class="itemContent">
 		{{:value.powerusage}}W
 	</div>
-	<div class="itemLabel">
-		Diagnostics:
-	</div>
-	<div class="itemContent">
-		{{:helper.link("EXECUTE", null, {'PC_diagnostics' : value.ref}, null)}}
-	</div>
 	{{if !value.critical}}
 	<div class="itemLabel">
 		Toggle Component: 
@@ -110,7 +67,7 @@
 	<br><br>
 {{/for}}
 	<h3>Auto-Updater</h3>
-	<i>Automatically downloads and installs critical OS upgrades if network is reachable. Disabling voids warranty.</i><br>
+	<i>Automatically downloads and installs critical OS upgrades if NTNet is reachable. Disabling voids warranty.</i><br>
 	<div class="itemLabel">
 		State: 
 	</div>
@@ -126,4 +83,4 @@
 	</div>
 	<br><br>
 <hr><hr>
-<i>NTOS v2.0.4b</i>
+<i>NTOS v2.0.4b Copyright NanoTrasen</i>

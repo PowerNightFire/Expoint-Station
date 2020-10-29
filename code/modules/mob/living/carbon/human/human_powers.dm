@@ -1,16 +1,6 @@
 /****************
  true human verbs
 ****************/
-/mob/living/carbon/human/verb/sniff_verb()
-	set name = "Sniff"
-	set desc = "Smell the local area."
-	set category = "IC"
-	set src = usr
-	if(!incapacitated())
-		if(species.sniff_message_3p && species.sniff_message_1p)
-			visible_message(SPAN_NOTICE("\The [src] [species.sniff_message_3p]."), SPAN_NOTICE(species.sniff_message_1p))
-		LAZYCLEARLIST(smell_cooldown)
-
 /mob/living/carbon/human/proc/tie_hair()
 	set name = "Tie Hair"
 	set desc = "Style your hair."
@@ -95,10 +85,30 @@
 		to_chat(src, "<span class='alium'>You channel a message: \"[msg]\" to [M]</span>")
 	return
 
+/***********
+ diona verbs
+***********/
+/mob/living/carbon/human/proc/diona_heal_toggle()
+	set name = "Toggle Heal"
+	set desc = "Turn your innate healing on or off."
+	set category = "Abilities"
+	var/obj/aura/regenerating/human/aura = locate() in auras
+	if(!aura)
+		to_chat(src, SPAN_WARNING("You don't possess an innate healing ability."))
+		return
+	if(!aura.can_toggle())
+		to_chat(src, SPAN_WARNING("You can't toggle the healing at this time!"))
+		return
+	aura.toggle()
+	if (aura.innate_heal)
+		to_chat(src, "<span class='alium'>You are now using nutrients to regenerate.</span>")
+	else
+		to_chat(src, "<span class='alium'>You are no longer using nutrients to regenerate.</span>")
+
 /mob/living/carbon/human/proc/change_colour()
 	set category = "Abilities"
 	set name = "Change Colour"
 	set desc = "Choose the colour of your skin."
 
-	var/new_skin = input(usr, "Choose your new skin colour: ", "Change Colour", skin_colour) as color|null
-	change_skin_color(new_skin)
+	var/new_skin = input(usr, "Choose your new skin colour: ", "Change Colour", rgb(r_skin, g_skin, b_skin)) as color|null
+	change_skin_color(hex2num(copytext(new_skin, 2, 4)), hex2num(copytext(new_skin, 4, 6)), hex2num(copytext(new_skin, 6, 8)))

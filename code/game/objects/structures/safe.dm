@@ -8,7 +8,7 @@ FLOOR SAFES
 /obj/structure/safe
 	name = "safe"
 	desc = "A huge chunk of metal with a dial embedded in it. Fine print on the dial reads \"Scarborough Arms - 2 tumbler safe, guaranteed thermite resistant, explosion resistant, and assistant resistant.\"."
-	icon = 'icons/obj/structures/safe.dmi'
+	icon = 'icons/obj/structures.dmi'
 	icon_state = "safe"
 	anchored = 1
 	density = 1
@@ -35,7 +35,7 @@ FLOOR SAFES
 	tumbler_2_pos = rand(0, 72)
 	tumbler_2_open = rand(0, 72)
 
-/obj/structure/safe/proc/check_unlocked(mob/user, canhear)
+/obj/structure/safe/proc/check_unlocked(mob/user as mob, canhear)
 	if(user && canhear)
 		if(tumbler_1_pos == tumbler_1_open)
 			to_chat(user, "<span class='notice'>You hear a [pick("tonk", "krunk", "plunk")] from [src].</span>")
@@ -68,7 +68,7 @@ FLOOR SAFES
 		icon_state = initial(icon_state)
 
 
-/obj/structure/safe/attack_hand(mob/user)
+/obj/structure/safe/attack_hand(mob/user as mob)
 	user.set_machine(src)
 	var/dat = "<center>"
 	dat += "<a href='?src=\ref[src];open=1'>[open ? "Close" : "Open"] [src]</a> | <a href='?src=\ref[src];decrement=1'>-</a> [dial * 5] <a href='?src=\ref[src];increment=1'>+</a>"
@@ -85,6 +85,10 @@ FLOOR SAFES
 	if(!ishuman(usr))	return
 	var/mob/living/carbon/human/user = usr
 
+	var/canhear = 0
+	if(istype(user.l_hand, /obj/item/clothing/accessory/stethoscope) || istype(user.r_hand, /obj/item/clothing/accessory/stethoscope))
+		canhear = 1
+
 	if(href_list["open"])
 		if(check_unlocked())
 			to_chat(user, "<span class='notice'>You [open ? "close" : "open"] [src].</span>")
@@ -96,7 +100,6 @@ FLOOR SAFES
 			to_chat(user, "<span class='notice'>You can't [open ? "close" : "open"] [src], the lock is engaged!</span>")
 			return
 
-	var/canhear = locate(/obj/item/clothing/accessory/stethoscope) in usr.get_held_items()
 	if(href_list["decrement"])
 		dial = decrement(dial)
 		if(dial == tumbler_1_pos + 1 || dial == tumbler_1_pos - 71)
@@ -126,7 +129,7 @@ FLOOR SAFES
 		return
 
 	if(href_list["retrieve"])
-		close_browser(user, "window=safe") // Close the menu
+		show_browser(user, "", "window=safe") // Close the menu
 
 		var/obj/item/P = locate(href_list["retrieve"]) in src
 		if(open)
@@ -135,7 +138,7 @@ FLOOR SAFES
 				updateUsrDialog()
 
 
-/obj/structure/safe/attackby(obj/item/I, mob/user)
+/obj/structure/safe/attackby(obj/item/I as obj, mob/user as mob)
 	if(open)
 		if(I.w_class + space <= maxspace)
 			if(!user.unEquip(I, src))
@@ -153,8 +156,7 @@ FLOOR SAFES
 			return
 
 
-obj/structure/safe/explosion_act(severity)
-	SHOULD_CALL_PARENT(FALSE)
+obj/structure/safe/ex_act(severity)
 	return
 
 //FLOOR SAFES

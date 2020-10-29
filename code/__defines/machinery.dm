@@ -24,16 +24,15 @@ var/global/defer_powernet_rebuild = 0      // True if net rebuild will be called
 #define TOTAL   5 // For total power used only.
 
 // Bitflags for machine stat variable.
-#define BROKEN   BITFLAG(0)
-#define NOPOWER  BITFLAG(1)
-#define MAINT    BITFLAG(2) // Under maintenance.
-#define EMPED    BITFLAG(3) // Temporary broken by EMP pulse.
-#define NOSCREEN BITFLAG(4) // No UI shown via direct interaction
-#define NOINPUT  BITFLAG(5) // No input taken from direct interaction
+#define BROKEN   0x1
+#define NOPOWER  0x2
+#define MAINT    0x8  // Under maintenance.
+#define EMPED    0x10 // Temporary broken by EMP pulse.
+#define NOSCREEN 0x20 // No UI shown via direct interaction
+#define NOINPUT  0x40 // No input taken from direct interaction
 
-#define MACHINE_BROKEN_GENERIC   BITFLAG(0) // Standard legacy brokenness, used on a case-by-case basis
-#define MACHINE_BROKEN_NO_PARTS  BITFLAG(1) // Missing required parts
-#define MACHINE_BROKEN_CONSTRUCT BITFLAG(2) // Construction state is causing the brokenness
+#define MACHINE_BROKEN_GENERIC  0x1 // Standard legacy brokenness, used on a case-by-case basis
+#define MACHINE_BROKEN_NO_PARTS 0x2 // Missing required parts
 
 // Used by firelocks
 #define FIREDOOR_OPEN 1
@@ -138,7 +137,7 @@ var/list/restricted_camera_networks = list(NETWORK_ERT, NETWORK_MERCENARY, NETWO
 
 #define MESSAGE_RESEND_TIME 5	//how long (in seconds) do we wait before resending a message
 
-// obj/item/stock_parts status flags
+// obj/item/weapon/stock_parts status flags
 #define PART_STAT_INSTALLED  1
 #define PART_STAT_PROCESSING 2
 #define PART_STAT_ACTIVE     4
@@ -148,7 +147,6 @@ var/list/restricted_camera_networks = list(NETWORK_ERT, NETWORK_MERCENARY, NETWO
 #define PART_FLAG_LAZY_INIT   1 // Will defer init on stock parts until machine is destroyed or parts are otherwise queried.
 #define PART_FLAG_QDEL        2 // Will delete on uninstall
 #define PART_FLAG_HAND_REMOVE 4 // Can be removed by hand
-#define PART_FLAG_NODAMAGE    8 // Cannot be damaged
 
 // Machinery process flags, for use with START_PROCESSING_MACHINE
 #define MACHINERY_PROCESS_SELF       1
@@ -166,17 +164,15 @@ var/list/restricted_camera_networks = list(NETWORK_ERT, NETWORK_MERCENARY, NETWO
 #define FAB_SHOCKED  4
 #define FAB_BUSY     8
 
-#define  PART_CPU  		/obj/item/stock_parts/computer/processor_unit				// CPU. Without it the computer won't run. Better CPUs can run more programs at once.
-#define  PART_NETWORK  	/obj/item/stock_parts/computer/network_card					// Network Card component of this computer. Allows connection to network
-#define  PART_HDD 		/obj/item/stock_parts/computer/hard_drive					// Hard Drive component of this computer. Stores programs and files.
+#define  PART_CPU  		/obj/item/weapon/stock_parts/computer/processor_unit				// CPU. Without it the computer won't run. Better CPUs can run more programs at once.
+#define  PART_NETWORK  	/obj/item/weapon/stock_parts/computer/network_card					// Network Card component of this computer. Allows connection to NTNet
+#define  PART_HDD 		/obj/item/weapon/stock_parts/computer/hard_drive					// Hard Drive component of this computer. Stores programs and files.
 
 // Optional hardware (improves functionality, but is not critical for computer to work in most cases)
-#define  PART_BATTERY  	/obj/item/stock_parts/computer/battery_module			// An internal power source for this computer. Can be recharged.
-#define  PART_CARD  	/obj/item/stock_parts/computer/card_slot					// ID Card slot component of this computer. Mostly for HoP modification console that needs ID slot for modification.
-#define  PART_PRINTER  	/obj/item/stock_parts/computer/nano_printer			// Nano Printer component of this computer, for your everyday paperwork needs.
-#define  PART_DRIVE  	/obj/item/stock_parts/computer/hard_drive/portable		// Portable data storage
-#define  PART_AI  		/obj/item/stock_parts/computer/ai_slot							// AI slot, an intellicard housing that allows modifications of AIs.
-#define  PART_TESLA  	/obj/item/stock_parts/computer/tesla_link					// Tesla Link, Allows remote charging from nearest APC.
-#define  PART_SCANNER  	/obj/item/stock_parts/computer/scanner							// One of several optional scanner attachments.
-#define  PART_D_SLOT	/obj/item/stock_parts/computer/drive_slot				// Portable drive slot.
-#define  PART_MSTICK	/obj/item/stock_parts/computer/charge_stick_slot		// Charge-slot component for transactions /w charge sticks.
+#define  PART_BATTERY  	/obj/item/weapon/stock_parts/computer/battery_module			// An internal power source for this computer. Can be recharged.
+#define  PART_CARD  	/obj/item/weapon/stock_parts/computer/card_slot					// ID Card slot component of this computer. Mostly for HoP modification console that needs ID slot for modification.
+#define  PART_PRINTER  	/obj/item/weapon/stock_parts/computer/nano_printer			// Nano Printer component of this computer, for your everyday paperwork needs.
+#define  PART_DRIVE  	/obj/item/weapon/stock_parts/computer/hard_drive/portable		// Portable data storage
+#define  PART_AI  		/obj/item/weapon/stock_parts/computer/ai_slot							// AI slot, an intellicard housing that allows modifications of AIs.
+#define  PART_TESLA  	/obj/item/weapon/stock_parts/computer/tesla_link					// Tesla Link, Allows remote charging from nearest APC.
+#define  PART_SCANNER  	/obj/item/weapon/stock_parts/computer/scanner							// One of several optional scanner attachments.

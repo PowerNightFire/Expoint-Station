@@ -1,5 +1,3 @@
-// This appears unused except via hidden admin invocation, and the code is problematic. Suggest it be deleted.
-
 /obj/effect/bhole
 	name = "black hole"
 	icon = 'icons/obj/objects.dmi'
@@ -10,13 +8,12 @@
 	density = 0
 	anchored = 1
 
-/obj/effect/bhole/Initialize()
-	. = ..()
-	controller()
+/obj/effect/bhole/New()
+	spawn(4)
+		controller()
 
 /obj/effect/bhole/proc/controller()
-	set waitfor = FALSE
-	while(!QDELETED(src))
+	while(src)
 
 		if(!isturf(loc))
 			qdel(src)
@@ -77,11 +74,11 @@
 	var/turf/T = locate(x, y, z)
 	if(isnull(T))	return
 
-	//Sucking in and/or ex_act-ing movable atoms in that turf
+	//Pulling and/or ex_act-ing movable atoms in that turf
 	if( prob(pull_chance) )
 		for(var/obj/O in T.contents)
 			if(O.anchored)
-				O.explosion_act(ex_act_force)
+				O.ex_act(ex_act_force)
 			else
 				step_towards(O,src)
 		for(var/mob/living/M in T.contents)

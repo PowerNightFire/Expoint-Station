@@ -2,20 +2,23 @@
 	var/list/silicon_subsystems_by_name = list()
 	var/list/silicon_subsystems = list(
 		/datum/nano_module/alarm_monitor/all,
-		/datum/nano_module/law_manager
+		/datum/nano_module/law_manager,
+		/datum/nano_module/email_client,
+		/datum/nano_module/crew_manifest
 	)
 
-/mob/living/silicon/ai/Initialize()
+/mob/living/silicon/ai/New()
 	silicon_subsystems.Cut()
 	for(var/subtype in subtypesof(/datum/nano_module))
 		var/datum/nano_module/NM = subtype
 		if(initial(NM.available_to_ai))
 			silicon_subsystems += NM
-	. = ..()
+	..()
 
 /mob/living/silicon/robot/syndicate
 	silicon_subsystems = list(
-		/datum/nano_module/law_manager
+		/datum/nano_module/law_manager,
+		/datum/nano_module/email_client
 	)
 
 /mob/living/silicon/Destroy()

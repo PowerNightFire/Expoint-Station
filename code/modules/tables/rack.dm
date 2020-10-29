@@ -6,11 +6,11 @@
 	can_plate = 0
 	can_reinforce = 0
 	flipped = -1
-	material = DEFAULT_FURNITURE_MATERIAL
-	handle_generic_blending = FALSE
 
-/obj/structure/table/rack/Initialize()
-	. = ..()
+	material = DEFAULT_FURNITURE_MATERIAL
+
+/obj/structure/table/rack/New()
+	..()
 	verbs -= /obj/structure/table/verb/do_flip
 	verbs -= /obj/structure/table/proc/do_put
 
@@ -30,11 +30,9 @@
 /obj/structure/table/rack/can_connect()
 	return FALSE
 
-/obj/structure/table/rack/holorack/dismantle()
-	material = null
-	reinf_material = null
-	parts_type = null
-	. = ..()
+/obj/structure/table/rack/holorack/dismantle(obj/item/weapon/wrench/W, mob/user)
+	to_chat(user, "<span class='warning'>You cannot dismantle \the [src].</span>")
+	return
 
 /obj/structure/table/rack/dark
 	color = COLOR_GRAY40

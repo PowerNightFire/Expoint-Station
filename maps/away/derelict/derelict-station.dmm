@@ -65,14 +65,14 @@
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "ah" = (
-/obj/machinery/sleeper/standard,
+/obj/machinery/sleeper,
 /obj/machinery/light{
 	dir = 1
 	},
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "ai" = (
-/obj/item/cell,
+/obj/item/weapon/cell,
 /turf/simulated/floor/plating,
 /area/derelict/ship)
 "aj" = (
@@ -88,8 +88,8 @@
 /area/derelict/ship)
 "al" = (
 /obj/structure/shuttle/engine/propulsion{
-	icon_state = "burst_r";
-	dir = 4
+	dir = 4;
+	icon_state = "burst_r"
 	},
 /turf/space,
 /area/derelict/ship)
@@ -117,8 +117,8 @@
 /area/derelict/ship)
 "aq" = (
 /obj/structure/shuttle/engine/heater{
-	icon_state = "heater";
-	dir = 4
+	dir = 4;
+	icon_state = "heater"
 	},
 /obj/structure/window/reinforced{
 	dir = 8
@@ -127,13 +127,13 @@
 /area/derelict/ship)
 "ar" = (
 /obj/structure/shuttle/engine/propulsion{
-	icon_state = "propulsion";
-	dir = 4
+	dir = 4;
+	icon_state = "propulsion"
 	},
 /turf/space,
 /area/derelict/ship)
 "as" = (
-/obj/item/scalpel,
+/obj/item/weapon/scalpel,
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "at" = (
@@ -199,15 +199,15 @@
 /area/derelict/ship)
 "aB" = (
 /obj/structure/table/standard,
-/obj/item/cell,
+/obj/item/weapon/cell,
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "aC" = (
-/obj/item/multitool,
+/obj/item/device/multitool,
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "aD" = (
-/obj/item/cell{
+/obj/item/weapon/cell{
 	charge = 100;
 	maxcharge = 15000
 	},
@@ -239,13 +239,13 @@
 /turf/simulated/floor/plating,
 /area/derelict/ship)
 "aH" = (
-/obj/machinery/fabricator/pipe,
+/obj/machinery/pipedispenser,
 /turf/simulated/floor/plating,
 /area/derelict/ship)
 "aI" = (
 /obj/structure/shuttle/engine/propulsion{
-	icon_state = "burst_l";
-	dir = 4
+	dir = 4;
+	icon_state = "burst_l"
 	},
 /turf/space,
 /area/derelict/ship)
@@ -323,7 +323,7 @@
 /area/derelict/ship)
 "aT" = (
 /obj/structure/bed,
-/obj/item/bedsheet,
+/obj/item/weapon/bedsheet,
 /obj/structure/window/reinforced{
 	dir = 8
 	},
@@ -342,8 +342,8 @@
 /area/derelict/ship)
 "aV" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 8
+	dir = 8;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
@@ -381,7 +381,7 @@
 /area/derelict/ship)
 "bb" = (
 /obj/structure/table/standard,
-/obj/item/tank/oxygen,
+/obj/item/weapon/tank/oxygen,
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "bc" = (
@@ -429,7 +429,7 @@
 /area/constructionsite/maintenance)
 "bj" = (
 /obj/structure/table/standard,
-/obj/item/scanner/gas,
+/obj/item/device/scanner/gas,
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "bk" = (
@@ -470,7 +470,7 @@
 /area/derelict/ship)
 "bs" = (
 /obj/structure/bed,
-/obj/item/bedsheet,
+/obj/item/weapon/bedsheet,
 /obj/structure/window/reinforced{
 	dir = 4
 	},
@@ -583,7 +583,7 @@
 /area/constructionsite/bridge)
 "bP" = (
 /obj/structure/table/standard,
-/obj/item/paper{
+/obj/item/weapon/paper{
 	info = "\\\[center]\\\[b]ATTN: Regarding Meteor Storms\\\[/b]\[/center]\\\[br]\\\[br]We've recently heard mutterings from the Atmospheric Technicians that the meteor showers in this sector are becoming too much. However, this should be disregarded.\\\[br]\\\[br] High Command has assured us that our shields can easily keep pace with any meteor storm and then some. Any uneasiness the crew may feel should be disspelled swiftly. Thank you.";
 	name = "ATTN: Regarding Meteor Storms"
 	},
@@ -611,30 +611,30 @@
 /area/derelict/ship)
 "bU" = (
 /obj/structure/table/rack,
-/obj/item/tank/emergency/oxygen,
-/obj/item/tank/emergency/oxygen,
-/obj/item/tank/emergency/oxygen,
-/obj/item/tank/emergency/oxygen,
+/obj/item/weapon/tank/emergency/oxygen,
+/obj/item/weapon/tank/emergency/oxygen,
+/obj/item/weapon/tank/emergency/oxygen,
+/obj/item/weapon/tank/emergency/oxygen,
 /obj/random/tank,
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "bV" = (
 /obj/structure/table/rack,
 /obj/item/clothing/mask/breath,
-/obj/item/cell,
+/obj/item/weapon/cell,
 /obj/random/hardsuit,
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "bW" = (
 /obj/structure/table/rack,
-/obj/item/storage/toolbox/syndicate,
+/obj/item/weapon/storage/toolbox/syndicate,
 /obj/random/maintenance,
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "bX" = (
 /obj/structure/cable{
-	icon_state = "0-4";
-	d2 = 4
+	d2 = 4;
+	icon_state = "0-4"
 	},
 /obj/machinery/power/apc/high/inactive{
 	dir = 8;
@@ -652,7 +652,7 @@
 /turf/simulated/floor/plating,
 /area/derelict/ship)
 "bZ" = (
-/obj/item/cell{
+/obj/item/weapon/cell{
 	charge = 100;
 	maxcharge = 15000
 	},
@@ -851,14 +851,14 @@
 /area/constructionsite/hallway/fore)
 "cJ" = (
 /obj/structure/table/standard,
-/obj/item/screwdriver,
+/obj/item/weapon/screwdriver,
 /obj/machinery/light,
 /obj/random/maintenance,
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "cK" = (
 /obj/structure/table/standard,
-/obj/item/radio/off,
+/obj/item/device/radio/off,
 /turf/simulated/floor/tiled,
 /area/derelict/ship)
 "cL" = (
@@ -867,7 +867,7 @@
 /area/derelict/ship)
 "cM" = (
 /obj/structure/bookcase,
-/obj/item/book/manual/excavation,
+/obj/item/weapon/book/manual/excavation,
 /turf/simulated/floor/airless,
 /area/constructionsite/hallway/fore)
 "cN" = (
@@ -885,7 +885,7 @@
 /area/constructionsite/hallway/fore)
 "cQ" = (
 /obj/structure/bookcase,
-/obj/item/book/manual/ripley_build_and_repair,
+/obj/item/weapon/book/manual/ripley_build_and_repair,
 /turf/simulated/floor/airless,
 /area/constructionsite/hallway/fore)
 "cR" = (
@@ -944,7 +944,7 @@
 /turf/simulated/floor/plating,
 /area/derelict/ship)
 "cX" = (
-/obj/machinery/fabricator/book,
+/obj/machinery/bookbinder,
 /turf/simulated/floor/tiled/dark/airless,
 /area/constructionsite/hallway/fore)
 "cY" = (
@@ -972,7 +972,7 @@
 /area/constructionsite/hallway/fore)
 "dc" = (
 /obj/structure/table/marble,
-/obj/item/kitchen/rollingpin,
+/obj/item/weapon/material/kitchen/rollingpin,
 /turf/simulated/floor/airless,
 /area/constructionsite/hallway/fore)
 "dd" = (
@@ -992,7 +992,7 @@
 /area/constructionsite/hallway/fore)
 "dg" = (
 /obj/structure/bookcase/manuals/medical,
-/obj/item/book/manual/nuclear,
+/obj/item/weapon/book/manual/nuclear,
 /turf/simulated/floor/airless{
 	icon_state = "dmg2"
 	},
@@ -1225,7 +1225,7 @@
 /turf/simulated/floor/airless,
 /area/constructionsite/storage)
 "ed" = (
-/obj/machinery/fabricator/industrial,
+/obj/machinery/robotics_fabricator,
 /turf/simulated/floor/airless,
 /area/constructionsite/storage)
 "ee" = (
@@ -1257,12 +1257,12 @@
 "ej" = (
 /obj/machinery/shieldgen,
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 8
+	dir = 8;
+	icon_state = "window"
 	},
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 1
+	dir = 1;
+	icon_state = "window"
 	},
 /obj/effect/floor_decal/industrial/outline/yellow,
 /turf/simulated/floor/tiled/dark,
@@ -1270,12 +1270,12 @@
 "ek" = (
 /obj/machinery/shieldgen,
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 4
+	dir = 4;
+	icon_state = "window"
 	},
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 1
+	dir = 1;
+	icon_state = "window"
 	},
 /obj/effect/floor_decal/industrial/outline/yellow,
 /turf/simulated/floor/tiled/dark,
@@ -1283,12 +1283,12 @@
 "el" = (
 /obj/machinery/portable_atmospherics/canister/air,
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 8
+	dir = 8;
+	icon_state = "window"
 	},
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 1
+	dir = 1;
+	icon_state = "window"
 	},
 /obj/effect/floor_decal/industrial/outline/yellow,
 /turf/simulated/floor/tiled/dark,
@@ -1296,12 +1296,12 @@
 "em" = (
 /obj/machinery/portable_atmospherics/canister/air,
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 4
+	dir = 4;
+	icon_state = "window"
 	},
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 1
+	dir = 1;
+	icon_state = "window"
 	},
 /obj/effect/floor_decal/industrial/outline/yellow,
 /turf/simulated/floor/tiled/dark,
@@ -1309,8 +1309,8 @@
 "en" = (
 /obj/structure/table/reinforced,
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 1
+	dir = 1;
+	icon_state = "tube1"
 	},
 /obj/item/stack/material/steel{
 	amount = 50;
@@ -1389,8 +1389,8 @@
 "ew" = (
 /obj/machinery/shieldgen,
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 8
+	dir = 8;
+	icon_state = "window"
 	},
 /obj/effect/floor_decal/industrial/outline/yellow,
 /turf/simulated/floor/tiled/dark,
@@ -1398,8 +1398,8 @@
 "ex" = (
 /obj/machinery/shieldgen,
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 4
+	dir = 4;
+	icon_state = "window"
 	},
 /obj/effect/floor_decal/industrial/outline/yellow,
 /turf/simulated/floor/tiled/dark,
@@ -1407,8 +1407,8 @@
 "ey" = (
 /obj/machinery/portable_atmospherics/canister/air,
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 8
+	dir = 8;
+	icon_state = "window"
 	},
 /obj/effect/floor_decal/industrial/outline/yellow,
 /turf/simulated/floor/tiled/dark,
@@ -1416,8 +1416,8 @@
 "ez" = (
 /obj/machinery/portable_atmospherics/canister/air,
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 4
+	dir = 4;
+	icon_state = "window"
 	},
 /obj/effect/floor_decal/industrial/outline/yellow,
 /turf/simulated/floor/tiled/dark,
@@ -1429,7 +1429,7 @@
 /obj/structure/table/reinforced,
 /obj/item/clothing/shoes/magboots,
 /obj/item/clothing/glasses/meson,
-/obj/item/tank/oxygen,
+/obj/item/weapon/tank/oxygen,
 /obj/random/tech_supply,
 /obj/random/tech_supply,
 /obj/random/tech_supply,
@@ -1440,6 +1440,9 @@
 /area/constructionsite/teleporter)
 "eC" = (
 /obj/structure/table/reinforced,
+/obj/item/stack/material/phoron{
+	amount = 10
+	},
 /obj/random/powercell,
 /obj/random/tech_supply,
 /obj/random/tech_supply,
@@ -1468,8 +1471,8 @@
 /turf/simulated/wall,
 /area/constructionsite/hallway/fore)
 "eH" = (
-/obj/machinery/button/access/exterior{
-	id_tag = "constructionsite_airlock";
+/obj/machinery/access_button/airlock_exterior{
+	master_tag = "constructionsite_airlock";
 	pixel_x = 20;
 	pixel_y = 0;
 	req_access = newlist()
@@ -1480,15 +1483,15 @@
 /obj/structure/sign/warning/vacuum{
 	pixel_x = -32
 	},
-/obj/machinery/button/access/interior{
-	id_tag = "constructionsite_airlock";
+/obj/machinery/access_button/airlock_interior{
+	master_tag = "constructionsite_airlock";
 	pixel_x = -20;
 	pixel_y = 0;
 	req_access = newlist()
 	},
 /obj/effect/floor_decal/industrial/warning/corner{
-	icon_state = "warningcorner";
-	dir = 1
+	dir = 1;
+	icon_state = "warningcorner"
 	},
 /turf/simulated/floor/tiled/dark,
 /area/constructionsite/teleporter)
@@ -1535,6 +1538,7 @@
 /area/constructionsite/hallway/fore)
 "eR" = (
 /obj/machinery/door/airlock/external{
+	frequency = 1379;
 	icon_state = "door_locked";
 	id_tag = "constructionsite_outer";
 	locked = 1
@@ -1542,17 +1546,18 @@
 /turf/simulated/floor,
 /area/constructionsite/teleporter)
 "eS" = (
-/obj/machinery/atmospherics/unary/vent_pump/high_volume/external_air{
+/obj/machinery/atmospherics/unary/vent_pump/high_volume/airlock{
 	id_tag = "constructionsite_vent"
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 9
+	dir = 9;
+	icon_state = "warning"
 	},
 /turf/simulated/floor,
 /area/constructionsite/teleporter)
 "eU" = (
 /obj/machinery/door/airlock/external{
+	frequency = 1379;
 	icon_state = "door_locked";
 	id_tag = "constructionsite_inner";
 	locked = 1
@@ -1561,8 +1566,8 @@
 /area/constructionsite/teleporter)
 "eV" = (
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 8
+	dir = 8;
+	icon_state = "warning"
 	},
 /turf/simulated/floor/tiled,
 /area/constructionsite/teleporter)
@@ -1590,11 +1595,12 @@
 /area/constructionsite/hallway/fore)
 "fa" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/blue{
-	icon_state = "intact";
-	dir = 5
+	dir = 5;
+	icon_state = "intact"
 	},
 /obj/machinery/light/small,
 /obj/machinery/embedded_controller/radio/airlock/airlock_controller{
+	frequency = 1379;
 	id_tag = "constructionsite_airlock";
 	pixel_x = 0;
 	pixel_y = -25;
@@ -1605,30 +1611,32 @@
 	tag_interior_door = "constructionsite_inner"
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 10
+	dir = 10;
+	icon_state = "warning"
 	},
 /turf/simulated/floor,
 /area/constructionsite/teleporter)
 "fb" = (
 /obj/machinery/atmospherics/pipe/manifold/hidden/blue,
 /obj/machinery/airlock_sensor{
+	frequency = 1379;
 	id_tag = "constructionsite_sensor";
 	pixel_x = 0;
 	pixel_y = -25
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 6
+	dir = 6;
+	icon_state = "warning"
 	},
 /turf/simulated/floor,
 /area/constructionsite/teleporter)
 "fc" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/blue{
-	icon_state = "intact";
-	dir = 4
+	dir = 4;
+	icon_state = "intact"
 	},
 /obj/machinery/door/airlock/external{
+	frequency = 1379;
 	icon_state = "door_locked";
 	id_tag = "constructionsite_inner";
 	locked = 1
@@ -1637,19 +1645,19 @@
 /area/constructionsite/teleporter)
 "fd" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/blue{
-	icon_state = "intact";
-	dir = 4
+	dir = 4;
+	icon_state = "intact"
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 8
+	dir = 8;
+	icon_state = "warning"
 	},
 /turf/simulated/floor/tiled,
 /area/constructionsite/teleporter)
 "fe" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/blue{
-	icon_state = "intact";
-	dir = 10
+	dir = 10;
+	icon_state = "intact"
 	},
 /turf/simulated/floor/tiled,
 /area/constructionsite/teleporter)
@@ -1709,24 +1717,24 @@
 /area/constructionsite/storage)
 "fn" = (
 /obj/structure/window/basic{
-	icon_state = "window";
-	dir = 1
+	dir = 1;
+	icon_state = "window"
 	},
 /obj/machinery/portable_atmospherics/canister/air/airlock,
 /obj/machinery/atmospherics/portables_connector{
-	icon_state = "map_connector";
-	dir = 4
+	dir = 4;
+	icon_state = "map_connector"
 	},
 /obj/effect/floor_decal/industrial/warning/corner{
-	icon_state = "warningcorner";
-	dir = 4
+	dir = 4;
+	icon_state = "warningcorner"
 	},
 /turf/simulated/floor/tiled/dark,
 /area/constructionsite/teleporter)
 "fo" = (
 /obj/machinery/atmospherics/pipe/manifold/hidden/blue{
-	icon_state = "map";
-	dir = 4
+	dir = 4;
+	icon_state = "map"
 	},
 /turf/simulated/floor/tiled,
 /area/constructionsite/teleporter)
@@ -1777,15 +1785,15 @@
 /obj/structure/window/basic,
 /obj/machinery/portable_atmospherics/canister/air/airlock,
 /obj/machinery/atmospherics/portables_connector{
-	icon_state = "map_connector";
-	dir = 4
+	dir = 4;
+	icon_state = "map_connector"
 	},
 /turf/simulated/floor/tiled/dark,
 /area/constructionsite/teleporter)
 "fv" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/blue{
-	icon_state = "intact";
-	dir = 9
+	dir = 9;
+	icon_state = "intact"
 	},
 /turf/simulated/floor/tiled/dark,
 /area/constructionsite/teleporter)
@@ -1808,28 +1816,30 @@
 /turf/simulated/floor/airless,
 /area/constructionsite/storage)
 "fy" = (
-/obj/machinery/fabricator/imprinter,
+/obj/machinery/r_n_d/circuit_imprinter,
 /turf/simulated/floor/tiled/dark/airless,
 /area/constructionsite/storage)
 "fz" = (
-/obj/machinery/destructive_analyzer,
+/obj/machinery/r_n_d/destructive_analyzer,
 /turf/simulated/floor/airless,
 /area/constructionsite/storage)
 "fA" = (
-/obj/machinery/fabricator/protolathe{
+/obj/machinery/r_n_d/protolathe{
+	icon_state = "protolathe_t";
 	stat = 1
 	},
 /turf/simulated/floor/airless,
 /area/constructionsite/storage)
 "fB" = (
+/obj/machinery/r_n_d/server/centcom,
 /turf/simulated/floor/airless,
 /area/constructionsite/storage)
 "fC" = (
-/obj/machinery/fabricator/pipe,
+/obj/machinery/pipedispenser,
 /turf/simulated/floor/tiled/dark,
 /area/constructionsite/teleporter)
 "fD" = (
-/obj/machinery/fabricator/pipe/disposal,
+/obj/machinery/pipedispenser/disposal,
 /turf/simulated/floor/tiled/dark,
 /area/constructionsite/teleporter)
 "fE" = (
@@ -1851,8 +1861,8 @@
 /area/constructionsite/teleporter)
 "fH" = (
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 9
+	dir = 9;
+	icon_state = "warning"
 	},
 /obj/machinery/constructable_frame/computerframe,
 /turf/simulated/floor/tiled/dark,
@@ -1860,16 +1870,16 @@
 "fI" = (
 /obj/machinery/teleport/station,
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 1
+	dir = 1;
+	icon_state = "warning"
 	},
 /turf/simulated/floor/tiled/dark,
 /area/constructionsite/teleporter)
 "fJ" = (
 /obj/machinery/teleport/hub,
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 1
+	dir = 1;
+	icon_state = "warning"
 	},
 /turf/simulated/floor/tiled/dark,
 /area/constructionsite/teleporter)
@@ -2268,7 +2278,7 @@
 /turf/simulated/wall,
 /area/constructionsite/medical)
 "ho" = (
-/obj/machinery/sleeper/standard,
+/obj/machinery/sleeper,
 /turf/simulated/floor/tiled/white/airless,
 /area/constructionsite/medical)
 "hp" = (
@@ -2291,7 +2301,9 @@
 	},
 /area/constructionsite/atmospherics)
 "hu" = (
-/obj/item/frame/light,
+/obj/machinery/light_construct{
+	dir = 1
+	},
 /turf/simulated/floor/airless,
 /area/constructionsite/medical)
 "hv" = (
@@ -2313,9 +2325,9 @@
 /turf/simulated/floor/tiled/white/airless,
 /area/constructionsite/medical)
 "hz" = (
-/obj/item/chems/ivbag,
-/obj/item/chems/ivbag,
-/obj/item/chems/ivbag/blood/OMinus,
+/obj/item/weapon/reagent_containers/ivbag,
+/obj/item/weapon/reagent_containers/ivbag,
+/obj/item/weapon/reagent_containers/ivbag/blood/OMinus,
 /obj/structure/closet/medical_wall{
 	name = "Blood Closet"
 	},
@@ -2491,7 +2503,7 @@
 /turf/simulated/floor/airless,
 /area/constructionsite/medical)
 "il" = (
-/obj/item/storage/box/freezer,
+/obj/item/weapon/storage/box/freezer,
 /turf/simulated/floor/airless,
 /area/constructionsite/medical)
 "im" = (
@@ -2510,8 +2522,8 @@
 /area/constructionsite/medical)
 "ip" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 4
+	dir = 4;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/airless,
 /area/constructionsite/medical)
@@ -2558,8 +2570,8 @@
 	name = "Mixed Air Supply Control";
 	output_tag = "d_air_out";
 	pressure_setting = 2000;
-	sensor_tag = "d_air_sensor";
-	sensor_name = "Air Supply Tank"
+	sensor_name = "Air Supply Tank";
+	sensor_tag = "d_air_sensor"
 	},
 /obj/machinery/atmospherics/pipe/simple/visible{
 	dir = 4
@@ -2588,15 +2600,15 @@
 /obj/machinery/atmospherics/unary/vent_pump/tank{
 	dir = 8;
 	external_pressure_bound = 0;
-	external_pressure_bound_default = 0
+	external_pressure_bound_default = 0;
 	icon_state = "map_vent_in";
 	id_tag = "d_air_out";
 	internal_pressure_bound = 2000;
 	internal_pressure_bound_default = 2000;
-	use_power = 1;
 	pressure_checks = 2;
 	pressure_checks_default = 2;
-	pump_direction = 0
+	pump_direction = 0;
+	use_power = 1
 	},
 /turf/simulated/floor/reinforced/airmix,
 /area/constructionsite/atmospherics)
@@ -2636,8 +2648,9 @@
 "iH" = (
 /obj/machinery/atmospherics/unary/outlet_injector{
 	dir = 8;
+	frequency = 1441;
 	icon_state = "map_injector";
-	id_tag = "d_air_in";
+	id = "d_air_in";
 	use_power = 1
 	},
 /turf/simulated/floor/reinforced/airmix,
@@ -2654,8 +2667,8 @@
 /area/constructionsite/hallway/aft)
 "iK" = (
 /obj/effect/floor_decal/industrial/warning/dust{
-	icon_state = "warning_dust";
-	dir = 8
+	dir = 8;
+	icon_state = "warning_dust"
 	},
 /turf/simulated/floor/tiled/dark/airless,
 /area/constructionsite/atmospherics)
@@ -2673,8 +2686,8 @@
 /area/constructionsite/hallway/aft)
 "iN" = (
 /obj/effect/floor_decal/industrial/warning/dust{
-	icon_state = "warning_dust";
-	dir = 8
+	dir = 8;
+	icon_state = "warning_dust"
 	},
 /turf/simulated/floor/airless,
 /area/constructionsite/atmospherics)
@@ -2683,8 +2696,8 @@
 	input_tag = "d_o2_in";
 	name = "Oxygen Supply Control";
 	output_tag = "d_o2_out";
-	sensor_tag = "d_o2_sensor";
-	sensor_name = "Oxygen Supply Tank"
+	sensor_name = "Oxygen Supply Tank";
+	sensor_tag = "d_o2_sensor"
 	},
 /obj/machinery/atmospherics/pipe/simple/visible{
 	dir = 4
@@ -2701,10 +2714,10 @@
 	initialize_directions = 1;
 	internal_pressure_bound = 4000;
 	internal_pressure_bound_default = 4000;
-	use_power = 1;
 	pressure_checks = 2;
 	pressure_checks_default = 2;
-	pump_direction = 0
+	pump_direction = 0;
+	use_power = 1
 	},
 /turf/simulated/floor/reinforced/oxygen,
 /area/constructionsite/atmospherics)
@@ -2733,8 +2746,9 @@
 "iU" = (
 /obj/machinery/atmospherics/unary/outlet_injector{
 	dir = 8;
+	frequency = 1441;
 	icon_state = "map_injector";
-	id_tag = "d_o2_in";
+	id = "d_o2_in";
 	use_power = 1
 	},
 /turf/simulated/floor/reinforced/oxygen,
@@ -2781,8 +2795,8 @@
 	input_tag = "d_n2_in";
 	name = "Nitrogen Supply Control";
 	output_tag = "d_n2_out";
-	sensor_tag = "d_n2_sensor";
-	sensor_name = "N2 Supply Tank"
+	sensor_name = "N2 Supply Tank";
+	sensor_tag = "d_n2_sensor"
 	},
 /obj/machinery/atmospherics/pipe/simple/visible{
 	dir = 4
@@ -2799,10 +2813,10 @@
 	initialize_directions = 1;
 	internal_pressure_bound = 4000;
 	internal_pressure_bound_default = 4000;
-	use_power = 1;
 	pressure_checks = 2;
 	pressure_checks_default = 2;
-	pump_direction = 0
+	pump_direction = 0;
+	use_power = 1
 	},
 /turf/simulated/floor/reinforced/nitrogen,
 /area/constructionsite/atmospherics)
@@ -2873,16 +2887,17 @@
 /area/constructionsite/atmospherics)
 "jq" = (
 /obj/machinery/atmospherics/pipe/simple/visible{
-	icon_state = "intact";
-	dir = 5
+	dir = 5;
+	icon_state = "intact"
 	},
 /turf/simulated/floor/airless,
 /area/constructionsite/atmospherics)
 "jr" = (
 /obj/machinery/atmospherics/unary/outlet_injector{
 	dir = 8;
+	frequency = 1441;
 	icon_state = "map_injector";
-	id_tag = "d_n2_in";
+	id = "d_n2_in";
 	use_power = 1
 	},
 /turf/simulated/floor/reinforced/nitrogen,
@@ -2984,7 +2999,7 @@
 	},
 /area/constructionsite)
 "jO" = (
-/obj/item/bedsheet,
+/obj/item/weapon/bedsheet,
 /turf/simulated/floor/tiled/dark/airless,
 /area/constructionsite)
 "jP" = (
@@ -3194,6 +3209,7 @@
 /turf/simulated/wall,
 /area/constructionsite/engineering)
 "kI" = (
+/obj/machinery/portable_atmospherics/canister/empty/phoron,
 /turf/simulated/floor/airless,
 /area/constructionsite/engineering)
 "kJ" = (
@@ -3334,6 +3350,7 @@
 /turf/simulated/floor/tiled/dark/airless,
 /area/constructionsite/engineering)
 "lm" = (
+/obj/machinery/portable_atmospherics/canister/phoron/engine_setup,
 /turf/simulated/floor/airless,
 /area/constructionsite/engineering)
 "ln" = (
@@ -3445,16 +3462,16 @@
 "lC" = (
 /obj/machinery/constructable_frame/computerframe,
 /obj/structure/cable{
-	icon_state = "0-2";
-	d2 = 2
+	d2 = 2;
+	icon_state = "0-2"
 	},
 /turf/simulated/floor/airless,
 /area/AIsattele)
 "lD" = (
 /obj/machinery/teleport/station,
 /obj/structure/cable{
-	icon_state = "0-2";
-	d2 = 2
+	d2 = 2;
+	icon_state = "0-2"
 	},
 /turf/simulated/floor/airless,
 /area/AIsattele)
@@ -3494,7 +3511,7 @@
 /turf/simulated/floor/airless,
 /area/constructionsite/engineering)
 "lI" = (
-/obj/item/shard{
+/obj/item/weapon/material/shard{
 	icon_state = "medium"
 	},
 /turf/simulated/floor/airless,
@@ -3525,7 +3542,7 @@
 /turf/simulated/floor/airless,
 /area/AIsattele)
 "lP" = (
-/obj/item/cell,
+/obj/item/weapon/cell,
 /turf/simulated/floor/airless,
 /area/AIsattele)
 "lQ" = (
@@ -3555,8 +3572,8 @@
 /area/AIsattele)
 "lW" = (
 /obj/structure/cable{
-	icon_state = "0-4";
-	d2 = 4
+	d2 = 4;
+	icon_state = "0-4"
 	},
 /turf/simulated/floor/airless,
 /area/AIsattele)
@@ -3565,7 +3582,7 @@
 /turf/space,
 /area/AIsattele)
 "lY" = (
-/obj/item/storage/toolbox/electrical{
+/obj/item/weapon/storage/toolbox/electrical{
 	pixel_x = 1;
 	pixel_y = -1
 	},
@@ -3624,12 +3641,12 @@
 /turf/simulated/floor/tiled/dark,
 /area/constructionsite/teleporter)
 "ob" = (
-/obj/machinery/atmospherics/unary/vent_pump/high_volume/external_air{
+/obj/machinery/atmospherics/unary/vent_pump/high_volume/airlock{
 	id_tag = "constructionsite_vent"
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 5
+	dir = 5;
+	icon_state = "warning"
 	},
 /obj/machinery/camera/motion{
 	c_tag = "Construction Site Teleporter Airlock"

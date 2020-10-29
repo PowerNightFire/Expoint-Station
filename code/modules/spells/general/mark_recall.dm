@@ -59,8 +59,8 @@
 
 	var/spell/mark_recall/spell
 
-/obj/effect/cleanable/wizard_mark/Initialize(mapload,var/mrspell)
-	. = ..()
+/obj/effect/cleanable/wizard_mark/New(var/newloc,var/mrspell)
+	..()
 	spell = mrspell
 
 /obj/effect/cleanable/wizard_mark/Destroy()
@@ -75,7 +75,7 @@
 	..()
 
 /obj/effect/cleanable/wizard_mark/attackby(var/obj/item/I, var/mob/user)
-	if(istype(I, /obj/item/nullrod) || istype(I, /obj/item/spellbook))
+	if(istype(I, /obj/item/weapon/nullrod) || istype(I, /obj/item/weapon/spellbook))
 		user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 		src.visible_message("\The [src] fades away!")
 		qdel(src)

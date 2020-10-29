@@ -16,7 +16,7 @@
 /obj/structure/closet/gmcloset/WillContain()
 	return list(
 		/obj/item/clothing/head/that = 2,
-		/obj/item/radio/headset/headset_service = 2,
+		/obj/item/device/radio/headset/headset_service = 2,
 		/obj/item/clothing/head/hairflower,
 		/obj/item/clothing/head/hairflower/pink,
 		/obj/item/clothing/head/hairflower/yellow,
@@ -25,7 +25,7 @@
 		/obj/item/clothing/under/rank/bartender = 2,
 		/obj/item/clothing/under/dress/dress_saloon,
 		/obj/item/clothing/accessory/wcoat/black = 2,
-		/obj/item/clothing/shoes/color/black = 2
+		/obj/item/clothing/shoes/black = 2
 	)
 
 /*
@@ -40,8 +40,8 @@
 	return list(
 		/obj/item/clothing/under/sundress,
 		/obj/item/clothing/under/waiter = 2,
-		/obj/item/radio/headset/headset_service = 2,
-		/obj/item/storage/box/mousetraps = 2,
+		/obj/item/device/radio/headset/headset_service = 2,
+		/obj/item/weapon/storage/box/mousetraps = 2,
 		/obj/item/clothing/under/rank/chef,
 		/obj/item/clothing/head/chefhat
 	)
@@ -57,17 +57,17 @@
 /obj/structure/closet/jcloset/WillContain()
 	return list(
 		/obj/item/clothing/under/rank/janitor,
-		/obj/item/radio/headset/headset_service,
+		/obj/item/device/radio/headset/headset_service,
 		/obj/item/clothing/gloves/thick,
 		/obj/item/clothing/head/soft/purple,
 		/obj/item/clothing/head/beret/purple,
-		/obj/item/flashlight,
-		/obj/item/caution = 4,
-		/obj/item/lightreplacer,
-		/obj/item/storage/bag/trash,
+		/obj/item/device/flashlight,
+		/obj/item/weapon/caution = 4,
+		/obj/item/device/lightreplacer,
+		/obj/item/weapon/storage/bag/trash,
 		/obj/item/clothing/shoes/galoshes,
-		/obj/item/soap,
-		/obj/item/storage/belt/janitor
+		/obj/item/weapon/soap,
+		/obj/item/weapon/storage/belt/janitor
 	)
 
 /*
@@ -88,6 +88,6 @@
 		/obj/item/clothing/suit/storage/toggle/suit/blue,
 		/obj/item/clothing/under/lawyer/purpsuit,
 		/obj/item/clothing/suit/storage/toggle/suit/purple,
-		/obj/item/clothing/shoes/color/brown,
-		/obj/item/clothing/shoes/color/black
+		/obj/item/clothing/shoes/brown,
+		/obj/item/clothing/shoes/black
 	)

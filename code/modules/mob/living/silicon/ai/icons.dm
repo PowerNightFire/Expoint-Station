@@ -28,7 +28,7 @@
 	name = "[name] (Malf)"
 
 /datum/ai_icon/malf/may_used_by_ai(var/mob/living/silicon/ai/AI)
-	return istype(AI) && AI.is_traitor()
+	return istype(AI) && AI.is_malf_or_traitor()
 
 /datum/ai_icon/red
 	name = "Red"
@@ -116,6 +116,11 @@
 	name = "Monochrome"
 	alive_icon = "ai-mono"
 	alive_light = "#585858"
+
+/datum/ai_icon/nanotrasen
+	name = "NanoTrasen"
+	alive_icon = "ai-nanotrasen"
+	alive_light = "#000029"
 
 /datum/ai_icon/rainbow
 	name = "Rainbow"

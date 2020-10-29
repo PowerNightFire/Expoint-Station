@@ -129,21 +129,18 @@
 		if(target)
 			if(base_area)
 				ChangeArea(target, get_area(source))
-				transport_turf_contents(source, target)
 				ChangeArea(source, base_area)
-			else
-				transport_turf_contents(source, target)
+			transport_turf_contents(source, target)
+
 	//change the old turfs
 	for(var/turf/source in translation)
-		var/old_turf = source.prev_type || base_turf || get_base_turf_by_area(source)
-		source.ChangeTurf(old_turf)
+		source.ChangeTurf(base_turf ? base_turf : get_base_turf_by_area(source), 1, 1)
 
 //Transports a turf from a source turf to a target turf, moving all of the turf's contents and making the target a copy of the source.
 /proc/transport_turf_contents(turf/source, turf/target)
-	var/target_type = target.type
+
 	var/turf/new_turf = target.ChangeTurf(source.type, 1, 1)
 	new_turf.transport_properties_from(source)
-	new_turf.prev_type = target_type
 
 	for(var/obj/O in source)
 		if(O.simulated)

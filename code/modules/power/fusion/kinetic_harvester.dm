@@ -60,9 +60,9 @@
 	data["status"] = (use_power >= POWER_USE_ACTIVE)
 	data["materials"] = list()
 	for(var/mat in stored)
-		var/decl/material/material = decls_repository.get_decl(mat)
+		var/material/material = SSmaterials.get_material_by_name(mat)
 		if(material)
-			var/sheets = Floor(stored[mat]/(SHEET_MATERIAL_AMOUNT * 1.5))
+			var/sheets = Floor(stored[mat]/(material.units_per_sheet * 1.5))
 			data["materials"] += list(list("material" = mat, "rawamount" = stored[mat], "amount" = sheets, "harvest" = harvesting[mat]))
 
 	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
@@ -104,9 +104,9 @@
 /obj/machinery/kinetic_harvester/OnTopic(var/mob/user, var/href_list, var/datum/topic_state/state)
 	if(href_list["remove_mat"])
 		var/mat = href_list["remove_mat"]
-		var/decl/material/material = decls_repository.get_decl(mat)
+		var/material/material = SSmaterials.get_material_by_name(mat)
 		if(material)
-			var/sheet_cost = (SHEET_MATERIAL_AMOUNT * 1.5)
+			var/sheet_cost = (material.units_per_sheet * 1.5)
 			var/sheets = Floor(stored[mat]/sheet_cost)
 			if(sheets > 0)
 				material.place_sheet(loc, sheets)

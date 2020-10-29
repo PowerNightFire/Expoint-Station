@@ -23,9 +23,9 @@ var/list/event_last_fired = list()
 	// Code/WorkInProgress/Cael_Aislinn/Economy/Economy_Events.dm
 	// Code/WorkInProgress/Cael_Aislinn/Economy/Economy_Events_Mundane.dm
 
-	possibleEvents[/datum/event/location_event/mundane_news] = 300
+	possibleEvents[/datum/event/economic_event] = 300
 	possibleEvents[/datum/event/trivial_news] = 400
-	possibleEvents[/datum/event/location_event] = 300
+	possibleEvents[/datum/event/mundane_news] = 300
 
 	possibleEvents[/datum/event/money_lotto] = max(min(5, GLOB.player_list.len), 50)
 	if(account_hack_attempted)
@@ -111,25 +111,25 @@ var/list/event_last_fired = list()
 		if(istype(M, /mob/living/silicon/robot))
 			var/mob/living/silicon/robot/R = M
 			if(R.module)
-				if(istype(R.module, /obj/item/robot_module/engineering))
+				if(istype(R.module, /obj/item/weapon/robot_module/engineering))
 					active_with_role["Engineer"]++
-				else if(istype(R.module, /obj/item/robot_module/security))
+				else if(istype(R.module, /obj/item/weapon/robot_module/security))
 					active_with_role["Security"]++
-				else if(istype(R.module, /obj/item/robot_module/medical))
+				else if(istype(R.module, /obj/item/weapon/robot_module/medical))
 					active_with_role["Medical"]++
-				else if(istype(R.module, /obj/item/robot_module/research))
+				else if(istype(R.module, /obj/item/weapon/robot_module/research))
 					active_with_role["Scientist"]++
 
-		if(M.mind.assigned_role in SSjobs.titles_by_department("engineering"))
+		if(M.mind.assigned_role in SSjobs.titles_by_department(ENG))
 			active_with_role["Engineer"]++
 
-		if(M.mind.assigned_role in SSjobs.titles_by_department("medical"))
+		if(M.mind.assigned_role in SSjobs.titles_by_department(MED))
 			active_with_role["Medical"]++
 
-		if(M.mind.assigned_role in SSjobs.titles_by_department("security"))
+		if(M.mind.assigned_role in SSjobs.titles_by_department(SEC))
 			active_with_role["Security"]++
 
-		if(M.mind.assigned_role in SSjobs.titles_by_department("science"))
+		if(M.mind.assigned_role in SSjobs.titles_by_department(SCI))
 			active_with_role["Scientist"]++
 
 		if(M.mind.assigned_role == "AI")

@@ -1,3 +1,16 @@
+var/const/ENG               =(1<<0)
+var/const/SEC               =(1<<1)
+var/const/MED               =(1<<2)
+var/const/SCI               =(1<<3)
+var/const/CIV               =(1<<4)
+var/const/COM               =(1<<5)
+var/const/MSC               =(1<<6)
+var/const/SRV               =(1<<7)
+var/const/SUP               =(1<<8)
+var/const/SPT               =(1<<9)
+var/const/EXP               =(1<<10)
+var/const/ROB               =(1<<11)
+
 SUBSYSTEM_DEF(jobs)
 	name = "Jobs"
 	init_order = SS_INIT_JOBS
@@ -12,7 +25,6 @@ SUBSYSTEM_DEF(jobs)
 	var/list/positions_by_department = list()
 	var/list/job_icons =               list()
 	var/job_config_file = "config/jobs.txt"
-	var/list/must_fill_titles =			list()
 
 /datum/controller/subsystem/jobs/Initialize(timeofday)
 
@@ -23,10 +35,6 @@ SUBSYSTEM_DEF(jobs)
 		if(!job)
 			job = new jobtype
 		primary_job_datums += job
-
-	for(var/datum/job/job in primary_job_datums)
-		if(isnull(job.primary_department))
-			job.primary_department = job.department_refs[1]
 
 	// Create abstract submap archetype jobs for use in prefs, etc.
 	archetype_job_datums.Cut()
@@ -92,7 +100,6 @@ SUBSYSTEM_DEF(jobs)
 	// Update valid job titles.
 	titles_to_datums = list()
 	types_to_datums = list()
-	must_fill_titles = list()
 	positions_by_department = list()
 	for(var/map_name in job_lists_by_map_name)
 		var/list/map_data = job_lists_by_map_name[map_name]
@@ -101,12 +108,10 @@ SUBSYSTEM_DEF(jobs)
 			titles_to_datums[job.title] = job
 			for(var/alt_title in job.alt_titles)
 				titles_to_datums[alt_title] = job
-			if(job.must_fill)
-				must_fill_titles += job.title
-			if(job.department_refs)
-				for(var/dept_ref in job.department_refs)
-					if(dept_ref in SSdepartments.departments)
-						LAZYDISTINCTADD(positions_by_department[dept_ref], job.title)
+			if(job.department_flag)
+				for (var/I in 1 to GLOB.bitflags.len)
+					if(job.department_flag & GLOB.bitflags[I])
+						LAZYDISTINCTADD(positions_by_department["[GLOB.bitflags[I]]"], job.title)
 
 	// Set up syndicate phrases.
 	syndicate_code_phrase = generate_code_phrase()
@@ -118,11 +123,10 @@ SUBSYSTEM_DEF(jobs)
 	. = ..()
 
 /datum/controller/subsystem/jobs/proc/guest_jobbans(var/job)
-	var/datum/job/j = get_by_title(job)
-	if(istype(j) && j.guestbanned)
-		return TRUE
+	for(var/dept in list(COM, MSC, SEC))
+		if(job in titles_by_department(dept))
+			return TRUE
 	return FALSE
-
 
 /datum/controller/subsystem/jobs/proc/reset_occupations()
 	for(var/mob/new_player/player in GLOB.player_list)
@@ -153,7 +157,7 @@ SUBSYSTEM_DEF(jobs)
 	if(!config.enter_allowed)
 		to_chat(joining, "<span class='warning'>There is an administrative lock on entering the game!</span>")
 		return FALSE
-	if(SSticker.mode && SSticker.mode.station_explosion_in_progress)
+	if(SSticker.mode && SSticker.mode.explosion_in_progress)
 		to_chat(joining, "<span class='warning'>The [station_name()] is currently exploding. Joining would go poorly.</span>")
 		return FALSE
 	return TRUE
@@ -237,7 +241,7 @@ SUBSYSTEM_DEF(jobs)
 			continue
 		if(job.is_restricted(player.client.prefs))
 			continue
-		if(job.not_random_selectable) //If you want a command position, select it!
+		if(job.title in titles_by_department(COM)) //If you want a command position, select it!
 			continue
 		if(jobban_isbanned(player, job.title))
 			continue
@@ -253,7 +257,7 @@ SUBSYSTEM_DEF(jobs)
 ///This proc is called before the level loop of divide_occupations() and will try to select a head, ignoring ALL non-head preferences for every level until it locates a head or runs out of levels to check
 /datum/controller/subsystem/jobs/proc/fill_head_position(var/datum/game_mode/mode)
 	for(var/level = 1 to 3)
-		for(var/command_position in must_fill_titles)
+		for(var/command_position in titles_by_department(COM))
 			var/datum/job/job = get_by_title(command_position)
 			if(!job)	continue
 			var/list/candidates = find_occupation_candidates(job, level)
@@ -287,7 +291,7 @@ SUBSYSTEM_DEF(jobs)
 
 ///This proc is called at the start of the level loop of divide_occupations() and will cause head jobs to be checked before any other jobs of the same level
 /datum/controller/subsystem/jobs/proc/CheckHeadPositions(var/level, var/datum/game_mode/mode)
-	for(var/command_position in must_fill_titles)
+	for(var/command_position in titles_by_department(COM))
 		var/datum/job/job = get_by_title(command_position)
 		if(!job)	continue
 		var/list/candidates = find_occupation_candidates(job, level)
@@ -423,7 +427,7 @@ SUBSYSTEM_DEF(jobs)
 					to_chat(H, "<span class='warning'>Your current species, job, branch, skills or whitelist status does not permit you to spawn with [thing]!</span>")
 					continue
 
-				if(!G.slot || G.slot == slot_tie_str || (G.slot in loadout_taken_slots) || !G.spawn_on_mob(H, H.client.prefs.Gear()[G.display_name]))
+				if(!G.slot || G.slot == slot_tie || (G.slot in loadout_taken_slots) || !G.spawn_on_mob(H, H.client.prefs.Gear()[G.display_name]))
 					spawn_in_storage.Add(G)
 				else
 					loadout_taken_slots.Add(G.slot)
@@ -437,10 +441,10 @@ SUBSYSTEM_DEF(jobs)
 				var/list/accessory_args = accessory_data.Copy()
 				accessory_args[1] = src
 				for(var/i in 1 to amt)
-					H.equip_to_slot_or_del(new accessory_path(arglist(accessory_args)), slot_tie_str)
+					H.equip_to_slot_or_del(new accessory_path(arglist(accessory_args)), slot_tie)
 			else
 				for(var/i in 1 to (isnull(accessory_data)? 1 : accessory_data))
-					H.equip_to_slot_or_del(new accessory_path(src), slot_tie_str)
+					H.equip_to_slot_or_del(new accessory_path(src), slot_tie)
 
 	return spawn_in_storage
 
@@ -464,9 +468,33 @@ SUBSYSTEM_DEF(jobs)
 		//Equip job items.
 		job.setup_account(H)
 
+		// EMAIL GENERATION
+		if(rank != "Robot" && rank != "AI")		//These guys get their emails later.
+			var/domain
+			var/addr = H.real_name
+			var/pass
+			if(H.char_branch)
+				if(H.char_branch.email_domain)
+					domain = H.char_branch.email_domain
+				if (H.char_branch.allow_custom_email && H.client.prefs.email_addr)
+					addr = H.client.prefs.email_addr
+			else
+				domain = "freemail.net"
+			if (H.client.prefs.email_pass)
+				pass = H.client.prefs.email_pass
+			if(domain)
+				ntnet_global.create_email(H, addr, domain, rank, pass)
+		// END EMAIL GENERATION
+
 		job.equip(H, H.mind ? H.mind.role_alt_title : "", H.char_branch, H.char_rank)
 		job.apply_fingerprints(H)
 		spawn_in_storage = equip_custom_loadout(H, job)
+
+		var/obj/item/clothing/under/uniform = H.w_uniform
+		if(istype(uniform) && uniform.has_sensor)
+			uniform.sensor_mode = SUIT_SENSOR_MODES[H.client.prefs.sensor_setting]
+			if(H.client.prefs.sensors_locked)
+				uniform.has_sensor = SUIT_LOCKED_SENSORS
 	else
 		to_chat(H, "Your job is [rank] and the game just can't handle it! Please report this bug to an administrator.")
 
@@ -487,23 +515,15 @@ SUBSYSTEM_DEF(jobs)
 			H.buckled.forceMove(H.loc)
 			H.buckled.set_dir(H.dir)
 
-	if(rank != "Robot" && rank != "AI")		//These guys get their emails later.
-		var/domain = "freemail.net"
-		if(H.char_branch?.email_domain)
-			domain = H.char_branch.email_domain
-		var/datum/computer_network/network = get_local_network_at(get_turf(H))
-		if(network)
-			network.create_email(H, H.real_name, domain, rank)
-
 	// If they're head, give them the account info for their department
 	if(H.mind && job.head_position)
 		var/remembered_info = ""
-		var/datum/money_account/department_account = department_accounts[job.primary_department]
+		var/datum/money_account/department_account = department_accounts[job.department]
 
 		if(department_account)
 			remembered_info += "<b>Your department's account number is:</b> #[department_account.account_number]<br>"
 			remembered_info += "<b>Your department's account pin is:</b> [department_account.remote_access_pin]<br>"
-			remembered_info += "<b>Your department's account funds are:</b> [department_account.format_value_by_currency(department_account.money)]<br>"
+			remembered_info += "<b>Your department's account funds are:</b> [GLOB.using_map.local_currency_name_short][department_account.money]<br>"
 
 		H.StoreMemory(remembered_info, /decl/memory_options/system)
 
@@ -522,6 +542,17 @@ SUBSYSTEM_DEF(jobs)
 		for(var/datum/gear/G in spawn_in_storage)
 			G.spawn_in_storage_or_drop(H, H.client.prefs.Gear()[G.display_name])
 
+	if(istype(H)) //give humans wheelchairs, if they need them.
+		var/obj/item/organ/external/l_foot = H.get_organ(BP_L_FOOT)
+		var/obj/item/organ/external/r_foot = H.get_organ(BP_R_FOOT)
+		if(!l_foot || !r_foot)
+			var/obj/structure/bed/chair/wheelchair/W = new /obj/structure/bed/chair/wheelchair(H.loc)
+			H.buckled = W
+			H.UpdateLyingBuckledAndVerbStatus()
+			W.set_dir(H.dir)
+			W.buckled_mob = H
+			W.add_fingerprint(H)
+
 	to_chat(H, "<font size = 3><B>You are [job.total_positions == 1 ? "the" : "a"] [alt_title ? alt_title : rank].</B></font>")
 
 	if(job.supervisors)
@@ -534,13 +565,10 @@ SUBSYSTEM_DEF(jobs)
 
 	//Gives glasses to the vision impaired
 	if(H.disabilities & NEARSIGHTED)
-		var/equipped = H.equip_to_slot_or_del(new /obj/item/clothing/glasses/prescription(H), slot_glasses_str)
+		var/equipped = H.equip_to_slot_or_del(new /obj/item/clothing/glasses/prescription(H), slot_glasses)
 		if(equipped)
 			var/obj/item/clothing/glasses/G = H.glasses
 			G.prescription = 7
-
-	if(H.needs_wheelchair())
-		equip_wheelchair(H)
 
 	BITSET(H.hud_updateflag, ID_HUD)
 	BITSET(H.hud_updateflag, IMPLOYAL_HUD)
@@ -548,12 +576,10 @@ SUBSYSTEM_DEF(jobs)
 
 	job.post_equip_rank(H, alt_title || rank)
 
-	INVOKE_ASYNC(GLOBAL_PROC, .proc/show_location_blurb, H.client, 30)
-
 	return H
 
 /datum/controller/subsystem/jobs/proc/titles_by_department(var/dept)
-	return positions_by_department[dept] || list()
+	return positions_by_department["[dept]"] || list()
 
 /datum/controller/subsystem/jobs/proc/spawn_empty_ai()
 	for(var/obj/effect/landmark/start/S in landmarks_list)
@@ -561,35 +587,5 @@ SUBSYSTEM_DEF(jobs)
 			continue
 		if(locate(/mob/living) in S.loc)
 			continue
-		empty_playable_ai_cores += new /obj/structure/aicore/deactivated(get_turf(S))
+		empty_playable_ai_cores += new /obj/structure/AIcore/deactivated(get_turf(S))
 	return 1
-
-/proc/show_location_blurb(client/C, duration)
-	set waitfor = 0
-
-	var/style = "font-family: 'Fixedsys'; -dm-text-outline: 1 black; font-size: 11px;"
-	var/area/A = get_area(C.mob)
-	var/text = "[stationdate2text()], [stationtime2text()]\n[station_name()], [A.name]"
-	text = uppertext(text)
-
-	var/obj/effect/overlay/T = new()
-	T.maptext_height = 64
-	T.maptext_width = 512
-	T.layer = FLOAT_LAYER
-	T.plane = HUD_PLANE
-	T.appearance_flags = APPEARANCE_UI_IGNORE_ALPHA
-	T.screen_loc = "LEFT+1,BOTTOM+2"
-
-	C.screen += T
-	animate(T, alpha = 255, time = 10)
-	for(var/i = 1 to length(text)+1)
-		T.maptext = "<span style=\"[style]\">[copytext(text,1,i)] </span>"
-		sleep(1)
-	
-	addtimer(CALLBACK(GLOBAL_PROC, .proc/fade_location_blurb, C, T), duration)
-
-/proc/fade_location_blurb(client/C, obj/T)
-	animate(T, alpha = 0, time = 5)
-	sleep(5)
-	C.screen -= T
-	qdel(T)

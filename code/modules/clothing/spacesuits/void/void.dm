@@ -2,9 +2,9 @@
 /obj/item/clothing/head/helmet/space/void
 	name = "void helmet"
 	desc = "A high-tech dark red space suit helmet. Used for AI satellite maintenance."
-	icon = 'icons/clothing/spacesuit/void/nasa/helmet.dmi'
+	icon_state = "void"
 
-	heat_protection = SLOT_HEAD
+	heat_protection = HEAD
 	armor = list(
 		melee = ARMOR_MELEE_RESISTANT, 
 		bullet = ARMOR_BALLISTIC_MINOR, 
@@ -19,10 +19,22 @@
 	min_pressure_protection = 0
 	siemens_coefficient = 0.4
 
+	//Species-specific stuff.
+	species_restricted = list(SPECIES_HUMAN, SPECIES_IPC)
+	sprite_sheets = list(
+		SPECIES_UNATHI = 'icons/mob/species/unathi/onmob_head_helmet_unathi.dmi',
+		SPECIES_SKRELL = 'icons/mob/species/skrell/onmob_head_skrell.dmi',
+		)
+	sprite_sheets_obj = list(
+		SPECIES_UNATHI = 'icons/obj/clothing/species/unathi/obj_head_unathi.dmi',
+		SPECIES_SKRELL = 'icons/obj/clothing/species/skrell/obj_head_skrell.dmi',
+		)
+
+	light_overlay = "helmet_light"
+
 /obj/item/clothing/suit/space/void
 	name = "voidsuit"
-	icon = 'icons/clothing/spacesuit/void/nasa/suit.dmi'
-	item_state_slots = null
+	icon_state = "void"
 	w_class = ITEM_SIZE_HUGE//bulky item
 	desc = "A high-tech dark red space suit. Used for AI satellite maintenance."
 	armor = list(
@@ -34,11 +46,21 @@
 		bio = ARMOR_BIO_SHIELDED, 
 		rad = ARMOR_RAD_MINOR
 		)
-	allowed = list(/obj/item/flashlight,/obj/item/tank,/obj/item/suit_cooling_unit)
-	heat_protection = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS|SLOT_FEET|SLOT_ARMS|SLOT_HANDS
+	allowed = list(/obj/item/device/flashlight,/obj/item/weapon/tank,/obj/item/device/suit_cooling_unit)
+	heat_protection = UPPER_TORSO|LOWER_TORSO|LEGS|FEET|ARMS|HANDS
 	max_heat_protection_temperature = SPACE_SUIT_MAX_HEAT_PROTECTION_TEMPERATURE
 	max_pressure_protection = VOIDSUIT_MAX_PRESSURE
 	siemens_coefficient = 0.4
+
+	species_restricted = list(SPECIES_HUMAN, SPECIES_SKRELL, SPECIES_IPC)
+	sprite_sheets = list(
+		SPECIES_UNATHI = 'icons/mob/species/unathi/onmob_suit_unathi.dmi',
+		SPECIES_SKRELL = 'icons/mob/species/skrell/onmob_suit_skrell.dmi',
+		)
+	sprite_sheets_obj = list(
+		SPECIES_UNATHI = 'icons/obj/clothing/species/unathi/obj_suit_unathi.dmi',
+		SPECIES_SKRELL = 'icons/obj/clothing/species/skrell/obj_suit_skrell.dmi',
+		)
 
 	//Breach thresholds, should ideally be inherited by most (if not all) voidsuits.
 	//With 0.2 resiliance, will reach 10 breach damage after 3 laser carbine blasts or 8 smg hits.
@@ -48,7 +70,7 @@
 	//Inbuilt devices.
 	var/obj/item/clothing/shoes/magboots/boots = null // Deployable boots, if any.
 	var/obj/item/clothing/head/helmet/helmet = null   // Deployable helmet, if any.
-	var/obj/item/tank/tank = null              // Deployable tank, if any.
+	var/obj/item/weapon/tank/tank = null              // Deployable tank, if any.
 
 	action_button_name = "Toggle Helmet"
 	var/helmet_deploy_sound = 'sound/items/helmet_close.ogg'
@@ -66,7 +88,7 @@ else if(##equipment_var) {\
 	. = ..()
 	VOIDSUIT_INIT_EQUIPMENT(boots,  /obj/item/clothing/shoes/magboots)
 	VOIDSUIT_INIT_EQUIPMENT(helmet, /obj/item/clothing/head/helmet)
-	VOIDSUIT_INIT_EQUIPMENT(tank,   /obj/item/tank)
+	VOIDSUIT_INIT_EQUIPMENT(tank,   /obj/item/weapon/tank)
 
 #undef VOIDSUIT_INIT_EQUIPMENT
 
@@ -85,12 +107,12 @@ else if(##equipment_var) {\
 	if(tank && distance <= 1)
 		to_chat(user, "<span class='notice'>The wrist-mounted pressure gauge reads [max(round(tank.air_contents.return_pressure()),0)] kPa remaining in \the [tank].</span>")
 
-/obj/item/clothing/suit/space/void/refit_for_bodytype(var/target_bodytype)
+/obj/item/clothing/suit/space/void/refit_for_species(var/target_species)
 	..()
 	if(istype(helmet))
-		helmet.refit_for_bodytype(target_bodytype)
+		helmet.refit_for_species(target_species)
 	if(istype(boots))
-		boots.refit_for_bodytype(target_bodytype)
+		boots.refit_for_species(target_species)
 
 /obj/item/clothing/suit/space/void/equipped(mob/M)
 	..()
@@ -103,13 +125,13 @@ else if(##equipment_var) {\
 		return
 
 	if(boots)
-		if (H.equip_to_slot_if_possible(boots, slot_shoes_str))
+		if (H.equip_to_slot_if_possible(boots, slot_shoes))
 			boots.canremove = 0
 
 	if(helmet)
 		if(H.head)
 			to_chat(M, "You are unable to deploy your suit's helmet as \the [H.head] is in the way.")
-		else if (H.equip_to_slot_if_possible(helmet, slot_head_str))
+		else if (H.equip_to_slot_if_possible(helmet, slot_head))
 			to_chat(M, "Your suit's helmet deploys with a hiss.")
 			playsound(loc, helmet_deploy_sound, 30)
 			helmet.canremove = 0
@@ -117,7 +139,7 @@ else if(##equipment_var) {\
 	if(tank)
 		if(H.s_store) //In case someone finds a way.
 			to_chat(M, "Alarmingly, the valve on your suit's installed tank fails to engage.")
-		else if (H.equip_to_slot_if_possible(tank, slot_s_store_str))
+		else if (H.equip_to_slot_if_possible(tank, slot_s_store))
 			to_chat(M, "The valve on your suit's installed tank safely engages.")
 			tank.canremove = 0
 
@@ -172,7 +194,7 @@ else if(##equipment_var) {\
 		if(H.head)
 			to_chat(H, "<span class='danger'>You cannot deploy your helmet while wearing \the [H.head].</span>")
 			return
-		if(H.equip_to_slot_if_possible(helmet, slot_head_str))
+		if(H.equip_to_slot_if_possible(helmet, slot_head))
 			helmet.pickup(H)
 			helmet.canremove = 0
 			playsound(loc, helmet_deploy_sound, 30)
@@ -196,8 +218,8 @@ else if(##equipment_var) {\
 	if(!istype(H)) return
 	if(H.incapacitated()) return
 	var/slot = H.get_inventory_slot(src)
-	if(slot != slot_wear_suit_str && !(slot in H.held_item_slots))
-		return// let them eject those tanks when they're in hand or stuff for ease of use
+	if(slot != slot_wear_suit && slot != slot_l_hand && slot != slot_r_hand) return// let them eject those tanks when they're in hand or stuff for ease of use
+
 
 	to_chat(H, "<span class='info'>You press the emergency release, ejecting \the [tank] from your suit.</span>")
 	tank.canremove = 1
@@ -206,15 +228,15 @@ else if(##equipment_var) {\
 	src.tank = null
 	playsound(loc, 'sound/effects/spray3.ogg', 50)
 
-/obj/item/clothing/suit/space/void/attackby(obj/item/W, mob/user)
+/obj/item/clothing/suit/space/void/attackby(obj/item/W as obj, mob/user as mob)
 
 	if(!istype(user,/mob/living)) return
 
-	if(istype(W,/obj/item/clothing/accessory) || istype(W, /obj/item/hand_labeler))
+	if(istype(W,/obj/item/clothing/accessory) || istype(W, /obj/item/weapon/hand_labeler))
 		return ..()
 
-	if(istype(W,/obj/item/screwdriver))
-		if(user.get_inventory_slot(src) == slot_wear_suit_str)//maybe I should make this into a proc?
+	if(istype(W,/obj/item/weapon/screwdriver))
+		if(user.get_inventory_slot(src) == slot_wear_suit)//maybe I should make this into a proc?
 			to_chat(user, "<span class='warning'>You cannot modify \the [src] while it is being worn.</span>")
 			return
 
@@ -239,7 +261,7 @@ else if(##equipment_var) {\
 			to_chat(user, "\The [src] does not have anything installed.")
 		return
 	else if(istype(W,/obj/item/clothing/head/helmet/space))
-		if(user.get_inventory_slot(src) == slot_wear_suit_str)
+		if(user.get_inventory_slot(src) == slot_wear_suit)
 			to_chat(user, "<span class='warning'>You cannot modify \the [src] while it is being worn.</span>")
 			return
 		if(helmet)
@@ -252,7 +274,7 @@ else if(##equipment_var) {\
 			playsound(loc, 'sound/items/Deconstruct.ogg', 50, 1)
 		return
 	else if(istype(W,/obj/item/clothing/shoes/magboots))
-		if(user.get_inventory_slot(src) == slot_wear_suit_str)
+		if(user.get_inventory_slot(src) == slot_wear_suit)
 			to_chat(user, "<span class='warning'>You cannot modify \the [src] while it is being worn.</span>")
 			return
 		if(boots)
@@ -264,12 +286,16 @@ else if(##equipment_var) {\
 			boots = W
 			playsound(loc, 'sound/items/Deconstruct.ogg', 50, 1)
 		return
-	else if(istype(W,/obj/item/tank))
-		if(user.get_inventory_slot(src) == slot_wear_suit_str)
+	else if(istype(W,/obj/item/weapon/tank))
+		if(user.get_inventory_slot(src) == slot_wear_suit)
 			to_chat(user, "<span class='warning'>You cannot modify \the [src] while it is being worn.</span>")
 			return
 		if(tank)
 			to_chat(user, "\The [src] already has an airtank installed.")
+			return
+		if (istype(W, /obj/item/weapon/tank/scrubber))
+			to_chat(user, SPAN_WARNING("\The [W] is far too large to attach to \the [src]."))
+			return
 		else
 			if(!user.unEquip(W, src))
 				return
@@ -283,14 +309,8 @@ else if(##equipment_var) {\
 /obj/item/clothing/suit/space/void/attack_self() //sole purpose of existence is to toggle the helmet
 	toggle_helmet()
 
-/obj/item/clothing/suit/space/void/get_mob_overlay(mob/user_mob, slot, bodypart)
+/obj/item/clothing/suit/space/void/get_mob_overlay(mob/user_mob, slot)
 	var/image/ret = ..()
-	if(tank && slot == slot_back_str)
-		ret.overlays += tank.get_mob_overlay(user_mob, slot_back_str)
-	return ret
-
-/obj/item/clothing/suit/space/void/apply_overlays(var/mob/user_mob, var/bodytype, var/image/overlay, var/slot)
-	var/image/ret = ..()
-	if(tank && slot == slot_back_str)
+	if(tank && slot == slot_back)
 		ret.overlays += tank.get_mob_overlay(user_mob, slot_back_str)
 	return ret

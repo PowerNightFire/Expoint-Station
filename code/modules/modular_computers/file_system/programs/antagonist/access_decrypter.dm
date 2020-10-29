@@ -1,12 +1,13 @@
 /datum/computer_file/program/access_decrypter
-	filename = "accrypt"
-	filedesc = "Access Database Decrypter"
+	filename = "nt_accrypt"
+	filedesc = "NTNet Access Decrypter"
 	program_icon_state = "hostile"
 	program_key_state = "security_key"
 	program_menu_icon = "unlocked"
 	extended_desc = "This highly advanced script can very slowly decrypt operational codes used in almost any network. These codes can be downloaded to an ID card to expand the available access. The system administrator will probably notice this."
-	size = 12
-	available_on_network = 0
+	size = 34
+	requires_ntnet = 1
+	available_on_ntnet = 0
 	available_on_syndinet = 1
 	nanomodule_path = /datum/nano_module/program/access_decrypter/
 	var/message = ""
@@ -30,17 +31,13 @@
 	. = ..()
 	if(!running)
 		return
-	var/obj/item/stock_parts/computer/processor_unit/CPU = computer.get_component(PART_CPU)
-	var/obj/item/stock_parts/computer/card_slot/RFID = computer.get_component(PART_CARD)
+	var/obj/item/weapon/stock_parts/computer/processor_unit/CPU = computer.get_component(PART_CPU)
+	var/obj/item/weapon/stock_parts/computer/card_slot/RFID = computer.get_component(PART_CARD)
 	if(!istype(CPU) || !CPU.check_functionality() || !istype(RFID) || !RFID.check_functionality())
 		message = "A fatal hardware error has been detected."
 		return
 	if(!istype(RFID.stored_card))
 		message = "RFID card has been removed from the device. Operation aborted."
-		return
-	var/datum/computer_network/net = computer.get_network()
-	if(!net)
-		message = "Network error. Unable to access to cypher database."
 		return
 
 	progress += get_speed()
@@ -54,9 +51,9 @@
 				valid_access_values -= skill_restricted_access_codes_master
 			target_access = get_access_by_id(pick(valid_access_values))
 		RFID.stored_card.access |= target_access.id
-		if(net.intrusion_detection_enabled && !prob(get_sneak_chance()))
-			computer.add_log("IDS WARNING - Unauthorised access to primary keycode database - downloaded access codes for: [target_access.desc].")
-			net.intrusion_detection_alarm = 1
+		if(ntnet_global.intrusion_detection_enabled && !prob(get_sneak_chance()))
+			ntnet_global.add_log("IDS WARNING - Unauthorised access to primary keycode database from device: [computer.get_network_tag()]  - downloaded access codes for: [target_access.desc].")
+			ntnet_global.intrusion_detection_alarm = 1
 		message = "Successfully decrypted and saved operational key codes. Downloaded access codes for: [target_access.desc]"
 		target_access = null
 		reset()
@@ -71,8 +68,8 @@
 	if(href_list["PRG_execute"])
 		if(running)
 			return 1
-		var/obj/item/stock_parts/computer/processor_unit/CPU = computer.get_component(PART_CPU)
-		var/obj/item/stock_parts/computer/card_slot/RFID = computer.get_component(PART_CARD)
+		var/obj/item/weapon/stock_parts/computer/processor_unit/CPU = computer.get_component(PART_CPU)
+		var/obj/item/weapon/stock_parts/computer/card_slot/RFID = computer.get_component(PART_CARD)
 		if(!istype(CPU) || !CPU.check_functionality() || !istype(RFID) || !RFID.check_functionality())
 			message = "A fatal hardware error has been detected."
 			return
@@ -81,7 +78,7 @@
 			return
 
 		var/access = href_list["PRG_execute"]
-		var/obj/item/card/id/id_card = RFID.stored_card
+		var/obj/item/weapon/card/id/id_card = RFID.stored_card
 		if(access in id_card.access)
 			return 1
 		if(access in restricted_access_codes)
@@ -94,10 +91,9 @@
 
 		running = TRUE
 
-		var/datum/computer_network/net = computer.get_network()
-		if(net.intrusion_detection_enabled && !prob(get_sneak_chance()))
-			computer.add_log("IDS WARNING - Unauthorised access attempt to primary keycode database")
-			net.intrusion_detection_alarm = 1
+		if(ntnet_global.intrusion_detection_enabled && !prob(get_sneak_chance()))
+			ntnet_global.add_log("IDS WARNING - Unauthorised access attempt to primary keycode database from device: [computer.get_network_tag()]")
+			ntnet_global.intrusion_detection_alarm = 1
 		return 1
 
 /datum/computer_file/program/access_decrypter/proc/get_sneak_chance()
@@ -105,21 +101,22 @@
 
 /datum/computer_file/program/access_decrypter/proc/get_speed()
 	var/skill_speed_modifier = 1 + (operator_skill - SKILL_ADEPT)/(SKILL_MAX - SKILL_MIN)
-	return computer.get_processing_power() * skill_speed_modifier
+	var/obj/item/weapon/stock_parts/computer/processor_unit/CPU = computer.get_component(PART_CPU)
+	return CPU?.processing_power * skill_speed_modifier
 
 /datum/nano_module/program/access_decrypter
-	name = "Access Database Decrypter"
+	name = "NTNet Access Decrypter"
 
 /datum/nano_module/program/access_decrypter/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = GLOB.default_state)
+	if(!ntnet_global)
+		return
 	var/datum/computer_file/program/access_decrypter/PRG = program
 	var/list/data = list()
 	if(!istype(PRG))
 		return
 	data = PRG.get_header_data()
-	if(!program.computer.get_network())
-		return
 
-	var/obj/item/stock_parts/computer/card_slot/RFID = PRG.computer.get_component(PART_CARD)
+	var/obj/item/weapon/stock_parts/computer/card_slot/RFID = PRG.computer.get_component(PART_CARD)
 	if(PRG.message)
 		data["message"] = PRG.message
 	else if(PRG.running)
@@ -136,7 +133,7 @@
 			strings.Add(string)
 		data["dos_strings"] = strings
 	else if(RFID && RFID.stored_card)
-		var/obj/item/card/id/id_card = RFID.stored_card
+		var/obj/item/weapon/card/id/id_card = RFID.stored_card
 		var/list/regions = list()
 		for(var/i = ACCESS_REGION_MIN; i <= ACCESS_REGION_MAX; i++)
 			var/list/accesses = list()
@@ -155,7 +152,7 @@
 
 	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
-		ui = new(user, src, ui_key, "access_decrypter.tmpl", name, 550, 400, state = state)
+		ui = new(user, src, ui_key, "access_decrypter.tmpl", "NTNet Access Decrypter", 550, 400, state = state)
 		ui.auto_update_layout = 1
 		ui.set_initial_data(data)
 		ui.open()

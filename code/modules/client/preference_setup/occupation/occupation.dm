@@ -23,28 +23,28 @@
 	var/datum/browser/panel
 
 /datum/category_item/player_setup_item/occupation/load_character(var/savefile/S)
-	from_file(S["alternate_option"], 	pref.alternate_option)
-	from_file(S["job_high"],			pref.job_high)
-	from_file(S["job_medium"],			pref.job_medium)
-	from_file(S["job_low"],				pref.job_low)
-	from_file(S["player_alt_titles"],	pref.player_alt_titles)
-	from_file(S["skills_saved"],		pref.skills_saved)
-	from_file(S["branches"],			pref.branches)
-	from_file(S["ranks"],				pref.ranks)
-	from_file(S["hiding_maps"],			pref.hiding_maps)
+	from_save(S["alternate_option"], 	pref.alternate_option)
+	from_save(S["job_high"],			pref.job_high)
+	from_save(S["job_medium"],			pref.job_medium)
+	from_save(S["job_low"],				pref.job_low)
+	from_save(S["player_alt_titles"],	pref.player_alt_titles)
+	from_save(S["skills_saved"],		pref.skills_saved)
+	from_save(S["branches"],			pref.branches)
+	from_save(S["ranks"],				pref.ranks)
+	from_save(S["hiding_maps"],			pref.hiding_maps)
 	load_skills()
 
 /datum/category_item/player_setup_item/occupation/save_character(var/savefile/S)
 	save_skills()
-	to_file(S["alternate_option"],		pref.alternate_option)
-	to_file(S["job_high"],				pref.job_high)
-	to_file(S["job_medium"],			pref.job_medium)
-	to_file(S["job_low"],				pref.job_low)
-	to_file(S["player_alt_titles"],		pref.player_alt_titles)
-	to_file(S["skills_saved"],			pref.skills_saved)
-	to_file(S["branches"],				pref.branches)
-	to_file(S["ranks"],					pref.ranks)
-	to_file(S["hiding_maps"],			pref.hiding_maps)
+	to_save(S["alternate_option"],		pref.alternate_option)
+	to_save(S["job_high"],				pref.job_high)
+	to_save(S["job_medium"],			pref.job_medium)
+	to_save(S["job_low"],				pref.job_low)
+	to_save(S["player_alt_titles"],		pref.player_alt_titles)
+	to_save(S["skills_saved"],			pref.skills_saved)
+	to_save(S["branches"],				pref.branches)
+	to_save(S["ranks"],					pref.ranks)
+	to_save(S["hiding_maps"],			pref.hiding_maps)
 
 /datum/category_item/player_setup_item/occupation/sanitize_character()
 	if(!istype(pref.job_medium))		pref.job_medium = list()
@@ -144,13 +144,13 @@
 
 				var/title = job.title
 				var/title_link = length(job.alt_titles) ? "<a href='?src=\ref[src];select_alt_title=\ref[job]'>[pref.GetPlayerAltTitle(job)]</a>" : job.title
-				if((job.head_position) || (title == "AI"))//Bold head jobs
+				if((title in SSjobs.titles_by_department(COM)) || (title == "AI"))//Bold head jobs
 					title_link = "<b>[title_link]</b>"
 
 				var/help_link = "</td><td width = '10%' align = 'center'><a href='?src=\ref[src];job_info=[title]'>?</a></td>"
 				lastJob = job
 
-				var/species_name = S.get_root_species_name()
+				var/bodytype = S.get_bodytype()
 				var/bad_message = ""
 				if(job.total_positions == 0 && job.spawn_positions == 0)
 					bad_message = "<b>\[UNAVAILABLE]</b>"
@@ -159,16 +159,12 @@
 				else if(!job.player_old_enough(user.client))
 					var/available_in_days = job.available_in_days(user.client)
 					bad_message = "\[IN [(available_in_days)] DAYS]"
-				else if(LAZYACCESS(job.minimum_character_age, species_name) && user.client && (user.client.prefs.age < job.minimum_character_age[species_name]))
-					bad_message = "\[MIN CHAR AGE: [job.minimum_character_age[species_name]]]"
+				else if(LAZYACCESS(job.minimum_character_age, bodytype) && user.client && (user.client.prefs.age < job.minimum_character_age[bodytype]))
+					bad_message = "\[MIN CHAR AGE: [job.minimum_character_age[bodytype]]]"
 				else if(!job.is_species_allowed(S))
 					bad_message = "<b>\[SPECIES RESTRICTED]</b>"
 				else if(!S.check_background(job, user.client.prefs))
 					bad_message = "<b>\[BACKGROUND RESTRICTED]</b>"
-				else
-					var/special_block = job.check_special_blockers(user.client.prefs)
-					if(special_block)
-						bad_message = "<b>\[[uppertext(special_block)]]</b>"
 
 				var/current_level = JOB_LEVEL_NEVER
 				if(pref.job_high == job.title)
@@ -405,8 +401,8 @@
 			dat += "<i><b>Alternative titles:</b> [english_list(job.alt_titles)].</i>"
 		send_rsc(user, job.get_job_icon(), "job[ckey(rank)].png")
 		dat += "<img src=job[ckey(rank)].png width=96 height=96 style='float:left;'>"
-		if(LAZYLEN(job.department_refs))
-			dat += "<b>Department:</b> [SSdepartments.departments[job.primary_department].title]."
+		if(job.department)
+			dat += "<b>Department:</b> [job.department]."
 			if(job.head_position)
 				dat += "You are in charge of this department."
 
@@ -430,7 +426,7 @@
 
 	else if(href_list["job_wiki"])
 		var/rank = href_list["job_wiki"]
-		open_link(user,"[config.wikiurl][rank]")
+		send_link(user,"[config.wikiurl][rank]")
 
 	return ..()
 

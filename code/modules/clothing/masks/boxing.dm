@@ -4,12 +4,15 @@
 	icon_state = "balaclava"
 	item_state = "balaclava"
 	flags_inv = HIDEFACE|BLOCKHAIR|HIDEEARS
-	body_parts_covered = SLOT_FACE|SLOT_HEAD
-	down_body_parts_covered = SLOT_HEAD
+	body_parts_covered = FACE|HEAD
+	down_body_parts_covered = HEAD
 	down_flags_inv = BLOCKHEADHAIR
 	down_icon_state = "balaclava_r"
 	pull_mask = 1
 	w_class = ITEM_SIZE_SMALL
+	sprite_sheets = list(
+		SPECIES_UNATHI = 'icons/mob/species/unathi/onmob_mask_unathi.dmi',
+		)
 
 /obj/item/clothing/mask/balaclava/tactical
 	name = "green balaclava"
@@ -22,7 +25,7 @@
 	icon_state = "luchag"
 	item_state = "luchag"
 	flags_inv = HIDEFACE|BLOCKHAIR|HIDEEARS
-	body_parts_covered = SLOT_HEAD|SLOT_FACE
+	body_parts_covered = HEAD|FACE
 	w_class = ITEM_SIZE_SMALL
 	siemens_coefficient = 3.0
 

@@ -1,7 +1,7 @@
 /obj/structure/closet/statue //what
 	name = "statue"
 	desc = "An incredibly lifelike marble carving."
-	icon = 'icons/obj/structures/statue.dmi'
+	icon = 'icons/obj/statue.dmi'
 	icon_state = "human_male"
 	density = 1
 	anchored = 1
@@ -13,7 +13,7 @@
 	var/intialOxy = 0
 	var/timer = 240 //eventually the person will be freed
 
-/obj/structure/closet/statue/Initialize(mapload, var/mob/living/L)
+/obj/structure/closet/statue/New(loc, var/mob/living/L)
 	if(L && (ishuman(L) || L.isMonkey() || iscorgi(L)))
 		if(L.buckled)
 			L.buckled = 0
@@ -41,10 +41,11 @@
 			desc = "If it takes forever, I will wait for you..."
 
 	if(health == 0) //meaning if the statue didn't find a valid target
-		return INITIALIZE_HINT_QDEL
+		qdel(src)
+		return
 
 	START_PROCESSING(SSobj, src)
-	. = ..(mapload)
+	..()
 
 /obj/structure/closet/statue/Process()
 	timer--
@@ -90,15 +91,18 @@
 
 	return
 
-/obj/structure/closet/statue/explosion_act(severity)
+/obj/structure/closet/statue/attack_generic(var/mob/user, damage, attacktext, environment_smash)
+	if(damage && environment_smash)
+		for(var/mob/M in src)
+			shatter(M)
+
+/obj/structure/closet/statue/ex_act(severity)
 	for(var/mob/M in src)
-		M.explosion_act(severity)
-	..()
-	if(!QDELETED(src))
+		M.ex_act(severity)
 		health -= 60 / severity
 		check_health()
 
-/obj/structure/closet/statue/attackby(obj/item/I, mob/user)
+/obj/structure/closet/statue/attackby(obj/item/I as obj, mob/user as mob)
 	health -= I.force
 	user.do_attack_animation(src)
 	visible_message("<span class='danger'>[user] strikes [src] with [I].</span>")
@@ -119,7 +123,7 @@
 /obj/structure/closet/statue/on_update_icon()
 	return
 
-/obj/structure/closet/statue/proc/shatter(mob/user)
+/obj/structure/closet/statue/proc/shatter(mob/user as mob)
 	if (user)
 		user.dust()
 	dump_contents()

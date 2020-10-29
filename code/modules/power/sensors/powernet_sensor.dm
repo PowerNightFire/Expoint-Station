@@ -16,28 +16,21 @@
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "floor_beacon" // If anyone wants to make better sprite, feel free to do so without asking me.
 
-	uncreated_component_parts = null
-	stat_immune = NOINPUT | NOSCREEN | NOPOWER
-	construct_state = /decl/machine_construction/pipe
-	frame_type = /obj/item/machine_chassis/power_sensor
+	var/name_tag = "#UNKN#" // ID tag displayed in list of powernet sensors. Each sensor should have it's own tag!
+	var/long_range = 0		// If 1, sensor reading will show on all computers, regardless of Zlevel
 
 // Proc: New()
 // Parameters: None
 // Description: Automatically assigns name according to ID tag.
-/obj/machinery/power/sensor/Initialize()
-	. = ..()
+/obj/machinery/power/sensor/New()
+	..()
 	auto_set_name()
 
 // Proc: auto_set_name()
 // Parameters: None
 // Description: Sets name of this sensor according to the ID tag.
 /obj/machinery/power/sensor/proc/auto_set_name()
-	if(!id_tag)
-		var/area/A = get_area(src)
-		if(!A)
-			return // in nullspace
-		id_tag = "[A.name] #[sequential_id(A.name + "power/sensor")]"
-	name = "[id_tag] - Powernet Sensor"
+	name = "[name_tag] - Powernet Sensor"
 
 // Proc: check_grid_warning()
 // Parameters: None
@@ -115,7 +108,7 @@
 		for(var/obj/machinery/power/apc/A in L)
 			out += "<tr><td>\The [A.area]" 															// Add area name
 			out += "<td>[S[A.equipment+1]]<td>[S[A.lighting+1]]<td>[S[A.environ+1]]" 				// Show status of channels
-			var/obj/item/cell/cell = A.get_cell()
+			var/obj/item/weapon/cell/cell = A.get_cell()
 			if(cell)
 				out += "<td>[round(cell.percent())]% - [chg[A.charging+1]]"
 			else
@@ -142,7 +135,7 @@
 	if(!powernet)
 		connect_to_network()
 	var/list/data = list()
-	data["name"] = id_tag
+	data["name"] = name_tag
 	if(!powernet)
 		data["error"] = "# SYSTEM ERROR - NO POWERNET #"
 		data["alarm"] = 0 // Runtime Prevention
@@ -163,7 +156,7 @@
 			APC_entry["s_lighting"] = S[A.lighting+1]
 			APC_entry["s_environment"] = S[A.environ+1]
 			// Cell Status
-			var/obj/item/cell/cell = A.get_cell()
+			var/obj/item/weapon/cell/cell = A.get_cell()
 			APC_entry["cell_charge"] = cell ? round(cell.percent()) : "NO CELL"
 			APC_entry["cell_status"] = cell ? chg[A.charging+1] : "N"
 			// Other info

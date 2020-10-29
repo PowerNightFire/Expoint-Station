@@ -18,7 +18,7 @@
 
 	// Things you might plausibly want to follow
 	if(istype(A,/atom/movable))
-		ManualFollow(A)
+		start_following(A)
 	// Otherwise jump
 	else
 		stop_following()
@@ -46,7 +46,7 @@
 	A.attack_ghost(src)
 
 // Oh by the way this didn't work with old click code which is why clicking shit didn't spam you
-/atom/proc/attack_ghost(mob/observer/ghost/user)
+/atom/proc/attack_ghost(mob/observer/ghost/user as mob)
 	if(!istype(user))
 		return
 	if(user.client && user.client.inquisitive_ghost)
@@ -58,22 +58,21 @@
 // Now you can click through portals, wormholes, gateways, and teleporters while observing. -Sayu
 
 /obj/machinery/teleport/hub/attack_ghost(mob/user)
-	var/atom/l = loc
-	var/obj/machinery/computer/teleporter/com = locate(/obj/machinery/computer/teleporter, locate(l.x - 2, l.y, l.z))
-	if(com.locked)
-		user.forceMove(get_turf(com.locked))
+	var/turf/target = get_turf(com?.locked)
+	if (target)
+		user.forceMove(target)
 
-/obj/effect/portal/attack_ghost(mob/user)
+/obj/effect/portal/attack_ghost(mob/user as mob)
 	if(target)
 		user.forceMove(get_turf(target))
 
-/obj/machinery/gateway/centerstation/attack_ghost(mob/user)
+/obj/machinery/gateway/centerstation/attack_ghost(mob/user as mob)
 	if(awaygate)
 		user.forceMove(awaygate.loc)
 	else
 		to_chat(user, "[src] has no destination.")
 
-/obj/machinery/gateway/centeraway/attack_ghost(mob/user)
+/obj/machinery/gateway/centeraway/attack_ghost(mob/user as mob)
 	if(stationgate)
 		user.forceMove(stationgate.loc)
 	else
@@ -85,7 +84,7 @@
 // but I'm leaving it here anyway
 // commented out, of course.
 /*
-/atom/proc/attack_admin(mob/user)
+/atom/proc/attack_admin(mob/user as mob)
 	if(!user || !user.client || !user.client.holder)
 		return
 	attack_hand(user)

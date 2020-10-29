@@ -17,6 +17,16 @@
 		if(2) return "[input[1]][and_text][input[2]]"
 		else  return "[jointext(input, comma_text, 1, -1)][final_comma_text][and_text][input[input.len]]"
 
+//Returns list element or null. Should prevent "index out of bounds" error.
+proc/listgetindex(var/list/list,index)
+	if(istype(list) && list.len)
+		if(isnum(index))
+			if(InRange(index,1,list.len))
+				return list[index]
+		else if(index in list)
+			return list[index]
+	return
+
 //Return either pick(list) or null if list is not of type /list or is empty
 proc/safepick(list/list)
 	if(!islist(list) || !list.len)
@@ -167,12 +177,6 @@ Checks if a list has the same entries and values as an element of big.
 		listfrom.len--
 		return picked
 	return null
-
-//Returns the first element from the list and removes it from the list
-/proc/popleft(list/L)
-	if(length(L))
-		. = L[1]
-		L.Cut(1,2)
 
 //Returns the next element in parameter list after first appearance of parameter element. If it is the last element of the list or not present in list, returns first element.
 /proc/next_in_list(element, list/L)
@@ -343,10 +347,10 @@ Checks if a list has the same entries and values as an element of big.
 	return (result + R.Copy(Ri, 0))
 
 // Macros to test for bits in a bitfield. Note, that this is for use with indexes, not bit-masks!
-#define BITTEST(bitfield,index)  ((bitfield)  &  BITFLAG(index))
-#define BITSET(bitfield,index)   (bitfield)  |=  BITFLAG(index)
-#define BITRESET(bitfield,index) (bitfield)  &= ~BITFLAG(index)
-#define BITFLIP(bitfield,index)  (bitfield)  ^=  BITFLAG(index)
+#define BITTEST(bitfield,index)  ((bitfield)  &   (1 << (index)))
+#define BITSET(bitfield,index)   (bitfield)  |=  (1 << (index))
+#define BITRESET(bitfield,index) (bitfield)  &= ~(1 << (index))
+#define BITFLIP(bitfield,index)  (bitfield)  ^=  (1 << (index))
 
 //Converts a bitfield to a list of numbers (or words if a wordlist is provided)
 /proc/bitfield2list(bitfield = 0, list/wordlist)
@@ -402,13 +406,13 @@ Checks if a list has the same entries and values as an element of big.
 			if(!success)
 				out.Add(entry)
 
-	//to_world_log("	output: [out.len]")
+	//to_world_log("output: [out.len]")
 	return out
 
 /proc/insertion_sort_numeric_list_descending(var/list/L)
 	//to_world_log("descending len input: [L.len]")
 	var/list/out = insertion_sort_numeric_list_ascending(L)
-	//to_world_log("	output: [out.len]")
+	//to_world_log("output: [out.len]")
 	return reverselist(out)
 
 
@@ -676,7 +680,7 @@ proc/dd_sortedTextList(list/incoming)
 //Move a single element from position fromIndex within a list, to position toIndex
 //All elements in the range [1,toIndex) before the move will be before the pivot afterwards
 //All elements in the range [toIndex, L.len+1) before the move will be after the pivot afterwards
-//In other words, it's as if the range [fromIndex,toIndex) have been rotated using a <<< operation common to other languages.
+//In other words, it's as if the range [fromIndex,toIndex) have been rotated using an unsigned shift operation common to other languages.
 //fromIndex and toIndex must be in the range [1,L.len+1]
 //This will preserve associations ~Carnie
 /proc/moveElement(list/L, fromIndex, toIndex)
@@ -752,15 +756,3 @@ proc/dd_sortedTextList(list/incoming)
 		var/atom/A = key
 		if(A.type == T)
 			return A
-
-var/list/json_cache = list()
-/proc/cached_json_decode(var/json_to_decode)
-	if(!json_to_decode || !length(json_to_decode))
-		return list()
-	try
-		if(isnull(global.json_cache[json_to_decode]))
-			global.json_cache[json_to_decode] = json_decode(json_to_decode)
-		. = global.json_cache[json_to_decode]
-	catch(var/exception/e)
-		log_error("Exception during JSON decoding ([json_to_decode]): [e]")
-		return list()

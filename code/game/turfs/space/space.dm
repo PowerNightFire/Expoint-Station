@@ -1,15 +1,16 @@
 /turf/space
-	name = "\proper space"
 	plane = SPACE_PLANE
 	icon = 'icons/turf/space.dmi'
-	explosion_resistance = 3
+
+	name = "\proper space"
 	icon_state = "default"
 	dynamic_lighting = 0
 	temperature = T20C
 	thermal_conductivity = OPEN_HEAT_TRANSFER_COEFFICIENT
-	permit_ao = FALSE
-	z_eventually_space = TRUE
 	var/static/list/dust_cache
+	permit_ao = FALSE
+
+	z_eventually_space = TRUE
 
 /turf/space/proc/build_dust_cache()
 	LAZYINITLIST(dust_cache)
@@ -18,19 +19,16 @@
 		im.plane = DUST_PLANE
 		im.alpha = 80
 		im.blend_mode = BLEND_ADD
+		dust_cache["[i]"] = im
 
-		var/image/I = new()
-		I.appearance = /turf/space
-		I.icon_state = "white"
-		I.overlays += im
-		dust_cache["[i]"] = I
 
 /turf/space/Initialize()
 	. = ..()
+	icon_state = "white"
 	update_starlight()
 	if (!dust_cache)
 		build_dust_cache()
-	appearance = dust_cache["[((x + y) ^ ~(x * y) + z) % 25]"]
+	overlays += dust_cache["[((x + y) ^ ~(x * y) + z) % 25]"]
 
 	if(!HasBelow(z))
 		return
@@ -67,7 +65,15 @@
 /turf/space/is_solid_structure()
 	return locate(/obj/structure/lattice, src) //counts as solid structure if it has a lattice
 
-/turf/space/attackby(obj/item/C, mob/user)
+/turf/space/proc/update_starlight()
+	if(!config.starlight)
+		return
+	if(locate(/turf/simulated) in orange(src,1)) //Let's make sure not to break everything if people use a crazy setting.
+		set_light(min(0.1*config.starlight, 1), 1, 3, l_color = SSskybox.background_color)
+	else
+		set_light(0)
+
+/turf/space/attackby(obj/item/C as obj, mob/user as mob)
 
 	if (istype(C, /obj/item/stack/material/rods))
 		var/obj/structure/lattice/L = locate(/obj/structure/lattice, src)
@@ -77,8 +83,8 @@
 		if (R.use(1))
 			to_chat(user, "<span class='notice'>Constructing support lattice ...</span>")
 			playsound(src, 'sound/weapons/Genhit.ogg', 50, 1)
-			ReplaceWithLattice(R.material.type)
-			return TRUE
+			ReplaceWithLattice(R.material.name)
+		return
 
 	if (istype(C, /obj/item/stack/tile/floor))
 		var/obj/structure/lattice/L = locate(/obj/structure/lattice, src)
@@ -89,20 +95,21 @@
 			qdel(L)
 			playsound(src, 'sound/weapons/Genhit.ogg', 50, 1)
 			ChangeTurf(/turf/simulated/floor/airless, keep_air = TRUE)
+			return
 		else
 			to_chat(user, "<span class='warning'>The plating is going to need some support.</span>")
-		return TRUE
+	return
 
 
 // Ported from unstable r355
 
-/turf/space/Entered(atom/movable/A)
+/turf/space/Entered(atom/movable/A as mob|obj)
 	..()
 	if(A && A.loc == src)
 		if (A.x <= TRANSITIONEDGE || A.x >= (world.maxx - TRANSITIONEDGE + 1) || A.y <= TRANSITIONEDGE || A.y >= (world.maxy - TRANSITIONEDGE + 1))
 			A.touch_map_edge()
 
-/turf/space/proc/Sandbox_Spacemove(atom/movable/A)
+/turf/space/proc/Sandbox_Spacemove(atom/movable/A as mob|obj)
 	var/cur_x
 	var/cur_y
 	var/next_x
@@ -221,7 +228,7 @@
 /turf/space/is_open()
 	return TRUE
 
-// Spooky turfs for shuttles and possible future transit use
-/turf/space/infinity
-	name = "\proper infinity"
+//Bluespace turfs for shuttles and possible future transit use
+/turf/space/bluespace
+	name = "bluespace"
 	icon_state = "bluespace"

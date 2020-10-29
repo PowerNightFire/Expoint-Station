@@ -7,7 +7,6 @@
 	color = "#bd6100"
 	vessel_mass = 5000
 	max_speed = 1/(2 SECONDS)
-	instant_contact = TRUE
 	burn_delay = 1 SECOND
 	initial_generic_waypoints = list(
 		"nav_casino_1",
@@ -21,9 +20,9 @@
 		"Casino Cutter" = list("nav_casino_hangar"),
 	)
 
-/obj/effect/overmap/visitable/ship/casino/Initialize()
+/obj/effect/overmap/visitable/ship/casino/New(nloc, max_x, max_y)
 	name = "IPV [pick("Fortuna","Gold Rush","Ebisu","Lucky Paw","Four Leaves")], \a [name]"
-	. = ..()
+	..()
 
 /datum/map_template/ruin/away_site/casino
 	name = "Casino"
@@ -36,7 +35,7 @@
 	apc_test_exempt_areas = list(
 		/area/casino/casino_hangar = NO_SCRUBBER,
 		/area/casino/casino_cutter = NO_SCRUBBER|NO_VENT,
-		/area/casino/casino_solar_control = NO_SCRUBBER|NO_VENT,
+		/area/casino/casino_solar_control = NO_SCRUBBER,
 		/area/casino/casino_maintenance = NO_SCRUBBER|NO_VENT
 	)
 
@@ -94,7 +93,7 @@
 	anchored = 1
 	var/busy=0
 
-/obj/structure/casino/roulette/attack_hand(mob/user)
+/obj/structure/casino/roulette/attack_hand(mob/user as mob)
 	if (busy)
 		to_chat(user,"<span class='notice'>You cannot spin now! \The [src] is already spinning.</span> ")
 		return

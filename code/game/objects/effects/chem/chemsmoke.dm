@@ -10,10 +10,10 @@
 	var/splash_amount = 10 //atoms moving through a smoke cloud get splashed with up to 10 units of reagent
 	var/turf/destination
 
-/obj/effect/effect/smoke/chem/Initialize(mapload, smoke_duration, turf/dest_turf = null, icon/cached_icon = null)
+/obj/effect/effect/smoke/chem/New(var/newloc, smoke_duration, turf/dest_turf = null, icon/cached_icon = null)
 	time_to_live = smoke_duration
 
-	. = ..()
+	..()
 
 	create_reagents(500)
 
@@ -151,14 +151,14 @@
 
 //Runs the chem smoke effect
 // Spawns damage over time loop for each reagent held in the cloud.
-// Applies reagents to walls that affect walls (only plant-b-gone at the moment).
+// Applies reagents to walls that affect walls (only thermite and plant-b-gone at the moment).
 // Also calculates target locations to spawn the visual smoke effect on, so the whole area
 // is covered fairly evenly.
 /datum/effect/effect/system/smoke_spread/chem/start()
 	if(!location)
 		return
 
-	if(LAZYLEN(chemholder.reagents.reagent_volumes))
+	if(chemholder.reagents.reagent_list.len) //reagent application - only run if there are extra reagents in the smoke
 		for(var/turf/T in wallList)
 			chemholder.reagents.touch_turf(T)
 		for(var/turf/T in targetTurfs)
@@ -224,7 +224,7 @@
 	else
 		smoke = new /obj/effect/effect/smoke/chem(location, smoke_duration + rand(0, 20), T, I)
 
-	if(LAZYLEN(chemholder.reagents.reagent_volumes))
+	if(chemholder.reagents.reagent_list.len)
 		chemholder.reagents.trans_to_obj(smoke, chemholder.reagents.total_volume / dist, copy = 1) //copy reagents to the smoke so mob/breathe() can handle inhaling the reagents
 
 	//Kinda ugly, but needed unless the system is reworked

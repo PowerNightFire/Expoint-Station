@@ -7,9 +7,9 @@
 	program_menu_icon = "shuffle"
 	extended_desc = "This program allows remote control of air alarms. This program can not be run on tablet computers."
 	required_access = access_atmospherics
-	requires_network = 1
+	requires_ntnet = 1
 	network_destination = "atmospheric control system"
-	requires_network_feature = NETWORK_SYSTEMCONTROL
+	requires_ntnet_feature = NTNET_SYSTEMCONTROL
 	usage_flags = PROGRAM_LAPTOP | PROGRAM_CONSOLE
 	category = PROG_ENG
 	size = 17
@@ -56,9 +56,6 @@
 
 	// TODO: Move these to a cache, similar to cameras
 	for(var/obj/machinery/alarm/alarm in (monitored_alarms.len ? monitored_alarms : SSmachines.machinery))
-		var/turf/Z = get_host_z()
-		if (!Z || !AreConnectedZLevels(Z, alarm.z))
-			continue
 		var/danger_level = max(alarm.danger_level, alarm.alarm_area.atmosalm)
 		if(danger_level == 2)
 			alarmsAlert[++alarmsAlert.len] = list("name" = sanitize(alarm.name), "ref"= "\ref[alarm]", "danger" = danger_level)
@@ -66,10 +63,10 @@
 			alarmsDanger[++alarmsDanger.len] = list("name" = sanitize(alarm.name), "ref"= "\ref[alarm]", "danger" = danger_level)
 		else
 			alarms[++alarms.len] = list("name" = sanitize(alarm.name), "ref"= "\ref[alarm]", "danger" = danger_level)
-
-	data["alarms"] = sortByKey(alarms, "name")
-	data["alarmsAlert"] = sortByKey(alarmsAlert, "name")
-	data["alarmsDanger"] = sortByKey(alarmsDanger, "name")
+	
+	data["alarms"] = alarms
+	data["alarmsAlert"] = alarmsAlert
+	data["alarmsDanger"] = alarmsDanger
 
 	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if(!ui)

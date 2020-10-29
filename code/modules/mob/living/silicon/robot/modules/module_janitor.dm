@@ -1,4 +1,4 @@
-/obj/item/robot_module/janitor
+/obj/item/weapon/robot_module/janitor
 	name = "janitorial robot module"
 	display_name = "Janitor"
 	channels = list(
@@ -10,28 +10,28 @@
 		"Mop Gear Rex" = "mopgearrex"
 	)
 	equipment = list(
-		/obj/item/flash,
-		/obj/item/soap,
-		/obj/item/storage/bag/trash,
-		/obj/item/mop/advanced,
+		/obj/item/device/flash,
+		/obj/item/weapon/soap,
+		/obj/item/weapon/storage/bag/trash,
+		/obj/item/weapon/mop/advanced,
 		/obj/item/holosign_creator,
-		/obj/item/lightreplacer,
+		/obj/item/device/lightreplacer,
 		/obj/item/borg/sight/hud/jani,
-		/obj/item/plunger,
-		/obj/item/crowbar,
-		/obj/item/weldingtool
+		/obj/item/device/plunger/robot,
+		/obj/item/weapon/crowbar,
+		/obj/item/weapon/weldingtool
 	)
-	emag = /obj/item/chems/spray
+	emag = /obj/item/weapon/reagent_containers/spray
 
-/obj/item/robot_module/janitor/finalize_emag()
+/obj/item/weapon/robot_module/janitor/finalize_emag()
 	. = ..()
-	emag.reagents.add_reagent(/decl/material/liquid/lube, 250)
+	emag.reagents.add_reagent(/datum/reagent/lube, 250)
 	emag.SetName("Lube spray")
 
-/obj/item/robot_module/janitor/respawn_consumable(var/mob/living/silicon/robot/R, var/amount)
+/obj/item/weapon/robot_module/janitor/respawn_consumable(var/mob/living/silicon/robot/R, var/amount)
 	..()
-	var/obj/item/lightreplacer/LR = locate() in equipment
+	var/obj/item/device/lightreplacer/LR = locate() in equipment
 	LR.Charge(R, amount)
 	if(emag)
-		var/obj/item/chems/spray/S = emag
-		S.reagents.add_reagent(/decl/material/liquid/lube, 20 * amount)
+		var/obj/item/weapon/reagent_containers/spray/S = emag
+		S.reagents.add_reagent(/datum/reagent/lube, 20 * amount)

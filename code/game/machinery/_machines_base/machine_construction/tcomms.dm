@@ -3,10 +3,6 @@
 /decl/machine_construction/tcomms
 	needs_board = "machine"
 
-/decl/machine_construction/tcomms/panel_closed
-	visible_components = FALSE
-	locked = TRUE
-
 /decl/machine_construction/tcomms/panel_closed/state_is_valid(obj/machinery/machine)
 	return !machine.panel_open
 
@@ -78,7 +74,7 @@
 		to_chat(user, "You remove the cables.")
 		var/obj/item/stack/cable_coil/A = new /obj/item/stack/cable_coil( user.loc )
 		A.amount = 5
-		machine.set_broken(TRUE, MACHINE_BROKEN_CONSTRUCT) // the machine's been borked!
+		machine.set_broken(TRUE, TRUE) // the machine's been borked!
 
 /decl/machine_construction/tcomms/panel_open/unwrenched/mechanics_info()
 	. = list()
@@ -92,19 +88,17 @@
 			TRANSFER_STATE(/decl/machine_construction/tcomms/panel_open/unwrenched)
 			A.use(5)
 			to_chat(user, "<span class='notice'>You insert the cables.</span>")
-			machine.set_broken(FALSE, MACHINE_BROKEN_CONSTRUCT) // the machine's not borked anymore!
+			machine.set_broken(FALSE, TRUE) // the machine's not borked anymore!
 			return
 		else
 			to_chat(user, "<span class='warning'>You need five coils of wire for this.</span>")
 			return TRUE
 	if(isCrowbar(I))
 		TRANSFER_STATE(/decl/machine_construction/default/deconstructed)
-		playsound(get_turf(machine), 'sound/items/Crowbar.ogg', 50, 1)
-		machine.visible_message(SPAN_NOTICE("\The [user] deconstructs \the [machine]."))
 		machine.dismantle()
 		return
 
-	if(istype(I, /obj/item/storage/part_replacer))
+	if(istype(I, /obj/item/weapon/storage/part_replacer))
 		return machine.part_replacement(I, user)
 
 	if(isWrench(I))

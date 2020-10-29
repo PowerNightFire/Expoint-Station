@@ -160,8 +160,8 @@ var/const/PROXIMITY_EXCLUDE_HOLDER_TURF = 1 // When acquiring turfs to monitor, 
 /obj/item/proxy_debug/square
 	proxy_type = /datum/proximity_trigger/square
 
-/obj/item/proxy_debug/Initialize()
-	. = ..()
+/obj/item/proxy_debug/New()
+	..()
 	overlay = image('icons/misc/mark.dmi', icon_state = "x3")
 	var/datum/proximity_trigger/a = new proxy_type(src, /obj/item/proxy_debug/proc/turf_entered, /obj/item/proxy_debug/proc/update_turfs)
 	a.register_turfs()
@@ -171,6 +171,6 @@ var/const/PROXIMITY_EXCLUDE_HOLDER_TURF = 1 // When acquiring turfs to monitor, 
 
 /obj/item/proxy_debug/proc/update_turfs(var/list/old_turfs, var/list/new_turfs)
 	for(var/turf/T in old_turfs)
-		T.cut_overlay(overlay, TRUE)
+		T.overlays -= overlay
 	for(var/turf/T in new_turfs)
-		T.add_overlay(overlay, TRUE)
+		T.overlays += overlay

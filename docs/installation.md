@@ -2,11 +2,11 @@
 
 The simplest way to obtain the code is using Github's .zip feature.
 
-Click [here](https://github.com/NebulaSS13/Nebula/archive/dev.zip) to get the latest code as a .zip file, then unzip it to wherever you want.
+Click [here](https://github.com/Baystation12/Baystation12/archive/dev.zip) to get the latest code as a .zip file, then unzip it to wherever you want.
 
 The more complicated and easier to update method is using git.  You'll need to download git or some client from [here](http://git-scm.com/).  When that's installed, right click in any folder and click on "Git Bash".  When that opens, type in:
 
-    git clone https://github.com/NebulaSS13/Nebula.git
+    git clone https://github.com/Baystation12/Baystation12.git
 
 (hint: hold down ctrl and press insert to paste into git bash)
 
@@ -18,11 +18,11 @@ This will take a while to download, but it provides an easier method for updatin
 
 First-time installation should be fairly straightforward.  First, you'll need BYOND installed.  You can get it from [here](http://www.byond.com/).
 
-This is a sourcecode-only release, so the next step is to compile the server files.  Open `nebula.dme` by double-clicking it, open the Build menu, and click compile.  This'll take a little while, and if everything's done right you'll get a message like this:
+This is a sourcecode-only release, so the next step is to compile the server files.  Open `baystation12.dme` by double-clicking it, open the Build menu, and click compile.  This'll take a little while, and if everything's done right you'll get a message like this:
 
-    saving nebula.dmb (DEBUG mode)
+    saving baystation12.dmb (DEBUG mode)
     
-    nebula.dmb - 0 errors, 0 warnings
+    baystation12.dmb - 0 errors, 0 warnings
 
 If you see any errors or warnings, something has gone wrong - possibly a corrupt download or the files extracted wrong, or a code issue on the main repo.  Ask on IRC or discord.
 
@@ -40,7 +40,7 @@ Edit `admins.txt` to remove the default admins and add your own.  "Game Master" 
 
 where the BYOND key must be in lowercase and the admin rank must be properly capitalised.  There are a bunch more admin ranks, but these two should be enough for most servers, assuming you have trustworthy admins.
 
-To start the server, run Dream Daemon and enter the path to your compiled `nebula.dmb` file.  Make sure to set the port to the one you  specified in the `config.txt`, and set the Security box to 'Trusted' so you don't have to confirm access to every single configuration and storage file for the server.  Then press GO and the server should start up and be ready to join.
+To start the server, run Dream Daemon and enter the path to your compiled `baystation12.dmb` file.  Make sure to set the port to the one you  specified in the `config.txt`, and set the Security box to 'Trusted' so you don't have to confirm access to every single configuration and storage file for the server.  Then press GO and the server should start up and be ready to join.
 
 ---
 
@@ -50,6 +50,8 @@ If you wish to use Discord webhooks, which are a way of passing information from
 - webhook_roundend: The round has ended. Will include the mode name and summarize survivors and ghosts.
 - webhook_roundstart: The master controller has finished initializing and the round will begin soon.
 - webhook_submap_loaded: A submap has been loaded and placed, and is available for people to join. Includes the name of the submap.
+- webhook_submap_vox: The vox submap specifically has been loaded and placed. This is distinct for the purposes of tagging vox players with a @mention.
+- webhook_submap_skrell: The Skrell submap specifically has been loaded and placed. This is distinct for the purposes of tagging Skrell players with a @mention.
 - webhook_custom_event: The custom event text for the round has been set or changed.
 
 Each definition can optionally include an array of roles to mention when the webhook is called. Roles must be provided using the role ID (ex. `<@&555231866735689749>`), which can be obtained by writing `\@somerole` into the chat, in order for pinging to work correctly.

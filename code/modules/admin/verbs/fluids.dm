@@ -1,26 +1,14 @@
 /datum/admins/proc/spawn_fluid_verb()
-	set name = "Spawn Fluid"
+	set name = "Spawn Water"
 	set desc = "Flood the turf you are standing on."
 	set category = "Debug"
 
-	if(!check_rights(R_SPAWN)) 
-		return
-
+	if(!check_rights(R_SPAWN)) return
 	var/mob/user = usr
-	if(!istype(user) || !user.client)
-		return
-	var/spawn_range = input("How wide a radius?", "Spawn Fluid", 0) as num|null
-	var/reagent_amount = input("How deep?", "Spawn Fluid", 1000) as num|null
-	if(!reagent_amount)
-		return
-	var/reagent_type = input("What kind of reagent?", "Spawn Fluid", /decl/material/liquid/water) as null|anything in subtypesof(/decl/material)
-	if(!reagent_type || !user || !check_rights(R_SPAWN))
-		return
-	var/turf/flooding = get_turf(user)
-	for(var/thing in RANGE_TURFS(flooding, spawn_range))
-		var/obj/effect/fluid/F = locate() in thing
-		if(!F) F = new(thing)
-		F.reagents.add_reagent(reagent_type, reagent_amount)
+	if(istype(user) && user.client)
+		for(var/thing in trange(1, get_turf(user)))
+			var/turf/T = thing
+			T.add_fluid(2000, /datum/reagent/water)
 
 /datum/admins/proc/jump_to_fluid_source()
 
@@ -50,12 +38,12 @@
 		else
 			to_chat(usr, "No active fluids.")
 
-/turf/exterior/seafloor/non_flooded
-	flooded = FALSE
-
 /turf/simulated/open/flooded
 	name = "open water"
 	flooded = TRUE
+
+/turf/simulated/ocean/non_flooded
+	flooded = FALSE
 
 GLOBAL_LIST_INIT(submerged_levels, new)
 /datum/admins/proc/submerge_map()
@@ -98,7 +86,7 @@ GLOBAL_LIST_INIT(submerged_levels, new)
 			var/area/A = get_area(T)
 			if(A && (A.area_flags & AREA_FLAG_EXTERNAL))
 				if(A.base_turf)
-					A.base_turf = /turf/exterior/seafloor/non_flooded
+					A.base_turf = /turf/simulated/ocean/non_flooded
 				if(!istype(T, /turf/space))
 					T.make_flooded()
 
@@ -109,7 +97,7 @@ GLOBAL_LIST_INIT(submerged_levels, new)
 			first_level = check_level
 	flooding_levels -= first_level
 	GLOB.submerged_levels["[first_level]"] = TRUE
-	GLOB.using_map.base_turf_by_z["[first_level]"] = /turf/exterior/seafloor
+	GLOB.using_map.base_turf_by_z["[first_level]"] = /turf/simulated/ocean
 	new /datum/random_map/noise/seafloor/replace_space(null, 1, 1, first_level, world.maxx, world.maxy)
 
 	// Generate open space for the remaining z-levels.

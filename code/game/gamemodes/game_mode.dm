@@ -11,6 +11,7 @@ var/global/list/additional_antag_types = list()
 
 	var/required_players = 0                 // Minimum players for round to start if voted in.
 	var/required_enemies = 0                 // Minimum antagonists for round to start.
+	var/newscaster_announcements = null
 	var/end_on_antag_death = FALSE           // Round will end when all antagonists are dead.
 	var/ert_disabled = FALSE                 // ERT cannot be called.
 	var/deny_respawn = FALSE	             // Disable respawn during this round.
@@ -29,7 +30,7 @@ var/global/list/additional_antag_types = list()
 	var/addantag_allowed = ADDANTAG_ADMIN | ADDANTAG_AUTO
 
 	var/station_was_nuked = FALSE            // See nuclearbomb.dm and malfunction.dm.
-	var/station_explosion_in_progress = FALSE        // Sit back and relax
+	var/explosion_in_progress = FALSE        // Sit back and relax
 
 	var/event_delay_mod_moderate             // Modifies the timing of random events.
 	var/event_delay_mod_major                // As above.
@@ -236,8 +237,8 @@ var/global/list/additional_antag_types = list()
 		mind.generate_goals(mind.assigned_job, is_spawning=TRUE)
 		mind.current.show_goals()
 
-	if(SSevac.evacuation_controller && auto_recall_shuttle)
-		SSevac.evacuation_controller.recall = 1
+	if(evacuation_controller && auto_recall_shuttle)
+		evacuation_controller.recall = 1
 
 	SSstatistics.set_field_details("round_start","[time2text(world.realtime)]")
 	if(SSticker.mode)
@@ -269,26 +270,26 @@ var/global/list/additional_antag_types = list()
 		"supermatter dust",
 		"leaks into a negative reality",
 		"antiparticle clouds",
-		"residual exotic energy",
+		"residual bluespace energy",
 		"suspected criminal operatives",
 		"malfunctioning von Neumann probe swarms",
 		"shadowy interlopers",
-		"a stranded xenoform",
-		"haywire machine constructs",
-		"rogue exiles",
+		"a stranded Vox arkship",
+		"haywire IPC constructs",
+		"rogue Unathi exiles",
 		"artifacts of eldritch horror",
 		"a brain slug infestation",
 		"killer bugs that lay eggs in the husks of the living",
 		"a deserted transport carrying xenofauna specimens",
-		"an emissary requesting a security detail",
-		"radical transevolutionaries",
+		"an emissary for the gestalt requesting a security detail",
+		"radical Skrellian transevolutionaries",
 		"classified security operations",
 		"a gargantuan glowing goat"
 		)
 	command_announcement.Announce("The presence of [pick(reasons)] in the region is tying up all available local emergency resources; emergency response teams cannot be called at this time, and post-evacuation recovery efforts will be substantially delayed.","Emergency Transmission")
 
 /datum/game_mode/proc/check_finished()
-	if(SSevac.evacuation_controller.round_over() || station_was_nuked)
+	if(evacuation_controller.round_over() || station_was_nuked)
 		return 1
 	if(end_on_antag_death && antag_templates && antag_templates.len)
 		var/has_antags = 0
@@ -297,7 +298,7 @@ var/global/list/additional_antag_types = list()
 				has_antags = 1
 				break
 		if(!has_antags)
-			SSevac.evacuation_controller.recall = 0
+			evacuation_controller.recall = 0
 			return 1
 	return 0
 
@@ -356,7 +357,7 @@ var/global/list/additional_antag_types = list()
 	var/text = "<br><br>"
 	if(surviving_total > 0)
 		text += "There [surviving_total>1 ? "were <b>[surviving_total] survivors</b>" : "was <b>one survivor</b>"]"
-		text += " (<b>[escaped_total>0 ? escaped_total : "none"] [SSevac.evacuation_controller.emergency_evacuation ? "escaped" : "transferred"]</b>) and <b>[ghosts] ghosts</b>.<br>"
+		text += " (<b>[escaped_total>0 ? escaped_total : "none"] [evacuation_controller.emergency_evacuation ? "escaped" : "transferred"]</b>) and <b>[ghosts] ghosts</b>.<br>"
 	else
 		text += "There were <b>no survivors</b> (<b>[ghosts] ghosts</b>)."
 
@@ -376,7 +377,7 @@ var/global/list/additional_antag_types = list()
 		SSstatistics.set_field("escaped_total",escaped_total)
 
 	send2mainirc("A round of [src.name] has ended - [surviving_total] survivor\s, [ghosts] ghost\s.")
-	SSwebhooks.send(WEBHOOK_ROUNDEND, list("survivors" = surviving_total, "escaped" = escaped_total, "ghosts" = ghosts, "clients" = clients))
+	SSwebhooks.send(WEBHOOK_ROUNDEND, list("survivors" = surviving_total, "escaped" = escaped_total, "ghosts" = ghosts))
 
 	return 0
 
@@ -460,6 +461,7 @@ var/global/list/additional_antag_types = list()
 				antag_templates |= antag
 
 	shuffle(antag_templates) //In the case of multiple antag types
+	newscaster_announcements = pick(newscaster_standard_feeds)
 
 // Manipulates the end-game cinematic in conjunction with GLOB.cinematic
 /datum/game_mode/proc/nuke_act(obj/screen/cinematic_screen, station_missed = 0)

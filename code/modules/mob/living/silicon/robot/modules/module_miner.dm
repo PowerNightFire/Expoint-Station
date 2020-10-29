@@ -1,8 +1,8 @@
-/obj/item/robot_module/miner
+/obj/item/weapon/robot_module/miner
 	name = "miner robot module"
 	display_name = "Miner"
-	software = list(
-		/datum/computer_file/program/supply
+	subsystems = list(
+		/datum/nano_module/supply
 	)
 	channels = list(
 		"Supply" = TRUE,
@@ -20,30 +20,29 @@
 		/obj/item/borg/upgrade/jetpack
 	)
 	equipment = list(
-		/obj/item/flash,
+		/obj/item/device/flash,
 		/obj/item/borg/sight/meson,
-		/obj/item/wrench,
-		/obj/item/screwdriver,
-		/obj/item/storage/ore,
-		/obj/item/pickaxe/borgdrill,
-		/obj/item/storage/sheetsnatcher/borg,
-		/obj/item/gripper/miner,
-		/obj/item/scanner/mining,
-		/obj/item/crowbar
+		/obj/item/weapon/wrench,
+		/obj/item/weapon/screwdriver,
+		/obj/item/weapon/storage/ore,
+		/obj/item/weapon/pickaxe/borgdrill,
+		/obj/item/weapon/storage/sheetsnatcher/borg,
+		/obj/item/weapon/gripper/miner,
+		/obj/item/device/scanner/mining,
+		/obj/item/weapon/crowbar
 	)
-	emag = /obj/item/gun/energy/plasmacutter
+	emag = /obj/item/weapon/gun/energy/plasmacutter
 	skills = list(
-		SKILL_LITERACY     = SKILL_ADEPT,
 		SKILL_PILOT        = SKILL_EXPERT,
 		SKILL_EVA          = SKILL_PROF,
 		SKILL_CONSTRUCTION = SKILL_EXPERT
 	)
 
-/obj/item/robot_module/miner/handle_emagged()
-	var/obj/item/pickaxe/D = locate(/obj/item/pickaxe/borgdrill) in equipment
+/obj/item/weapon/robot_module/miner/handle_emagged()
+	var/obj/item/weapon/pickaxe/D = locate(/obj/item/weapon/pickaxe/borgdrill) in equipment
 	if(D)
 		equipment -= D
 		qdel(D)
-	D = new /obj/item/pickaxe/diamonddrill(src)
+	D = new /obj/item/weapon/pickaxe/diamonddrill(src)
 	D.canremove = FALSE
 	equipment += D

@@ -5,6 +5,7 @@
 	atom_flags = ATOM_FLAG_NO_TEMP_CHANGE | ATOM_FLAG_CLIMBABLE
 	setup = 0
 	storage_types = CLOSET_STORAGE_ITEMS
+	var/points_per_crate = 5
 	var/rigged = 0
 
 /obj/structure/closet/crate/open()
@@ -14,22 +15,22 @@
 	if(.)
 		if(rigged)
 			visible_message("<span class='danger'>There are wires attached to the lid of [src]...</span>")
-			for(var/obj/item/assembly_holder/H in src)
+			for(var/obj/item/device/assembly_holder/H in src)
 				H.process_activation(usr)
-			for(var/obj/item/assembly/A in src)
+			for(var/obj/item/device/assembly/A in src)
 				A.activate()
 
 /obj/structure/closet/crate/examine(mob/user)
 	. = ..()
 	if(rigged && opened)
 		var/list/devices = list()
-		for(var/obj/item/assembly_holder/H in src)
+		for(var/obj/item/device/assembly_holder/H in src)
 			devices += H
-		for(var/obj/item/assembly/A in src)
+		for(var/obj/item/device/assembly/A in src)
 			devices += A
 		to_chat(user,"There are some wires attached to the lid, connected to [english_list(devices)].")
 
-/obj/structure/closet/crate/attackby(obj/item/W, mob/user)
+/obj/structure/closet/crate/attackby(obj/item/W as obj, mob/user as mob)
 	if(opened)
 		return ..()
 	else if(istype(W, /obj/item/stack/package_wrap))
@@ -43,7 +44,7 @@
 			to_chat(user, "<span class='notice'>You rig [src].</span>")
 			rigged = 1
 			return
-	else if(istype(W, /obj/item/assembly_holder) || istype(W, /obj/item/assembly))
+	else if(istype(W, /obj/item/device/assembly_holder) || istype(W, /obj/item/device/assembly))
 		if(rigged)
 			if(!user.unEquip(W, src))
 				return
@@ -72,6 +73,7 @@
 /obj/structure/closet/crate/plastic
 	name = "plastic crate"
 	desc = "A rectangular plastic crate."
+	points_per_crate = 1
 	closet_appearance = /decl/closet_appearance/crate/plastic
 
 /obj/structure/closet/crate/internals
@@ -83,7 +85,7 @@
 	desc = "A fuel tank crate."
 
 /obj/structure/closet/crate/internals/fuel/WillContain()
-	return list(/obj/item/tank/hydrogen = 4)
+	return list(/obj/item/weapon/tank/hydrogen = 4)
 
 /obj/structure/closet/crate/trashcart
 	name = "trash cart"
@@ -101,8 +103,8 @@
 
 /obj/structure/closet/crate/rcd/WillContain()
 	return list(
-		/obj/item/rcd_ammo = 3,
-		/obj/item/rcd
+		/obj/item/weapon/rcd_ammo = 3,
+		/obj/item/weapon/rcd
 	)
 
 /obj/structure/closet/crate/solar
@@ -111,9 +113,9 @@
 /obj/structure/closet/crate/solar/WillContain()
 	return list(
 		/obj/item/solar_assembly = 14,
-		/obj/item/stock_parts/circuitboard/solar_control,
-		/obj/item/tracker_electronics,
-		/obj/item/paper/solar
+		/obj/item/weapon/stock_parts/circuitboard/solar_control,
+		/obj/item/weapon/tracker_electronics,
+		/obj/item/weapon/paper/solar
 	)
 
 /obj/structure/closet/crate/solar_assembly
@@ -152,7 +154,7 @@
 	desc = "A crate of emergency rations."
 
 /obj/structure/closet/crate/freezer/rations/WillContain()
-	return list(/obj/random/mre = 6, /obj/item/chems/food/drinks/cans/waterbottle = 12)
+	return list(/obj/random/mre = 6, /obj/item/weapon/reagent_containers/food/drinks/cans/waterbottle = 12)
 
 /obj/structure/closet/crate/freezer/meat
 	name = "meat crate"
@@ -160,9 +162,9 @@
 
 /obj/structure/closet/crate/freezer/meat/WillContain()
 	return list(
-		/obj/item/chems/food/snacks/meat/beef = 4,
-		/obj/item/chems/food/snacks/meat/syntiflesh = 4,
-		/obj/item/chems/food/snacks/fish = 4
+		/obj/item/weapon/reagent_containers/food/snacks/meat/beef = 4,
+		/obj/item/weapon/reagent_containers/food/snacks/meat/syntiflesh = 4,
+		/obj/item/weapon/reagent_containers/food/snacks/fish = 4
 	)
 
 /obj/structure/closet/crate/bin
@@ -187,9 +189,9 @@
 	desc = "A secure weapons crate."
 	closet_appearance = /decl/closet_appearance/crate/secure/weapon
 
-/obj/structure/closet/crate/secure/explosives
-	name = "explosives crate"
-	desc = "A secure exploxives crate."
+/obj/structure/closet/crate/secure/phoron
+	name = "phoron crate"
+	desc = "A secure phoron crate."
 	closet_appearance = /decl/closet_appearance/crate/secure/hazard
 
 /obj/structure/closet/crate/secure/shuttle
@@ -211,7 +213,7 @@
 /obj/structure/closet/crate/large
 	name = "large crate"
 	desc = "A hefty metal crate."
-	storage_capacity = 2 * MOB_SIZE_LARGE
+	storage_capacity = 2 * MOB_LARGE
 	storage_types = CLOSET_STORAGE_ITEMS|CLOSET_STORAGE_STRUCTURES
 	closet_appearance = /decl/closet_appearance/large_crate
 
@@ -223,10 +225,10 @@
 	desc = "A hefty metal crate with an electronic locking system."
 	closet_appearance = /decl/closet_appearance/large_crate/secure
 
-	storage_capacity = 2 * MOB_SIZE_LARGE
+	storage_capacity = 2 * MOB_LARGE
 	storage_types = CLOSET_STORAGE_ITEMS|CLOSET_STORAGE_STRUCTURES
 
-/obj/structure/closet/crate/secure/large/supermatter
+/obj/structure/closet/crate/secure/large/phoron
 	closet_appearance = /decl/closet_appearance/large_crate/secure/hazard
 
 //fluff variant
@@ -240,12 +242,12 @@
 
 /obj/structure/closet/crate/hydroponics/prespawned/WillContain()
 	return list(
-		/obj/item/chems/spray/plantbgone = 2,
-		/obj/item/minihoe = 2,
-		/obj/item/storage/plants = 2,
-		/obj/item/hatchet = 2,
-		/obj/item/wirecutters/clippers = 2,
-		/obj/item/scanner/plant = 2
+		/obj/item/weapon/reagent_containers/spray/plantbgone = 2,
+		/obj/item/weapon/material/minihoe = 2,
+		/obj/item/weapon/storage/plants = 2,
+		/obj/item/weapon/material/hatchet = 2,
+		/obj/item/weapon/wirecutters/clippers = 2,
+		/obj/item/device/scanner/plant = 2
 	)
 
 /obj/structure/closet/crate/secure/biohazard
@@ -255,7 +257,7 @@
 	close_sound = 'sound/items/Deconstruct.ogg'
 	req_access = list(access_xenobiology)
 	closet_appearance = /decl/closet_appearance/cart/biohazard
-	storage_capacity = 2 * MOB_SIZE_LARGE
+	storage_capacity = 2 * MOB_LARGE
 	storage_types = CLOSET_STORAGE_ITEMS|CLOSET_STORAGE_MOBS|CLOSET_STORAGE_STRUCTURES
 
 /obj/structure/closet/crate/secure/biohazard/blanks/WillContain()
@@ -278,7 +280,7 @@
 	desc = "A rectangular plastic crate, filled up with blank papers for refilling bins and printers. A bureaucrat's favorite."
 
 /obj/structure/closet/crate/paper_refill/WillContain()
-	return list(/obj/item/paper = 30)
+	return list(/obj/item/weapon/paper = 30)
 
 /obj/structure/closet/crate/uranium
 	name = "fissibles crate"

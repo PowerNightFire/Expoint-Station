@@ -1,14 +1,12 @@
 /datum/extension/interactive/ntos/console
 	expected_type = /obj/machinery
-	screen_icon_file = 'icons/obj/modular_computers/modular_console.dmi'
-
+	screen_icon_file = 'icons/obj/modular_console.dmi'
+	
 /datum/extension/interactive/ntos/console/get_hardware_flag()
 	return PROGRAM_CONSOLE
 
 /datum/extension/interactive/ntos/console/get_component(var/part_type)
 	var/obj/machinery/M = holder
-	if(ispath(part_type, PART_DRIVE))
-		return ..()	//special handling for removable disks
 	return M.get_component_of_type(part_type)
 
 /datum/extension/interactive/ntos/console/get_all_components()
@@ -25,7 +23,7 @@
 
 /datum/extension/interactive/ntos/console/emagged()
 	var/obj/machinery/M = holder
-	var/obj/item/stock_parts/circuitboard/modular_computer/MB = M.get_component_of_type(/obj/item/stock_parts/circuitboard/modular_computer)
+	var/obj/item/weapon/stock_parts/circuitboard/modular_computer/MB = M.get_component_of_type(/obj/item/weapon/stock_parts/circuitboard/modular_computer)
 	return MB && MB.emagged
 
 /datum/extension/interactive/ntos/console/system_boot()
@@ -60,5 +58,5 @@
 	var/datum/extension/interactive/ntos/os = get_extension(src, /datum/extension/interactive/ntos)
 	if(os)
 		return os.check_eye()
-	else
+	else 
 		return ..()

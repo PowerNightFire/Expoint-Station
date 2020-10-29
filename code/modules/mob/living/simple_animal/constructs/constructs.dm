@@ -15,6 +15,7 @@
 	status_flags = CANPUSH
 	universal_speak = FALSE
 	universal_understand = TRUE
+	attack_sound = 'sound/weapons/spiderlunge.ogg'
 	min_gas = null
 	max_gas = null
 	minbodytemp = 0
@@ -40,18 +41,18 @@
 /mob/living/simple_animal/construct/cultify()
 	return
 
-/mob/living/simple_animal/construct/Initialize()
-	. = ..()
+/mob/living/simple_animal/construct/New()
+	..()
 	name = text("[initial(name)] ([random_id(/mob/living/simple_animal/construct, 1000, 9999)])")
 	real_name = name
-	add_language(/decl/language/cultcommon)
-	add_language(/decl/language/cult)
+	add_language(LANGUAGE_CULT)
+	add_language(LANGUAGE_CULT_GLOBAL)
 	for(var/spell in construct_spells)
 		src.add_spell(new spell, "const_spell_ready")
 	update_icon()
 
 /mob/living/simple_animal/construct/death(gibbed, deathmessage, show_dead_message)
-	new /obj/item/ectoplasm (src.loc)
+	new /obj/item/weapon/ectoplasm (src.loc)
 	..(null,"collapses in a shattered heap.","The bonds tying you to this mortal plane have been severed.")
 	ghostize()
 	qdel(src)
@@ -61,7 +62,7 @@
 	..()
 	add_glow()
 
-/mob/living/simple_animal/construct/attack_animal(var/mob/user)
+/mob/living/simple_animal/construct/attack_generic(var/mob/user)
 	if(istype(user, /mob/living/simple_animal/construct/builder))
 		if(health < maxHealth)
 			adjustBruteLoss(-5)
@@ -73,7 +74,7 @@
 
 /mob/living/simple_animal/construct/examine(mob/user)
 	. = ..(user)
-	var/msg = "<span cass='info'>*---------*\nThis is [html_icon(src)] \a <EM>[src]</EM>!\n"
+	var/msg = "<span cass='info'>*---------*\nThis is [icon2html(src, user)] \a <EM>[src]</EM>!\n"
 	if (src.health < src.maxHealth)
 		msg += "<span class='warning'>"
 		if (src.health >= src.maxHealth/2)
@@ -85,7 +86,7 @@
 
 	to_chat(user, msg)
 
-/obj/item/ectoplasm
+/obj/item/weapon/ectoplasm
 	name = "ectoplasm"
 	desc = "Spooky."
 	gender = PLURAL
@@ -108,21 +109,17 @@
 	speak_emote = list("rumbles")
 	response_harm   = "harmlessly punches"
 	harm_intent_damage = 0
-	natural_weapon = /obj/item/natural_weapon/juggernaut
-	mob_size = MOB_SIZE_LARGE
+	melee_damage_lower = 30
+	melee_damage_upper = 30
+	attacktext = "smashed their armoured gauntlet into"
+	mob_size = MOB_LARGE
 	speed = 3
 	environment_smash = 2
+	attack_sound = 'sound/weapons/heavysmash.ogg'
 	status_flags = 0
 	resistance = 10
 	construct_spells = list(/spell/aoe_turf/conjure/forcewall/lesser)
 	can_escape = TRUE
-
-/obj/item/natural_weapon/juggernaut
-	name = "armored gauntlet"
-	gender = NEUTER
-	attack_verb = list("smashed", "demolished")
-	hitsound = 'sound/weapons/heavysmash.ogg'
-	force = 30
 
 /mob/living/simple_animal/construct/armoured/Life()
 	weakened = 0
@@ -166,19 +163,15 @@
 	icon_dead = "floating_dead"
 	maxHealth = 75
 	health = 75
-	natural_weapon = /obj/item/natural_weapon/wraith
+	melee_damage_lower = 25
+	melee_damage_upper = 25
+	attacktext = "slashed"
 	speed = -1
 	environment_smash = 1
 	see_in_dark = 7
+	attack_sound = 'sound/weapons/rapidslice.ogg'
 	construct_spells = list(/spell/targeted/ethereal_jaunt/shift)
 
-/obj/item/natural_weapon/wraith
-	name = "wicked blade"
-	gender = NEUTER
-	attack_verb = list("slashed", "tore into")
-	hitsound = 'sound/weapons/rapidslice.ogg'
-	edge = TRUE
-	force = 25
 
 /////////////////////////////Artificer/////////////////////////
 
@@ -195,9 +188,12 @@
 	health = 50
 	response_harm = "viciously beaten"
 	harm_intent_damage = 5
-	natural_weapon = /obj/item/natural_weapon/cult_builder
+	melee_damage_lower = 5
+	melee_damage_upper = 5
+	attacktext = "rammed"
 	speed = 0
 	environment_smash = 1
+	attack_sound = 'sound/weapons/rapidslice.ogg'
 	construct_spells = list(/spell/aoe_turf/conjure/construct/lesser,
 							/spell/aoe_turf/conjure/wall,
 							/spell/aoe_turf/conjure/floor,
@@ -205,10 +201,6 @@
 							/spell/aoe_turf/conjure/pylon
 							)
 
-/obj/item/natural_weapon/cult_builder
-	name = "heavy arms"
-	attack_verb = list("rammed")
-	force = 5
 
 /////////////////////////////Behemoth/////////////////////////
 
@@ -225,17 +217,17 @@
 	speak_emote = list("rumbles")
 	response_harm   = "harmlessly punched"
 	harm_intent_damage = 0
-	natural_weapon = /obj/item/natural_weapon/juggernaut/behemoth
+	melee_damage_lower = 50
+	melee_damage_upper = 50
+	attacktext = "brutally crushed"
 	speed = 5
 	environment_smash = 2
+	attack_sound = 'sound/weapons/heavysmash.ogg'
 	resistance = 10
 	var/energy = 0
 	var/max_energy = 1000
 	construct_spells = list(/spell/aoe_turf/conjure/forcewall/lesser)
 	can_escape = TRUE
-
-/obj/item/natural_weapon/juggernaut/behemoth
-	force = 50
 
 ////////////////////////Harvester////////////////////////////////
 
@@ -251,22 +243,17 @@
 	icon_dead = "harvester_dead"
 	maxHealth = 150
 	health = 150
-	natural_weapon = /obj/item/natural_weapon/harvester
+	melee_damage_lower = 25
+	melee_damage_upper = 25
+	attacktext = "violently stabbed"
 	speed = -1
 	environment_smash = 1
 	see_in_dark = 7
+	attack_sound = 'sound/weapons/pierce.ogg'
 
 	construct_spells = list(
 			/spell/targeted/harvest
 		)
-
-/obj/item/natural_weapon/harvester
-	name = "malicious spike"
-	gender = NEUTER
-	attack_verb = list("violently stabbed", "ran through")
-	hitsound = 'sound/weapons/pierce.ogg'
-	sharp = TRUE
-	force = 25
 
 ////////////////Glow//////////////////
 /mob/living/simple_animal/construct/proc/add_glow()
@@ -284,9 +271,14 @@
 		if(fire)
 			if(fire_alert)							fire.icon_state = "fire1"
 			else									fire.icon_state = "fire0"
+		if(pullin)
+			if(pulling)								pullin.icon_state = "pull1"
+			else									pullin.icon_state = "pull0"
+
 		if(purged)
 			if(purge > 0)							purged.icon_state = "purge1"
 			else									purged.icon_state = "purge0"
+
 		silence_spells(purge)
 
 /mob/living/simple_animal/construct/armoured/Life()

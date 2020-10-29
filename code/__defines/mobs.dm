@@ -4,20 +4,35 @@
 #define DEAD        2
 
 // Bitflags defining which status effects could be or are inflicted on a mob.
-#define CANSTUN      BITFLAG(0)
-#define CANWEAKEN    BITFLAG(1)
-#define CANPARALYSE  BITFLAG(2)
-#define CANPUSH      BITFLAG(3)
-#define PASSEMOTES   BITFLAG(4) // Mob has a holder inside of it that need to see emotes.
-#define GODMODE      BITFLAG(5)
-#define FAKEDEATH    BITFLAG(6) // Replaces stuff like changeling.changeling_fakedeath.
-#define NO_ANTAG     BITFLAG(7) // Players are restricted from gaining antag roles when occupying this mob
-#define ENABLE_AI    BITFLAG(8) // Regardless of player control, the mob is using AI.
+#define CANSTUN     0x1
+#define CANWEAKEN   0x2
+#define CANPARALYSE 0x4
+#define CANPUSH     0x8
+#define PASSEMOTES  0x10    // Mob has a cortical borer or holders inside of it that need to see emotes.
+#define GODMODE     0x1000
+#define FAKEDEATH   0x2000  // Replaces stuff like changeling.changeling_fakedeath.
+#define NO_ANTAG    0x4000  // Players are restricted from gaining antag roles when occupying this mob
 
-#define BORGMESON    BITFLAG(0)
-#define BORGTHERM    BITFLAG(1)
-#define BORGXRAY     BITFLAG(2)
-#define BORGMATERIAL BITFLAG(3)
+// Grab Types
+#define GRAB_NORMAL			"normal"
+#define GRAB_NAB			"nab"
+#define GRAB_NAB_SPECIAL	"special nab"
+
+// Grab levels.
+#define NORM_PASSIVE    "normal passive"
+#define NORM_STRUGGLE   "normal struggle"
+#define NORM_AGGRESSIVE "normal aggressive"
+#define NORM_NECK       "normal neck"
+#define NORM_KILL       "normal kill"
+
+#define NAB_PASSIVE		"nab passive"
+#define NAB_AGGRESSIVE	"nab aggressive"
+#define NAB_KILL		"nab kill"
+
+#define BORGMESON 0x1
+#define BORGTHERM 0x2
+#define BORGXRAY  0x4
+#define BORGMATERIAL  8
 
 #define HOSTILE_STANCE_IDLE      1
 #define HOSTILE_STANCE_ALERT     2
@@ -26,9 +41,9 @@
 #define HOSTILE_STANCE_TIRED     5
 #define HOSTILE_STANCE_INSIDE    6
 
-#define LEFT  BITFLAG(0)
-#define RIGHT BITFLAG(1)
-#define UNDER BITFLAG(2)
+#define LEFT  0x1
+#define RIGHT 0x2
+#define UNDER 0x4
 
 // Pulse levels, very simplified.
 #define PULSE_NONE    0   // So !M.pulse checks would be possible.
@@ -64,17 +79,17 @@
 #define ROBOT_NOTIFICATION_MODULE_RESET 4
 
 // Appearance change flags
-#define APPEARANCE_UPDATE_DNA        BITFLAG(0)
-#define APPEARANCE_RACE              (BITFLAG(1)|APPEARANCE_UPDATE_DNA)
-#define APPEARANCE_GENDER            (BITFLAG(2)|APPEARANCE_UPDATE_DNA)
-#define APPEARANCE_SKIN              BITFLAG(3)
-#define APPEARANCE_HAIR              BITFLAG(4)
-#define APPEARANCE_HAIR_COLOR        BITFLAG(5)
-#define APPEARANCE_FACIAL_HAIR       BITFLAG(6)
-#define APPEARANCE_FACIAL_HAIR_COLOR BITFLAG(7)
-#define APPEARANCE_EYE_COLOR         BITFLAG(8)
-#define APPEARANCE_ALL_HAIR          (APPEARANCE_HAIR|APPEARANCE_HAIR_COLOR|APPEARANCE_FACIAL_HAIR|APPEARANCE_FACIAL_HAIR_COLOR)
-#define APPEARANCE_ALL               (APPEARANCE_UPDATE_DNA|APPEARANCE_RACE|APPEARANCE_GENDER|APPEARANCE_SKIN|APPEARANCE_EYE_COLOR|APPEARANCE_ALL_HAIR)
+#define APPEARANCE_UPDATE_DNA  0x1
+#define APPEARANCE_RACE       (0x2|APPEARANCE_UPDATE_DNA)
+#define APPEARANCE_GENDER     (0x4|APPEARANCE_UPDATE_DNA)
+#define APPEARANCE_SKIN        0x8
+#define APPEARANCE_HAIR        0x10
+#define APPEARANCE_HAIR_COLOR  0x20
+#define APPEARANCE_FACIAL_HAIR 0x40
+#define APPEARANCE_FACIAL_HAIR_COLOR 0x80
+#define APPEARANCE_EYE_COLOR 0x100
+#define APPEARANCE_ALL_HAIR (APPEARANCE_HAIR|APPEARANCE_HAIR_COLOR|APPEARANCE_FACIAL_HAIR|APPEARANCE_FACIAL_HAIR_COLOR)
+#define APPEARANCE_ALL       0xFFFF
 
 // Click cooldown
 #define DEFAULT_ATTACK_COOLDOWN 8 //Default timeout for aggressive actions
@@ -87,7 +102,7 @@
 #define MIN_SUPPLIED_LAW_NUMBER 15
 #define MAX_SUPPLIED_LAW_NUMBER 50
 
-// Corporate alignment for the character
+// NT's alignment towards the character
 #define COMPANY_LOYAL 			"Loyal"
 #define COMPANY_SUPPORTATIVE	"Supportive"
 #define COMPANY_NEUTRAL 		"Neutral"
@@ -97,11 +112,11 @@
 #define COMPANY_ALIGNMENTS		list(COMPANY_LOYAL,COMPANY_SUPPORTATIVE,COMPANY_NEUTRAL,COMPANY_SKEPTICAL,COMPANY_OPPOSED)
 
 // Defines mob sizes, used by lockers and to determine what is considered a small sized mob, etc.
-#define MOB_SIZE_LARGE  		40
-#define MOB_SIZE_MEDIUM 		20
-#define MOB_SIZE_SMALL 		10
-#define MOB_SIZE_TINY 		5
-#define MOB_SIZE_MINISCULE	1
+#define MOB_LARGE  		40
+#define MOB_MEDIUM 		20
+#define MOB_SMALL 		10
+#define MOB_TINY 		5
+#define MOB_MINISCULE	1
 
 // Defines how strong the species is compared to humans. Think like strength in D&D
 #define STR_VHIGH       2
@@ -179,6 +194,7 @@
 #define BP_GBLADDER "gas bladder"
 #define BP_POLYP    "polyp segment"
 #define BP_ANCHOR   "anchoring ligament"
+#define BP_PHORON   "phoron filter"
 #define BP_ACETONE  "acetone reactor"
 
 // Vox bits.
@@ -209,14 +225,29 @@
 #define AUGMENTATION_MECHANIC 1
 #define AUGMENTATION_ORGANIC  2
 
+// Limbs.
+#define BP_L_FOOT "l_foot"
+#define BP_R_FOOT "r_foot"
+#define BP_L_LEG  "l_leg"
+#define BP_R_LEG  "r_leg"
+#define BP_L_HAND "l_hand"
+#define BP_R_HAND "r_hand"
+#define BP_L_ARM  "l_arm"
+#define BP_R_ARM  "r_arm"
+#define BP_HEAD   "head"
+#define BP_CHEST  "chest"
+#define BP_GROIN  "groin"
+#define BP_ALL_LIMBS list(BP_CHEST, BP_GROIN, BP_HEAD, BP_L_ARM, BP_R_ARM, BP_L_HAND, BP_R_HAND, BP_L_LEG, BP_R_LEG, BP_L_FOOT, BP_R_FOOT)
+#define BP_BY_DEPTH list(BP_HEAD, BP_L_HAND, BP_R_HAND, BP_L_ARM, BP_R_ARM, BP_L_FOOT, BP_R_FOOT, BP_L_LEG, BP_R_LEG, BP_GROIN, BP_CHEST)
+
 // Prosthetic helpers.
-#define BP_IS_PROSTHETIC(org) (!QDELETED(org) && (org.status & ORGAN_PROSTHETIC))
-#define BP_IS_ASSISTED(org)   (!QDELETED(org) && (org.status & ORGAN_ASSISTED))
-#define BP_IS_BRITTLE(org)    (!QDELETED(org) && (org.status & ORGAN_BRITTLE))
-#define BP_IS_CRYSTAL(org)    (!QDELETED(org) && (org.status & ORGAN_CRYSTAL))
+#define BP_IS_ROBOTIC(org)  ((org) && ((org).status & ORGAN_ROBOTIC))
+#define BP_IS_ASSISTED(org) ((org) && ((org).status & ORGAN_ASSISTED))
+#define BP_IS_BRITTLE(org)  ((org) && ((org).status & ORGAN_BRITTLE))
+#define BP_IS_CRYSTAL(org)  ((org) && ((org).status & ORGAN_CRYSTAL))
 
 // Limb flag helpers
-#define BP_IS_DEFORMED(org) (org.limb_flags & ORGAN_FLAG_DEFORMED)
+#define BP_IS_DEFORMED(org) ((org) && ((org).limb_flags & ORGAN_FLAG_DEFORMED))
 
 #define SYNTH_BLOOD_COLOUR "#030303"
 #define SYNTH_FLESH_COLOUR "#575757"
@@ -256,15 +287,33 @@
 #define CORPSE_CAN_REENTER 1
 #define CORPSE_CAN_REENTER_AND_RESPAWN 2
 
-#define SPECIES_HUMAN            "Human"
-#define SPECIES_MONKEY           "Monkey"
-#define SPECIES_ALIEN            "Humanoid"
-#define SPECIES_GOLEM            "Golem"
-#define SPECIES_FRAME            "Utility Frame"
+#define SPECIES_HUMAN       "Human"
+#define SPECIES_DIONA       "Diona"
+#define SPECIES_VOX         "Vox"
+#define SPECIES_VOX_ARMALIS "Vox Armalis"
+#define SPECIES_IPC         "Machine"
+#define SPECIES_UNATHI      "Unathi"
+#define SPECIES_SKRELL      "Skrell"
+#define SPECIES_PROMETHEAN  "Promethean"
+#define SPECIES_ALIEN       "Humanoid"
+#define SPECIES_ADHERENT    "Adherent"
+#define SPECIES_GOLEM       "Golem"
+#define SPECIES_YEOSA       "Yeosa'Unathi"
+#define SPECIES_VATGROWN    "Vat-Grown Human"
+#define SPECIES_SPACER      "Space-Adapted Human"
+#define SPECIES_TRITONIAN   "Tritonian"
+#define SPECIES_GRAVWORLDER "Grav-Adapted Human"
+#define SPECIES_MULE        "Mule"
+#define SPECIES_BOOSTER     "Booster"
 
-#define BODYTYPE_HUMANOID        "Humanoid Body"
-#define BODYTYPE_OTHER           "Alien Body"
-#define BODYTYPE_MONKEY          "Small Humanoid Body"
+#define UNRESTRICTED_SPECIES list(SPECIES_HUMAN, SPECIES_DIONA, SPECIES_IPC, SPECIES_UNATHI, SPECIES_SKRELL, SPECIES_TRITONIAN, SPECIES_SPACER, SPECIES_VATGROWN, SPECIES_GRAVWORLDER, SPECIES_BOOSTER, SPECIES_MULE)
+#define RESTRICTED_SPECIES   list(SPECIES_VOX, SPECIES_ALIEN, SPECIES_GOLEM, SPECIES_MANTID_GYNE, SPECIES_MANTID_ALATE, SPECIES_MONARCH_WORKER, SPECIES_MONARCH_QUEEN)
+
+#define SPECIES_NABBER         "giant armoured serpentid"
+#define SPECIES_MONARCH_WORKER "Monarch Serpentid Worker"
+#define SPECIES_MONARCH_QUEEN  "Monarch Serpentid Queen"
+#define SPECIES_MANTID_ALATE   "Kharmaan Alate"
+#define SPECIES_MANTID_GYNE    "Kharmaan Gyne"
 
 #define SURGERY_CLOSED 0
 #define SURGERY_OPEN 1
@@ -301,19 +350,10 @@
 
 #define RADIO_INTERRUPT_DEFAULT 30
 
-#define MOB_FLAG_HOLY_BAD BITFLAG(0)  // If this mob is allergic to holiness
+#define MOB_FLAG_HOLY_BAD                0x001  // If this mob is allergic to holiness
 
 #define MARKING_TARGET_SKIN 0 // Draw a datum/sprite_accessory/marking to the mob's body, eg. tattoos
 #define MARKING_TARGET_HAIR 1 // Draw a datum/sprite_accessory/marking to the mob's hair, eg. ears & horns
-
-#define DEXTERITY_NONE            0
-#define DEXTERITY_SIMPLE_MACHINES 1
-#define DEXTERITY_KEYBOARDS       2
-#define DEXTERITY_TOUCHSCREENS    3
-#define DEXTERITY_GRIP            4
-#define DEXTERITY_WEAPONS         5
-#define DEXTERITY_COMPLEX_TOOLS   6
-#define DEXTERITY_FULL            7
 
 // used in /mob/living/carbon/human/can_inject, and by various callers of that proc
 #define CAN_INJECT 1

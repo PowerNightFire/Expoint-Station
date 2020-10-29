@@ -1,8 +1,3 @@
-#define HEX_RED(COLOUR)   hex2num(copytext(COLOUR,2,4))
-#define HEX_GREEN(COLOUR) hex2num(copytext(COLOUR,4,6))
-#define HEX_BLUE(COLOUR)  hex2num(copytext(COLOUR,6,8))
-#define HEX_ALPHA(COLOUR) hex2num(copytext(COLOUR,8,10))
-
 // BYOND lower-cases color values, and thus we do so as well to ensure atom.color == COLOR_X will work correctly
 #define COLOR_BLACK            "#000000"
 #define COLOR_NAVY_BLUE        "#000080"
@@ -25,7 +20,6 @@
 #define COLOR_CYAN             "#00ffff"
 #define COLOR_TEAL             "#33cccc"
 #define COLOR_RED              "#ff0000"
-#define COLOR_DARK_RED         "#aa0000"
 #define COLOR_PINK             "#ff00ff"
 #define COLOR_PALE_PINK        "#bf89ba"
 #define COLOR_ORANGE           "#ff9900"
@@ -52,12 +46,10 @@
 #define COLOR_PALE_PURPLE_GRAY "#bda2ba"
 #define COLOR_PALE_BLUE_GRAY   "#8bbbd5"
 #define COLOR_LUMINOL          "#66ffff"
-#define COLOR_ACID_CYAN        "#00ffc8"
 #define COLOR_SILVER           "#c0c0c0"
 #define COLOR_GRAY80           "#cccccc"
 #define COLOR_OFF_WHITE        "#eeeeee"
 #define COLOR_WHITE            "#ffffff"
-#define COLOR_EGGSHELL         "#e4e0d2"
 #define COLOR_GOLD             "#ffcc33"
 #define COLOR_CLOSET_GOLD      "#6d6133"
 #define COLOR_NT_RED           "#9d2300"
@@ -68,7 +60,6 @@
 #define COLOR_STEEL            "#a8b0b2"
 #define COLOR_MUZZLE_FLASH     "#ffffb2"
 #define COLOR_CHESTNUT         "#996633"
-#define COLOR_COPPER           "#b87333"
 #define COLOR_BEASTY_BROWN     "#663300"
 #define COLOR_WHEAT            "#ffff99"
 #define COLOR_CYAN_BLUE        "#3366cc"
@@ -83,13 +74,12 @@
 #define COLOR_TITANIUM         "#d1e6e3"
 #define COLOR_DARK_GUNMETAL    "#4c535b"
 #define COLOR_BRONZE           "#8c7853"
-#define COLOR_TAN			   "#a39682"
 #define COLOR_BRASS            "#b99d71"
-#define COLOR_POLISHED_BRASS   "#fdef6e"
 #define COLOR_INDIGO           "#4b0082"
 #define COLOR_ALUMINIUM        "#bbbbbb"
 #define COLOR_CRYSTAL          "#00c8a5"
 #define COLOR_ASTEROID_ROCK    "#735555"
+#define COLOR_NULLGLASS        "#ff6088"
 #define COLOR_DIAMOND          "#d8d4ea"
 
 
@@ -111,12 +101,15 @@
 #define	COMMS_COLOR_SUPPLY     "#7f6539"
 #define	COMMS_COLOR_SCIENCE    "#993399"
 #define	COMMS_COLOR_MEDICAL    "#009190"
+#define	COMMS_COLOR_MEDICAL_I  "#509190"
 #define	COMMS_COLOR_EXPLORER   "#929820"
 #define	COMMS_COLOR_ENGINEER   "#a66300"
 #define	COMMS_COLOR_SECURITY   "#930000"
+#define	COMMS_COLOR_SECURITY_I "#935050"
 #define	COMMS_COLOR_COMMAND    "#204090"
 #define	COMMS_COLOR_CENTCOMM   "#5c5c7c"
 #define	COMMS_COLOR_SYNDICATE  "#6d3f40"
+#define	COMMS_COLOR_SKRELL     "#7331c4"
 
 #define WOOD_COLOR_GENERIC     "#d5a66e"
 #define WOOD_COLOR_RICH        "#792f27"
@@ -127,7 +120,7 @@
 #define WOOD_COLOR_YELLOW      "#e3994e"
 
 #define GLASS_COLOR            "#74c1ee"
-#define GLASS_COLOR_SILICATE   "#7c3a9a"
+#define GLASS_COLOR_PHORON     "#7c3a9a"
 #define GLASS_COLOR_TINTED     "#222222"
 #define GLASS_COLOR_FROSTED    "#ffffff"
 
@@ -155,33 +148,9 @@
 #define COLOR_SABER_RED        "#ff0000"	//In case someone wants to tweak COLOR_RED, since COLOR_GREEN is not #00ff00
 #define COLOR_SABER_GREEN      "#00ff00"
 #define COLOR_SABER_PURPLE     "#6800f4"
+#define COLOR_SABER_SKRELL     "#6600cc"
 #define COLOR_SABER_AXE        "#00ccff"
 #define COLOR_SABER_CUTLASS    "#ff0033"
-
-//  Light colors from Aurora
-//Important note on colors. Colors can end up significantly different from the basic html picture, especially when saturated
-#define LIGHT_COLOR_RED        "#fa8282" //Warm but extremely diluted red. rgb(250, 130, 130)
-#define LIGHT_COLOR_GREEN      "#64c864" //Bright but quickly dissipating neon green. rgb(100, 200, 100)
-#define LIGHT_COLOR_BLUE       "#6496fa" //Cold, diluted blue. rgb(100, 150, 250)
-
-#define LIGHT_COLOR_CYAN       "#7de1e1" //Diluted cyan. rgb(125, 225, 225)
-#define LIGHT_COLOR_PINK       "#e17de1" //Diluted, mid-warmth pink. rgb(225, 125, 225)
-#define LIGHT_COLOR_YELLOW     "#e1e17d" //Dimmed yellow, leaning kaki. rgb(225, 225, 125)
-#define LIGHT_COLOR_LYELLOW    "#fffee0" //Mostly used today in regular lamps. rgb(255, 254, 224)
-#define LIGHT_COLOR_BROWN      "#966432" //Clear brown, mostly dim. rgb(150, 100, 50)
-#define LIGHT_COLOR_ORANGE     "#fa9632" //Mostly pure orange. rgb(250, 150, 50)
-#define LIGHT_COLOR_PURPLE     "#a97faa" //Soft purple. rgb(169, 127, 170)
-#define LIGHT_COLOR_VIOLET     "#b43cb8" //Deep purple. rgb(180, 60, 184)
-#define LIGHT_COLOR_SCARLET    "#e85656" //Light red. rgb(232, 86, 86)
-
-//These ones aren't a direct colour like the ones above, because nothing would fit
-#define LIGHT_COLOR_FIRE       "#faa019" //Warm orange color, leaning strongly towards yellow. rgb(250, 160, 25)
-#define LIGHT_COLOR_LAVA       "#c48a18" //Very warm yellow, leaning slightly towards orange. rgb(196, 138, 24)
-#define LIGHT_COLOR_FLARE      "#fa644b" //Bright, non-saturated red. Leaning slightly towards pink for visibility. rgb(250, 100, 75)
-#define LIGHT_COLOR_SLIME_LAMP "#afc84b" //Weird color, between yellow and green, very slimy. rgb(175, 200, 75)
-#define LIGHT_COLOR_TUNGSTEN   "#fae1af" //Extremely diluted yellow, close to skin color (for some reason). rgb(250, 225, 175)
-#define LIGHT_COLOR_HALOGEN    "#f0fafa" //Barely visible cyan-ish hue, as the doctor prescribed. rgb(240, 250, 250)
-#define LIGHT_COLOR_EMERGENCY  "#ff3232" //Red color used by emergency lighting. rgb(255, 50, 50)
 
 // Used by fluid system.
 #define COLOR_OCEAN "#99f5ff"
@@ -203,3 +172,7 @@
 #define CODEX_COLOR_ANTAG     "#e5a2a2"
 
 #define COLOR_WEBHOOK_DEFAULT 0x8bbbd5
+
+#define COLOR_DARKMODE_BACKGROUND "#202020"
+#define COLOR_DARKMODE_DARKBACKGROUND "#171717"
+#define COLOR_DARKMODE_TEXT "#a4bad6"

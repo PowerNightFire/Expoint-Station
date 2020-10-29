@@ -6,7 +6,7 @@
 	deform = 'icons/mob/human_races/species/golem/body.dmi'
 	husk_icon = 'icons/mob/human_races/species/golem/husk.dmi'
 
-	unarmed_attacks = list(/decl/natural_attack/stomp, /decl/natural_attack/kick, /decl/natural_attack/punch)
+	unarmed_types = list(/datum/unarmed_attack/stomp, /datum/unarmed_attack/kick, /datum/unarmed_attack/punch)
 	species_flags = SPECIES_FLAG_NO_PAIN | SPECIES_FLAG_NO_SCAN | SPECIES_FLAG_NO_POISON
 	spawn_flags = SPECIES_IS_RESTRICTED
 	siemens_coefficient = 0
@@ -36,8 +36,6 @@
 	death_message = "becomes completely motionless..."
 	genders = list(NEUTER)
 
-	is_crystalline = TRUE
-
 	force_cultural_info = list(
 		TAG_CULTURE =   CULTURE_CULTIST,
 		TAG_HOMEWORLD = HOME_SYSTEM_STATELESS,
@@ -53,3 +51,6 @@
 	H.SetName(H.real_name)
 	H.status_flags |= NO_ANTAG
 	..()
+
+/datum/species/golem/post_organ_rejuvenate(var/obj/item/organ/org, var/mob/living/carbon/human/H)
+	org.status |= (ORGAN_BRITTLE|ORGAN_CRYSTAL)

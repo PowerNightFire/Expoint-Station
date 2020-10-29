@@ -34,11 +34,10 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/robotics/unscrew_hatch
 	name = "Unscrew maintenance hatch"
-	description = "This procedure unsecures the maintenance hatch of a robotic prosthetic."
 	allowed_tools = list(
-		/obj/item/screwdriver = 100,
-		/obj/item/coin = 50,
-		/obj/item/knife = 50
+		/obj/item/weapon/screwdriver = 100,
+		/obj/item/weapon/material/coin = 50,
+		/obj/item/weapon/material/knife = 50
 	)
 	min_duration = 90
 	max_duration = 110
@@ -70,11 +69,10 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/robotics/screw_hatch
 	name = "Secure maintenance hatch"
-	description = "This procedure screws shut the maintenance hatch of a robotic prosthetic."
 	allowed_tools = list(
-		/obj/item/screwdriver = 100,
-		/obj/item/coin = 50,
-		/obj/item/knife = 50
+		/obj/item/weapon/screwdriver = 100,
+		/obj/item/weapon/material/coin = 50,
+		/obj/item/weapon/material/knife = 50
 	)
 	min_duration = 90
 	max_duration = 110
@@ -106,11 +104,10 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/robotics/open_hatch
 	name = "Open maintenance hatch"
-	description = "This procedure levers open the maintenance hatch of a robotic prosthetic."
 	allowed_tools = list(
-		/obj/item/retractor = 100,
-		/obj/item/crowbar = 100,
-		/obj/item/kitchen/utensil = 50
+		/obj/item/weapon/retractor = 100,
+		/obj/item/weapon/crowbar = 100,
+		/obj/item/weapon/material/kitchen/utensil = 50
 	)
 
 	min_duration = 30
@@ -143,11 +140,10 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/robotics/close_hatch
 	name = "Close maintenance hatch"
-	description = "This procedure closes the maintenance hatch of a robotic prosthetic."
 	allowed_tools = list(
-		/obj/item/retractor = 100,
-		/obj/item/crowbar = 100,
-		/obj/item/kitchen/utensil = 50
+		/obj/item/weapon/retractor = 100,
+		/obj/item/weapon/crowbar = 100,
+		/obj/item/weapon/material/kitchen/utensil = 50
 	)
 
 	min_duration = 70
@@ -181,10 +177,10 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/robotics/repair_brute
 	name = "Repair damage to prosthetic"
-	description = "This procedure patches physical damage to a robotic prosthetic."
 	allowed_tools = list(
-		/obj/item/weldingtool = 100,
-		/obj/item/gun/energy/plasmacutter = 50
+		/obj/item/weapon/weldingtool = 100,
+		/obj/item/weapon/gun/energy/plasmacutter = 50,
+		/obj/item/psychic_power/psiblade/master = 100
 	)
 
 	min_duration = 50
@@ -205,11 +201,11 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 			to_chat(user, SPAN_WARNING("\The [target]'s [affected.name] is too brittle to be repaired normally."))
 			return FALSE
 		if(isWelder(tool))
-			var/obj/item/weldingtool/welder = tool
+			var/obj/item/weapon/weldingtool/welder = tool
 			if(!welder.isOn() || !welder.remove_fuel(1,user))
 				return FALSE
-		if(istype(tool, /obj/item/gun/energy/plasmacutter))
-			var/obj/item/gun/energy/plasmacutter/cutter = tool
+		if(istype(tool, /obj/item/weapon/gun/energy/plasmacutter))
+			var/obj/item/weapon/gun/energy/plasmacutter/cutter = tool
 			if(!cutter.slice(user))
 				return FALSE
 		return TRUE
@@ -244,7 +240,6 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/robotics/repair_brittle
 	name = "Reinforce prosthetic"
-	description = "This procedure repairs brittleness within a robotic prosthetic."
 	allowed_tools = list(/obj/item/stack/nanopaste = 100)
 	min_duration = 50
 	max_duration = 60
@@ -282,7 +277,6 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/robotics/repair_burn
 	name = "Repair burns on prosthetic"
-	description = "This procedure repairs fire or electrical damage to a robotic prosthetic."
 	allowed_tools = list(
 		/obj/item/stack/cable_coil = 100
 	)
@@ -341,11 +335,10 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/robotics/fix_organ_robotic //For artificial organs
 	name = "Repair prosthetic organ"
-	description = "This procedure repairs damage to a robotic internal organ."
 	allowed_tools = list(
 		/obj/item/stack/nanopaste = 100,
-		/obj/item/bonegel = 30,
-		/obj/item/screwdriver = 70,
+		/obj/item/weapon/bonegel = 30,
+		/obj/item/weapon/screwdriver = 70,
 	)
 	min_duration = 70
 	max_duration = 90
@@ -361,7 +354,7 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 	var/obj/item/organ/external/affected = ..()
 	if(affected)
 		for(var/obj/item/organ/internal/I in affected.internal_organs)
-			if(BP_IS_PROSTHETIC(I) && !BP_IS_CRYSTAL(I) && I.damage > 0)
+			if(BP_IS_ROBOTIC(I) && !BP_IS_CRYSTAL(I) && I.damage > 0)
 				if(I.surface_accessible)
 					return affected
 				if(affected.how_open() >= (affected.encased ? SURGERY_ENCASED : SURGERY_RETRACTED) || affected.hatch_state == HATCH_OPENED)
@@ -371,7 +364,7 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
 	for(var/obj/item/organ/I in affected.internal_organs)
 		if(I && I.damage > 0)
-			if(BP_IS_PROSTHETIC(I))
+			if(BP_IS_ROBOTIC(I))
 				user.visible_message("[user] starts mending the damage to [target]'s [I.name]'s mechanisms.", \
 				"You start mending the damage to [target]'s [I.name]'s mechanisms." )
 	..()
@@ -380,7 +373,7 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
 	for(var/obj/item/organ/I in affected.internal_organs)
 		if(I && I.damage > 0)
-			if(BP_IS_PROSTHETIC(I))
+			if(BP_IS_ROBOTIC(I))
 				user.visible_message("<span class='notice'>[user] repairs [target]'s [I.name] with [tool].</span>", \
 				"<span class='notice'>You repair [target]'s [I.name] with [tool].</span>" )
 				I.damage = 0
@@ -401,9 +394,8 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/robotics/detatch_organ_robotic
 	name = "Decouple prosthetic organ"
-	description = "This procedure decouples a robotic internal organ for removal."
 	allowed_tools = list(
-		/obj/item/multitool = 100
+		/obj/item/device/multitool = 100
 	)
 	min_duration = 90
 	max_duration = 110
@@ -414,13 +406,13 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 	for(var/organ in target.internal_organs_by_name)
 		var/obj/item/organ/I = target.internal_organs_by_name[organ]
 		if(I && !(I.status & ORGAN_CUT_AWAY) && !BP_IS_CRYSTAL(I) && I.parent_organ == target_zone)
-			var/image/radial_button = image(icon = I.icon, icon_state = I.icon_state)
-			radial_button.name = "Detach \the [I.name]"
-			LAZYSET(attached_organs, organ, radial_button)
+			LAZYADD(attached_organs, organ)
 	if(!LAZYLEN(attached_organs))
 		to_chat(user, SPAN_WARNING("There are no appropriate internal components to decouple."))
 		return FALSE
-	return show_radial_menu(user, tool, attached_organs, radius = 42, require_near = TRUE, use_labels = TRUE, check_locs = list(tool))
+	var/organ_to_remove = input(user, "Which organ do you want to prepare for removal?") as null|anything in attached_organs
+	if(organ_to_remove)
+		return organ_to_remove
 
 /decl/surgery_step/robotics/detatch_organ_robotic/begin_step(mob/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
 	user.visible_message("[user] starts to decouple [target]'s [LAZYACCESS(target.surgeries_in_progress, target_zone)] with \the [tool].", \
@@ -444,23 +436,20 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/robotics/attach_organ_robotic
 	name = "Reattach prosthetic organ"
-	description = "This procedure reattaches a decoupled robotic internal organ."
 	allowed_tools = list(
-		/obj/item/screwdriver = 100,
+		/obj/item/weapon/screwdriver = 100,
 	)
 	min_duration = 100
 	max_duration = 120
 	surgery_candidate_flags = SURGERY_NO_CRYSTAL | SURGERY_NO_FLESH | SURGERY_NO_STUMP | SURGERY_NEEDS_ENCASEMENT
 
 /decl/surgery_step/robotics/attach_organ_robotic/pre_surgery_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
-	var/list/removable_organs
+	var/list/removable_organs = list()
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
 	for(var/obj/item/organ/I in affected.implants)
-		if ((I.status & ORGAN_CUT_AWAY) && BP_IS_PROSTHETIC(I) && !BP_IS_CRYSTAL(I) && (I.parent_organ == target_zone))
-			var/image/radial_button = image(icon = I.icon, icon_state = I.icon_state)
-			radial_button.name = "Reattach \the [I.name]"
-			LAZYSET(removable_organs, I.organ_tag, radial_button)
-	var/organ_to_replace = show_radial_menu(user, tool, removable_organs, radius = 42, require_near = TRUE, use_labels = TRUE, check_locs = list(tool))
+		if ((I.status & ORGAN_CUT_AWAY) && BP_IS_ROBOTIC(I) && !BP_IS_CRYSTAL(I) && (I.parent_organ == target_zone))
+			removable_organs |= I.organ_tag
+	var/organ_to_replace = input(user, "Which organ do you want to reattach?") as null|anything in removable_organs
 	if(!organ_to_replace)
 		return FALSE
 	var/obj/item/organ/internal/augment/A = organ_to_replace
@@ -497,16 +486,15 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 //////////////////////////////////////////////////////////////////
 /decl/surgery_step/robotics/install_mmi
 	name = "Install MMI"
-	description = "This procedure installs an MMI within a prosthetic organ."
 	allowed_tools = list(
-		/obj/item/mmi = 100
+		/obj/item/device/mmi = 100
 	)
 	min_duration = 60
 	max_duration = 80
 	surgery_candidate_flags = SURGERY_NO_CRYSTAL | SURGERY_NO_FLESH | SURGERY_NO_STUMP | SURGERY_NEEDS_ENCASEMENT
 
 /decl/surgery_step/robotics/install_mmi/pre_surgery_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
-	var/obj/item/mmi/M = tool
+	var/obj/item/device/mmi/M = tool
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
 	if(affected && istype(M))
 		if(!M.brainmob || !M.brainmob.client || !M.brainmob.ckey || M.brainmob.stat >= DEAD)
@@ -541,7 +529,7 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 	user.visible_message("<span class='notice'>[user] has installed \the [tool] into [target]'s [affected.name].</span>", \
 	"<span class='notice'>You have installed \the [tool] into [target]'s [affected.name].</span>")
 
-	var/obj/item/mmi/M = tool
+	var/obj/item/device/mmi/M = tool
 	var/obj/item/organ/internal/mmi_holder/holder = new(target, 1)
 	target.internal_organs_by_name[BP_BRAIN] = holder
 	tool.forceMove(holder)
@@ -557,26 +545,23 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 
 /decl/surgery_step/internal/remove_organ/robotic
 	name = "Remove robotic component"
-	description = "This procedure removes a robotic component."
 	can_infect = 0
 	surgery_candidate_flags = SURGERY_NO_CRYSTAL | SURGERY_NO_FLESH | SURGERY_NO_STUMP | SURGERY_NEEDS_ENCASEMENT
 
 /decl/surgery_step/internal/replace_organ/robotic
 	name = "Replace robotic component"
-	description = "This procedure installs a robotic component."
 	can_infect = 0
 	robotic_surgery = TRUE
 	surgery_candidate_flags = SURGERY_NO_CRYSTAL | SURGERY_NO_FLESH | SURGERY_NO_STUMP | SURGERY_NEEDS_ENCASEMENT
 
 /decl/surgery_step/remove_mmi
 	name = "Remove MMI"
-	description = "This procedure removes an MMI from a prosthetic organ."
 	min_duration = 60
 	max_duration = 80
 	allowed_tools = list(
-		/obj/item/hemostat = 100,
-		/obj/item/wirecutters = 75,
-		/obj/item/kitchen/utensil/fork = 20
+		/obj/item/weapon/hemostat = 100,
+		/obj/item/weapon/wirecutters = 75,
+		/obj/item/weapon/material/kitchen/utensil/fork = 20
 	)
 	can_infect = 0
 	surgery_candidate_flags = SURGERY_NO_CRYSTAL | SURGERY_NO_FLESH | SURGERY_NO_STUMP | SURGERY_NEEDS_ENCASEMENT
@@ -586,7 +571,7 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 
 /decl/surgery_step/remove_mmi/assess_bodypart(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
 	var/obj/item/organ/external/affected = ..()
-	if(affected && (locate(/obj/item/mmi) in affected.implants))
+	if(affected && (locate(/obj/item/device/mmi) in affected.implants))
 		return affected
 
 /decl/surgery_step/remove_mmi/begin_step(mob/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
@@ -600,7 +585,7 @@ decl/surgery_step/robotics/get_skill_reqs(mob/living/user, mob/living/carbon/hum
 /decl/surgery_step/remove_mmi/end_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool)
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
 	if(affected)
-		var/obj/item/mmi/mmi = locate() in affected.implants
+		var/obj/item/device/mmi/mmi = locate() in affected.implants
 		if(affected && mmi)
 			user.visible_message( \
 			SPAN_NOTICE("\The [user] removes \the [mmi] from \the [target]'s [affected.name] with \the [tool]."), \

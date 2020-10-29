@@ -11,8 +11,6 @@
 	var/datum/nano_module/skill_ui/NM
 	var/list/nm_viewing
 
-	var/literacy_charges = 2 //used to limit the number of books a master literate mob can make
-
 /datum/skillset/New(mob/mob)
 	owner = mob
 	for(var/datum/skill_verb/SV in GLOB.skill_verbs)
@@ -34,7 +32,7 @@
 		. += SB.buffs[skill_path]
 
 /datum/skillset/proc/obtain_from_mob(mob/mob)
-	if(!istype(mob) || !skills_transferable || !mob.skillset.skills_transferable)
+	if(!istype(mob) || !skills_transferable || !mob.skillset?.skills_transferable)
 		return
 	skill_list = mob.skillset.skill_list
 	default_value = mob.skillset.default_value
@@ -77,10 +75,20 @@
 		skill_list[S.type] = min + (allocation[S] || 0)
 	on_levels_change()
 
+/datum/skillset/proc/obtain_from_job(datum/job/job)
+	if(!job)
+		return
+
+	skill_list = list()
+
+	for(var/decl/hierarchy/skill/S in GLOB.skills)
+		skill_list[S.type] = job.get_min_skill(S)
+	on_levels_change()
+
 //Skill-related mob helper procs
 
 /mob/proc/get_skill_value(skill_path)
-	return skillset?.get_value(skill_path)
+	return skillset.get_value(skill_path)
 
 /mob/proc/reset_skillset()
 	qdel(skillset)

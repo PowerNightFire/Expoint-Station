@@ -1,22 +1,28 @@
 /decl/webhook/roundend
 	id = WEBHOOK_ROUNDEND
 
-// Data expects three numerical fields: "survivors", "escaped", "ghosts", "clients"
+// Data expects three numerical fields: "survivors", "escaped", "ghosts"
 /decl/webhook/roundend/get_message(var/list/data)
 	. = ..()
-	var/desc = "A round of **[SSticker.mode ? SSticker.mode.name : "Unknown"]** has ended.\n\n"
+	var/desc = "A round of **[SSticker.mode ? SSticker.mode.name : "Unknown"]** has ended.\n"
 	if(data)
-		var/s_escaped =  "Escaped"
-		if(!SSevac.evacuation_controller.emergency_evacuation)
-			s_escaped = "Transferred"
+
 		if(data["survivors"] > 0)
-			desc += "Survivors: **[data["survivors"]]**\n"
-			desc += "[s_escaped]: **[data["escaped"]]**\n"
+
+			var/s_was =      "was"
+			var/s_survivor = "survivor"
+			var/s_escaped =  "escaped"
+
+			if(data["survivors"] != 1)
+				s_was = "were"
+				s_survivor = "survivors"
+
+			if(!evacuation_controller.emergency_evacuation)
+				s_escaped = "transferred"
+
+			desc += "There [s_was] **[data["survivors"]] [s_survivor] ([data["escaped"]] [s_escaped])** and **[data["ghosts"]] ghosts.**"
 		else
-			desc += "There were **no survivors**.\n\n"
-		desc += "Ghosts: **[data["ghosts"]]**\n"
-		desc += "Players: **[data["clients"]]**\n"
-		desc += "Round duration: **[roundduration2text()]**"
+			desc += "There were **no survivors** ([data["ghosts"]] ghosts)."
 
 	.["embeds"] = list(list(
 		"title" = "Round [game_id] is ending.",

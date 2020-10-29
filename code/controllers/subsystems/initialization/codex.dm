@@ -8,7 +8,6 @@ SUBSYSTEM_DEF(codex)
 	var/list/entries_by_string = list()
 	var/list/index_file =        list()
 	var/list/search_cache =      list()
-	var/list/categories =        list()
 
 /datum/controller/subsystem/codex/Initialize()
 	// Codex link syntax is such: 
@@ -27,13 +26,13 @@ SUBSYSTEM_DEF(codex)
 				add_entry_by_string(associated_string, centry)
 			if(centry.display_name)
 				add_entry_by_string(centry.display_name, centry)
+			centry.update_links()
 
 	// Create categorized entries.
-	var/list/categories = decls_repository.get_decls_of_subtype(/decl/codex_category)
-	for(var/ctype in categories)
-		var/decl/codex_category/cat = categories[ctype]
-		if(cat?.name)
-			cat.Initialize()
+	for(var/ctype in subtypesof(/datum/codex_category))
+		var/datum/codex_category/cat = new ctype
+		cat.Initialize()
+		qdel(cat)
 
 	// Create the index file for later use.
 	for(var/thing in SScodex.entries_by_path)
@@ -77,13 +76,9 @@ SUBSYSTEM_DEF(codex)
 
 /datum/controller/subsystem/codex/proc/present_codex_entry(var/mob/presenting_to, var/datum/codex_entry/entry)
 	if(entry && istype(presenting_to) && presenting_to.client)
-		var/datum/browser/popup = new(presenting_to, "codex\ref[entry]", "Codex", nheight=425)
+		var/datum/browser/popup = new(presenting_to, "codex", "Codex", nheight=425)
 		popup.set_content(parse_links(entry.get_text(presenting_to), presenting_to))
 		popup.open()
-
-/datum/controller/subsystem/codex/proc/get_guide(var/category)
-	var/decl/codex_category/cat = decls_repository.get_decl(category)
-	. = cat?.guide_html
 
 /datum/controller/subsystem/codex/proc/retrieve_entries_for_string(var/searching)
 

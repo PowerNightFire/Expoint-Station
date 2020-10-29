@@ -244,8 +244,8 @@
 	dir = 1
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 9
+	dir = 9;
+	icon_state = "warning"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/bow_starboard)
@@ -269,8 +269,8 @@
 /area/errant_pisces/bow_starboard)
 "aJ" = (
 /obj/machinery/atmospherics/unary/heater{
-	icon_state = "heater_0";
-	dir = 1
+	dir = 1;
+	icon_state = "heater_0"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/bow_starboard)
@@ -282,8 +282,8 @@
 /area/errant_pisces/bow_starboard)
 "aL" = (
 /obj/machinery/atmospherics/valve{
-	icon_state = "map_valve0";
-	dir = 8
+	dir = 8;
+	icon_state = "map_valve0"
 	},
 /obj/machinery/door/airlock,
 /obj/machinery/door/firedoor,
@@ -297,8 +297,8 @@
 /area/errant_pisces/bow_port)
 "aN" = (
 /obj/machinery/atmospherics/unary/heater{
-	icon_state = "heater_0";
-	dir = 1
+	dir = 1;
+	icon_state = "heater_0"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/bow_port)
@@ -307,8 +307,8 @@
 	dir = 1
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 9
+	dir = 9;
+	icon_state = "warning"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/bow_port)
@@ -462,6 +462,7 @@
 /turf/simulated/floor/plating,
 /area/errant_pisces/atmos)
 "bl" = (
+/obj/machinery/portable_atmospherics/canister/phoron,
 /turf/simulated/floor/plating,
 /area/errant_pisces/enginering)
 "bm" = (
@@ -507,7 +508,7 @@
 	icon_state = "0-4"
 	},
 /obj/machinery/power/solar{
-	id = "HarpoonSolarStarboard"
+	id = "XynergySolarStarboard"
 	},
 /turf/simulated/floor/airless,
 /area/space)
@@ -531,7 +532,7 @@
 	icon_state = "0-8"
 	},
 /obj/machinery/power/solar{
-	id = "HarpoonSolarStarboard"
+	id = "XynergySolarStarboard"
 	},
 /turf/simulated/floor/airless,
 /area/space)
@@ -579,8 +580,8 @@
 /area/errant_pisces/atmos)
 "bC" = (
 /obj/machinery/atmospherics/pipe/simple/visible/yellow{
-	icon_state = "intact";
-	dir = 5
+	dir = 5;
+	icon_state = "intact"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/atmos)
@@ -662,7 +663,7 @@
 /obj/machinery/light/small{
 	dir = 8
 	},
-/obj/item/mop,
+/obj/item/weapon/mop,
 /turf/simulated/floor/plating,
 /area/errant_pisces/storage_port)
 "bQ" = (
@@ -672,7 +673,7 @@
 	icon_state = "0-4"
 	},
 /obj/machinery/power/solar{
-	id = "HarpoonSolarPort"
+	id = "XynergySolarPort"
 	},
 /turf/simulated/floor/airless,
 /area/space)
@@ -683,7 +684,7 @@
 	icon_state = "0-8"
 	},
 /obj/machinery/power/solar{
-	id = "HarpoonSolarPort"
+	id = "XynergySolarPort"
 	},
 /turf/simulated/floor/airless,
 /area/space)
@@ -804,8 +805,8 @@
 /area/errant_pisces/atmos)
 "cj" = (
 /obj/machinery/atmospherics/pipe/simple/visible/blue{
-	icon_state = "intact";
-	dir = 6
+	dir = 6;
+	icon_state = "intact"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/atmos)
@@ -826,8 +827,8 @@
 /area/errant_pisces/atmos)
 "cm" = (
 /obj/machinery/atmospherics/pipe/manifold/visible/red{
-	icon_state = "map";
-	dir = 8
+	dir = 8;
+	icon_state = "map"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/atmos)
@@ -851,7 +852,7 @@
 "cq" = (
 /obj/structure/closet,
 /obj/random/tech_supply,
-/obj/item/clothing/shoes/jackboots/duty,
+/obj/item/clothing/shoes/dutyboots,
 /obj/item/clothing/under/hazard,
 /turf/simulated/floor/plating,
 /area/errant_pisces/enginering)
@@ -877,8 +878,8 @@
 /area/errant_pisces/atmos)
 "cv" = (
 /obj/machinery/atmospherics/pipe/simple/visible/red{
-	icon_state = "intact";
-	dir = 4
+	dir = 4;
+	icon_state = "intact"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/atmos)
@@ -891,8 +892,8 @@
 "cx" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
 /obj/machinery/atmospherics/pipe/simple/visible/blue{
-	icon_state = "intact";
-	dir = 6
+	dir = 6;
+	icon_state = "intact"
 	},
 /obj/effect/floor_decal/industrial/warning{
 	dir = 6
@@ -919,7 +920,7 @@
 /turf/simulated/floor/plating,
 /area/errant_pisces/atmos)
 "cB" = (
-/obj/machinery/fabricator/pipe,
+/obj/machinery/pipedispenser,
 /turf/simulated/floor/plating,
 /area/errant_pisces/enginering)
 "cC" = (
@@ -990,8 +991,8 @@
 /area/errant_pisces/atmos)
 "cN" = (
 /obj/machinery/atmospherics/pipe/simple/visible/blue{
-	icon_state = "intact";
-	dir = 9
+	dir = 9;
+	icon_state = "intact"
 	},
 /obj/machinery/atmospherics/pipe/manifold/hidden/supply{
 	dir = 8
@@ -1188,11 +1189,11 @@
 /area/errant_pisces/enginering)
 "dj" = (
 /obj/machinery/light/small,
-/obj/machinery/suit_cycler,
+/obj/machinery/suit_storage_unit/standard_unit,
 /turf/simulated/floor/plating,
 /area/errant_pisces/enginering)
 "dk" = (
-/obj/machinery/suit_cycler,
+/obj/machinery/suit_storage_unit/standard_unit,
 /turf/simulated/floor/plating,
 /area/errant_pisces/enginering)
 "dl" = (
@@ -1203,7 +1204,7 @@
 	pixel_y = 0
 	},
 /obj/structure/mopbucket,
-/obj/item/mop,
+/obj/item/weapon/mop,
 /obj/machinery/atmospherics/unary/vent_scrubber/on{
 	dir = 4
 	},
@@ -1413,8 +1414,9 @@
 "dA" = (
 /obj/machinery/atmospherics/unary/outlet_injector{
 	dir = 4;
+	frequency = 1441;
 	icon_state = "map_injector";
-	id_tag = "n2_in";
+	id = "n2_in";
 	use_power = 1
 	},
 /turf/simulated/floor/airless,
@@ -1422,21 +1424,21 @@
 "dB" = (
 /obj/effect/wallframe_spawn/reinforced,
 /obj/machinery/atmospherics/pipe/simple/visible/red{
-	icon_state = "intact";
-	dir = 4
+	dir = 4;
+	icon_state = "intact"
 	},
 /obj/machinery/door/blast/regular/open{
 	dir = 4;
 	icon_state = "pdoor0";
-	id_tag = "Harpoon_perimeter_blast"
+	id_tag = "xynergy_perimeter_blast"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/bow_maint)
 "dC" = (
 /obj/effect/wallframe_spawn/reinforced,
 /obj/machinery/atmospherics/pipe/simple/visible/red{
-	icon_state = "intact";
-	dir = 4
+	dir = 4;
+	icon_state = "intact"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/bow_maint)
@@ -1575,7 +1577,7 @@
 /obj/machinery/door/blast/regular/open{
 	dir = 4;
 	icon_state = "pdoor0";
-	id_tag = "Harpoon_perimeter_blast"
+	id_tag = "xynergy_perimeter_blast"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/bow_maint)
@@ -1647,7 +1649,7 @@
 	icon_state = "0-4"
 	},
 /obj/machinery/power/tracker{
-	id = "HarpoonSolarStarboard"
+	id = "XynergySolarStarboard"
 	},
 /turf/simulated/floor/airless,
 /area/space)
@@ -1686,17 +1688,19 @@
 /obj/machinery/door/blast/regular/open{
 	dir = 4;
 	icon_state = "pdoor0";
-	id_tag = "Harpoon_perimeter_blast"
+	id_tag = "xynergy_perimeter_blast"
 	},
-/obj/machinery/button/access/exterior{
-	id_tag = "Harpoon_solar_starboard_airlock";
+/obj/machinery/access_button/airlock_exterior{
+	frequency = 1011;
+	master_tag = "xyn_solar_starboard_airlock";
 	pixel_y = 20
 	},
 /turf/simulated/floor/airless,
 /area/errant_pisces/solar_starboard)
 "eg" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_solar_starboard_outer"
+	frequency = 1011;
+	id_tag = "xyn_solar_starboard_outer"
 	},
 /obj/structure/cable/yellow{
 	d1 = 4;
@@ -1712,20 +1716,20 @@
 	d2 = 8;
 	icon_state = "2-8"
 	},
-/obj/machinery/atmospherics/unary/vent_pump/high_volume/external_air{
-	id_tag = "Harpoon_solar_starboard_pump"
-	},
+/obj/machinery/atmospherics/unary/vent_pump/high_volume,
 /obj/machinery/airlock_sensor{
-	id_tag = "Harpoon_solar_starboard_sensor";
+	frequency = 1011;
+	id_tag = "xyn_solar_starboard_sensor";
 	pixel_y = 25
 	},
 /obj/machinery/embedded_controller/radio/airlock/airlock_controller{
-	id_tag = "Harpoon_solar_starboard_airlock";
+	frequency = 1011;
+	id_tag = "xyn_solar_starboard_airlock";
 	pixel_x = 25;
-	tag_airpump = "Harpoon_solar_starboard_pump";
-	tag_chamber_sensor = "Harpoon_solar_starboard_sensor";
-	tag_exterior_door = "Harpoon_solar_starboard_outer";
-	tag_interior_door = "Harpoon_solar_starboard_inner"
+	tag_airpump = "xyn_solar_starboard_pump";
+	tag_chamber_sensor = "xyn_solar_starboard_sensor";
+	tag_exterior_door = "xyn_solar_starboard_outer";
+	tag_interior_door = "xyn_solar_starboard_inner"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/solar_starboard)
@@ -1748,7 +1752,7 @@
 /area/errant_pisces/bow_maint)
 "ek" = (
 /obj/structure/table/standard,
-/obj/item/towel/random,
+/obj/item/weapon/towel/random,
 /turf/simulated/floor/tiled/white,
 /area/errant_pisces/head_f)
 "el" = (
@@ -1870,9 +1874,9 @@
 /area/errant_pisces/head_m)
 "ez" = (
 /obj/structure/table/standard,
-/obj/item/towel/random,
-/obj/item/towel/random,
-/obj/item/towel/random,
+/obj/item/weapon/towel/random,
+/obj/item/weapon/towel/random,
+/obj/item/weapon/towel/random,
 /turf/simulated/floor/tiled/white,
 /area/errant_pisces/head_m)
 "eA" = (
@@ -1894,19 +1898,21 @@
 	d2 = 4;
 	icon_state = "2-4"
 	},
-/obj/machinery/atmospherics/unary/vent_pump/high_volume/external_air{
-	id_tag = "Harpoon_solar_port_pump"
+/obj/machinery/atmospherics/unary/vent_pump/high_volume{
+	id_tag = "xyn_solar_port_pump"
 	},
 /obj/machinery/embedded_controller/radio/airlock/airlock_controller{
-	id_tag = "Harpoon_solar_port_airlock";
+	frequency = 1439;
+	id_tag = "xyn_solar_port_airlock";
 	pixel_x = -25;
-	tag_airpump = "Harpoon_solar_port_pump";
-	tag_chamber_sensor = "Harpoon_solar_port_sensor";
-	tag_exterior_door = "Harpoon_solar_port_outer";
-	tag_interior_door = "Harpoon_solar_port_inner"
+	tag_airpump = "xyn_solar_port_pump";
+	tag_chamber_sensor = "xyn_solar_port_sensor";
+	tag_exterior_door = "xyn_solar_port_outer";
+	tag_interior_door = "xyn_solar_port_inner"
 	},
 /obj/machinery/airlock_sensor{
-	id_tag = "Harpoon_solar_port_sensor";
+	frequency = 1439;
+	id_tag = "xyn_solar_port_sensor";
 	pixel_y = 25
 	},
 /mob/living/simple_animal/hostile/carp/shark,
@@ -1914,7 +1920,8 @@
 /area/errant_pisces/solar_port)
 "eC" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_solar_port_outer"
+	frequency = 1439;
+	id_tag = "xyn_solar_port_outer"
 	},
 /obj/structure/cable/yellow{
 	d1 = 4;
@@ -1933,10 +1940,11 @@
 /obj/machinery/door/blast/regular/open{
 	dir = 4;
 	icon_state = "pdoor0";
-	id_tag = "Harpoon_perimeter_blast"
+	id_tag = "xynergy_perimeter_blast"
 	},
-/obj/machinery/button/access/exterior{
-	id_tag = "Harpoon_solar_port_airlock";
+/obj/machinery/access_button/airlock_exterior{
+	frequency = 1439;
+	master_tag = "xyn_solar_port_airlock";
 	pixel_y = 20
 	},
 /turf/simulated/floor/airless,
@@ -1961,7 +1969,7 @@
 /area/space)
 "eF" = (
 /obj/machinery/power/tracker{
-	id = "HarpoonSolarPort"
+	id = "XynergySolarPort"
 	},
 /obj/structure/cable/yellow{
 	d2 = 8;
@@ -1989,7 +1997,8 @@
 /area/space)
 "eH" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_solar_starboard_inner"
+	frequency = 1011;
+	id_tag = "xyn_solar_starboard_inner"
 	},
 /obj/structure/cable/yellow{
 	d1 = 1;
@@ -2002,8 +2011,8 @@
 /area/errant_pisces/solar_starboard)
 "eI" = (
 /obj/structure/hygiene/shower{
-	icon_state = "shower";
-	dir = 4
+	dir = 4;
+	icon_state = "shower"
 	},
 /obj/effect/decal/cleanable/blood,
 /turf/simulated/floor/tiled/white,
@@ -2045,12 +2054,12 @@
 /area/errant_pisces/smes_room)
 "eN" = (
 /obj/machinery/power/terminal{
-	icon_state = "term";
-	dir = 1
+	dir = 1;
+	icon_state = "term"
 	},
 /obj/structure/cable{
-	icon_state = "0-2";
-	d2 = 2
+	d2 = 2;
+	icon_state = "0-2"
 	},
 /obj/structure/cable/yellow{
 	d1 = 4;
@@ -2102,8 +2111,8 @@
 	icon_state = "0-8"
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 9
+	dir = 9;
+	icon_state = "warning"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/smes_room)
@@ -2137,7 +2146,8 @@
 /area/errant_pisces/head_m)
 "eV" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_solar_port_inner"
+	frequency = 1439;
+	id_tag = "xyn_solar_port_inner"
 	},
 /obj/structure/cable/yellow{
 	d1 = 1;
@@ -2158,8 +2168,9 @@
 	dir = 8
 	},
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
-/obj/machinery/button/access/interior{
-	id_tag = "Harpoon_solar_starboard_airlock";
+/obj/machinery/access_button/airlock_interior{
+	frequency = 1011;
+	master_tag = "xyn_solar_starboard_airlock";
 	pixel_x = -25;
 	pixel_y = 25
 	},
@@ -2168,8 +2179,8 @@
 "eX" = (
 /obj/machinery/power/smes/buildable,
 /obj/structure/cable{
-	icon_state = "0-2";
-	d2 = 2
+	d2 = 2;
+	icon_state = "0-2"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/solar_starboard)
@@ -2199,8 +2210,8 @@
 /area/errant_pisces/head_f)
 "fb" = (
 /obj/structure/cable{
-	icon_state = "0-4";
-	d2 = 4
+	d2 = 4;
+	icon_state = "0-4"
 	},
 /obj/machinery/power/smes/buildable,
 /turf/simulated/floor/plating,
@@ -2253,8 +2264,8 @@
 	icon_state = "0-8"
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 8
+	dir = 8;
+	icon_state = "warning"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/smes_room)
@@ -2292,8 +2303,8 @@
 "fk" = (
 /obj/machinery/power/smes/buildable,
 /obj/structure/cable{
-	icon_state = "0-2";
-	d2 = 2
+	d2 = 2;
+	icon_state = "0-2"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/solar_port)
@@ -2307,8 +2318,9 @@
 	dir = 4
 	},
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
-/obj/machinery/button/access/interior{
-	id_tag = "Harpoon_solar_port_airlock";
+/obj/machinery/access_button/airlock_interior{
+	frequency = 1439;
+	master_tag = "xyn_solar_port_airlock";
 	pixel_x = 25;
 	pixel_y = 25
 	},
@@ -2319,7 +2331,7 @@
 /obj/machinery/door/blast/regular/open{
 	dir = 4;
 	icon_state = "pdoor0";
-	id_tag = "Harpoon_perimeter_blast"
+	id_tag = "xynergy_perimeter_blast"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/solar_starboard)
@@ -2345,8 +2357,8 @@
 /area/errant_pisces/solar_starboard)
 "fp" = (
 /obj/machinery/power/terminal{
-	icon_state = "term";
-	dir = 1
+	dir = 1;
+	icon_state = "term"
 	},
 /obj/structure/cable/yellow{
 	d2 = 8;
@@ -2431,8 +2443,8 @@
 	icon_state = "0-8"
 	},
 /obj/effect/floor_decal/industrial/warning{
-	icon_state = "warning";
-	dir = 10
+	dir = 10;
+	icon_state = "warning"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/smes_room)
@@ -2470,8 +2482,8 @@
 /area/errant_pisces/solar_port)
 "fC" = (
 /obj/machinery/power/terminal{
-	icon_state = "term";
-	dir = 1
+	dir = 1;
+	icon_state = "term"
 	},
 /obj/structure/cable/yellow{
 	d2 = 4;
@@ -2525,7 +2537,7 @@
 /obj/machinery/door/blast/regular/open{
 	dir = 4;
 	icon_state = "pdoor0";
-	id_tag = "Harpoon_perimeter_blast"
+	id_tag = "xynergy_perimeter_blast"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/solar_port)
@@ -2550,7 +2562,7 @@
 	pixel_y = -24
 	},
 /obj/structure/cable,
-/obj/item/stool,
+/obj/item/weapon/stool,
 /obj/machinery/atmospherics/unary/vent_pump/on{
 	dir = 1
 	},
@@ -2630,7 +2642,7 @@
 /turf/simulated/floor/tiled/white,
 /area/errant_pisces/head_m)
 "fR" = (
-/obj/item/stool,
+/obj/item/weapon/stool,
 /obj/machinery/alarm{
 	dir = 4;
 	icon_state = "alarm0";
@@ -2656,9 +2668,9 @@
 	dir = 1
 	},
 /obj/machinery/power/solar_control{
-	icon_state = "solar";
 	dir = 1;
-	id = "HarpoonSolarPort"
+	icon_state = "solar";
+	id = "XynergySolarPort"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/solar_port)
@@ -2710,8 +2722,8 @@
 /area/errant_pisces/hallway)
 "fY" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 8
+	dir = 8;
+	icon_state = "tube1"
 	},
 /obj/structure/closet/emcloset,
 /turf/simulated/floor/tiled,
@@ -2804,8 +2816,8 @@
 /area/errant_pisces/hallway)
 "gh" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 4
+	dir = 4;
+	icon_state = "tube1"
 	},
 /obj/structure/closet/emcloset,
 /turf/simulated/floor/tiled,
@@ -2863,7 +2875,7 @@
 /area/errant_pisces/dorms)
 "gp" = (
 /obj/structure/bed/padded,
-/obj/item/bedsheet/rainbow,
+/obj/item/weapon/bedsheet/rainbow,
 /turf/simulated/floor/wood,
 /area/errant_pisces/rooms)
 "gq" = (
@@ -2877,7 +2889,7 @@
 /area/errant_pisces/rooms)
 "gs" = (
 /obj/structure/bed/padded,
-/obj/item/bedsheet/orange,
+/obj/item/weapon/bedsheet/orange,
 /turf/simulated/floor/wood,
 /area/errant_pisces/rooms)
 "gt" = (
@@ -2888,8 +2900,8 @@
 /area/errant_pisces/rooms)
 "gu" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 1
+	dir = 1;
+	icon_state = "tube1"
 	},
 /obj/machinery/media/jukebox,
 /turf/simulated/floor/wood,
@@ -2954,8 +2966,8 @@
 "gD" = (
 /obj/machinery/vending/fitness,
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 1
+	dir = 1;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/dorms)
@@ -2981,13 +2993,13 @@
 /area/errant_pisces/dorms)
 "gI" = (
 /obj/structure/bed/padded,
-/obj/item/bedsheet,
+/obj/item/weapon/bedsheet,
 /obj/random/plushie,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/dorms)
 "gJ" = (
 /obj/structure/bed/padded,
-/obj/item/bedsheet,
+/obj/item/weapon/bedsheet,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/dorms)
 "gK" = (
@@ -3006,8 +3018,8 @@
 "gL" = (
 /obj/structure/bed/chair/comfy/green,
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 8
+	dir = 8;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/wood,
 /area/errant_pisces/rooms)
@@ -3024,8 +3036,8 @@
 "gO" = (
 /obj/structure/bed/chair/comfy/teal,
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 8
+	dir = 8;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/wood,
 /area/errant_pisces/rooms)
@@ -3035,7 +3047,7 @@
 /area/errant_pisces/rooms)
 "gQ" = (
 /obj/structure/table/gamblingtable,
-/obj/item/deck/cards,
+/obj/item/weapon/deck/cards,
 /turf/simulated/floor/wood,
 /area/errant_pisces/rooms)
 "gR" = (
@@ -3101,8 +3113,8 @@
 /area/errant_pisces/rooms)
 "hb" = (
 /obj/structure/table/woodentable,
-/obj/item/paper_bin,
-/obj/item/flashlight/lamp,
+/obj/item/weapon/paper_bin,
+/obj/item/device/flashlight/lamp,
 /turf/simulated/floor/wood,
 /area/errant_pisces/rooms)
 "hc" = (
@@ -3118,7 +3130,7 @@
 /area/errant_pisces/rooms)
 "he" = (
 /obj/structure/table/woodentable,
-/obj/item/ashtray,
+/obj/item/weapon/material/ashtray/bronze,
 /obj/random/smokes,
 /turf/simulated/floor/wood,
 /area/errant_pisces/rooms)
@@ -3235,10 +3247,10 @@
 	icon_state = "0-4"
 	},
 /obj/machinery/power/solar{
-	id = "HarpoonSolarPort"
+	id = "XynergySolarPort"
 	},
 /obj/machinery/power/solar{
-	id = "HarpoonSolarPort"
+	id = "XynergySolarPort"
 	},
 /turf/simulated/floor/airless,
 /area/space)
@@ -3284,8 +3296,8 @@
 /area/errant_pisces/rooms)
 "hy" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 1
+	dir = 1;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/wood,
 /area/errant_pisces/rooms)
@@ -3328,7 +3340,7 @@
 /area/errant_pisces/dorms)
 "hE" = (
 /obj/structure/bed/padded,
-/obj/item/bedsheet,
+/obj/item/weapon/bedsheet,
 /obj/random/plushie/large,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/dorms)
@@ -3346,7 +3358,7 @@
 "hH" = (
 /obj/structure/table/standard,
 /obj/random/firstaid,
-/obj/item/storage/box/bodybags,
+/obj/item/weapon/storage/box/bodybags,
 /turf/simulated/floor/plating,
 /area/errant_pisces/infirmary)
 "hI" = (
@@ -3358,23 +3370,23 @@
 /area/errant_pisces/infirmary)
 "hK" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 1
+	dir = 1;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled/white,
 /area/errant_pisces/infirmary)
 "hL" = (
 /obj/structure/table/steel,
 /obj/item/clothing/head/surgery,
-/obj/item/storage/firstaid/surgery,
-/obj/item/storage/firstaid/adv,
+/obj/item/weapon/storage/firstaid/surgery,
+/obj/item/weapon/storage/firstaid/adv,
 /obj/item/clothing/mask/breath/anesthetic,
 /turf/simulated/floor/tiled/white,
 /area/errant_pisces/infirmary)
 "hM" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 4
+	dir = 4;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/hallway)
@@ -3384,8 +3396,8 @@
 /area/errant_pisces/dorms)
 "hO" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 4
+	dir = 4;
+	icon_state = "tube1"
 	},
 /obj/structure/closet/emcloset,
 /turf/simulated/floor/tiled,
@@ -3412,8 +3424,8 @@
 /area/errant_pisces/infirmary)
 "hT" = (
 /obj/machinery/computer/operating{
-	icon_state = "computer";
-	dir = 4
+	dir = 4;
+	icon_state = "computer"
 	},
 /turf/simulated/floor/tiled/white,
 /area/errant_pisces/infirmary)
@@ -3427,7 +3439,7 @@
 /area/errant_pisces/infirmary)
 "hW" = (
 /obj/structure/bed/padded,
-/obj/item/bedsheet,
+/obj/item/weapon/bedsheet,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/infirmary)
 "hX" = (
@@ -3466,8 +3478,8 @@
 /area/errant_pisces/infirmary)
 "id" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 1
+	dir = 1;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/infirmary)
@@ -3485,11 +3497,11 @@
 /turf/simulated/floor/tiled,
 /area/errant_pisces/dorms)
 "ih" = (
-/obj/item/knife/table,
+/obj/item/weapon/material/knife/table,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/dorms)
 "ii" = (
-/obj/item/stool,
+/obj/item/weapon/stool,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/dorms)
 "ij" = (
@@ -3527,7 +3539,7 @@
 /area/errant_pisces/live_storage)
 "iq" = (
 /obj/machinery/button/blast_door{
-	id_tag = "Harpoon_bd_cell1";
+	id_tag = "xynergy_bd_cell1";
 	name = "Cell 1 blast door-control";
 	pixel_y = -25
 	},
@@ -3539,7 +3551,7 @@
 /area/errant_pisces/live_storage)
 "is" = (
 /obj/machinery/button/blast_door{
-	id_tag = "Harpoon_bd_cell2";
+	id_tag = "xynergy_bd_cell2";
 	name = "Cell 2 blast door-control";
 	pixel_y = -25
 	},
@@ -3547,7 +3559,7 @@
 /area/errant_pisces/live_storage)
 "it" = (
 /obj/machinery/button/blast_door{
-	id_tag = "Harpoon_bd_cell3";
+	id_tag = "xynergy_bd_cell3";
 	name = "Cell 3 blast door-control";
 	pixel_y = -25
 	},
@@ -3611,7 +3623,7 @@
 "iF" = (
 /obj/structure/table/standard,
 /obj/item/trash/plate,
-/obj/item/kitchen/utensil/fork,
+/obj/item/weapon/material/kitchen/utensil/fork,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/dorms)
 "iG" = (
@@ -3634,19 +3646,19 @@
 /area/errant_pisces/dorms)
 "iK" = (
 /obj/machinery/door/blast/regular{
-	id_tag = "Harpoon_bd_cell1"
+	id_tag = "xynergy_bd_cell1"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/live_storage)
 "iL" = (
 /obj/machinery/door/blast/regular{
-	id_tag = "Harpoon_bd_cell2"
+	id_tag = "xynergy_bd_cell2"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/live_storage)
 "iM" = (
 /obj/machinery/door/blast/regular{
-	id_tag = "Harpoon_bd_cell3"
+	id_tag = "xynergy_bd_cell3"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/live_storage)
@@ -3695,8 +3707,8 @@
 /area/errant_pisces/infirmary)
 "iT" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 1
+	dir = 1;
+	icon_state = "tube1"
 	},
 /obj/machinery/alarm{
 	dir = 1;
@@ -3772,14 +3784,14 @@
 "ja" = (
 /obj/machinery/body_scanconsole,
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 4
+	dir = 4;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/infirmary)
 "jb" = (
 /obj/structure/table/standard,
-/obj/item/paper_bin,
+/obj/item/weapon/paper_bin,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/infirmary)
 "jc" = (
@@ -3899,7 +3911,7 @@
 /area/errant_pisces/hallway)
 "js" = (
 /obj/structure/table/standard,
-/obj/item/kitchen/utensil/fork/plastic,
+/obj/item/weapon/material/kitchen/utensil/fork/plastic,
 /obj/random/snack,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/dorms)
@@ -3930,8 +3942,9 @@
 /turf/space,
 /area/errant_pisces/live_storage)
 "jy" = (
-/obj/machinery/button/access/exterior{
-	id_tag = "Harpoon_ls_airlock";
+/obj/machinery/access_button/airlock_exterior{
+	frequency = 1439;
+	master_tag = "xyn_ls_airlock";
 	pixel_x = -25;
 	pixel_y = 0
 	},
@@ -3954,7 +3967,7 @@
 /area/errant_pisces/infirmary)
 "jC" = (
 /obj/structure/table/standard,
-/obj/item/storage/box/freezer,
+/obj/item/weapon/storage/box/freezer,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/infirmary)
 "jD" = (
@@ -4004,7 +4017,7 @@
 /turf/simulated/floor/tiled,
 /area/errant_pisces/infirmary)
 "jI" = (
-/obj/item/stool,
+/obj/item/weapon/stool,
 /obj/machinery/alarm{
 	dir = 1;
 	pixel_y = -25;
@@ -4021,7 +4034,7 @@
 	name = "south bump";
 	pixel_y = -24
 	},
-/obj/item/stool,
+/obj/item/weapon/stool,
 /obj/structure/cable/green,
 /obj/machinery/atmospherics/unary/vent_pump/on{
 	dir = 1
@@ -4030,7 +4043,7 @@
 /area/errant_pisces/infirmary)
 "jK" = (
 /obj/structure/table/standard,
-/obj/item/kitchen/utensil/fork,
+/obj/item/weapon/material/kitchen/utensil/fork,
 /obj/machinery/light,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/dorms)
@@ -4058,7 +4071,8 @@
 /area/errant_pisces/dorms)
 "jQ" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_ls_outer"
+	frequency = 1439;
+	id_tag = "xyn_ls_outer"
 	},
 /obj/machinery/door/firedoor,
 /turf/simulated/floor/plating,
@@ -4096,7 +4110,7 @@
 /area/errant_pisces/science_wing)
 "jV" = (
 /obj/structure/table/standard,
-/obj/item/paper_bin,
+/obj/item/weapon/paper_bin,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "jW" = (
@@ -4125,14 +4139,15 @@
 /turf/simulated/floor/tiled,
 /area/errant_pisces/cryo)
 "ka" = (
-/obj/machinery/atmospherics/unary/vent_pump/high_volume/external_air{
-	id_tag = "Harpoon_ls_pump"
+/obj/machinery/atmospherics/unary/vent_pump/high_volume{
+	id_tag = "xyn_ls_pump"
 	},
 /obj/machinery/light/small{
 	dir = 4
 	},
 /obj/machinery/airlock_sensor{
-	id_tag = "Harpoon_ls_sensor";
+	frequency = 1439;
+	id_tag = "xyn_ls_sensor";
 	pixel_x = -25;
 	pixel_y = 0
 	},
@@ -4190,15 +4205,15 @@
 /turf/simulated/wall/r_wall,
 /area/errant_pisces/cryo)
 "kk" = (
-/obj/machinery/sleeper/standard{
+/obj/machinery/sleeper{
 	dir = 4
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/cryo)
 "kl" = (
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 1
+	dir = 1;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/cryo)
@@ -4268,7 +4283,7 @@
 /turf/simulated/floor/tiled,
 /area/errant_pisces/cryo)
 "kr" = (
-/obj/machinery/sleeper/standard{
+/obj/machinery/sleeper{
 	dir = 8
 	},
 /turf/simulated/floor/tiled,
@@ -4281,7 +4296,8 @@
 /area/errant_pisces/prod_storage)
 "ku" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_ls_inner"
+	frequency = 1439;
+	id_tag = "xyn_ls_inner"
 	},
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
 /obj/machinery/door/firedoor,
@@ -4295,8 +4311,8 @@
 	dir = 5
 	},
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 8
+	dir = 8;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
@@ -4354,19 +4370,21 @@
 	dir = 1
 	},
 /obj/structure/bookcase,
-/obj/item/book/manual/anomaly_testing,
-/obj/item/book/manual/anomaly_spectroscopy,
+/obj/item/weapon/book/manual/anomaly_testing,
+/obj/item/weapon/book/manual/anomaly_spectroscopy,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "kB" = (
 /obj/structure/bookcase,
-/obj/item/book/manual/mass_spectrometry,
-/obj/item/book/manual/engineering_guide,
+/obj/item/weapon/book/manual/mass_spectrometry,
+/obj/item/weapon/book/manual/research_and_development,
+/obj/item/weapon/book/manual/engineering_guide,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "kC" = (
 /obj/structure/bookcase,
-/obj/item/book/manual/materials_chemistry_analysis,
+/obj/item/weapon/book/manual/materials_chemistry_analysis,
+/obj/item/weapon/book/manual/hydroponics_pod_people,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "kD" = (
@@ -4426,7 +4444,7 @@
 /area/errant_pisces/cryo)
 "kM" = (
 /obj/structure/closet,
-/obj/item/clothing/suit/storage/toggle/labcoat,
+/obj/item/clothing/suit/storage/toggle/labcoat/xyn_machine,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/cryo)
 "kN" = (
@@ -4443,20 +4461,20 @@
 /area/errant_pisces/general_storage)
 "kQ" = (
 /obj/structure/table/rack,
-/obj/item/knife/combat,
+/obj/item/weapon/material/knife/combat,
 /turf/simulated/floor/plating,
 /area/errant_pisces/general_storage)
 "kR" = (
 /obj/structure/table/rack,
-/obj/item/harpoon,
+/obj/item/weapon/material/harpoon,
 /obj/random/tool,
 /turf/simulated/floor/plating,
 /area/errant_pisces/general_storage)
 "kS" = (
 /obj/structure/table/rack,
-/obj/item/storage/box/survival,
-/obj/item/storage/box/survival,
-/obj/item/storage/box/survival,
+/obj/item/weapon/storage/box/survival,
+/obj/item/weapon/storage/box/survival,
+/obj/item/weapon/storage/box/survival,
 /turf/simulated/floor/plating,
 /area/errant_pisces/general_storage)
 "kT" = (
@@ -4464,7 +4482,7 @@
 /area/errant_pisces/general_storage)
 "kU" = (
 /obj/structure/closet/secure_closet/freezer/fridge,
-/obj/item/chems/food/snacks/fish/poison,
+/obj/item/weapon/reagent_containers/food/snacks/fish/poison,
 /turf/simulated/floor/tiled/freezer,
 /area/errant_pisces/prod_storage)
 "kV" = (
@@ -4489,30 +4507,35 @@
 	},
 /turf/simulated/floor/tiled/freezer,
 /area/errant_pisces/prod_storage)
+"kZ" = (
+/obj/item/weapon/reagent_containers/chem_disp_cartridge/synaptizine,
+/turf/simulated/floor/tiled/freezer,
+/area/errant_pisces/prod_storage)
 "la" = (
 /turf/simulated/wall,
 /area/errant_pisces/prod_storage)
 "lb" = (
-/obj/machinery/suit_cycler,
+/obj/machinery/suit_storage_unit/standard_unit,
 /turf/simulated/floor/plating,
 /area/errant_pisces/live_storage)
 "lc" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
 /obj/machinery/embedded_controller/radio/airlock/airlock_controller{
-	id_tag = "Harpoon_ls_airlock";
+	frequency = 1439;
+	id_tag = "xyn_ls_airlock";
 	pixel_x = 25;
 	pixel_y = 0;
-	tag_airpump = "Harpoon_ls_pump";
-	tag_chamber_sensor = "Harpoon_ls_sensor";
-	tag_exterior_door = "Harpoon_ls_outer";
-	tag_interior_door = "Harpoon_ls_inner"
+	tag_airpump = "xyn_ls_pump";
+	tag_chamber_sensor = "xyn_ls_sensor";
+	tag_exterior_door = "xyn_ls_outer";
+	tag_interior_door = "xyn_ls_inner"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/live_storage)
 "ld" = (
 /obj/machinery/atmospherics/pipe/simple/hidden/supply,
 /obj/structure/table/rack,
-/obj/item/harpoon,
+/obj/item/weapon/material/harpoon,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "le" = (
@@ -4522,6 +4545,7 @@
 /area/errant_pisces/science_wing)
 "lf" = (
 /obj/structure/table/rack,
+/obj/item/weapon/gun/launcher/net,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "lg" = (
@@ -4553,19 +4577,19 @@
 /area/errant_pisces/prod_storage)
 "lk" = (
 /obj/structure/closet/secure_closet/freezer/fridge,
-/obj/item/chems/food/snacks/cubancarp,
+/obj/item/weapon/reagent_containers/food/snacks/cubancarp,
 /turf/simulated/floor/tiled/freezer,
 /area/errant_pisces/prod_storage)
 "ll" = (
 /obj/structure/window/basic{
 	dir = 8
 	},
-/obj/item/chems/chem_disp_cartridge/amphetamines,
+/obj/item/weapon/reagent_containers/chem_disp_cartridge/hyperzine,
 /turf/simulated/floor/tiled/freezer,
 /area/errant_pisces/prod_storage)
 "lm" = (
 /obj/structure/closet/crate,
-/obj/item/chems/food/snacks/fish/poison,
+/obj/item/weapon/reagent_containers/food/snacks/fish/poison,
 /turf/simulated/floor/tiled/freezer,
 /area/errant_pisces/prod_storage)
 "ln" = (
@@ -4607,36 +4631,36 @@
 /area/errant_pisces/science_wing)
 "lu" = (
 /obj/structure/table/standard,
-/obj/item/storage/box/freezer,
+/obj/item/weapon/storage/box/freezer,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "lv" = (
 /obj/structure/table/standard,
-/obj/item/storage/toolbox/mechanical,
+/obj/item/weapon/storage/toolbox/mechanical,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "lw" = (
 /obj/structure/table/standard,
-/obj/item/storage/toolbox/electrical,
+/obj/item/weapon/storage/toolbox/electrical,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "lx" = (
 /obj/structure/table/standard,
-/obj/item/tape_roll,
+/obj/item/weapon/tape_roll,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "ly" = (
 /obj/structure/table/standard,
-/obj/item/storage/box/gloves,
+/obj/item/weapon/storage/box/gloves,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "lz" = (
 /obj/structure/closet,
-/obj/item/clothing/suit/storage/toggle/labcoat,
+/obj/item/clothing/suit/storage/toggle/labcoat/xyn_machine,
 /obj/random/advdevice,
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 8
+	dir = 8;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/cryo)
@@ -4656,29 +4680,29 @@
 /obj/item/clothing/suit/apron/overalls,
 /obj/random/glasses,
 /obj/machinery/light{
-	icon_state = "tube1";
-	dir = 4
+	dir = 4;
+	icon_state = "tube1"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/cryo)
 "lD" = (
 /obj/structure/table/rack,
-/obj/item/storage/toolbox/mechanical,
+/obj/item/weapon/storage/toolbox/mechanical,
 /turf/simulated/floor/plating,
 /area/errant_pisces/general_storage)
 "lE" = (
 /obj/structure/table/rack,
-/obj/item/storage/ore,
+/obj/item/weapon/storage/ore,
 /obj/random/tool,
 /turf/simulated/floor/plating,
 /area/errant_pisces/general_storage)
 "lF" = (
 /obj/structure/table/rack,
-/obj/item/storage/firstaid/empty,
+/obj/item/weapon/storage/firstaid/empty,
 /turf/simulated/floor/plating,
 /area/errant_pisces/general_storage)
 "lG" = (
-/obj/item/chems/chem_disp_cartridge/mercury,
+/obj/item/weapon/reagent_containers/chem_disp_cartridge/mercury,
 /turf/simulated/floor/tiled/freezer,
 /area/errant_pisces/prod_storage)
 "lH" = (
@@ -4753,8 +4777,8 @@
 	dir = 4
 	},
 /obj/structure/table/standard,
-/obj/item/book/manual/mass_spectrometry,
-/obj/item/scanner/spectrometer,
+/obj/item/weapon/book/manual/mass_spectrometry,
+/obj/item/device/scanner/spectrometer,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "lS" = (
@@ -4766,9 +4790,9 @@
 /area/errant_pisces/science_wing)
 "lT" = (
 /obj/structure/table/steel,
-/obj/item/storage/firstaid/surgery,
-/obj/item/knife/kitchen/cleaver,
-/obj/item/twohanded/fireaxe,
+/obj/item/weapon/storage/firstaid/surgery,
+/obj/item/weapon/material/knife/kitchen/cleaver,
+/obj/item/weapon/material/twohanded/fireaxe,
 /obj/structure/window/reinforced{
 	dir = 1
 	},
@@ -4784,8 +4808,8 @@
 /area/errant_pisces/general_storage)
 "lW" = (
 /obj/structure/closet/secure_closet/freezer/fridge,
-/obj/item/chems/food/snacks/fish/poison,
-/obj/item/chems/food/snacks/fish/poison,
+/obj/item/weapon/reagent_containers/food/snacks/fish/poison,
+/obj/item/weapon/reagent_containers/food/snacks/fish/poison,
 /turf/simulated/floor/tiled/freezer,
 /area/errant_pisces/prod_storage)
 "lX" = (
@@ -4793,7 +4817,7 @@
 	dir = 8
 	},
 /obj/structure/closet/crate,
-/obj/item/chems/food/snacks/fish/poison,
+/obj/item/weapon/reagent_containers/food/snacks/fish/poison,
 /turf/simulated/floor/tiled/freezer,
 /area/errant_pisces/prod_storage)
 "lY" = (
@@ -4815,15 +4839,17 @@
 /area/errant_pisces/live_storage)
 "mb" = (
 /obj/structure/lattice,
-/obj/machinery/button/access/exterior{
-	id_tag = "Harpoon_sci_airlock";
+/obj/machinery/access_button/airlock_exterior{
+	frequency = 1439;
+	master_tag = "xyn_sci_airlock";
 	pixel_y = -20
 	},
 /turf/space,
 /area/errant_pisces/science_wing)
 "mc" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_sci_outer"
+	frequency = 1439;
+	id_tag = "xyn_sci_outer"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/science_wing)
@@ -4831,28 +4857,31 @@
 /obj/machinery/light/small{
 	dir = 1
 	},
-/obj/machinery/atmospherics/unary/vent_pump/high_volume/external_air{
+/obj/machinery/atmospherics/unary/vent_pump/high_volume{
 	dir = 4;
-	id_tag = "Harpoon_sci_pump"
+	id_tag = "xyn_sci_pump"
 	},
 /obj/machinery/embedded_controller/radio/airlock/airlock_controller{
-	id_tag = "Harpoon_sci_airlock";
+	frequency = 1439;
+	id_tag = "xyn_sci_airlock";
 	pixel_x = 0;
 	pixel_y = -25;
-	tag_airpump = "Harpoon_sci_pump";
-	tag_chamber_sensor = "Harpoon_sci_sensor";
-	tag_exterior_door = "Harpoon_sci_outer";
-	tag_interior_door = "Harpoon_sci_inner"
+	tag_airpump = "xyn_sci_pump";
+	tag_chamber_sensor = "xyn_sci_sensor";
+	tag_exterior_door = "xyn_sci_outer";
+	tag_interior_door = "xyn_sci_inner"
 	},
 /obj/machinery/airlock_sensor{
-	id_tag = "Harpoon_sci_sensor";
+	frequency = 1439;
+	id_tag = "xyn_sci_sensor";
 	pixel_y = 25
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/science_wing)
 "me" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_sci_inner"
+	frequency = 1439;
+	id_tag = "xyn_sci_inner"
 	},
 /obj/machinery/atmospherics/pipe/simple/hidden/supply{
 	dir = 4
@@ -4863,8 +4892,9 @@
 /obj/machinery/atmospherics/pipe/simple/hidden/supply{
 	dir = 9
 	},
-/obj/machinery/button/access/interior{
-	id_tag = "Harpoon_sci_airlock";
+/obj/machinery/access_button/airlock_interior{
+	frequency = 1439;
+	master_tag = "xyn_sci_airlock";
 	pixel_x = -25;
 	pixel_y = -25
 	},
@@ -4886,8 +4916,8 @@
 	req_access = newlist()
 	},
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
@@ -4927,8 +4957,8 @@
 	icon_state = "tube1"
 	},
 /obj/machinery/computer/operating{
-	icon_state = "computer";
-	dir = 8
+	dir = 8;
+	icon_state = "computer"
 	},
 /turf/simulated/floor/tiled/white,
 /area/errant_pisces/science_wing)
@@ -4986,7 +5016,7 @@
 /obj/machinery/atmospherics/unary/vent_scrubber/on{
 	dir = 4
 	},
-/obj/item/harpoon,
+/obj/item/weapon/material/harpoon,
 /turf/simulated/floor/plating,
 /area/errant_pisces/live_storage)
 "my" = (
@@ -5009,7 +5039,7 @@
 /turf/simulated/floor/plating,
 /area/errant_pisces/science_wing)
 "mB" = (
-/obj/machinery/suit_cycler,
+/obj/machinery/suit_storage_unit/standard_unit,
 /turf/simulated/floor/plating,
 /area/errant_pisces/science_wing)
 "mC" = (
@@ -5044,8 +5074,8 @@
 	dir = 8
 	},
 /obj/structure/table/standard,
-/obj/item/storage/box/beakers,
-/obj/item/chems/dropper,
+/obj/item/weapon/storage/box/beakers,
+/obj/item/weapon/reagent_containers/dropper,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/science_wing)
 "mG" = (
@@ -5064,7 +5094,7 @@
 "mI" = (
 /obj/machinery/optable,
 /obj/item/clothing/glasses/welding,
-/obj/item/weldingtool,
+/obj/item/weapon/weldingtool,
 /turf/simulated/floor/tiled/white,
 /area/errant_pisces/science_wing)
 "mJ" = (
@@ -5167,6 +5197,7 @@
 	level = 2
 	},
 /obj/structure/table/rack,
+/obj/item/weapon/gun/launcher/net,
 /turf/simulated/floor/plating,
 /area/errant_pisces/live_storage)
 "mV" = (
@@ -5263,8 +5294,9 @@
 /obj/machinery/light/small{
 	dir = 1
 	},
-/obj/machinery/button/access/interior{
-	id_tag = "Harpoon_dock1_airlock";
+/obj/machinery/access_button/airlock_interior{
+	frequency = 1439;
+	master_tag = "xyn_dock1_airlock";
 	pixel_x = 0;
 	pixel_y = 25
 	},
@@ -5272,7 +5304,8 @@
 /area/errant_pisces/aft_hallway)
 "nf" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_dock1_inner"
+	frequency = 1439;
+	id_tag = "xyn_dock1_inner"
 	},
 /obj/machinery/atmospherics/pipe/simple/hidden/supply{
 	dir = 4
@@ -5284,40 +5317,44 @@
 /obj/machinery/light/small{
 	dir = 1
 	},
-/obj/machinery/atmospherics/unary/vent_pump/high_volume/external_air{
+/obj/machinery/atmospherics/unary/vent_pump/high_volume{
 	dir = 8;
-	id_tag = "Harpoon_dock1_pump"
+	id_tag = "xyn_dock1_pump"
 	},
 /obj/machinery/embedded_controller/radio/airlock/airlock_controller{
-	id_tag = "Harpoon_dock1_airlock";
+	frequency = 1439;
+	id_tag = "xyn_dock1_airlock";
 	pixel_x = 0;
 	pixel_y = -25;
-	tag_airpump = "Harpoon_dock1_pump";
-	tag_chamber_sensor = "Harpoon_dock1_sensor";
-	tag_exterior_door = "Harpoon_dock1_outer";
-	tag_interior_door = "Harpoon_dock1_inner"
+	tag_airpump = "xyn_dock1_pump";
+	tag_chamber_sensor = "xyn_dock1_sensor";
+	tag_exterior_door = "xyn_dock1_outer";
+	tag_interior_door = "xyn_dock1_inner"
 	},
 /obj/machinery/airlock_sensor{
-	id_tag = "Harpoon_dock1_sensor";
+	frequency = 1439;
+	id_tag = "xyn_dock1_sensor";
 	pixel_y = 25
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/aft_hallway)
 "nh" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_dock1_outer"
+	frequency = 1439;
+	id_tag = "xyn_dock1_outer"
 	},
 /obj/machinery/door/blast/regular/open{
 	dir = 4;
 	icon_state = "pdoor0";
-	id_tag = "Harpoon_perimeter_blast"
+	id_tag = "xynergy_perimeter_blast"
 	},
 /obj/machinery/door/firedoor,
 /turf/simulated/floor/plating,
 /area/errant_pisces/aft_hallway)
 "ni" = (
-/obj/machinery/button/access/exterior{
-	id_tag = "Harpoon_dock1_airlock";
+/obj/machinery/access_button/airlock_exterior{
+	frequency = 1439;
+	master_tag = "xyn_dock1_airlock";
 	pixel_x = -25;
 	pixel_y = -25
 	},
@@ -5892,8 +5929,9 @@
 /obj/machinery/atmospherics/pipe/simple/hidden/supply{
 	dir = 5
 	},
-/obj/machinery/button/access/interior{
-	id_tag = "Harpoon_dock2_airlock";
+/obj/machinery/access_button/airlock_interior{
+	frequency = 1439;
+	master_tag = "xyn_dock2_airlock";
 	pixel_x = 0;
 	pixel_y = -25
 	},
@@ -5901,7 +5939,8 @@
 /area/errant_pisces/aft_hallway)
 "ol" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_dock2_inner"
+	frequency = 1439;
+	id_tag = "xyn_dock2_inner"
 	},
 /obj/machinery/atmospherics/pipe/simple/hidden/supply{
 	dir = 4
@@ -5913,40 +5952,44 @@
 /obj/machinery/light/small{
 	dir = 1
 	},
-/obj/machinery/atmospherics/unary/vent_pump/high_volume/external_air{
+/obj/machinery/atmospherics/unary/vent_pump/high_volume{
 	dir = 8;
-	id_tag = "Harpoon_dock2_pump"
+	id_tag = "xyn_dock2_airlock"
 	},
 /obj/machinery/embedded_controller/radio/airlock/airlock_controller{
-	id_tag = "Harpoon_dock2_airlock";
+	frequency = 1439;
+	id_tag = "xyn_dock2_airlock";
 	pixel_x = 0;
 	pixel_y = -25;
-	tag_airpump = "Harpoon_dock2_pump";
-	tag_chamber_sensor = "Harpoon_dock2_sensor";
-	tag_exterior_door = "Harpoon_dock2_outer";
-	tag_interior_door = "Harpoon_dock2_inner"
+	tag_airpump = "xyn_dock2_pump";
+	tag_chamber_sensor = "xyn_dock2_sensor";
+	tag_exterior_door = "xyn_dock2_outer";
+	tag_interior_door = "xyn_dock2_inner"
 	},
 /obj/machinery/airlock_sensor{
-	id_tag = "Harpoon_dock2_sensor";
+	frequency = 1439;
+	id_tag = "xyn_dock2_sensor";
 	pixel_y = 25
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/aft_hallway)
 "on" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_dock2_outer"
+	frequency = 1439;
+	id_tag = "xyn_dock2_outer"
 	},
 /obj/machinery/door/blast/regular/open{
 	dir = 4;
 	icon_state = "pdoor0";
-	id_tag = "Harpoon_perimeter_blast"
+	id_tag = "xynergy_perimeter_blast"
 	},
 /obj/machinery/door/firedoor,
 /turf/simulated/floor/plating,
 /area/errant_pisces/aft_hallway)
 "oo" = (
-/obj/machinery/button/access/exterior{
-	id_tag = "Harpoon_dock2_airlock";
+/obj/machinery/access_button/airlock_exterior{
+	frequency = 1439;
+	master_tag = "xyn_dock2_airlock";
 	pixel_x = -25;
 	pixel_y = -25
 	},
@@ -5970,9 +6013,9 @@
 /area/errant_pisces/aux_power)
 "or" = (
 /obj/structure/table/rack,
-/obj/item/wrench,
-/obj/item/screwdriver,
-/obj/item/wirecutters,
+/obj/item/weapon/wrench,
+/obj/item/weapon/screwdriver,
+/obj/item/weapon/wirecutters,
 /turf/simulated/floor/plating,
 /area/errant_pisces/aux_power)
 "os" = (
@@ -5997,7 +6040,7 @@
 /area/errant_pisces/fishing_wing)
 "ov" = (
 /obj/structure/table/marble,
-/obj/item/knife/kitchen/cleaver,
+/obj/item/weapon/material/knife/kitchen/cleaver,
 /obj/machinery/atmospherics/unary/vent_pump/on{
 	dir = 8
 	},
@@ -6012,9 +6055,9 @@
 /area/errant_pisces/fishing_wing)
 "ox" = (
 /obj/structure/table/marble,
-/obj/item/chems/food/snacks/fish/poison,
-/obj/item/chems/food/snacks/fish/poison,
-/obj/item/chems/food/snacks/fish/poison,
+/obj/item/weapon/reagent_containers/food/snacks/fish/poison,
+/obj/item/weapon/reagent_containers/food/snacks/fish/poison,
+/obj/item/weapon/reagent_containers/food/snacks/fish/poison,
 /turf/simulated/floor/tiled/freezer,
 /area/errant_pisces/fishing_wing)
 "oy" = (
@@ -6023,6 +6066,7 @@
 /area/errant_pisces/fishing_wing)
 "oz" = (
 /obj/structure/table/marble,
+/obj/item/weapon/gun/launcher/net,
 /turf/simulated/floor/tiled/freezer,
 /area/errant_pisces/fishing_wing)
 "oA" = (
@@ -6150,7 +6194,7 @@
 /turf/simulated/floor/tiled,
 /area/errant_pisces/bridge)
 "oR" = (
-/obj/structure/bookcase,
+/obj/structure/bookcase/manuals/research_and_development,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/bridge)
 "oS" = (
@@ -6186,8 +6230,8 @@
 	dir = 1
 	},
 /obj/structure/closet,
-/obj/item/gun/projectile/shotgun/pump,
-/obj/random/lipstick,
+/obj/item/weapon/gun/projectile/shotgun/pump/combat,
+/obj/item/weapon/lipstick/random,
 /obj/random/ammo,
 /obj/random/cash,
 /obj/random/cash,
@@ -6268,8 +6312,8 @@
 /area/errant_pisces/bridge)
 "pi" = (
 /obj/machinery/computer/ship/navigation{
-	icon_state = "computer";
-	dir = 1
+	dir = 1;
+	icon_state = "computer"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/bridge)
@@ -6306,7 +6350,7 @@
 /obj/machinery/door/blast/regular/open{
 	dir = 2;
 	icon_state = "pdoor0";
-	id_tag = "Harpoon_perimeter_blast"
+	id_tag = "xynergy_perimeter_blast"
 	},
 /turf/simulated/floor/reinforced/airless,
 /area/errant_pisces/bridge)
@@ -6556,8 +6600,8 @@
 /area/space)
 "qa" = (
 /obj/machinery/computer/ship/sensors{
-	icon_state = "computer";
-	dir = 4
+	dir = 4;
+	icon_state = "computer"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/bridge)
@@ -6584,27 +6628,27 @@
 "qf" = (
 /obj/structure/table/steel,
 /obj/machinery/button/blast_door{
-	id_tag = "Harpoon_perimeter_blast";
+	id_tag = "xynergy_perimeter_blast";
 	name = "perimeter blast door-control"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/bridge)
 "qg" = (
 /obj/machinery/computer/ship/helm{
-	icon_state = "computer";
-	dir = 1
+	dir = 1;
+	icon_state = "computer"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/bridge)
 "qh" = (
 /obj/machinery/computer/ship/engines{
-	icon_state = "computer";
-	dir = 1
+	dir = 1;
+	icon_state = "computer"
 	},
 /turf/simulated/floor/tiled,
 /area/errant_pisces/bridge)
 "qi" = (
-/obj/item/bedsheet/captain,
+/obj/item/weapon/bedsheet/captain,
 /obj/structure/bed/padded,
 /turf/simulated/floor/wood,
 /area/errant_pisces/bridge)
@@ -6613,7 +6657,7 @@
 	dir = 1
 	},
 /obj/structure/table/rack,
-/obj/item/gun/projectile/shotgun/pump,
+/obj/item/weapon/gun/projectile/shotgun/pump,
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qk" = (
@@ -6632,7 +6676,7 @@
 "qn" = (
 /obj/structure/table/rack,
 /obj/item/clothing/mask/breath,
-/obj/item/storage/box/survival,
+/obj/item/weapon/storage/box/survival,
 /obj/machinery/atmospherics/unary/vent_pump/on{
 	dir = 4;
 	level = 2
@@ -6647,10 +6691,10 @@
 /area/errant_pisces/fishing_wing)
 "qp" = (
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
-/obj/machinery/suit_cycler,
+/obj/machinery/suit_storage_unit/standard_unit,
 /obj/machinery/atmospherics/unary/vent_scrubber/on{
 	dir = 1
 	},
@@ -6658,7 +6702,7 @@
 /area/errant_pisces/fishing_wing)
 "qq" = (
 /obj/structure/janitorialcart,
-/obj/item/mop,
+/obj/item/weapon/mop,
 /turf/simulated/floor/tiled,
 /area/errant_pisces/fishing_wing)
 "qr" = (
@@ -6672,12 +6716,13 @@
 	dir = 8
 	},
 /obj/structure/table/rack,
+/obj/item/weapon/gun/launcher/net,
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qt" = (
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
 /obj/random/contraband,
 /obj/structure/closet/l3closet/janitor,
@@ -6685,7 +6730,7 @@
 /area/errant_pisces/fishing_wing)
 "qu" = (
 /obj/structure/table/rack,
-/obj/item/tank/oxygen,
+/obj/item/weapon/tank/oxygen,
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qv" = (
@@ -6693,7 +6738,7 @@
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qw" = (
-/obj/machinery/suit_cycler,
+/obj/machinery/suit_storage_unit/standard_unit,
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qx" = (
@@ -6710,6 +6755,7 @@
 /area/errant_pisces/fishing_wing)
 "qA" = (
 /obj/structure/table/rack,
+/obj/item/weapon/gun/launcher/net,
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qB" = (
@@ -6724,8 +6770,8 @@
 /area/errant_pisces/bridge)
 "qD" = (
 /obj/structure/table/rack,
-/obj/item/knife/combat,
-/obj/item/knife/combat,
+/obj/item/weapon/material/knife/combat,
+/obj/item/weapon/material/knife/combat,
 /obj/item/stack/net/thirty,
 /obj/item/stack/net/thirty,
 /turf/simulated/floor/plating,
@@ -6739,16 +6785,16 @@
 /area/errant_pisces/fishing_wing)
 "qF" = (
 /obj/structure/table/rack,
-/obj/item/storage/box/survival,
+/obj/item/weapon/storage/box/survival,
 /obj/item/stack/net/thirty,
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qG" = (
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
-/obj/machinery/suit_cycler,
+/obj/machinery/suit_storage_unit/standard_unit,
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qH" = (
@@ -6760,16 +6806,16 @@
 	dir = 8
 	},
 /obj/structure/table/rack,
-/obj/item/harpoon,
-/obj/item/harpoon,
-/obj/item/harpoon,
+/obj/item/weapon/material/harpoon,
+/obj/item/weapon/material/harpoon,
+/obj/item/weapon/material/harpoon,
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qJ" = (
 /obj/structure/closet,
 /obj/machinery/light/small{
-	icon_state = "bulb1";
-	dir = 4
+	dir = 4;
+	icon_state = "bulb1"
 	},
 /obj/random/gloves,
 /turf/simulated/floor/plating,
@@ -6777,7 +6823,7 @@
 "qK" = (
 /obj/structure/table/rack,
 /obj/item/clothing/mask/breath,
-/obj/item/flashlight,
+/obj/item/device/flashlight,
 /obj/item/stack/net/thirty,
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
@@ -6802,8 +6848,9 @@
 /area/errant_pisces/fishing_wing)
 "qP" = (
 /obj/effect/decal/cleanable/blood,
-/obj/machinery/button/access/interior{
-	id_tag = "Harpoon_fish_airlock";
+/obj/machinery/access_button/airlock_interior{
+	frequency = 1439;
+	master_tag = "xyn_fish_airlock";
 	pixel_x = 25;
 	pixel_y = -25
 	},
@@ -6814,7 +6861,8 @@
 /area/errant_pisces/fishing_wing)
 "qQ" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_fish_inner"
+	frequency = 1439;
+	id_tag = "xyn_fish_inner"
 	},
 /obj/machinery/door/firedoor,
 /obj/effect/decal/cleanable/blood,
@@ -6829,40 +6877,44 @@
 	},
 /obj/effect/decal/cleanable/blood,
 /obj/machinery/embedded_controller/radio/airlock/airlock_controller{
-	id_tag = "Harpoon_fish_airlock";
+	frequency = 1439;
+	id_tag = "xyn_fish_airlock";
 	pixel_x = 0;
 	pixel_y = -25;
-	tag_airpump = "Harpoon_fish_pump";
-	tag_chamber_sensor = "Harpoon_fish_sensor";
-	tag_exterior_door = "Harpoon_fish_outer";
-	tag_interior_door = "Harpoon_fish_inner"
+	tag_airpump = "xyn_fish_pump";
+	tag_chamber_sensor = "xyn_fish_sensor";
+	tag_exterior_door = "xyn_fish_outer";
+	tag_interior_door = "xyn_fish_inner"
 	},
 /obj/machinery/airlock_sensor{
-	id_tag = "Harpoon_fish_sensor";
+	frequency = 1439;
+	id_tag = "xyn_fish_sensor";
 	pixel_y = 25
 	},
-/obj/machinery/atmospherics/unary/vent_pump/high_volume/external_air{
+/obj/machinery/atmospherics/unary/vent_pump/high_volume{
 	dir = 8;
-	id_tag = "Harpoon_fish_pump"
+	id_tag = "xyn_fish_pump"
 	},
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qS" = (
 /obj/machinery/door/airlock/external{
-	id_tag = "Harpoon_fish_outer"
+	frequency = 1439;
+	id_tag = "xyn_fish_outer"
 	},
 /obj/machinery/door/blast/regular/open{
 	dir = 4;
 	icon_state = "pdoor0";
-	id_tag = "Harpoon_perimeter_blast"
+	id_tag = "xynergy_perimeter_blast"
 	},
 /obj/machinery/door/firedoor,
 /turf/simulated/floor/plating,
 /area/space)
 "qT" = (
 /obj/structure/net,
-/obj/machinery/button/access/exterior{
-	id_tag = "Harpoon_dock2_airlock";
+/obj/machinery/access_button/airlock_exterior{
+	frequency = 1439;
+	master_tag = "xyn_dock2_airlock";
 	pixel_x = -25;
 	pixel_y = -25
 	},
@@ -6877,7 +6929,7 @@
 "qV" = (
 /obj/structure/table/steel,
 /obj/random/smokes,
-/obj/item/flame/lighter/random,
+/obj/item/weapon/flame/lighter/random,
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qW" = (
@@ -6889,7 +6941,7 @@
 /obj/structure/bed/chair{
 	dir = 8
 	},
-/obj/item/flame/match,
+/obj/item/weapon/flame/match,
 /turf/simulated/floor/plating,
 /area/errant_pisces/fishing_wing)
 "qY" = (
@@ -6902,12 +6954,12 @@
 /area/errant_pisces/fishing_wing)
 "ra" = (
 /obj/structure/net,
-/obj/item/knife/combat,
+/obj/item/weapon/material/knife/combat,
 /turf/space,
 /area/space)
 "rb" = (
 /obj/structure/net,
-/obj/item/chems/food/snacks/meat/syntiflesh,
+/obj/item/weapon/reagent_containers/food/snacks/meat/syntiflesh,
 /turf/space,
 /area/space)
 "rc" = (
@@ -6917,12 +6969,12 @@
 /area/space)
 "sb" = (
 /obj/structure/hygiene/sink{
-	icon_state = "sink";
 	dir = 8;
+	icon_state = "sink";
 	pixel_x = -12;
 	pixel_y = 2
 	},
-/obj/item/storage/mirror{
+/obj/item/weapon/storage/mirror{
 	pixel_x = -30
 	},
 /turf/simulated/floor/tiled/white,
@@ -6934,7 +6986,7 @@
 	pixel_x = 11;
 	pixel_y = 0
 	},
-/obj/item/storage/mirror{
+/obj/item/weapon/storage/mirror{
 	pixel_x = 30
 	},
 /turf/simulated/floor/tiled/white,
@@ -6946,7 +6998,7 @@
 	pixel_x = 11;
 	pixel_y = 0
 	},
-/obj/item/storage/mirror{
+/obj/item/weapon/storage/mirror{
 	pixel_x = 30
 	},
 /obj/machinery/power/apc{
@@ -32118,7 +32170,7 @@ hF
 hF
 hF
 kt
-kV
+kZ
 kV
 lm
 kV

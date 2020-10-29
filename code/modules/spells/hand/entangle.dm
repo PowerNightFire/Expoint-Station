@@ -30,11 +30,11 @@
 	seed.name = "heirlooms"
 	seed.seed_name = "heirloom"
 	seed.display_name = "vines"
-	seed.chems = list(/decl/material/liquid/nutriment = list(1,20))
+	seed.chems = list(/datum/reagent/nutriment = list(1,20))
 
 /spell/hand/charges/entangle/cast_hand(var/mob/M,var/mob/user)
 	var/turf/T = get_turf(M)
-	var/obj/effect/vine/single/P = new(T, seed, null, TRUE)
+	var/obj/effect/vine/single/P = new(T,seed, start_matured =1)
 	P.can_buckle = 1
 
 	P.buckle_mob(M)

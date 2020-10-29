@@ -1,7 +1,7 @@
 /mob/living/carbon/slime
 	hud_type = /datum/hud/slime
 
-/datum/hud/slime/FinalizeInstantiation()
+/datum/hud/slime/FinalizeInstantiation(ui_style = 'icons/mob/screen1_Midnight.dmi')
 	src.adding = list()
 
 	var/obj/screen/using
@@ -41,6 +41,12 @@
 		mymob.healths.SetName("health")
 		mymob.healths.screen_loc = ui_construct_health
 
+		mymob.pullin = new /obj/screen()
+		mymob.pullin.icon = 'icons/mob/screen1_construct.dmi'
+		mymob.pullin.icon_state = "pull0"
+		mymob.pullin.SetName("pull")
+		mymob.pullin.screen_loc = ui_construct_pull
+
 		mymob.zone_sel = new /obj/screen/zone_sel()
 		mymob.zone_sel.icon = 'icons/mob/screen1_construct.dmi'
 		mymob.zone_sel.overlays.len = 0
@@ -53,4 +59,4 @@
 		mymob.purged.screen_loc = ui_construct_purge
 
 	mymob.client.screen = list()
-	mymob.client.screen += list(mymob.fire, mymob.healths, mymob.zone_sel, mymob.purged)
+	mymob.client.screen += list(mymob.fire, mymob.healths, mymob.pullin, mymob.zone_sel, mymob.purged)

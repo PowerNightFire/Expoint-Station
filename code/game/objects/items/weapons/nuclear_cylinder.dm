@@ -1,7 +1,7 @@
-obj/item/nuclear_cylinder
+obj/item/weapon/nuclear_cylinder
 	name = "\improper nuclear cylinder"
 	desc = "This cylinder is used in the self destruct system of the ship."
-	icon = 'icons/obj/items/nuclear_cylinder.dmi'
+	icon = 'icons/obj/nuclear_cylinder.dmi'
 	icon_state = "nuclear_cylinder"
 	item_state = "nuclear"
 	obj_flags = OBJ_FLAG_CONDUCTIBLE
@@ -10,4 +10,4 @@ obj/item/nuclear_cylinder
 	throwforce = 15.0
 	throw_speed = 2
 	throw_range = 4
-	origin_tech = "{'materials':3,'engineering':4}"
+	origin_tech = list(TECH_MATERIAL = 3, TECH_ENGINEERING = 4)

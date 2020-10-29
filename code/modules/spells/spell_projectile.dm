@@ -21,8 +21,7 @@
 	carried = null
 	return ..()
 
-/obj/item/projectile/spell_projectile/explosion_act()
-	SHOULD_CALL_PARENT(FALSE)
+/obj/item/projectile/spell_projectile/ex_act()
 	return
 
 /obj/item/projectile/spell_projectile/before_move()

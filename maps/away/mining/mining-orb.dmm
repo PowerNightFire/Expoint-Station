@@ -20,10 +20,10 @@
 /turf/simulated/floor/asteroid,
 /area/mine/unexplored)
 "ag" = (
-/turf/simulated/wall/natural/random/high_chance,
+/turf/simulated/mineral/random/high_chance,
 /area/mine/unexplored)
 "ah" = (
-/turf/simulated/wall/natural/random,
+/turf/simulated/mineral/random,
 /area/mine/unexplored)
 "ai" = (
 /turf/simulated/wall/sandstone,
@@ -42,7 +42,7 @@
 /turf/simulated/wall/alium,
 /area/mine/unexplored)
 "an" = (
-/turf/simulated/wall/natural,
+/turf/simulated/mineral,
 /area/mine/unexplored)
 "ao" = (
 /turf/simulated/wall/alium,
@@ -53,20 +53,20 @@
 "aq" = (
 /obj/effect/floor_decal/spline/fancy/wood,
 /obj/effect/floor_decal/spline/fancy/wood{
-	icon_state = "spline_fancy";
-	dir = 1
+	dir = 1;
+	icon_state = "spline_fancy"
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "as" = (
 /obj/effect/floor_decal/spline/fancy/wood{
-	icon_state = "spline_fancy";
-	dir = 5
+	dir = 5;
+	icon_state = "spline_fancy"
 	},
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 8
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "au" = (
 /obj/effect/shuttle_landmark/orb/nav4,
@@ -74,26 +74,26 @@
 /area/space)
 "ax" = (
 /obj/effect/floor_decal/spline/fancy/wood,
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "aB" = (
 /obj/effect/floor_decal/spline/fancy/wood{
 	dir = 4
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "aD" = (
 /obj/effect/floor_decal/spline/fancy/wood{
 	dir = 8
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "aF" = (
 /obj/effect/floor_decal/spline/fancy/wood{
-	icon_state = "spline_fancy";
-	dir = 1
+	dir = 1;
+	icon_state = "spline_fancy"
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "aI" = (
 /obj/effect/floor_decal/spline/fancy/wood/corner{
@@ -102,21 +102,21 @@
 /turf/simulated/floor/airless/stone,
 /area/mine/explored)
 "aM" = (
-/obj/item/stool/stone,
+/obj/item/weapon/stool/stone,
 /turf/simulated/floor/fixed/alium/airless,
 /area/mine/explored)
 "aN" = (
-/obj/structure/door/sandstone{
+/obj/machinery/door/unpowered/simple/sandstone{
 	desc = "It opens and closes. It's absolutely dominated by a huge engraving of some kind of bird.";
 	name = "engraved door"
 	},
 /turf/simulated/floor/airless/stone,
 /area/mine/explored)
 "aP" = (
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "aQ" = (
-/obj/structure/door/sandstone,
+/obj/machinery/door/unpowered/simple/sandstone,
 /turf/simulated/floor/airless/stone,
 /area/mine/explored)
 "aR" = (
@@ -124,7 +124,7 @@
 /turf/space,
 /area/space)
 "aS" = (
-/turf/simulated/wall/natural,
+/turf/simulated/mineral,
 /area/mine/explored)
 "aT" = (
 /obj/effect/overmap/visitable/sector/orb,
@@ -132,24 +132,23 @@
 /area/mine/explored)
 "aU" = (
 /obj/effect/floor_decal/spline/fancy/wood{
-	icon_state = "spline_fancy";
-	dir = 9
+	dir = 9;
+	icon_state = "spline_fancy"
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "aV" = (
 /obj/effect/floor_decal/spline/fancy/wood{
-	icon_state = "spline_fancy";
 	dir = 5
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "aW" = (
 /obj/effect/floor_decal/spline/fancy/wood{
 	dir = 8
 	},
 /obj/effect/floor_decal/spline/fancy/wood/corner,
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "aX" = (
 /obj/effect/floor_decal/spline/fancy/wood{
@@ -158,7 +157,7 @@
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 8
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "aY" = (
 /obj/effect/floor_decal/spline/fancy/wood{
@@ -167,7 +166,7 @@
 /obj/effect/floor_decal/spline/fancy/wood{
 	dir = 4
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "aZ" = (
 /obj/effect/floor_decal/spline/fancy/wood{
@@ -176,7 +175,7 @@
 /obj/effect/floor_decal/spline/fancy/wood{
 	dir = 8
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "ba" = (
 /obj/effect/floor_decal/spline/fancy/wood{
@@ -185,7 +184,7 @@
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 1
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "bb" = (
 /obj/effect/floor_decal/spline/fancy/wood{
@@ -194,20 +193,20 @@
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 4
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "bc" = (
 /obj/effect/floor_decal/spline/fancy/wood{
-	icon_state = "spline_fancy";
-	dir = 10
+	dir = 10;
+	icon_state = "spline_fancy"
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "bd" = (
 /obj/effect/floor_decal/spline/fancy/wood{
 	dir = 6
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "be" = (
 /turf/unsimulated/mask,
@@ -224,37 +223,37 @@
 /obj/effect/floor_decal/spline/fancy/wood{
 	dir = 4
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/unexplored)
 "eM" = (
 /obj/effect/floor_decal/spline/fancy/wood{
 	dir = 6
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/unexplored)
 "fA" = (
 /obj/effect/floor_decal/spline/fancy/wood{
-	icon_state = "spline_fancy";
-	dir = 9
+	dir = 9;
+	icon_state = "spline_fancy"
 	},
 /obj/effect/floor_decal/spline/fancy/wood/corner,
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "ma" = (
 /obj/effect/floor_decal/spline/fancy/wood{
 	dir = 8
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/unexplored)
 "pz" = (
 /obj/effect/floor_decal/spline/fancy/wood{
-	icon_state = "spline_fancy";
-	dir = 10
+	dir = 10;
+	icon_state = "spline_fancy"
 	},
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 1
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "st" = (
 /obj/effect/shuttle_landmark/orb/nav7,
@@ -262,10 +261,10 @@
 /area/mine/explored)
 "vc" = (
 /obj/effect/floor_decal/spline/fancy/wood{
-	icon_state = "spline_fancy";
-	dir = 10
+	dir = 10;
+	icon_state = "spline_fancy"
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/unexplored)
 "wM" = (
 /obj/effect/floor_decal/spline/fancy/wood{
@@ -274,13 +273,13 @@
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 4
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "yQ" = (
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 4
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "yR" = (
 /obj/effect/floor_decal/spline/fancy/wood/corner{
@@ -290,18 +289,18 @@
 /area/mine/explored)
 "Aj" = (
 /obj/effect/floor_decal/spline/fancy/wood/corner,
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/unexplored)
 "DJ" = (
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 1
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "EM" = (
 /obj/effect/floor_decal/spline/fancy/wood{
-	icon_state = "spline_fancy";
-	dir = 10
+	dir = 10;
+	icon_state = "spline_fancy"
 	},
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 1
@@ -309,7 +308,7 @@
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 8
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "Gl" = (
 /obj/effect/floor_decal/spline/fancy/wood/corner{
@@ -318,30 +317,30 @@
 /obj/effect/floor_decal/spline/fancy/wood{
 	dir = 6
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "Le" = (
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 4
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/unexplored)
 "LT" = (
 /obj/effect/floor_decal/spline/fancy/wood{
-	icon_state = "spline_fancy";
-	dir = 1
+	dir = 1;
+	icon_state = "spline_fancy"
 	},
 /obj/effect/floor_decal/spline/fancy/wood,
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/explored)
 "MX" = (
 /obj/effect/floor_decal/spline/fancy/wood/corner{
 	dir = 8
 	},
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/unexplored)
 "NQ" = (
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/unexplored)
 "Ol" = (
 /obj/effect/floor_decal/spline/fancy/wood/corner{
@@ -354,7 +353,7 @@
 /area/mine/explored)
 "Rr" = (
 /obj/effect/floor_decal/spline/fancy/wood,
-/turf/exterior/water,
+/turf/simulated/floor/exoplanet/water/shallow,
 /area/mine/unexplored)
 "SY" = (
 /obj/structure/fountain,

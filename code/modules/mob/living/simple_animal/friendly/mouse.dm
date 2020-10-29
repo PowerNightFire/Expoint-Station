@@ -24,8 +24,8 @@
 	maxbodytemp = 323	//Above 50 Degrees Celsius
 	universal_speak = FALSE
 	universal_understand = TRUE
-	holder_type = /obj/item/holder/mouse
-	mob_size = MOB_SIZE_MINISCULE
+	holder_type = /obj/item/weapon/holder/mouse
+	mob_size = MOB_MINISCULE
 	possession_candidate = 1
 	can_escape = TRUE
 	can_pull_size = ITEM_SIZE_TINY
@@ -34,7 +34,7 @@
 	meat_amount =   1
 	bone_amount =   1
 	skin_amount =   1
-	skin_material = /decl/material/solid/skin/fur
+	skin_material = MATERIAL_SKIN_FUR
 
 	var/body_color //brown, gray and white, leave blank for random
 
@@ -58,14 +58,14 @@
 			icon_state = "mouse_[body_color]"
 			wander = 1
 		else if(prob(5))
-			INVOKE_ASYNC(src, .proc/audible_emote, "snuffles.")
+			audible_emote("snuffles.")
 
 /mob/living/simple_animal/mouse/lay_down()
 	..()
 	icon_state = resting ? "mouse_[body_color]_sleep" : "mouse_[body_color]"
 
-/mob/living/simple_animal/mouse/Initialize()
-	. = ..()
+/mob/living/simple_animal/mouse/New()
+	..()
 
 	verbs += /mob/living/proc/ventcrawl
 	verbs += /mob/living/proc/hide
@@ -87,20 +87,20 @@
 	. = ..()
 	switch(body_color)
 		if("gray")
-			skin_material = /decl/material/solid/skin/fur/gray
+			skin_material = MATERIAL_SKIN_FUR_GRAY
 		if("white")
-			skin_material = /decl/material/solid/skin/fur/white
+			skin_material = MATERIAL_SKIN_FUR_WHITE
 
 /mob/living/simple_animal/mouse/proc/splat()
 	icon_dead = "mouse_[body_color]_splat"
 	adjustBruteLoss(maxHealth)  // Enough damage to kill
 	src.death()
 
-/mob/living/simple_animal/mouse/Crossed(AM)
+/mob/living/simple_animal/mouse/Crossed(AM as mob|obj)
 	if( ishuman(AM) )
 		if(!stat)
 			var/mob/M = AM
-			to_chat(M, "<span class='warning'>[html_icon(src)] Squeek!</span>")
+			to_chat(M, "<span class='warning'>[icon2html(src, M)] Squeek!</span>")
 			sound_to(M, 'sound/effects/mousesqueek.ogg')
 	..()
 
@@ -125,8 +125,8 @@
 	name = "Tom"
 	desc = "Jerry the cat is not amused."
 
-/mob/living/simple_animal/mouse/brown/Tom/Initialize()
-	. = ..()
+/mob/living/simple_animal/mouse/brown/Tom/New()
+	..()
 	// Change my name back, don't want to be named Tom (666)
 	SetName(initial(name))
 	real_name = name

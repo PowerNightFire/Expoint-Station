@@ -1,21 +1,21 @@
 /obj/structure/extinguisher_cabinet
 	name = "extinguisher cabinet"
 	desc = "A small wall mounted cabinet designed to hold a fire extinguisher."
-	icon = 'icons/obj/structures/extinguisher.dmi'
+	icon = 'icons/obj/extinguisher.dmi'
 	icon_state = "extinguisher_closed"
 	anchored = 1
 	density = 0
-	var/obj/item/extinguisher/has_extinguisher
+	var/obj/item/weapon/extinguisher/has_extinguisher
 	var/opened = 0
 
-/obj/structure/extinguisher_cabinet/Initialize()
-	. = ..()
-	has_extinguisher = new/obj/item/extinguisher(src)
+/obj/structure/extinguisher_cabinet/New()
+	..()
+	has_extinguisher = new/obj/item/weapon/extinguisher(src)
 
 /obj/structure/extinguisher_cabinet/attackby(obj/item/O, mob/user)
 	if(isrobot(user))
 		return
-	if(istype(O, /obj/item/extinguisher))
+	if(istype(O, /obj/item/weapon/extinguisher))
 		if(!has_extinguisher && opened && user.unEquip(O, src))
 			has_extinguisher = O
 			to_chat(user, "<span class='notice'>You place [O] in [src].</span>")
@@ -32,7 +32,9 @@
 		return
 	if (ishuman(user))
 		var/mob/living/carbon/human/H = user
-		var/obj/item/organ/external/temp = H.organs_by_name[H.get_active_held_item_slot()]
+		var/obj/item/organ/external/temp = H.organs_by_name[BP_R_HAND]
+		if (user.hand)
+			temp = H.organs_by_name[BP_L_HAND]
 		if(temp && !temp.is_usable())
 			to_chat(user, "<span class='notice'>You try to move your [temp.name], but cannot!</span>")
 			return
@@ -51,7 +53,7 @@
 		icon_state = "extinguisher_closed"
 		return
 	if(has_extinguisher)
-		if(istype(has_extinguisher, /obj/item/extinguisher/mini))
+		if(istype(has_extinguisher, /obj/item/weapon/extinguisher/mini))
 			icon_state = "extinguisher_mini"
 		else
 			icon_state = "extinguisher_full"

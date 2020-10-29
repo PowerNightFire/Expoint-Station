@@ -8,10 +8,6 @@
 	map_generators = list(/datum/random_map/noise/exoplanet/desert, /datum/random_map/noise/ore/rich)
 	surface_color = "#d6cca4"
 	water_color = null
-	has_trees = FALSE
-	flora_diversity = 4
-	fauna_types = list(/mob/living/simple_animal/thinbug, /mob/living/simple_animal/tindalos, /mob/living/simple_animal/hostile/voxslug, /mob/living/simple_animal/hostile/antlion)
-	megafauna_types = list(/mob/living/simple_animal/hostile/antlion/mega)
 
 /obj/effect/overmap/visitable/sector/exoplanet/desert/generate_map()
 	if(prob(70))
@@ -44,22 +40,27 @@
 /datum/random_map/noise/exoplanet/desert
 	descriptor = "desert exoplanet"
 	smoothing_iterations = 4
-	land_type = /turf/exterior/sand
+	land_type = /turf/simulated/floor/exoplanet/desert
 
 	flora_prob = 5
 	large_flora_prob = 0
+	flora_diversity = 4
+	fauna_types = list(/mob/living/simple_animal/thinbug, /mob/living/simple_animal/tindalos, /mob/living/simple_animal/hostile/voxslug, /mob/living/simple_animal/hostile/antlion)
+	megafauna_types = list(/mob/living/simple_animal/hostile/antlion/mega)
 
 /datum/random_map/noise/exoplanet/desert/get_additional_spawns(var/value, var/turf/T)
 	..()
+	if(is_edge_turf(T))
+		return
 	var/v = noise2value(value)
 	if(v > 6)
-		T.icon_state = "0"
+		T.icon_state = "desert[v-1]"
 		if(prob(10))
 			new/obj/structure/quicksand(T)
 
 /area/exoplanet/desert
 	ambience = list('sound/effects/wind/desert0.ogg','sound/effects/wind/desert1.ogg','sound/effects/wind/desert2.ogg','sound/effects/wind/desert3.ogg','sound/effects/wind/desert4.ogg','sound/effects/wind/desert5.ogg')
-	base_turf = /turf/exterior/sand
+	base_turf = /turf/simulated/floor/exoplanet/desert
 
 /obj/structure/quicksand
 	name = "sand"
@@ -72,9 +73,9 @@
 	var/exposed = 0
 	var/busy
 
-/obj/structure/quicksand/Initialize()
-	. = ..()
+/obj/structure/quicksand/New()
 	icon_state = "intact[rand(0,2)]"
+	..()
 
 /obj/structure/quicksand/user_unbuckle_mob(mob/user)
 	if(buckled_mob && !user.stat && !user.restrained())
@@ -139,7 +140,7 @@
 	exposed = 1
 	update_icon()
 
-/obj/structure/quicksand/attackby(obj/item/W, mob/user)
+/obj/structure/quicksand/attackby(obj/item/weapon/W, mob/user)
 	if(!exposed && W.force)
 		expose()
 	else

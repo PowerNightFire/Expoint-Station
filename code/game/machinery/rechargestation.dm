@@ -1,6 +1,6 @@
 /obj/machinery/recharge_station
-	name = "robot recharging station"
-	desc = "A heavy duty rapid charging system, designed to quickly recharge autonomous system power reserves."
+	name = "cyborg recharging station"
+	desc = "A heavy duty rapid charging system, designed to quickly recharge cyborg power reserves."
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "borgcharger0"
 	density = 1
@@ -27,17 +27,6 @@
 	. = ..()
 	update_icon()
 
-/obj/machinery/recharge_station/MouseDrop_T(var/mob/living/target, var/mob/user)
-	if(!CanMouseDrop(target, user) || !istype(target))
-		return FALSE
-	user.visible_message(SPAN_NOTICE("\The [user] begins placing \the [target] into \the [src]."), SPAN_NOTICE("You start placing \the [target] into \the [src]."))
-	if(!do_after(user, 30, src))
-		return
-	if(target.buckled)
-		to_chat(user, SPAN_WARNING("Unbuckle the subject before attempting to move them."))
-		return FALSE	
-	go_in(target)
-
 /obj/machinery/recharge_station/Process()
 	if(stat & (BROKEN | NOPOWER))
 		return
@@ -63,7 +52,7 @@
 		var/repair = wire_rate - use_power_oneoff(wire_power_use * wire_rate, LOCAL) / wire_power_use
 		occupant.adjustFireLoss(-repair)
 
-	var/obj/item/cell/target
+	var/obj/item/weapon/cell/target
 	if(isrobot(occupant))
 		var/mob/living/silicon/robot/R = occupant
 		target = R.cell
@@ -81,25 +70,29 @@
 		var/obj/item/organ/internal/cell/potato = H.internal_organs_by_name[BP_CELL]
 		if(potato)
 			target = potato.cell
-		if((!target || target.percent() > 95) && istype(H.back,/obj/item/rig))
-			var/obj/item/rig/R = H.back
+		if((!target || target.percent() > 95) && istype(H.back,/obj/item/weapon/rig))
+			var/obj/item/weapon/rig/R = H.back
 			if(R.cell && !R.cell.fully_charged())
 				target = R.cell
 
 	if(target && !target.fully_charged())
 		var/diff = min(target.maxcharge - target.charge, charging_power * CELLRATE) // Capped by charging_power / tick
+		if(ishuman(occupant))
+			var/mob/living/carbon/human/H = occupant
+			if(H.species.name == SPECIES_ADHERENT)
+				diff /= 2 //Adherents charge at half the normal rate.
 		var/charge_used = diff - use_power_oneoff(diff / CELLRATE, LOCAL) * CELLRATE
 		target.give(charge_used)
 
 /obj/machinery/recharge_station/examine(mob/user)
 	. = ..()
-	var/obj/item/cell/cell = get_cell()
+	var/obj/item/weapon/cell/cell = get_cell()
 	if(cell)
 		to_chat(user, "The charge meter reads: [cell.percent()]%")
 	else
 		to_chat(user, "The indicator shows that the cell is missing.")
 
-/obj/machinery/recharge_station/relaymove(mob/user)
+/obj/machinery/recharge_station/relaymove(mob/user as mob)
 	if(user.stat)
 		return
 	go_out()
@@ -108,7 +101,7 @@
 	if(occupant)
 		occupant.emp_act(severity)
 		go_out()
-	var/obj/item/cell/cell = get_cell()
+	var/obj/item/weapon/cell/cell = get_cell()
 	if(cell)
 		cell.emp_act(severity)
 	..(severity)
@@ -123,8 +116,8 @@
 
 /obj/machinery/recharge_station/RefreshParts()
 	..()
-	var/man_rating = Clamp(total_component_rating_of_type(/obj/item/stock_parts/manipulator), 0, 10)
-	var/cap_rating = Clamp(total_component_rating_of_type(/obj/item/stock_parts/capacitor), 0, 10)
+	var/man_rating = Clamp(total_component_rating_of_type(/obj/item/weapon/stock_parts/manipulator), 0, 10)
+	var/cap_rating = Clamp(total_component_rating_of_type(/obj/item/weapon/stock_parts/capacitor), 0, 10)
 
 	charging_power = 40000 + 40000 * cap_rating
 	weld_rate = max(0, man_rating - 3)
@@ -138,7 +131,7 @@
 		desc += "<br>It is capable of repairing burn damage."
 
 /obj/machinery/recharge_station/proc/overlay_state()
-	var/obj/item/cell/cell = get_cell()
+	var/obj/item/weapon/cell/cell = get_cell()
 	switch(cell && cell.percent() || 0)
 		if(0 to 20)
 			return "statn_c0"
@@ -175,6 +168,7 @@
 
 /obj/machinery/recharge_station/proc/go_in(var/mob/M)
 
+
 	if(occupant)
 		return
 
@@ -194,10 +188,10 @@
 		return (R.cell)
 	if(ishuman(M))
 		var/mob/living/carbon/human/H = M		
-		if(H.isSynthetic())
+		if(H.isSynthetic()) // FBPs and IPCs
 			return 1
-		if(istype(H.back,/obj/item/rig))
-			var/obj/item/rig/R = H.back
+		if(istype(H.back,/obj/item/weapon/rig))
+			var/obj/item/weapon/rig/R = H.back
 			return R.cell
 		return H.internal_organs_by_name["cell"]
 	return 0

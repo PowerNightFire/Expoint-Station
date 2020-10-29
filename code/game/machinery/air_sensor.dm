@@ -1,12 +1,13 @@
 /obj/machinery/air_sensor
-	name = "gas sensor"
-	icon = 'icons/obj/machines/gas_sensor.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "gsensor1"
-	anchored = TRUE
+	name = "Gas Sensor"
+
+	anchored = 1
 
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/radio/transmitter/basic/buildable,
-		/obj/item/stock_parts/power/apc/buildable
+		/obj/item/weapon/stock_parts/radio/transmitter/basic,
+		/obj/item/weapon/stock_parts/power/apc
 	)
 	public_variables = list(
 		/decl/public_access/public_variable/gas,
@@ -16,13 +17,9 @@
 	stock_part_presets = list(/decl/stock_part_preset/radio/basic_transmitter/air_sensor = 1)
 	use_power = POWER_USE_IDLE
 
-	frame_type = /obj/item/machine_chassis/air_sensor/base
-	construct_state = /decl/machine_construction/default/panel_closed/item_chassis
-	base_type = /obj/machinery/air_sensor/buildable
-
-// Have to install components on your own.
-/obj/machinery/air_sensor/buildable
-	uncreated_component_parts = null
+	frame_type = /obj/item/machine_chassis/air_sensor
+	construct_state = /decl/machine_construction/default/item_chassis
+	base_type = /obj/machinery/air_sensor
 
 /obj/machinery/air_sensor/on_update_icon()
 	if(!powered())
@@ -45,11 +42,11 @@
 	var/total_moles = air_sample.total_moles
 	if(total_moles <= 0)
 		return
+
 	. = list()
-	for(var/gas in air_sample.gas)
-		var/decl/material/mat = decls_repository.get_decl(gas)			
-		var/gaspercent = round(air_sample.gas[gas]*100/total_moles,0.01)
-		var/gas_list = list("symbol" = mat.gas_symbol_html, "percent" = gaspercent)
+	for(var/gas in air_sample.gas)				
+		var/gaspercent = round(air_sample.gas["[gas]"]*100/total_moles,0.01)
+		var/gas_list = list("symbol" = gas_data.symbol_html["[gas]"], "percent" = gaspercent)
 		. += list(gas_list)
 
 /decl/public_access/public_variable/pressure
@@ -91,7 +88,7 @@
 	frequency = ATMOS_ENGINE_FREQ
 
 /obj/machinery/air_sensor/dist
-	stock_part_presets = list(/decl/stock_part_preset/radio/basic_transmitter/air_sensor/dist = 1)
+	stock_part_presets = list(/decl/stock_part_preset/radio/basic_transmitter/air_sensor/engine = 1)
 
-/decl/stock_part_preset/radio/basic_transmitter/air_sensor/dist
+/decl/stock_part_preset/radio/basic_transmitter/air_sensor/engine
 	frequency = ATMOS_DIST_FREQ

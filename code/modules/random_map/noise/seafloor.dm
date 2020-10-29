@@ -1,27 +1,17 @@
 /datum/random_map/noise/seafloor
 	descriptor = "seafloor (roundstart)"
 	smoothing_iterations = 3
-	target_turf_type = /turf/exterior/seafloor
+	target_turf_type = /turf/simulated/ocean
 
 /datum/random_map/noise/seafloor/replace_space
 	descriptor = "seafloor (replace space)"
 	target_turf_type = /turf/space
 
 /datum/random_map/noise/seafloor/replace_space/get_appropriate_path(var/value)
-	return /turf/exterior/seafloor
-
-/turf/exterior/mud/flooded
-	flooded = TRUE
-
-/turf/exterior/mud/dark/flooded
-	flooded = TRUE
+	return /turf/simulated/ocean
 
 /datum/random_map/noise/seafloor/get_appropriate_path(var/value)
-	switch(value)
-		if(6)
-			return /turf/exterior/mud/flooded
-		if(7 to 9)
-			return /turf/exterior/mud/dark/flooded
+	return
 
 /datum/random_map/noise/seafloor/get_additional_spawns(var/value, var/turf/T)
 	var/val = min(9,max(0,round((value/cell_range)*10)))
@@ -49,3 +39,10 @@
 				new /obj/structure/flora/seaweed/large(T)
 			else if(prob(1))
 				new /obj/structure/flora/seaweed/glow(T)
+	var/turf/simulated/ocean/O = T
+	if(istype(O))
+		switch(val)
+			if(6)
+				O.icon_state = "mud_light"
+			if(7 to 9)
+				O.icon_state = "mud_dark"

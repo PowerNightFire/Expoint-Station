@@ -90,23 +90,25 @@ distortion - starting distortion.
 english_only - whether to use traditional english letters only (for use in NanoUI)
 */
 proc/RadioChat(mob/living/user, message, distortion_chance = 60, distortion_speed = 1, distortion = 1, english_only = 0)
-	var/decl/language/language = user?.get_default_language()
+	var/datum/language/language
+	if(user)
+		language = user.get_default_language()
 	message = html_decode(message)
 	var/new_message = ""
 	var/input_size = length(message)
-	var/cursor_position = 0
+	var/lentext = 0
 	if(input_size < 20) // Short messages get distorted too. Bit hacksy.
 		distortion += (20-input_size)/2
-	while(cursor_position <= input_size)
-		var/newletter=copytext(message, cursor_position, cursor_position+1)
+	while(lentext <= input_size)
+		var/newletter=copytext(message, lentext, lentext+1)
 		if(!prob(distortion_chance))
 			new_message += newletter
-			cursor_position += 1
+			lentext += 1
 			continue
 		if(newletter != " ")
 			if(prob(0.08 * distortion)) // Major cutout
 				newletter = "*zzzt*"
-				cursor_position += rand(1, (length(message) - cursor_position)) // Skip some characters
+				lentext += rand(1, (length(message) - lentext)) // Skip some characters
 				distortion += 1 * distortion_speed
 			else if(prob(0.8 * distortion)) // Minor cut out
 				if(prob(25))
@@ -165,6 +167,6 @@ proc/RadioChat(mob/living/user, message, distortion_chance = 60, distortion_spee
 		if(prob(20))
 			capitalize(newletter)
 		new_message += newletter
-		cursor_position += 1
+		lentext += 1
 	return new_message
 

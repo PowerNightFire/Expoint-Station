@@ -10,11 +10,15 @@
 	var/one_time_use = 0 //Used for one-time-use teleport cards (such as clown planet coordinates.)
 						 //Setting this to 1 will set src.locked to null after a player enters the portal and will not allow hand-teles to open portals to that location.
 
+/obj/machinery/computer/teleporter/New()
+	src.id = "[random_id(/obj/machinery/computer/teleporter, 1000, 9999)]"
+	..()
+	underlays.Cut()
+	underlays += image('icons/obj/stationobjs.dmi', icon_state = "telecomp-wires")
+	return
+
 /obj/machinery/computer/teleporter/Initialize()
 	. = ..()
-
-	id = "[random_id(/obj/machinery/computer/teleporter, 1000, 9999)]"
-
 	station = locate(/obj/machinery/teleport/station, get_step(src, turn(dir, 90)))
 	if(station)
 		hub = locate(/obj/machinery/teleport/hub, get_step(station, turn(dir, 90)))
@@ -42,8 +46,8 @@
 
 
 /obj/machinery/computer/teleporter/attackby(var/obj/I, var/mob/living/user)
-	if(istype(I, /obj/item/card/data/))
-		var/obj/item/card/data/C = I
+	if(istype(I, /obj/item/weapon/card/data/))
+		var/obj/item/weapon/card/data/C = I
 		if(stat & (NOPOWER|BROKEN) & (C.function != "teleporter"))
 			attack_hand(user)
 
@@ -69,7 +73,7 @@
 			if(C.data == "Clown Land")
 				//whoops
 				for(var/mob/O in hearers(src, null))
-					O.show_message("<span class='warning'>Incoming wormhole detected, unable to lock in.</span>", 2)
+					O.show_message("<span class='warning'>Incoming bluespace portal detected, unable to lock in.</span>", 2)
 
 				for(var/obj/machinery/teleport/hub/H in range(1))
 					var/amount = rand(2,5)
@@ -97,7 +101,7 @@
 	var/list/areaindex = list()
 
 	. = TRUE
-	for(var/obj/item/radio/beacon/R in world)
+	for(var/obj/item/device/radio/beacon/R in world)
 		if(!R.functioning)
 			continue
 		var/turf/T = get_turf(R)
@@ -112,7 +116,7 @@
 			areaindex[tmpname] = 1
 		L[tmpname] = R
 
-	for (var/obj/item/implant/tracking/I in world)
+	for (var/obj/item/weapon/implant/tracking/I in world)
 		if (!I.implanted || !ismob(I.loc))
 			continue
 		else
@@ -175,7 +179,7 @@
 	hub = null
 	return ..()
 
-/proc/find_loc(obj/R)
+/proc/find_loc(obj/R as obj)
 	if (!R)	return null
 	var/turf/T = R.loc
 	while(!istype(T, /turf))
@@ -185,7 +189,7 @@
 
 /obj/machinery/teleport
 	name = "teleport"
-	icon = 'icons/obj/machines/teleporter.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	density = 1
 	anchored = 1.0
 	var/lockeddown = 0
@@ -195,18 +199,23 @@
 	name = "teleporter hub"
 	desc = "The teleporter hub handles all of the impossibly complex busywork required in instant matter transmission."
 	icon_state = "tele0"
-	dir = EAST
+	dir = 4
 	idle_power_usage = 10
 	active_power_usage = 2000
 	var/obj/machinery/computer/teleporter/com
 
-/obj/machinery/teleport/hub/Bumped(var/atom/movable/M)
+/obj/machinery/teleport/hub/New()
+	..()
+	underlays.Cut()
+	underlays += image('icons/obj/stationobjs.dmi', icon_state = "tele-wires")
+
+/obj/machinery/teleport/hub/Bumped(M as mob|obj)
 	spawn()
 		if (src.icon_state == "tele1")
 			teleport(M)
 			use_power_oneoff(5000)
 
-/obj/machinery/teleport/hub/proc/teleport(atom/movable/M)
+/obj/machinery/teleport/hub/proc/teleport(atom/movable/M as mob|obj)
 	do_teleport(M, com.locked)
 	if(com.one_time_use) //Make one-time-use cards only usable one time!
 		com.one_time_use = 0
@@ -221,14 +230,19 @@
 	name = "projector"
 	desc = "This machine is capable of projecting a miniature wormhole leading directly to its provided target."
 	icon_state = "controller"
-	dir = EAST
+	dir = 4
 	var/engaged = 0
 	idle_power_usage = 10
 	active_power_usage = 2000
 	var/obj/machinery/computer/teleporter/com
 	var/obj/machinery/teleport/hub/hub
 
-/obj/machinery/teleport/station/attackby(var/obj/item/W, var/mob/user)
+/obj/machinery/teleport/station/New()
+	..()
+	overlays.Cut()
+	overlays += image('icons/obj/stationobjs.dmi', icon_state = "controller-wires")
+
+/obj/machinery/teleport/station/attackby(var/obj/item/weapon/W, var/mob/user)
 	attack_hand(user)
 
 /obj/machinery/teleport/station/interface_interact(var/mob/user)
@@ -248,8 +262,8 @@
 		audible_message("<span class='warning'>Failure: Cannot authenticate locked on coordinates. Please reinstate coordinate matrix.</span>")
 		return
 
-	if(istype(com.locked, /obj/item/radio/beacon))
-		var/obj/item/radio/beacon/B = com.locked
+	if(istype(com.locked, /obj/item/device/radio/beacon))
+		var/obj/item/device/radio/beacon/B = com.locked
 		if(!B.functioning)
 			audible_message("<span class='warning'>Failure: Unable to establish connection to provided coordinates. Please reinstate coordinate matrix.</span>")
 			return
@@ -288,6 +302,6 @@
 
 /obj/machinery/teleport/station/on_update_icon()
 	if(stat & NOPOWER)
-		icon_state = panel_open ? "controller-o" : "controller-p"
+		icon_state = "controller-p"
 	else
 		icon_state = "controller"

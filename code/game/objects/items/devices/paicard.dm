@@ -1,38 +1,34 @@
-/obj/item/paicard
+/obj/item/device/paicard
 	name = "personal AI device"
-	icon = 'icons/obj/items/device/pai.dmi'
+	icon = 'icons/obj/pda.dmi'
 	icon_state = "pai"
 	item_state = "electronic"
 	w_class = ITEM_SIZE_SMALL
-	slot_flags = SLOT_LOWER_BODY
-	origin_tech = "{'programming':2}"
-	material = /decl/material/solid/glass
-	matter = list(/decl/material/solid/metal/steel = MATTER_AMOUNT_REINFORCEMENT)
-
-	var/current_emotion = 1
-	var/obj/item/radio/radio
+	slot_flags = SLOT_BELT
+	origin_tech = list(TECH_DATA = 2)
+	var/obj/item/device/radio/radio
 	var/looking_for_personality = 0
 	var/mob/living/silicon/pai/pai
 
-/obj/item/paicard/relaymove(var/mob/user, var/direction)
+/obj/item/device/paicard/relaymove(var/mob/user, var/direction)
 	if(user.stat || user.stunned)
 		return
-	var/obj/item/rig/rig = src.get_rig()
+	var/obj/item/weapon/rig/rig = src.get_rig()
 	if(istype(rig))
 		rig.forced_move(direction, user)
 
-/obj/item/paicard/Initialize()
-	. = ..()
+/obj/item/device/paicard/New()
+	..()
 	overlays += "pai-off"
 
-/obj/item/paicard/Destroy()
+/obj/item/device/paicard/Destroy()
 	//Will stop people throwing friend pAIs into the singularity so they can respawn
 	if(!isnull(pai))
 		pai.death(0)
 	QDEL_NULL(radio)
 	return ..()
 
-/obj/item/paicard/attack_self(mob/user)
+/obj/item/device/paicard/attack_self(mob/user)
 	if (!in_range(src, user))
 		return
 	user.set_machine(src)
@@ -47,7 +43,7 @@
 					    color:white;
 					    font-size:13px;
 					    background-image:url('uiBackground.png');
-					    background-repeat:repeat;
+					    background-repeat:repeat-x;
 					    background-color:#272727;
 						background-position:center top;
 					}
@@ -228,13 +224,13 @@
 	onclose(user, "paicard")
 	return
 
-/obj/item/paicard/CanUseTopic(mob/user, datum/topic_state/state, href_list)
+/obj/item/device/paicard/CanUseTopic(mob/user, datum/topic_state/state, href_list)
 	. = ..()
 	// possible NRE in Topic
 	if(href_list && (href_list["setdna"] || href_list["setlaws"] || href_list["wires"]) && !istype(pai))
 		return FALSE
 
-/obj/item/paicard/Topic(href, href_list)
+/obj/item/device/paicard/Topic(href, href_list)
 	if ((. = ..()))
 		return
 
@@ -282,16 +278,18 @@
 //		WIRE_RECEIVE = 2
 //		WIRE_TRANSMIT = 4
 
-/obj/item/paicard/proc/setPersonality(mob/living/silicon/pai/personality)
+/obj/item/device/paicard/proc/setPersonality(mob/living/silicon/pai/personality)
 	src.pai = personality
 	src.overlays += "pai-happy"
 
-/obj/item/paicard/proc/removePersonality()
+/obj/item/device/paicard/proc/removePersonality()
 	src.pai = null
 	src.overlays.Cut()
 	src.overlays += "pai-off"
 
-/obj/item/paicard/proc/setEmotion(var/emotion)
+/obj/item/device/paicard
+	var/current_emotion = 1
+/obj/item/device/paicard/proc/setEmotion(var/emotion)
 	if(pai)
 		src.overlays.Cut()
 		switch(emotion)
@@ -312,30 +310,28 @@
 			if(15) src.overlays += "pai-question"
 		current_emotion = emotion
 
-/obj/item/paicard/proc/alertUpdate()
+/obj/item/device/paicard/proc/alertUpdate()
 	var/turf/T = get_turf_or_move(src.loc)
 	for (var/mob/M in viewers(T))
 		M.show_message("<span class='notice'>\The [src] flashes a message across its screen, \"Additional personalities available for download.\"</span>", 3, "<span class='notice'>\The [src] bleeps electronically.</span>", 2)
 
-/obj/item/paicard/emp_act(severity)
+/obj/item/device/paicard/emp_act(severity)
 	for(var/mob/M in src)
 		M.emp_act(severity)
 
-/obj/item/paicard/explosion_act(severity)
-	..()
-	if(!QDELETED(src))
-		if(pai)
-			pai.explosion_act(severity)
-		else
-			qdel(src)
+/obj/item/device/paicard/ex_act(severity)
+	if(pai)
+		pai.ex_act(severity)
+	else
+		qdel(src)
 
-/obj/item/paicard/see_emote(mob/living/M, text)
+/obj/item/device/paicard/see_emote(mob/living/M, text)
 	if(pai && pai.client && pai.stat == CONSCIOUS)
 		var/rendered = "<span class='message'>[text]</span>"
 		pai.show_message(rendered, 2)
 	..()
 
-/obj/item/paicard/show_message(msg, type, alt, alt_type)
+/obj/item/device/paicard/show_message(msg, type, alt, alt_type)
 	if(pai && pai.client)
 		var/rendered = "<span class='message'>[msg]</span>"
 		pai.show_message(rendered, type)

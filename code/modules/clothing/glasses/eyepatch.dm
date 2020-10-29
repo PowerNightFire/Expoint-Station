@@ -50,7 +50,7 @@
 		eye.color = eye_color
 		overlays += eye
 
-/obj/item/clothing/glasses/eyepatch/hud/get_mob_overlay(mob/user_mob, slot, bodypart)
+/obj/item/clothing/glasses/eyepatch/hud/get_mob_overlay(mob/user_mob, slot)
 	var/image/res = ..()
 	if(active)
 		var/image/eye = overlay_image(res.icon, "[icon_state]_eye", flags=RESET_COLOR)
@@ -78,12 +78,6 @@
 	vision_flags = SEE_TURFS
 	see_invisible = SEE_INVISIBLE_NOLIGHTING
 	eye_color = COLOR_LIME
-
-/obj/item/clothing/glasses/eyepatch/hud/science
-	name = "SCIpatch"
-	desc = "A Science-type heads-up display that connects directly to the ocular nerve of the user, replacing the need for that useless eyeball."
-	hud_type = HUD_SCIENCE
-	eye_color = COLOR_PINK
 
 /obj/item/clothing/glasses/eyepatch/hud/meson/Initialize()
 	. = ..()

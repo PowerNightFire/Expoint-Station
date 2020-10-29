@@ -67,7 +67,7 @@
 	return toxloss
 
 /mob/living/carbon/slime/get_digestion_product()
-	return /decl/material/liquid/slimejelly
+	return /datum/reagent/slimejelly
 
 /mob/living/carbon/slime/adjustToxLoss(var/amount)
 	toxloss = Clamp(toxloss + amount, 0, maxHealth)
@@ -75,7 +75,7 @@
 /mob/living/carbon/slime/setToxLoss(var/amount)
 	adjustToxLoss(amount-getToxLoss())
 
-/mob/living/carbon/slime/Initialize(mapload, var/colour="grey")
+/mob/living/carbon/slime/New(var/location, var/colour="grey")
 	ingested = new(240, src, CHEM_INGEST)
 	verbs += /mob/living/proc/ventcrawl
 
@@ -85,7 +85,7 @@
 	real_name = name
 	mutation_chance = rand(25, 35)
 	regenerate_icons()
-	. = ..(mapload)
+	..(location)
 
 /mob/living/carbon/slime/movement_delay()
 	if (bodytemperature >= 330.23) // 135 F
@@ -100,10 +100,10 @@
 		tally += (283.222 - bodytemperature) / 10 * 1.75
 
 	if(reagents)
-		if(reagents.has_reagent(/decl/material/liquid/amphetamines)) // Stimulants slows slimes down
+		if(reagents.has_reagent(/datum/reagent/hyperzine)) // Hyperzine slows slimes down
 			tally *= 2
 
-		if(reagents.has_reagent(/decl/material/liquid/frostoil)) // Frostoil also makes them move VEEERRYYYYY slow
+		if(reagents.has_reagent(/datum/reagent/frostoil)) // Frostoil also makes them move VEEERRYYYYY slow
 			tally *= 5
 
 	if(health <= 0) // if damaged, the slime moves twice as slow
@@ -111,7 +111,7 @@
 
 	return tally + config.slime_delay
 
-/mob/living/carbon/slime/Bump(atom/movable/AM, yes)
+/mob/living/carbon/slime/Bump(atom/movable/AM as mob|obj, yes)
 	if ((!(yes) || now_pushing))
 		return
 	now_pushing = 1
@@ -148,6 +148,9 @@
 
 	..()
 
+/mob/living/carbon/slime/Allow_Spacemove()
+	return 1
+
 /mob/living/carbon/slime/Stat()
 	. = ..()
 
@@ -178,27 +181,38 @@
 	powerlevel = 0 // oh no, the power!
 	..()
 
-/mob/living/carbon/slime/explosion_act(severity)
+/mob/living/carbon/slime/ex_act(severity)
 	..()
-	switch(severity)
-		if(1)
-			qdel(src)
-		if(2)
-			adjustBruteLoss(60)
-			adjustFireLoss(60)
-			updatehealth()
-		if(3)
-			adjustBruteLoss(30)
-			updatehealth()
 
-/mob/living/carbon/slime/u_equip(obj/item/W)
-	SHOULD_CALL_PARENT(FALSE)
-	return FALSE
+	var/b_loss = null
+	var/f_loss = null
+	switch (severity)
+		if (1.0)
+			qdel(src)
+			return
+
+		if (2.0)
+
+			b_loss += 60
+			f_loss += 60
+
+
+		if(3.0)
+			b_loss += 30
+
+	adjustBruteLoss(b_loss)
+	adjustFireLoss(f_loss)
+
+	updatehealth()
+
+
+/mob/living/carbon/slime/u_equip(obj/item/W as obj)
+	return
 
 /mob/living/carbon/slime/attack_ui(slot)
 	return
 
-/mob/living/carbon/slime/attack_hand(mob/living/carbon/human/M)
+/mob/living/carbon/slime/attack_hand(mob/living/carbon/human/M as mob)
 
 	..()
 
@@ -297,8 +311,8 @@
 /mob/living/carbon/slime/toggle_throw_mode()
 	return
 
-/mob/living/carbon/slime/check_has_eyes()
-	return FALSE
+/mob/living/carbon/slime/has_eyes()
+	return 0
 
 /mob/living/carbon/slime/check_has_mouth()
 	return 0

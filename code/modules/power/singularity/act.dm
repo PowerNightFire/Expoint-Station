@@ -17,7 +17,8 @@
 
 /mob/living/carbon/human/singularity_pull(S, current_size)
 	if(current_size >= STAGE_THREE)
-		for(var/obj/item/hand in get_held_items())
+		var/list/handlist = list(l_hand, r_hand)
+		for(var/obj/item/hand in handlist)
 			if(prob(current_size*5) && hand.w_class >= ((11-current_size)/2) && unEquip(hand))
 				step_towards(hand, S)
 				to_chat(src, "<span class = 'warning'>\The [S] pulls \the [hand] from your grip!</span>")
@@ -28,8 +29,8 @@
 
 /obj/singularity_act()
 	if(simulated)
-		explosion_act(1)
-		if(!QDELETED(src))
+		ex_act(1)
+		if(src)
 			qdel(src)
 		return 2
 
@@ -82,7 +83,7 @@
 /obj/item/projectile/beam/emitter/singularity_pull()
 	return
 
-/obj/item/storage/backpack/holding/singularity_act(S, current_size)
+/obj/item/weapon/storage/backpack/holding/singularity_act(S, current_size)
 	var/dist = max((current_size - 2), 1)
 	explosion(src.loc,(dist),(dist*2),(dist*4))
 	return 1000

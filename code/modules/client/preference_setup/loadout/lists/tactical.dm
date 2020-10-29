@@ -1,7 +1,7 @@
 /datum/gear/tactical/
 	sort_category = "Tactical Equipment"
 	category = /datum/gear/tactical/
-	slot = slot_tie_str
+	slot = slot_tie
 
 /datum/gear/tactical/armor_deco
 	display_name = "armor customization"
@@ -22,11 +22,6 @@
 	path = /obj/item/clothing/accessory/storage/holster
 	cost = 3
 
-/datum/gear/tactical/holster/get_gear_tweak_options()
-	. = ..()
-	LAZYINITLIST(.[/datum/gear_tweak/path/specified_types_list])
-	.[/datum/gear_tweak/path/specified_types_list] |= typesof(/obj/item/clothing/accessory/storage/holster) - typesof(/obj/item/clothing/accessory/storage/holster/machete)
-
 /datum/gear/tactical/sheath
 	display_name = "machete sheath"
 	path = /obj/item/clothing/accessory/storage/holster/machete
@@ -40,4 +35,4 @@
 /datum/gear/tactical/tacticool
 	display_name = "tacticool turtleneck"
 	path = /obj/item/clothing/under/syndicate/tacticool
-	slot = slot_w_uniform_str
+	slot = slot_w_uniform

@@ -22,7 +22,7 @@
 /obj/item/clothing/head/warden
 	name = "warden's hat"
 	desc = "It's a special helmet issued to the Warden of a securiy force."
-	icon = 'icons/clothing/head/warden.dmi'
+	icon_state = "policehelm"
 	body_parts_covered = 0
 
 /obj/item/clothing/under/rank/security
@@ -44,7 +44,7 @@
 	armor = list(
 		melee = ARMOR_MELEE_SMALL
 		)
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS
 	siemens_coefficient = 0.9
 
 /obj/item/clothing/under/rank/security2
@@ -57,6 +57,14 @@
 		melee = ARMOR_MELEE_SMALL
 		)
 	siemens_coefficient = 0.9
+
+/obj/item/clothing/under/rank/security/corp
+	icon_state = "sec_corporate"
+	worn_state = "sec_corporate"
+
+/obj/item/clothing/under/rank/warden/corp
+	icon_state = "warden_corporate"
+	worn_state = "warden_corporate"
 
 /obj/item/clothing/under/tactical
 	name = "tactical jumpsuit"
@@ -103,8 +111,11 @@
 /obj/item/clothing/head/det
 	name = "fedora"
 	desc = "A brown fedora - either the cornerstone of a detective's style or a poor attempt at looking cool, depending on the person wearing it."
-	icon = 'icons/clothing/head/detective.dmi'
-	color = "#725443"
+	icon_state = "detective"
+	item_state_slots = list(
+		slot_l_hand_str = "det_hat",
+		slot_r_hand_str = "det_hat",
+		)
 	armor = list(
 		melee = ARMOR_MELEE_RESISTANT, 
 		laser = ARMOR_LASER_SMALL,
@@ -112,8 +123,6 @@
 		)
 	siemens_coefficient = 0.9
 	flags_inv = BLOCKHEADHAIR
-	markings_icon = "band"
-	markings_color = "#b2977c"
 
 /obj/item/clothing/head/det/attack_self(mob/user)
 	flags_inv ^= BLOCKHEADHAIR
@@ -121,14 +130,9 @@
 	..()
 
 /obj/item/clothing/head/det/grey
-	color = COLOR_GRAY40
-	markings_color = COLOR_SILVER
+	icon_state = "detective2"
 	desc = "A grey fedora - either the cornerstone of a detective's style or a poor attempt at looking cool, depending on the person wearing it."
 
-/obj/item/clothing/head/det/wack
-	color = COLOR_VIOLET
-	markings_color = COLOR_YELLOW
-	desc = "A colorful fedora - either the cornerstone of a detective's style or a poor attempt at looking disco, depending on the person wearing it."
 
 /*
  * Head of Security
@@ -144,18 +148,35 @@
 		)
 	siemens_coefficient = 0.8
 
+/obj/item/clothing/under/rank/head_of_security/corp
+	icon_state = "hos_corporate"
+	worn_state = "hos_corporate"
+
 /obj/item/clothing/head/HoS
 	name = "Head of Security Hat"
 	desc = "The hat of the Head of Security. For showing the officers who's in charge."
-	icon = 'icons/clothing/head/hos.dmi'
+	icon_state = "hoscap"
 	body_parts_covered = 0
 	siemens_coefficient = 0.8
+
+/obj/item/clothing/head/HoS/dermal
+	name = "Dermal Armour Patch"
+	desc = "You're not quite sure how you manage to take it on and off, but it implants nicely in your head."
+	icon_state = "dermal"
+	armor = list(
+		melee = ARMOR_MELEE_MAJOR, 
+		bullet = ARMOR_BALLISTIC_PISTOL, 
+		laser = ARMOR_LASER_HANDGUNS,
+		energy = ARMOR_ENERGY_SMALL, 
+		bomb = ARMOR_BOMB_PADDED
+		)
+	siemens_coefficient = 0.6
 
 /obj/item/clothing/suit/armor/hos
 	name = "armored coat"
 	desc = "A greatcoat enhanced with a special alloy for some protection and style."
-	icon = 'icons/clothing/suit/hos.dmi'
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_ARMS|SLOT_LEGS
+	icon_state = "hos"
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|ARMS|LEGS
 	armor = list(
 		melee = ARMOR_MELEE_MAJOR, 
 		bullet = ARMOR_BALLISTIC_PISTOL, 
@@ -178,6 +199,31 @@
 /obj/item/clothing/suit/armor/hos/jensen
 	name = "armored trenchcoat"
 	desc = "A trenchcoat augmented with a special alloy for some protection and style."
-	icon = 'icons/clothing/suit/jensen.dmi'
+	icon_state = "hostrench"
 	flags_inv = 0
 	siemens_coefficient = 0.6
+
+/*
+ * Navy uniforms
+ */
+
+/obj/item/clothing/under/rank/security/navyblue
+	name = "security officer's uniform"
+	desc = "The latest in fashionable security outfits."
+	icon_state = "officerblueclothes"
+	item_state = "ba_suit"
+	worn_state = "officerblueclothes"
+
+/obj/item/clothing/under/rank/head_of_security/navyblue
+	desc = "The insignia on this uniform tells you that this uniform belongs to the Head of Security."
+	name = "head of security's uniform"
+	icon_state = "hosblueclothes"
+	item_state = "ba_suit"
+	worn_state = "hosblueclothes"
+
+/obj/item/clothing/under/rank/warden/navyblue
+	desc = "The insignia on this uniform tells you that this uniform belongs to the Warden."
+	name = "warden's uniform"
+	icon_state = "wardenblueclothes"
+	item_state = "ba_suit"
+	worn_state = "wardenblueclothes"

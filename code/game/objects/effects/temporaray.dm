@@ -13,10 +13,6 @@
 	. = ..()
 	QDEL_IN(src, duration)
 
-/obj/effect/temp_visual/emp_burst
-	icon = 'icons/effects/effects.dmi'
-	icon_state = "empdisable"
-
 /obj/effect/temp_visual/bloodsplatter
 	icon = 'icons/effects/bloodspatter.dmi'
 	duration = 5

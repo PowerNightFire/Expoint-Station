@@ -4,7 +4,7 @@
 	icon_state = "bluecrab"
 	icon_living = "bluecrab"
 	icon_dead = "bluecrab_dead"
-	mob_size = MOB_SIZE_LARGE
+	mob_size = MOB_LARGE
 	speak_emote = list("clicks")
 	emote_hear = list("clicks")
 	emote_see = list("clacks")
@@ -16,12 +16,14 @@
 	meat_amount = 12
 	can_escape = TRUE //snip snip
 	break_stuff_probability = 15
+	attacktext = "crushed"
 	faction = "crabs"
 	pry_time = 2 SECONDS
 
 	health = 350
 	maxHealth = 350
-	natural_weapon = /obj/item/natural_weapon/pincers/giant
+	melee_damage_lower = 15
+	melee_damage_upper = 18
 	return_damage_min = 2
 	return_damage_max = 5
 	harm_intent_damage = 1
@@ -36,10 +38,6 @@
 	var/grab_damage = 6 //brute damage before reductions, per crab's life tick
 	var/list/grab_desc = list("thrashes", "squeezes", "crushes")
 	var/continue_grab_prob = 35 //probability that a successful grab will be extended by one life tick
-
-/obj/item/natural_weapon/pincers/giant
-	force = 15
-	attack_verb = list("snipped", "pinched", "crushed")
 
 /mob/living/simple_animal/hostile/retaliate/giant_crab/Initialize() //embiggen
 	. = ..()
@@ -57,8 +55,11 @@
 
 /mob/living/simple_animal/hostile/retaliate/giant_crab/Life()
 	. = ..()
+
+	process_grab()
+
 	if(!.)
-		return
+		return FALSE
 	
 	if((health > maxHealth / 1.5) && enemies.len && prob(10))
 		if(victim)
@@ -66,10 +67,6 @@
 		enemies = list()
 		LoseTarget()
 		visible_message("<span class='notice'>\The [src] lowers its pincer.</span>")
-
-/mob/living/simple_animal/hostile/retaliate/giant_crab/do_delayed_life_action()
-	..()
-	process_grab()
 
 /mob/living/simple_animal/hostile/retaliate/giant_crab/AttackingTarget()
 	. = ..()

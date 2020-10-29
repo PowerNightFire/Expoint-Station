@@ -8,7 +8,8 @@
 		remove_antagonist(target)
 		return 0
 	if(flags & ANTAG_CHOOSE_NAME)
-		INVOKE_ASYNC(src, .proc/set_antag_name, target.current)
+		spawn(1)
+			set_antag_name(target.current)
 	if(move)
 		place_mob(target.current)
 	update_leader()
@@ -30,27 +31,27 @@
 
 /datum/antagonist/proc/create_id(var/assignment, var/mob/living/carbon/human/player, var/equip = 1)
 
-	var/obj/item/card/id/W = new id_type(player)
+	var/obj/item/weapon/card/id/W = new id_type(player)
 	if(!W) return
 	W.access |= default_access
 	W.assignment = "[assignment]"
 	player.set_id_info(W)
-	if(equip) player.equip_to_slot_or_del(W, slot_wear_id_str)
+	if(equip) player.equip_to_slot_or_del(W, slot_wear_id)
 	return W
 
 /datum/antagonist/proc/create_radio(var/freq, var/mob/living/carbon/human/player)
-	var/obj/item/radio/R
+	var/obj/item/device/radio/R
 
 	switch(freq)
 		if(SYND_FREQ)
-			R = new/obj/item/radio/headset/syndicate(player)
+			R = new/obj/item/device/radio/headset/syndicate(player)
 		if(RAID_FREQ)
-			R = new/obj/item/radio/headset/raider(player)
+			R = new/obj/item/device/radio/headset/raider(player)
 		else
-			R = new/obj/item/radio/headset(player)
+			R = new/obj/item/device/radio/headset(player)
 			R.set_frequency(freq)
 
-	player.equip_to_slot_or_del(R, slot_l_ear_str)
+	player.equip_to_slot_or_del(R, slot_l_ear)
 	return R
 
 /datum/antagonist/proc/create_nuke(var/atom/paper_spawn_loc, var/datum/mind/code_owner)
@@ -73,11 +74,11 @@
 
 		if(paper_spawn_loc)
 			// Create and pass on the bomb code paper.
-			var/obj/item/paper/P = new(paper_spawn_loc)
+			var/obj/item/weapon/paper/P = new(paper_spawn_loc)
 			P.info = "The nuclear authorization code is: <b>[code]</b>"
 			P.SetName("nuclear bomb code")
 			if(leader && leader.current)
-				if(get_turf(P) == get_turf(leader.current) && leader.current.get_empty_hand_slot())
+				if(get_turf(P) == get_turf(leader.current) && !(leader.current.l_hand && leader.current.r_hand))
 					leader.current.put_in_hands(P)
 
 		if(!code_owner && leader)

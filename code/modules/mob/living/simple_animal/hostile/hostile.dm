@@ -14,7 +14,7 @@
 	var/ranged_range = 6 //tiles of range for ranged attackers to attack
 	var/move_to_delay = 4 //delay for the automated movement.
 	var/attack_delay = DEFAULT_ATTACK_COOLDOWN
-	var/list/friends = list()
+	var/list/friends = list() //List of mobs that wont be picked as a target. Add to using weakref().
 	var/break_stuff_probability = 10
 	stop_automated_movement_when_pulled = 0
 	var/destroy_surroundings = 1
@@ -28,7 +28,7 @@
 	var/pry_time = 7 SECONDS //time it takes for mob to pry open a door
 	var/pry_desc = "prying" //"X begins pry_desc the door!"
 
-	//hostile mobs will bash through these in order with their natural weapon
+	//hostile mobs will bash through these in order - any new entry must have a functioning attack_generic()
 	var/list/valid_obstacles_by_priority = list(/obj/structure/window,
 												/obj/structure/closet,
 												/obj/machinery/door/window,
@@ -55,39 +55,29 @@
 	if(!faction) //No faction, no reason to attack anybody.
 		return null
 	stop_automated_movement = 0
-	for(var/atom/A in ListTargets(10))
-		var/atom/F = Found(A)
-		if(F)
-			face_atom(F)
-			return F
+	for(var/mob/M in ListTargets(10))
+		stance = HOSTILE_STANCE_ATTACK
+		return M
 
-		if(ValidTarget(A))
-			stance = HOSTILE_STANCE_ATTACK
-			face_atom(A)
-			return A
-
-/mob/living/simple_animal/hostile/proc/ValidTarget(var/atom/A)
-	if(A == src)
+/mob/living/simple_animal/hostile/proc/ValidTarget(var/mob/M)
+	if(M == src)
 		return FALSE
-
-	if(ismob(A))
-		var/mob/M = A
-		if(M.faction == src.faction && !attack_same)
+	if(istype(M, /mob/living/simple_animal/hostile))
+		var/mob/living/simple_animal/hostile/H = M
+		if(H.faction == faction && !attack_same && !H.attack_same)
 			return FALSE
-		else if(weakref(M) in friends)
+	if(istype(M))
+		if(M.faction == faction)
+			return FALSE
+		if(weakref(M) in friends)
 			return FALSE
 		if(M.stat)
 			return FALSE
-
 		if(ishuman(M))
 			var/mob/living/carbon/human/H = M
-			if (H.is_cloaked())
+			if(H.is_cloaked())
 				return FALSE
-
 	return TRUE
-
-/mob/living/simple_animal/hostile/proc/Found(var/atom/A)
-	return
 
 /mob/living/simple_animal/hostile/proc/MoveToTarget()
 	if(!can_act())
@@ -137,7 +127,7 @@
 			visible_message("<span class='notice'>\The [src] misses its attack on \the [target_mob]!</span>")
 			return
 		var/mob/living/L = target_mob
-		L.attackby(get_natural_weapon(), src)
+		L.attack_generic(src,rand(melee_damage_lower,melee_damage_upper),attacktext,environment_smash,damtype,defense,melee_damage_flags)
 		return L
 
 /mob/living/simple_animal/hostile/proc/LoseTarget()
@@ -149,9 +139,12 @@
 	stance = HOSTILE_STANCE_IDLE
 	walk(src, 0)
 
-/mob/living/simple_animal/hostile/proc/ListTargets(var/dist = 7)
-	var/list/L = hearers(src, dist)
-	return L
+/mob/living/simple_animal/hostile/proc/ListTargets(var/dist = world.view)
+	var/list/possible_targets = hearers(src, dist)
+	for(var/mob/M in possible_targets)
+		if(!ValidTarget(M))
+			possible_targets -= M
+	return possible_targets
 
 /mob/living/simple_animal/hostile/proc/get_accuracy()
 	return Clamp(sa_accuracy - melee_accuracy_mods(), 0, 100)
@@ -164,9 +157,9 @@
 	. = ..()
 	if(!.)
 		walk(src, 0)
-
-/mob/living/simple_animal/hostile/do_delayed_life_action()
-	..()
+		return 0
+	if(client)
+		return 0
 	if(!can_act())
 		walk(src, 0)
 		kick_stance()
@@ -263,14 +256,14 @@
 
 		var/obj/effect/shield/S = locate(/obj/effect/shield) in targ
 		if(S && S.gen && S.gen.check_flag(MODEFLAG_NONHUMANS))
-			S.attackby(natural_weapon, src)
+			S.attack_generic(src,rand(melee_damage_lower,melee_damage_upper),attacktext)
 			return
 
 		for(var/type in valid_obstacles_by_priority)
 			var/obj/obstacle = locate(type) in targ
 			if(obstacle)
 				face_atom(obstacle)
-				obstacle.attackby(natural_weapon, src)
+				obstacle.attack_generic(src, rand(melee_damage_lower, melee_damage_upper), attacktext)
 				return
 
 		if(can_pry)

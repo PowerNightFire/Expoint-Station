@@ -12,15 +12,15 @@
 	var/vocal = 1
 
 	//Healing vars
-	var/obj/item/chems/glass/reagent_glass = null //Can be set to draw from this for reagents.
+	var/obj/item/weapon/reagent_containers/glass/reagent_glass = null //Can be set to draw from this for reagents.
 	var/injection_amount = 15 //How much reagent do we inject at a time?
 	var/heal_threshold = 10 //Start healing when they have this much damage in a category
 	var/use_beaker = 0 //Use reagents in beaker instead of default treatment agents.
-	var/treatment_brute = /decl/material/liquid/regenerator
-	var/treatment_oxy =   /decl/material/liquid/regenerator
-	var/treatment_fire =  /decl/material/liquid/regenerator
-	var/treatment_tox =   /decl/material/liquid/regenerator
-	var/treatment_emag =  /decl/material/liquid/venom
+	var/treatment_brute = /datum/reagent/tricordrazine
+	var/treatment_oxy = /datum/reagent/tricordrazine
+	var/treatment_fire = /datum/reagent/tricordrazine
+	var/treatment_tox = /datum/reagent/tricordrazine
+	var/treatment_emag = /datum/reagent/toxin
 	var/declare_treatment = 0 //When attempting to treat a patient, should it notify everyone wearing medhuds?
 
 /mob/living/bot/medbot/handleIdle()
@@ -77,7 +77,7 @@
 	update_icons()
 	if(do_mob(src, H, 30))
 		if(t == 1)
-			reagent_glass.reagents.trans_to_mob(H, injection_amount, CHEM_INJECT)
+			reagent_glass.reagents.trans_to_mob(H, injection_amount, CHEM_BLOOD)
 		else
 			H.reagents.add_reagent(t, injection_amount)
 		visible_message("<span class='warning'>[src] injects [H] with the syringe!</span>")
@@ -94,7 +94,7 @@
 		icon_state = "medibot[on]"
 
 /mob/living/bot/medbot/attackby(var/obj/item/O, var/mob/user)
-	if(istype(O, /obj/item/chems/glass))
+	if(istype(O, /obj/item/weapon/reagent_containers/glass))
 		if(locked)
 			to_chat(user, "<span class='notice'>You cannot insert a beaker because the panel is locked.</span>")
 			return
@@ -204,9 +204,9 @@
 	visible_message("<span class='danger'>[src] blows apart!</span>")
 	var/turf/Tsec = get_turf(src)
 
-	new /obj/item/storage/firstaid(Tsec)
-	new /obj/item/assembly/prox_sensor(Tsec)
-	new /obj/item/scanner/health(Tsec)
+	new /obj/item/weapon/storage/firstaid(Tsec)
+	new /obj/item/device/assembly/prox_sensor(Tsec)
+	new /obj/item/device/scanner/health(Tsec)
 	if (prob(50))
 		new /obj/item/robot_parts/l_arm(Tsec)
 
@@ -232,7 +232,7 @@
 
 	// If they're injured, we're using a beaker, and they don't have on of the chems in the beaker
 	if(reagent_glass && use_beaker && ((H.getBruteLoss() >= heal_threshold) || (H.getToxLoss() >= heal_threshold) || (H.getToxLoss() >= heal_threshold) || (H.getOxyLoss() >= (heal_threshold + 15))))
-		for(var/R in reagent_glass.reagents.reagent_volumes)
+		for(var/datum/reagent/R in reagent_glass.reagents.reagent_list)
 			if(!H.reagents.has_reagent(R))
 				return 1
 			continue

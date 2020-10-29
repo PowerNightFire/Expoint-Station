@@ -34,9 +34,8 @@
 	to_chat(usr, "\[3/5\] - All ZAS Zones removed.")
 
 	var/list/unsorted_overlays = list()
-	for(var/id in subtypesof(/decl/material/gas))
-		var/decl/material/mat = decls_repository.get_decl(id)
-		unsorted_overlays |= mat.gas_tile_overlay
+	for(var/id in gas_data.tile_overlay)
+		unsorted_overlays |= gas_data.tile_overlay[id]
 
 	for(var/turf/simulated/T in world)
 		T.air = null

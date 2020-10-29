@@ -10,7 +10,7 @@
  Then check if it's true, if true return. This will stop the normal menu appearing and will instead show the uplink menu.
 */
 
-/obj/item/uplink
+/obj/item/device/uplink
 	name = "hidden uplink"
 	desc = "There is something wrong if you're examining this."
 	var/active = 0
@@ -32,15 +32,14 @@
 	var/datum/uplink_item/discount_item	//The item to be discounted
 	var/discount_amount					//The amount as a percent the item will be discounted by
 
-/obj/item/uplink/nano_host()
+/obj/item/device/uplink/nano_host()
 	return loc
 
-/obj/item/uplink/Initialize(mapload, var/datum/mind/owner, var/telecrystals = DEFAULT_TELECRYSTAL_AMOUNT)
-	. = ..(mapload)
-	if(!istype(loc, /atom))
-		. = INITIALIZE_HINT_QDEL
-		CRASH("Invalid spawn location. Expected /atom, was [log_info_line(loc)]")
+/obj/item/device/uplink/New(var/atom/location, var/datum/mind/owner, var/telecrystals = DEFAULT_TELECRYSTAL_AMOUNT)
+	if(!istype(location, /atom))
+		CRASH("Invalid spawn location. Expected /atom, was [location ? location.type : "NULL"]")
 
+	..()
 	nanoui_data = list()
 	update_nano_data()
 
@@ -49,13 +48,13 @@
 	uses = telecrystals
 	START_PROCESSING(SSobj, src)
 
-/obj/item/uplink/Destroy()
+/obj/item/device/uplink/Destroy()
 	uplink_owner = null
 	world_uplinks -= src
 	STOP_PROCESSING(SSobj, src)
 	return ..()
 
-/obj/item/uplink/Process()
+/obj/item/device/uplink/Process()
 	if(world.time > next_offer_time)
 		next_offer_time = world.time + offer_time
 		discount_amount = pick(90;0.9, 80;0.8, 70;0.7, 60;0.6, 50;0.5, 40;0.4, 30;0.3, 20;0.2, 10;0.1)
@@ -73,7 +72,7 @@
 		update_nano_data()
 		SSnano.update_uis(src)
 
-/obj/item/uplink/proc/is_improper_item(var/datum/uplink_item/new_discount_item, discount_amount)
+/obj/item/device/uplink/proc/is_improper_item(var/datum/uplink_item/new_discount_item, discount_amount)
 	if(!new_discount_item)
 		return FALSE
 
@@ -89,15 +88,15 @@
 
 	return FALSE
 
-/obj/item/uplink/proc/get_item_cost(var/item_type, var/item_cost)
+/obj/item/device/uplink/proc/get_item_cost(var/item_type, var/item_cost)
 	return item_type == discount_item ? max(1, round(item_cost*discount_amount)) : item_cost
 
 // Toggles the uplink on and off. Normally this will bypass the item's normal functions and go to the uplink menu, if activated.
-/obj/item/uplink/proc/toggle()
+/obj/item/device/uplink/proc/toggle()
 	active = !active
 
 // Directly trigger the uplink. Turn on if it isn't already.
-/obj/item/uplink/proc/trigger(mob/user)
+/obj/item/device/uplink/proc/trigger(mob/user as mob)
 	if(!active)
 		toggle()
 	interact(user)
@@ -105,7 +104,7 @@
 // Checks to see if the value meets the target. Like a frequency being a traitor_frequency, in order to unlock a headset.
 // If true, it accesses trigger() and returns 1. If it fails, it returns false. Use this to see if you need to close the
 // current item's menu.
-/obj/item/uplink/proc/check_trigger(mob/user, var/value, var/target)
+/obj/item/device/uplink/proc/check_trigger(mob/user as mob, var/value, var/target)
 	if(value == target)
 		trigger(user)
 		return 1
@@ -114,7 +113,7 @@
 /*
 	NANO UI FOR UPLINK WOOP WOOP
 */
-/obj/item/uplink/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/uistate = GLOB.inventory_state)
+/obj/item/device/uplink/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/uistate = GLOB.inventory_state)
 	var/title = "Remote Uplink"
 	var/data[0]
 
@@ -137,16 +136,16 @@
 
 
 // Interaction code. Gathers a list of items purchasable from the paren't uplink and displays it. It also adds a lock button.
-/obj/item/uplink/interact(mob/user)
+/obj/item/device/uplink/interact(mob/user)
 	ui_interact(user)
 
-/obj/item/uplink/CanUseTopic()
+/obj/item/device/uplink/CanUseTopic()
 	if(!active)
 		return STATUS_CLOSE
 	return ..()
 
 // The purchasing code.
-/obj/item/uplink/OnTopic(user, href_list)
+/obj/item/device/uplink/OnTopic(user, href_list)
 	if(href_list["buy_item"])
 		var/datum/uplink_item/UI = (locate(href_list["buy_item"]) in uplink.items)
 		UI.buy(src, usr)
@@ -169,7 +168,7 @@
 	if(. == TOPIC_REFRESH)
 		update_nano_data()
 
-/obj/item/uplink/proc/update_nano_data()
+/obj/item/device/uplink/proc/update_nano_data()
 	if(nanoui_menu == 0)
 		var/categories[0]
 		for(var/datum/uplink_category/category in uplink.categories)
@@ -202,7 +201,7 @@
 // You place this in your uplinkable item to check if an uplink is active or not.
 // If it is, it will display the uplink menu and return 1, else it'll return false.
 // If it returns true, I recommend closing the item's normal menu with "close_browser(user, "window=name")"
-/obj/item/proc/active_uplink_check(mob/user)
+/obj/item/proc/active_uplink_check(mob/user as mob)
 	// Activates the uplink if it's active
 	if(src.hidden_uplink)
 		if(src.hidden_uplink.active)
@@ -216,25 +215,29 @@
 // Includes normal radio uplink, multitool uplink,
 // implant uplink (not the implant tool) and a preset headset uplink.
 
-/obj/item/radio/uplink/attack_self(mob/user)
-	if(!hidden_uplink && user.mind)
-		hidden_uplink = new(src, user.mind, DEFAULT_TELECRYSTAL_AMOUNT)
+/obj/item/device/radio/uplink/New(var/loc, var/owner, var/amount)
+	..()
+	hidden_uplink = new(src, owner, amount)
+	icon_state = "radio"
+
+/obj/item/device/radio/uplink/attack_self(mob/user as mob)
 	if(hidden_uplink)
 		hidden_uplink.trigger(user)
 
-/obj/item/multitool/uplink/attack_self(mob/user)
-	if(!hidden_uplink && user.mind)
-		hidden_uplink = new(src, user.mind, DEFAULT_TELECRYSTAL_AMOUNT)
+/obj/item/device/multitool/uplink/New(var/loc, var/owner)
+	..()
+	hidden_uplink = new(src, owner)
+
+/obj/item/device/multitool/uplink/attack_self(mob/user as mob)
 	if(hidden_uplink)
 		hidden_uplink.trigger(user)
 
-/obj/item/radio/headset/uplink
+/obj/item/device/radio/headset/uplink
 	traitor_frequency = 1445
 
-/obj/item/radio/headset/uplink/attack_self(mob/user)
-	if(!hidden_uplink && user.mind)
-		hidden_uplink = new(src, user.mind, DEFAULT_TELECRYSTAL_AMOUNT)
-	. = ..()
-	
-/obj/item/uplink/contained/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/uistate = GLOB.contained_state)
+/obj/item/device/radio/headset/uplink/New()
+	..()
+	hidden_uplink = new(src)
+
+/obj/item/device/uplink/contained/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/uistate = GLOB.contained_state)
 	return ..()

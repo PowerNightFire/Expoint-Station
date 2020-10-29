@@ -29,7 +29,6 @@
 
 	var/descriptor = "tiles"
 	var/flags
-	var/remove_timer = 10
 	var/can_paint
 	var/can_engrave = TRUE
 
@@ -73,7 +72,6 @@
 	has_base_range = 3
 	damage_temperature = T0C+80
 	can_engrave = FALSE
-	footstep_type = /decl/footsteps/grass
 
 /decl/flooring/asteroid
 	name = "coarse sand"
@@ -83,7 +81,6 @@
 	flags = TURF_HAS_EDGES | TURF_REMOVE_SHOVEL
 	build_type = null
 	can_engrave = FALSE
-	footstep_type = /decl/footsteps/asteroid
 
 /decl/flooring/carpet
 	name = "brown carpet"
@@ -353,6 +350,25 @@
 /decl/flooring/reinforced/shuttle/black
 	icon_base = "floor7"
 
+/decl/flooring/reinforced/shuttle/skrell
+	icon = 'icons/turf/skrellturf.dmi'
+	icon_base = "skrellblack"
+
+/decl/flooring/reinforced/shuttle/skrell/white
+	icon_base = "skrellwhite"
+
+/decl/flooring/reinforced/shuttle/skrell/red
+	icon_base = "skrellred"
+
+/decl/flooring/reinforced/shuttle/skrell/blue
+	icon_base = "skrellblue"
+
+/decl/flooring/reinforced/shuttle/skrell/orange
+	icon_base = "skrellorange"
+
+/decl/flooring/reinforced/shuttle/skrell/green
+	icon_base = "skrellgreen"
+
 /decl/flooring/crystal
 	name = "crystal floor"
 	icon = 'icons/turf/flooring/crystal.dmi'
@@ -360,13 +376,12 @@
 	flags = TURF_ACID_IMMUNE | TURF_CAN_BREAK | TURF_REMOVE_CROWBAR
 	color = "#00ffe1"
 
-/decl/flooring/snow
-	name = "snow"
-	desc = "Let it sno-ow... Let it snow..."
-	icon = 'icons/turf/snow.dmi'
-	icon_base = "snow"
-	has_base_range = 12
-	flags = TURF_REMOVE_SHOVEL
+/decl/flooring/flesh
+	name = "flesh"
+	icon = 'icons/turf/flooring/flesh.dmi'
+	icon_base = "flesh"
+	has_base_range = 3
+	damage_temperature = T0C + 100
 	build_type = null
+	flags = TURF_ACID_IMMUNE | TURF_REMOVE_CROWBAR
 	can_engrave = FALSE
-	footstep_type = /decl/footsteps/snow

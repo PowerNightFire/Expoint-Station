@@ -1,3 +1,5 @@
+#define PUKE_ACTION_NAME "Empty Stomach"
+
 /obj/item/organ/internal/stomach
 	name = "stomach"
 	desc = "Gross. This is hard to stomach."
@@ -13,13 +15,13 @@
 	QDEL_NULL(ingested)
 	. = ..()
 
-/obj/item/organ/internal/stomach/Initialize()
-	. = ..()
-	ingested = new/datum/reagents/metabolism(240, (owner || src), CHEM_INGEST)
+/obj/item/organ/internal/stomach/New()
+	..()
+	ingested = new/datum/reagents/metabolism(240, owner, CHEM_INGEST)
 	if(!ingested.my_atom)
 		ingested.my_atom = src
 	if(species.gluttonous)
-		verbs |= /obj/item/organ/internal/stomach/proc/throw_up
+		action_button_name = PUKE_ACTION_NAME
 
 /obj/item/organ/internal/stomach/removed()
 	. = ..()
@@ -52,16 +54,16 @@
 /obj/item/organ/internal/stomach/proc/get_devour_time(var/atom/movable/food)
 	if(iscarbon(food) || isanimal(food))
 		var/mob/living/L = food
-		if((species.gluttonous & GLUT_TINY) && (L.mob_size <= MOB_SIZE_TINY) && !ishuman(food)) // Anything MOB_SIZE_TINY or smaller
+		if((species.gluttonous & GLUT_TINY) && (L.mob_size <= MOB_TINY) && !ishuman(food)) // Anything MOB_TINY or smaller
 			return DEVOUR_SLOW
 		else if((species.gluttonous & GLUT_SMALLER) && owner.mob_size > L.mob_size) // Anything we're larger than
 			return DEVOUR_SLOW
 		else if(species.gluttonous & GLUT_ANYTHING) // Eat anything ever
 			return DEVOUR_FAST
-	else if(istype(food, /obj/item) && !istype(food, /obj/item/holder)) //Don't eat holders. They are special.
+	else if(istype(food, /obj/item) && !istype(food, /obj/item/weapon/holder)) //Don't eat holders. They are special.
 		var/obj/item/I = food
 		var/cost = I.get_storage_cost()
-		if(cost < ITEM_SIZE_NO_CONTAINER)
+		if(cost != ITEM_SIZE_NO_CONTAINER)
 			if((species.gluttonous & GLUT_ITEM_TINY) && cost < 4)
 				return DEVOUR_SLOW
 			else if((species.gluttonous & GLUT_ITEM_NORMAL) && cost <= 4)
@@ -69,13 +71,17 @@
 			else if(species.gluttonous & GLUT_ITEM_ANYTHING)
 				return DEVOUR_FAST
 
+/obj/item/organ/internal/stomach/refresh_action_button()
+	. = ..()
+	if(.)
+		action.button_icon_state = "puke"
+		if(action.button) action.button.UpdateIcon()
 
-obj/item/organ/internal/stomach/proc/throw_up()
-	set name = "Empty Stomach"
-	set category = "IC"
-	set src in usr
-	if(usr == owner && owner && !owner.incapacitated())
+/obj/item/organ/internal/stomach/attack_self(mob/user)
+	. = ..()
+	if(. && action_button_name == PUKE_ACTION_NAME && owner && !owner.incapacitated())
 		owner.vomit(deliberate = TRUE)
+		refresh_action_button()
 
 /obj/item/organ/internal/stomach/return_air()
 	return null
@@ -114,7 +120,7 @@ obj/item/organ/internal/stomach/proc/throw_up()
 			next_cramp = world.time + rand(200,800)
 			owner.custom_pain("Your stomach cramps agonizingly!",1)
 
-		var/alcohol_volume = REAGENT_VOLUME(ingested, /decl/material/liquid/ethanol)
+		var/alcohol_volume = ingested.get_reagent_amount(/datum/reagent/ethanol)
 		
 		var/alcohol_threshold_met = alcohol_volume > STOMACH_VOLUME / 2
 		if(alcohol_threshold_met && (owner.disabilities & EPILEPSY) && prob(20))
@@ -129,3 +135,4 @@ obj/item/organ/internal/stomach/proc/throw_up()
 			owner.vomit()
 
 #undef STOMACH_VOLUME
+#undef PUKE_ACTION_NAME

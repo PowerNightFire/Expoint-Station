@@ -5,6 +5,8 @@
 #define EVAC_COOLDOWN   4
 #define EVAC_COMPLETE   5
 
+var/datum/evacuation_controller/evacuation_controller
+
 /datum/evacuation_controller
 
 	var/name = "generic evac controller"
@@ -41,8 +43,9 @@
 	recall = _recall
 
 /datum/evacuation_controller/proc/set_up()
-	set waitfor = FALSE
-	set background = TRUE
+	set waitfor=0
+	set background=1
+	return
 
 /datum/evacuation_controller/proc/get_cooldown_message()
 	return "An evacuation cannot be called at this time. Please wait another [round((evac_cooldown_time-world.time)/600)] minute\s before trying again."
@@ -152,7 +155,6 @@
 	state = EVAC_COMPLETE
 
 /datum/evacuation_controller/proc/process()
-	SHOULD_NOT_SLEEP(TRUE)
 
 	if(state == EVAC_PREPPING && recall && world.time >= auto_recall_time)
 		cancel_evacuation()

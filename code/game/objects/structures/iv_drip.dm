@@ -1,11 +1,11 @@
 /obj/structure/iv_drip
 	name = "\improper IV drip"
-	icon = 'icons/obj/structures/iv_drip.dmi'
+	icon = 'icons/obj/iv_drip.dmi'
 	anchored = 0
 	density = 0
 	var/mob/living/carbon/human/attached
 	var/mode = 1 // 1 is injecting, 0 is taking blood.
-	var/obj/item/chems/beaker
+	var/obj/item/weapon/reagent_containers/beaker
 	var/list/transfer_amounts = list(REM, 1, 2)
 	var/transfer_amount = 1
 
@@ -35,7 +35,7 @@
 		var/datum/reagents/reagents = beaker.reagents
 		var/percent = round((reagents.total_volume / beaker.volume) * 100)
 		if(reagents.total_volume)
-			var/image/filling = image(icon, src, "reagent")
+			var/image/filling = image('icons/obj/iv_drip.dmi', src, "reagent")
 
 			switch(percent)
 				if(0 to 9)		filling.icon_state = "reagent0"
@@ -49,7 +49,7 @@
 			overlays += filling
 
 		if(attached)
-			var/image/light = image(icon, "light_full")
+			var/image/light = image('icons/obj/iv_drip.dmi', "light_full")
 			if(percent < 15)
 				light.icon_state = "light_low"
 			else if(percent < 60)
@@ -64,8 +64,8 @@
 	else if(ishuman(over_object))
 		hook_up(over_object, usr)
 
-/obj/structure/iv_drip/attackby(obj/item/W, mob/user)
-	if (istype(W, /obj/item/chems))
+/obj/structure/iv_drip/attackby(obj/item/weapon/W as obj, mob/user as mob)
+	if (istype(W, /obj/item/weapon/reagent_containers))
 		if(!isnull(src.beaker))
 			to_chat(user, "There is already a reagent container loaded!")
 			return
@@ -101,7 +101,7 @@
 
 	if(mode) // Give blood
 		if(beaker.volume > 0)
-			beaker.reagents.trans_to_mob(attached, transfer_amount, CHEM_INJECT)
+			beaker.reagents.trans_to_mob(attached, transfer_amount, CHEM_BLOOD)
 			queue_icon_update()
 	else // Take blood
 		var/amount = beaker.reagents.maximum_volume - beaker.reagents.total_volume
@@ -121,7 +121,7 @@
 		if(attached.take_blood(beaker,amount))
 			queue_icon_update()
 
-/obj/structure/iv_drip/attack_hand(mob/user)
+/obj/structure/iv_drip/attack_hand(mob/user as mob)
 	if(attached)
 		drip_detach()
 	else if(beaker)
@@ -146,7 +146,7 @@
 	if(!CanPhysicallyInteractWith(usr, src))
 		to_chat(usr, SPAN_NOTICE("You're in no condition to do that!"))
 		return
-		
+
 	if(!usr.skill_check(SKILL_MEDICAL, SKILL_BASIC))
 		rip_out()
 	else

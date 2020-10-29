@@ -16,8 +16,8 @@ var/const/GHOST_IMAGE_ALL = ~GHOST_IMAGE_NONE
 	var/ghost_image_flag = GHOST_IMAGE_DARKNESS
 	var/image/ghost_image = null //this mobs ghost image, for deleting and stuff
 
-/mob/observer/Initialize()
-	. = ..()
+/mob/observer/New()
+	..()
 	ghost_image = image(src.icon,src)
 	ghost_image.plane = plane
 	ghost_image.layer = layer
@@ -78,11 +78,7 @@ mob/observer/check_airflow_movable()
 	var/turf/T = locate(new_x, new_y, z)
 	if(T)
 		forceMove(T)
+		inertia_dir = 0
 		throwing = null
 		to_chat(src, "<span class='notice'>You cannot move further in this direction.</span>")
 
-/mob/observer/handle_reading_literacy(var/mob/user, var/text_content, var/skip_delays)
-	. = text_content
-
-/mob/observer/handle_writing_literacy(var/mob/user, var/text_content, var/skip_delays)
-	. = text_content

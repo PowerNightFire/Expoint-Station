@@ -30,7 +30,7 @@
 	var/powered = 0		//set if vehicle is powered and should use fuel when moving
 	var/move_delay = 1	//set this to limit the speed of the vehicle
 
-	var/obj/item/cell/cell
+	var/obj/item/weapon/cell/cell
 	var/charge_use = 200 //W
 
 	var/atom/movable/load		//all vehicles can take a load, since they should all be a least drivable
@@ -41,6 +41,9 @@
 //-------------------------------------------
 // Standard procs
 //-------------------------------------------
+/obj/vehicle/New()
+	..()
+	//spawn the cell you want in each vehicle
 
 /obj/vehicle/Move()
 	if(world.time > l_move_time + move_delay)
@@ -70,8 +73,8 @@
 	else
 		return 0
 
-/obj/vehicle/attackby(obj/item/W, mob/user)
-	if(istype(W, /obj/item/hand_labeler))
+/obj/vehicle/attackby(obj/item/weapon/W as obj, mob/user as mob)
+	if(istype(W, /obj/item/weapon/hand_labeler))
 		return
 	if(isScrewdriver(W))
 		if(!locked)
@@ -81,10 +84,10 @@
 	else if(isCrowbar(W) && cell && open)
 		remove_cell(user)
 
-	else if(istype(W, /obj/item/cell) && !cell && open)
+	else if(istype(W, /obj/item/weapon/cell) && !cell && open)
 		insert_cell(W, user)
 	else if(isWelder(W))
-		var/obj/item/weldingtool/T = W
+		var/obj/item/weapon/weldingtool/T = W
 		if(T.welding)
 			if(health < maxhealth)
 				if(open)
@@ -97,33 +100,40 @@
 				to_chat(user, "<span class='notice'>[src] does not need a repair.</span>")
 		else
 			to_chat(user, "<span class='notice'>Unable to repair while [src] is off.</span>")
-	else
+	else if(hasvar(W,"force") && hasvar(W,"damtype"))
 		user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 		switch(W.damtype)
-			if(BURN)
+			if("fire")
 				health -= W.force * fire_dam_coeff
-			if(BRUTE)
+			if("brute")
 				health -= W.force * brute_dam_coeff
 		..()
 		healthcheck()
+	else
+		..()
 
 /obj/vehicle/bullet_act(var/obj/item/projectile/Proj)
 	health -= Proj.get_structure_damage()
 	..()
 	healthcheck()
 
-/obj/vehicle/explosion_act(severity)
-	SHOULD_CALL_PARENT(FALSE)
-	if(severity == 1)
-		explode()
-	else 
-		if(severity == 2)
+/obj/vehicle/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			explode()
+			return
+		if(2.0)
 			health -= rand(5,10)*fire_dam_coeff
 			health -= rand(10,20)*brute_dam_coeff
-		else if(prob(50))
-			health -= rand(1,5)*fire_dam_coeff
-			health -= rand(1,5)*brute_dam_coeff
-		healthcheck()
+			healthcheck()
+			return
+		if(3.0)
+			if (prob(50))
+				health -= rand(1,5)*fire_dam_coeff
+				health -= rand(1,5)*brute_dam_coeff
+				healthcheck()
+				return
+	return
 
 /obj/vehicle/emp_act(severity)
 	var/was_on = on
@@ -144,7 +154,7 @@
 		if(was_on)
 			turn_on()
 
-/obj/vehicle/attack_ai(mob/user)
+/obj/vehicle/attack_ai(mob/user as mob)
 	return
 
 /obj/vehicle/unbuckle_mob(mob/user)
@@ -170,7 +180,7 @@
 	set_light(0)
 	update_icon()
 
-/obj/vehicle/emag_act(var/remaining_charges, mob/user)
+/obj/vehicle/emag_act(var/remaining_charges, mob/user as mob)
 	if(!emagged)
 		emagged = 1
 		if(locked)
@@ -223,7 +233,7 @@
 		turn_on()
 		return
 
-/obj/vehicle/proc/insert_cell(var/obj/item/cell/C, var/mob/living/carbon/human/H)
+/obj/vehicle/proc/insert_cell(var/obj/item/weapon/cell/C, var/mob/living/carbon/human/H)
 	if(cell)
 		return
 	if(!istype(C))
@@ -341,3 +351,16 @@
 //-------------------------------------------------------
 /obj/vehicle/proc/update_stats()
 	return
+
+/obj/vehicle/attack_generic(var/mob/user, var/damage, var/attack_message)
+	if(!damage)
+		return
+	visible_message("<span class='danger'>\The [user] [attack_message] the \the [src]!</span>")
+	if(istype(user))
+		admin_attacker_log(user, "attacked \the [src]")
+		user.do_attack_animation(src)
+	src.health -= damage
+	if(prob(10))
+		new /obj/effect/decal/cleanable/blood/oil(src.loc)
+	spawn(1) healthcheck()
+	return 1

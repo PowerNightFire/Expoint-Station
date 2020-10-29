@@ -5,7 +5,8 @@
 	var/decl/backpack_outfit/backpack
 	var/list/backpack_metadata
 
-	var/starting_cash_choice
+	var/sensor_setting
+	var/sensors_locked
 
 /datum/category_item/player_setup_item/physical/equipment
 	name = "Clothing"
@@ -25,28 +26,22 @@
 /datum/category_item/player_setup_item/physical/equipment/load_character(var/savefile/S)
 	var/load_backbag
 
-	from_file(S["all_underwear"], pref.all_underwear)
-	from_file(S["all_underwear_metadata"], pref.all_underwear_metadata)
-	from_file(S["backpack"], load_backbag)
-	from_file(S["backpack_metadata"], pref.backpack_metadata)
+	from_save(S["all_underwear"], pref.all_underwear)
+	from_save(S["all_underwear_metadata"], pref.all_underwear_metadata)
+	from_save(S["backpack"], load_backbag)
+	from_save(S["backpack_metadata"], pref.backpack_metadata)
+	from_save(S["sensor_setting"], pref.sensor_setting)
+	from_save(S["sensors_locked"], pref.sensors_locked)
+
 	pref.backpack = backpacks_by_name[load_backbag] || get_default_outfit_backpack()
 
-	from_file(S["starting_cash_choice"], pref.starting_cash_choice)
-	var/list/all_cash_choices = decls_repository.get_decls_of_type(/decl/starting_cash_choice)
-	for(var/ctype in all_cash_choices)
-		var/decl/starting_cash_choice/cash_choice = all_cash_choices[ctype]
-		if(lowertext(cash_choice.name) == pref.starting_cash_choice)
-			pref.starting_cash_choice = ctype
-			break
-
 /datum/category_item/player_setup_item/physical/equipment/save_character(var/savefile/S)
-	to_file(S["all_underwear"], pref.all_underwear)
-	to_file(S["all_underwear_metadata"], pref.all_underwear_metadata)
-	to_file(S["backpack"], pref.backpack.name)
-	to_file(S["backpack_metadata"], pref.backpack_metadata)
-	
-	var/decl/starting_cash_choice/cash_choice = decls_repository.get_decl(pref.starting_cash_choice)
-	to_file(S["starting_cash_choice"], lowertext(cash_choice.name))
+	to_save(S["all_underwear"], pref.all_underwear)
+	to_save(S["all_underwear_metadata"], pref.all_underwear_metadata)
+	to_save(S["backpack"], pref.backpack.name)
+	to_save(S["backpack_metadata"], pref.backpack_metadata)
+	to_save(S["sensor_setting"], pref.sensor_setting)
+	to_save(S["sensors_locked"], pref.sensors_locked)
 
 /datum/category_item/player_setup_item/physical/equipment/sanitize_character()
 	if(!istype(pref.all_underwear))
@@ -58,7 +53,7 @@
 					pref.all_underwear[WRC.name] = WRI.name
 					break
 
-	var/datum/species/mob_species = get_species_by_key(pref.species)
+	var/datum/species/mob_species = all_species[pref.species]
 	if(!(mob_species && mob_species.appearance_flags & HAS_UNDERWEAR))
 		pref.all_underwear.Cut()
 
@@ -97,8 +92,8 @@
 				var/list/metadata = tweak_metadata["[tweak]"]
 				tweak_metadata["[tweak]"] = tweak.validate_metadata(metadata)
 
-	if(!ispath(pref.starting_cash_choice, /decl/starting_cash_choice))
-		pref.starting_cash_choice = GLOB.using_map.default_starting_cash_choice
+	pref.sensor_setting = sanitize_inlist(pref.sensor_setting, SUIT_SENSOR_MODES, get_key_by_index(SUIT_SENSOR_MODES, 0))
+	pref.sensors_locked = sanitize_bool(pref.sensors_locked, FALSE)
 
 /datum/category_item/player_setup_item/physical/equipment/content()
 	. = list()
@@ -117,9 +112,8 @@
 	for(var/datum/backpack_tweak/bt in pref.backpack.tweaks)
 		. += " <a href='?src=\ref[src];backpack=[pref.backpack.name];tweak=\ref[bt]'>[bt.get_ui_content(get_backpack_metadata(pref.backpack, bt))]</a>"
 	. += "<br>"
-
-	var/decl/starting_cash_choice/cash_choice = decls_repository.get_decl(pref.starting_cash_choice)
-	. += "<br><b>Personal finances:</b><br><a href='?src=\ref[src];change_cash_choice=1'>[capitalize(cash_choice.name)]</a><br>"
+	. += "Default Suit Sensor Setting: <a href='?src=\ref[src];change_sensor_setting=1'>[pref.sensor_setting]</a><br />"
+	. += "Suit Sensors Locked: <a href='?src=\ref[src];toggle_sensors_locked=1'>[pref.sensors_locked ? "Locked" : "Unlocked"]</a><br />"
 	return jointext(.,null)
 
 /datum/category_item/player_setup_item/physical/equipment/proc/get_underwear_metadata(var/underwear_category, var/datum/gear_tweak/gt)
@@ -191,9 +185,16 @@
 		if(new_metadata)
 			set_backpack_metadata(bo, bt, new_metadata)
 			return TOPIC_REFRESH_UPDATE_PREVIEW
-	else if(href_list["change_cash_choice"])
-		pref.starting_cash_choice = next_in_list(pref.starting_cash_choice, typesof(/decl/starting_cash_choice))
-		return TOPIC_REFRESH_UPDATE_PREVIEW
+	else if(href_list["change_sensor_setting"])
+		var/switchMode = input("Select a sensor mode:", "Suit Sensor Mode", pref.sensor_setting) as null | anything in SUIT_SENSOR_MODES
+		if(!switchMode || !CanUseTopic(user))
+			return TOPIC_NOACTION
+		pref.sensor_setting = switchMode
+		return TOPIC_REFRESH
+	else if(href_list["toggle_sensors_locked"])
+		pref.sensors_locked = !pref.sensors_locked
+		return TOPIC_REFRESH
+
 	return ..()
 
 /datum/category_item/player_setup_item/physical/equipment/update_setup(var/savefile/preferences, var/savefile/character)
@@ -209,12 +210,12 @@
 		)
 
 		var/old_index
-		from_file(character["backbag"], old_index)
+		from_save(character["backbag"], old_index)
 
 		if(old_index > 0 && old_index <= old_index_to_backpack_type.len)
 			pref.backpack = decls_repository.get_decl(old_index_to_backpack_type[old_index])
 		else
 			pref.backpack = get_default_outfit_backpack()
 
-		to_file(character["backpack"], pref.backpack.name)
+		to_save(character["backpack"], pref.backpack.name)
 		return 1

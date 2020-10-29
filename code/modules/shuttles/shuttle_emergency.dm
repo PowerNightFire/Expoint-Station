@@ -5,7 +5,7 @@
 
 /datum/shuttle/autodock/ferry/emergency/New()
 	. = ..()
-	emergency_controller = SSevac.evacuation_controller
+	emergency_controller = evacuation_controller
 	if(!istype(emergency_controller))
 		CRASH("Escape shuttle created without the appropriate controller type.")
 	if(emergency_controller.shuttle)
@@ -78,7 +78,7 @@
 	if (istype(user, /obj/machinery/computer/shuttle_control/emergency))	//if we were given a command by an emergency shuttle console
 		if (emergency_controller.autopilot)
 			emergency_controller.autopilot = 0
-			to_world("<span class='notice'><b>Alert: The shuttle autopilot has been overridden. Main drive engaged!</b></span>")
+			to_world("<span class='notice'><b>Alert: The shuttle autopilot has been overridden. Bluespace drive engaged!</b></span>")
 
 	if(usr)
 		log_and_message_admins("has overridden the shuttle autopilot and forced immediate launch")
@@ -122,7 +122,7 @@
 		return 0 //don't need any more
 
 	var/decl/security_state/security_state = decls_repository.get_decl(GLOB.using_map.security_state)
-	if (!SSevac.evacuation_controller.emergency_evacuation && security_state.current_security_level_is_lower_than(security_state.high_security_level))
+	if (!evacuation_controller.emergency_evacuation && security_state.current_security_level_is_lower_than(security_state.high_security_level))
 		src.visible_message("\The [src] buzzes. It does not appear to be accepting any commands.")
 		return 0
 
@@ -130,7 +130,7 @@
 	var/auth_name
 	var/dna_hash
 
-	var/obj/item/card/id/ID = ident.GetIdCard()
+	var/obj/item/weapon/card/id/ID = ident.GetIdCard()
 
 	if(!ID)
 		return
@@ -166,7 +166,7 @@
 		emagged = 1
 		return 1
 
-/obj/machinery/computer/shuttle_control/emergency/attackby(obj/item/W, mob/user)
+/obj/machinery/computer/shuttle_control/emergency/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	read_authorization(W)
 	..()
 
@@ -192,7 +192,7 @@
 			else
 				shuttle_status = "Standing-by at [GLOB.using_map.dock_name]."
 		if(WAIT_LAUNCH, FORCE_LAUNCH)
-			shuttle_status = "Shuttle has recieved command and will depart shortly."
+			shuttle_status = "Shuttle has received command and will depart shortly."
 		if(WAIT_ARRIVE)
 			shuttle_status = "Proceeding to destination."
 		if(WAIT_FINISH)

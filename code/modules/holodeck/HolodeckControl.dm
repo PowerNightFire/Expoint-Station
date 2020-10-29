@@ -24,8 +24,8 @@
 	var/list/supported_programs = list()
 	var/list/restricted_programs = list()
 
-/obj/machinery/computer/HolodeckControl/Initialize()
-	. = ..()
+/obj/machinery/computer/HolodeckControl/New()
+	..()
 	linkedholodeck = locate(linkedholodeck_area)
 	if (programs_list_id in GLOB.using_map.holodeck_supported_programs)
 		supported_programs |= GLOB.using_map.holodeck_supported_programs[programs_list_id]
@@ -136,7 +136,7 @@
 	src.updateUsrDialog()
 	return
 
-/obj/machinery/computer/HolodeckControl/emag_act(var/remaining_charges, var/mob/user)
+/obj/machinery/computer/HolodeckControl/emag_act(var/remaining_charges, var/mob/user as mob)
 	playsound(src.loc, 'sound/effects/sparks4.ogg', 75, 1)
 	last_to_emag = user //emag again to change the owner
 	if (!emagged)
@@ -154,11 +154,11 @@
 /obj/machinery/computer/HolodeckControl/proc/update_projections()
 	if (safety_disabled)
 		item_power_usage = 2500
-		for(var/obj/item/holo/esword/H in linkedholodeck)
+		for(var/obj/item/weapon/holo/esword/H in linkedholodeck)
 			H.damtype = BRUTE
 	else
 		item_power_usage = initial(item_power_usage)
-		for(var/obj/item/holo/esword/H in linkedholodeck)
+		for(var/obj/item/weapon/holo/esword/H in linkedholodeck)
 			H.damtype = initial(H.damtype)
 
 	for(var/mob/living/simple_animal/hostile/carp/holodeck/C in holographic_mobs)
@@ -169,11 +169,11 @@
 //This could all be done better, but it works for now.
 /obj/machinery/computer/HolodeckControl/Destroy()
 	emergencyShutdown()
-	. = ..()
+	..()
 
-/obj/machinery/computer/HolodeckControl/explosion_act(severity)
+/obj/machinery/computer/HolodeckControl/ex_act(severity)
 	emergencyShutdown()
-	. = ..()
+	..()
 
 /obj/machinery/computer/HolodeckControl/power_change()
 	. = ..()
@@ -210,7 +210,7 @@
 					var/datum/effect/effect/system/spark_spread/s = new /datum/effect/effect/system/spark_spread
 					s.set_up(2, 1, T)
 					s.start()
-				T.explosion_act(3)
+				T.ex_act(3)
 				T.hotspot_expose(1000,500,1)
 
 /obj/machinery/computer/HolodeckControl/proc/derez(var/obj/obj , var/silent = 1)

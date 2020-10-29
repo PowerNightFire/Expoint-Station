@@ -1,20 +1,20 @@
 /obj/item/glass_jar
 	name = "glass jar"
 	desc = "A small empty jar."
-	icon = 'icons/obj/items/jar.dmi'
+	icon = 'icons/obj/items.dmi'
 	icon_state = "jar"
 	w_class = ITEM_SIZE_SMALL
-	material = /decl/material/solid/glass
-	material_force_multiplier = 0.1
+	matter = list(MATERIAL_GLASS = 200)
 	item_flags = ITEM_FLAG_NO_BLUDGEON
 	var/list/accept_mobs = list(
-		/mob/living/simple_animal/lizard,
-		/mob/living/simple_animal/mouse
+		/mob/living/simple_animal/lizard, 
+		/mob/living/simple_animal/mouse,
+		/mob/living/simple_animal/borer
 	)
 	var/contains = 0 // 0 = nothing, 1 = money, 2 = animal, 3 = spiderling
 
-/obj/item/glass_jar/Initialize()
-	. = ..()
+/obj/item/glass_jar/New()
+	..()
 	update_icon()
 
 /obj/item/glass_jar/afterattack(var/atom/A, var/mob/user, var/proximity)
@@ -69,15 +69,15 @@
 			return
 
 /obj/item/glass_jar/attackby(var/obj/item/W, var/mob/user)
-	if(istype(W, /obj/item/cash))
+	if(istype(W, /obj/item/weapon/spacecash))
 		if(contains == 0)
 			contains = 1
 		if(contains != 1)
 			return
 		if(!user.unEquip(W, src))
 			return
-		var/obj/item/cash/S = W
-		user.visible_message("<span class='notice'>[user] puts \the [S] into \the [src].</span>")
+		var/obj/item/weapon/spacecash/S = W
+		user.visible_message("<span class='notice'>[user] puts [S.worth] [S.worth > 1 ? GLOB.using_map.local_currency_name : GLOB.using_map.local_currency_name_singular] into \the [src].</span>")
 		update_icon()
 
 /obj/item/glass_jar/on_update_icon() // Also updates name and desc
@@ -90,17 +90,14 @@
 		if(1)
 			SetName("tip jar")
 			desc = "A small jar with money inside."
-			for(var/obj/item/cash/S in src)
-				var/image/cash = new
-				cash.appearance = S
-				cash.plane = FLOAT_PLANE
-				cash.layer = FLOAT_LAYER
-				cash.pixel_x = rand(-2, 3)
-				cash.pixel_y = rand(-6, 6)
-				var/matrix/M = cash.transform || matrix()
-				M.Scale(0.6)
-				cash.transform = M
-				underlays += cash
+			for(var/obj/item/weapon/spacecash/S in src)
+				var/list/moneyImages = S.getMoneyImages()
+				for(var/A in moneyImages)
+					var/image/money = image('icons/obj/items.dmi', A)
+					money.pixel_x = rand(-2, 3)
+					money.pixel_y = rand(-6, 6)
+					money.transform *= 0.6
+					underlays += money
 		if(2)
 			for(var/mob/M in src)
 				var/image/victim = image(M.icon, M.icon_state)

@@ -60,7 +60,7 @@
 		overlays.Cut()
 		return
 
-	maptext =  SPAN_STYLE("font-family: 'Small Fonts'; -dm-text-outline: 1 black; font-size: 7px;", "[holding.get_hardpoint_maptext()]")
+	maptext = holding.get_hardpoint_maptext()
 
 	var/ui_damage = (!owner.body.diagnostics || !owner.body.diagnostics.is_functional() || ((owner.emp_damage>EMP_GUI_DISRUPT) && prob(owner.emp_damage)))
 
@@ -71,7 +71,7 @@
 
 	if(ui_damage)
 		value = -1
-		maptext = SPAN_STYLE("font-family: 'Small Fonts'; -dm-text-outline: 1 black; font-size: 7px;", "ERROR")
+		maptext = "ERROR"
 	else
 		if((owner.emp_damage>EMP_GUI_DISRUPT) && prob(owner.emp_damage*2))
 			if(prob(10))
@@ -126,7 +126,7 @@
 	if(!(..()))
 		return
 
-	if(!owner.hatch_closed)
+	if(!owner?.hatch_closed)
 		to_chat(usr, SPAN_WARNING("Error: Hardpoint interface disabled while [owner.body.hatch_descriptor] is open."))
 		return
 
@@ -222,6 +222,8 @@
 	icon_state = "hatch_status"
 
 /obj/screen/exosuit/toggle/hatch_open/toggled()
+	if (!owner)
+		return
 	if(owner.hatch_locked && owner.hatch_closed)
 		to_chat(usr, SPAN_WARNING("You cannot open the hatch while it is locked."))
 		return
@@ -240,7 +242,7 @@
 			to_chat(usr, SPAN_NOTICE("The diagnostics panel blinks several times as it updates:"))
 			for(var/obj/item/mech_component/MC in list(owner.arms, owner.legs, owner.body, owner.head))
 				if(MC)
-					MC.return_diagnostics(usr)
+					MC.return_diagnostics(usr)	
 
 //Controls if cameras set the vision flags
 /obj/screen/exosuit/toggle/camera

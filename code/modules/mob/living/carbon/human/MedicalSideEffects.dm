@@ -11,11 +11,11 @@
 /datum/medical_effect/proc/manifest(mob/living/carbon/human/H)
 	for(var/R in cures)
 		if(!H.reagents || H.reagents.has_reagent(R))
-			return FALSE
+			return 0
 	for(var/R in triggers)
-		if(REAGENT_VOLUME(H.reagents, R) >= triggers[R])
-			return TRUE
-	return FALSE
+		if(H.reagents.get_reagent_amount(R) >= triggers[R])
+			return 1
+	return 0
 
 /datum/medical_effect/proc/on_life(mob/living/carbon/human/H, strength)
 	return
@@ -24,9 +24,10 @@
 	for(var/R in cures)
 		if(H.reagents.has_reagent(R))
 			if (cure_message)
-				to_chat(H, SPAN_NOTICE("[cure_message]"))
-			return TRUE
-	return FALSE
+				to_chat(H, "<span class='notice'>[cure_message]</span>")
+			return 1
+	return 0
+
 
 // MOB HELPERS
 // ===========
@@ -39,27 +40,27 @@
 			M.start = life_tick
 			return
 
-	for(var/T in subtypesof(/datum/medical_effect))
-		var/datum/medical_effect/M = T
-		if(initial(M.name) == name)
-			M = new T
-			M.strength = strength
-			M.start = life_tick
-			side_effects += M
-			break
+
+	var/T = side_effects[name]
+	if (!T)
+		return
+
+	var/datum/medical_effect/M = new T
+	if(M.name == name)
+		M.strength = strength
+		M.start = life_tick
+		side_effects += M
 
 /mob/living/carbon/human/proc/handle_medical_side_effects()
 	//Going to handle those things only every few ticks.
 	if(life_tick % 15 != 0)
-		return FALSE
+		return 0
 
-	var/list/L = subtypesof(/datum/medical_effect)
+	var/list/L = typesof(/datum/medical_effect)-/datum/medical_effect
 	for(var/T in L)
 		var/datum/medical_effect/M = new T
 		if (M.manifest(src))
 			src.add_side_effect(M.name)
-		else
-			qdel(M)
 
 	// One full cycle(in terms of strength) every 10 minutes
 	for (var/datum/medical_effect/M in side_effects)
@@ -81,80 +82,70 @@
 // ========
 /datum/medical_effect/headache
 	name = "Headache"
-	triggers = list(/decl/material/liquid/brute_meds = 15, /decl/material/liquid/regenerator = 15)
-	cures = list(/decl/material/liquid/neuroannealer, /decl/material/liquid/painkillers)
+	triggers = list(/datum/reagent/cryoxadone = 10, /datum/reagent/bicaridine = 15, /datum/reagent/tricordrazine = 15)
+	cures = list(/datum/reagent/alkysine, /datum/reagent/tramadol, /datum/reagent/paracetamol, /datum/reagent/tramadol/oxycodone)
 	cure_message = "Your head stops throbbing..."
 
 /datum/medical_effect/headache/on_life(mob/living/carbon/human/H, strength)
-	var/obj/item/organ/external/head/head = H.get_organ(BP_HEAD)
-	if(head)
+	var/obj/item/organ/external/head/head = H.get_organ("head")
+	if(istype(head))
 		switch(strength)
 			if(1 to 10)
-				H.custom_pain("You feel a light pain in your [head.name].", 5, affecting = head)
+				H.custom_pain("You feel a light pain in your head.",0, affecting = head)
 			if(11 to 30)
-				H.custom_pain("You feel a throbbing pain in your [head.name]!", 15, affecting = head)
-				H.eye_blurry += rand(3,6)
-				H.stamina -= rand(10,20)
-				shake_camera(H, 7, 0.5)
+				H.custom_pain("You feel a throbbing pain in your head!",1, affecting = head)
 			if(31 to INFINITY)
-				H.custom_pain("You feel an excrutiating pain in your [head.name]!", 40, affecting = head)
-				H.eye_blurry += rand(10,20)
-				H.stamina -= rand(20,35)
-				shake_camera(H, 7, 1)
+				H.custom_pain("You feel an excrutiating pain in your head!",1, affecting = head)
 
 // BAD STOMACH
 // ===========
 /datum/medical_effect/bad_stomach
 	name = "Bad Stomach"
-	triggers = list(/decl/material/liquid/burn_meds = 30)
-	cures = list(/decl/material/liquid/antitoxins)
+	triggers = list(/datum/reagent/kelotane = 30, /datum/reagent/dermaline = 15)
+	cures = list(/datum/reagent/dylovene)
 	cure_message = "Your stomach feels a little better now..."
 
 /datum/medical_effect/bad_stomach/on_life(mob/living/carbon/human/H, strength)
-	var/obj/item/organ/internal/stomach/stomach = H.get_organ(BP_STOMACH) //INF
-	if(stomach)
-		switch(strength)
-			if(1 to 10)
-				H.custom_pain("You feel a bit light around \the [stomach.name].", 10, affecting = stomach)
-			if(11 to 30)
-				H.custom_pain("Your [stomach.name] hurts.", 20, affecting = stomach)
-			if(31 to INFINITY)
-				H.custom_pain("You feel sick.", 30, affecting = stomach)
+	switch(strength)
+		if(1 to 10)
+			H.custom_pain("You feel a bit light around the stomach.",0)
+		if(11 to 30)
+			H.custom_pain("Your stomach hurts.",0)
+		if(31 to INFINITY)
+			H.custom_pain("You feel sick.",1)
 
 // CRAMPS
 // ======
 /datum/medical_effect/cramps
 	name = "Cramps"
-	triggers = list(/decl/material/liquid/antitoxins = 30, /decl/material/liquid/painkillers = 15)
-	cures = list(/decl/material/liquid/adrenaline)
+	triggers = list(/datum/reagent/dylovene = 30, /datum/reagent/tramadol = 15)
+	cures = list(/datum/reagent/inaprovaline)
 	cure_message = "The cramps let up..."
 
 /datum/medical_effect/cramps/on_life(mob/living/carbon/human/H, strength)
 	switch(strength)
 		if(1 to 10)
-			H.custom_pain("The muscles in your body hurt a little.", 20)
+			H.custom_pain("The muscles in your body hurt a little.",0)
 		if(11 to 30)
-			H.custom_pain("The muscles in your body cramp up painfully.", 30)
+			H.custom_pain("The muscles in your body cramp up painfully.",0)
 		if(31 to INFINITY)
 			H.visible_message("<B>\The [src]</B> flinches as all the muscles in their body cramp up.")
-			H.custom_pain("There's pain all over your body.", 70)
-			shake_camera(H, 10, 1)
+			H.custom_pain("There's pain all over your body.",1)
 
 // ITCH
 // ====
 /datum/medical_effect/itch
 	name = "Itch"
-	triggers = list(/decl/material/liquid/psychoactives = 10)
-	cures = list(/decl/material/liquid/adrenaline)
+	triggers = list(/datum/reagent/space_drugs = 10)
+	cures = list(/datum/reagent/inaprovaline)
 	cure_message = "The itching stops..."
 
 /datum/medical_effect/itch/on_life(mob/living/carbon/human/H, strength)
 	switch(strength)
 		if(1 to 10)
-			H.custom_pain("You feel a slight itch.", 10)
+			H.custom_pain("You feel a slight itch.",0)
 		if(11 to 30)
-			H.custom_pain("You want to scratch your itch badly.", 15)
+			H.custom_pain("You want to scratch your itch badly.",0)
 		if(31 to INFINITY)
 			H.visible_message("<B>\The [src]</B> shivers slightly.")
-			H.custom_pain("This itch makes it really hard to concentrate.", 20)
-			shake_camera(H, 20, 4)
+			H.custom_pain("This itch makes it really hard to concentrate.",1)

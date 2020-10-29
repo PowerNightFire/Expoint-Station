@@ -1,3 +1,10 @@
+#define QUICK_TO_STANDING      5  //How much time after standing still after running we will use STANDING_FALL_PROB instead of RUNNING_FALL_PROB
+#define DELIBERATE_TO_STANDING 3  //How much time after standing still after walking we will use STANDING_FALL_PROB instead of WALKING_FALL_PROB
+#define RUNNING_FALL_PROB      75
+#define WALKING_FALL_PROB      50
+#define STANDING_FALL_PROB     20
+
+
 /obj/machinery/computer/ship/disperser/proc/fire(mob/user)
 	log_and_message_admins("attempted to launch a disperser beam.")
 	if(!link_parts())
@@ -21,14 +28,14 @@
 				explosion(T,1,2,3)
 				continue
 			else
-				T.explosion_act(1)
+				T.ex_act(1)
 		for(var/atom/A in T)
 			if(A.density)
 				if(distance < 7)
 					explosion(A,1,2,3)
 					break
 				else
-					A.explosion_act(1)
+					A.ex_act(1)
 
 	var/list/relevant_z = GetConnectedZlevels(start.z)
 	for(var/mob/M in GLOB.player_list)
@@ -38,6 +45,22 @@
 		shake_camera(M, 25)
 		if(!isdeaf(M))
 			sound_to(M, sound('sound/effects/explosionfar.ogg', volume=10))
+
+		if(M.can_be_floored())
+			var/shouldstumble = FALSE
+			var/sincelastmove = world.time - M.l_move_time
+
+			if(sincelastmove > QUICK_TO_STANDING SECONDS) //We are standing still
+				shouldstumble = prob(STANDING_FALL_PROB)
+			else if(sincelastmove > DELIBERATE_TO_STANDING) //We are either standing still after running or standing still after walking/creeping
+				shouldstumble = MOVING_QUICKLY(M) ? prob(RUNNING_FALL_PROB) : prob(STANDING_FALL_PROB)
+			else //We are either currently running or currently walking/creeping
+				shouldstumble = MOVING_QUICKLY(M) ? prob(RUNNING_FALL_PROB) : prob(WALKING_FALL_PROB)
+
+			if(shouldstumble)
+				to_chat(M, SPAN_DANGER("You stumble onto the floor from the shaking!"))
+				M.AdjustStunned(2)
+				M.AdjustWeakened(2)
 
 	if(front) //Meanwhile front might have exploded
 		front.layer = ABOVE_OBJ_LAYER //So the beam goes below us. Looks a lot better
@@ -98,3 +121,9 @@
 			return locate(1,start.y,start.z)
 		if(EAST)
 			return locate(world.maxx,start.y,start.z)
+
+#undef QUICK_TO_STANDING
+#undef DELIBERATE_TO_STANDING
+#undef RUNNING_FALL_PROB
+#undef WALKING_FALL_PROB
+#undef STANDING_FALL_PROB

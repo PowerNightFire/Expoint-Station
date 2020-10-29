@@ -1,12 +1,12 @@
-/obj/item/boombox
+/obj/item/device/boombox
 	name = "boombox"
 	desc = "A device used to emit rhythmic sounds, colloquialy refered to as a 'boombox'. It's in a retro style (massive), and absolutely unwieldy."
-	icon = 'icons/obj/items/device/boombox.dmi'
+	icon = 'icons/obj/boombox.dmi'
 	icon_state = "off"
 	item_state = "boombox"
 	force = 7
 	w_class = ITEM_SIZE_HUGE //forbid putting something that emits loud sounds forever into a backpack
-	origin_tech = "{'magnets':2,'combat':1}"
+	origin_tech = list(TECH_MAGNET = 2, TECH_COMBAT = 1)
 	var/playing = 0
 	var/track_num = 1
 	var/volume = 20
@@ -19,29 +19,29 @@
 	var/broken
 	var/panel = TRUE
 
-/obj/item/boombox/attack_self(var/mob/user)
+/obj/item/device/boombox/attack_self(var/mob/user)
 	interact(user)
 
-/obj/item/boombox/Initialize()
+/obj/item/device/boombox/Initialize()
 	. = ..()
 	sound_id = "[type]_[sequential_id(type)]"
 	tracks = setup_music_tracks(tracks)
 
-/obj/item/boombox/emp_act(severity)
+/obj/item/device/boombox/emp_act(severity)
 	boombox_break()
 
-/obj/item/boombox/examine(mob/user)
+/obj/item/device/boombox/examine(mob/user)
 	. = ..()
 	if(!panel)
 		to_chat(user, SPAN_NOTICE("The front panel is unhinged."))
 	if(broken)
 		to_chat(user, SPAN_WARNING("It's broken."))
 
-/obj/item/boombox/Destroy()
+/obj/item/device/boombox/Destroy()
 	stop()
 	. = ..()
 
-/obj/item/boombox/interact(var/mob/user)
+/obj/item/device/boombox/interact(var/mob/user)
 	if(!CanPhysicallyInteract(user))
 		return
 	var/dat = "<A href='?src=\ref[src];tracknum=1;'>NEXT</a>"
@@ -54,14 +54,14 @@
 	popup.set_content(dat)
 	popup.open()
 
-/obj/item/boombox/DefaultTopicState()
+/obj/item/device/boombox/DefaultTopicState()
 	return GLOB.physical_state
 
-/obj/item/boombox/CouldUseTopic(var/mob/user)
+/obj/item/device/boombox/CouldUseTopic(var/mob/user)
 	..()
 	playsound(src, "switch", 40)
 
-/obj/item/boombox/OnTopic(var/user, var/list/href_list)
+/obj/item/device/boombox/OnTopic(var/user, var/list/href_list)
 	if(href_list["tracknum"])
 		var/diff = text2num(href_list["tracknum"])
 		track_num += diff
@@ -85,7 +85,7 @@
 		change_volume(volume - 10)
 		return TOPIC_HANDLED
 
-/obj/item/boombox/attackby(var/obj/item/W, var/mob/user)
+/obj/item/device/boombox/attackby(var/obj/item/W, var/mob/user)
 	if(isScrewdriver(W))
 		if(!panel)
 			user.visible_message(SPAN_NOTICE("\The [user] re-attaches \the [src]'s front panel with \the [W]."), SPAN_NOTICE("You re-attach \the [src]'s front panel."))
@@ -110,7 +110,7 @@
 	else
 		. = ..()
 
-/obj/item/boombox/proc/AdjustFrequency(var/obj/item/W, var/mob/user)
+/obj/item/device/boombox/proc/AdjustFrequency(var/obj/item/W, var/mob/user)
 	var/const/MIN_FREQUENCY = 0.5
 	var/const/MAX_FREQUENCY = 1.5
 
@@ -155,36 +155,36 @@
 
 	return TRUE
 
-/obj/item/boombox/proc/MayAdjust(var/mob/user)
+/obj/item/device/boombox/proc/MayAdjust(var/mob/user)
 	if(playing)
 		to_chat(user, "<span class='warning'>You can only adjust \the [src] when it's not playing.</span>")
 		return FALSE
 	return TRUE
 
-/obj/item/boombox/on_update_icon()
+/obj/item/device/boombox/on_update_icon()
 	icon_state = playing ? "on" : "off"
 
-/obj/item/boombox/proc/stop()
+/obj/item/device/boombox/proc/stop()
 	playing = 0
 	update_icon()
 	QDEL_NULL(sound_token)
 
-/obj/item/boombox/proc/start()
+/obj/item/device/boombox/proc/start()
 	QDEL_NULL(sound_token)
 	var/datum/track/T = tracks[track_num]
-	sound_token = GLOB.sound_player.PlayLoopingSound(src, sound_id, T.GetTrack(), volume = volume, frequency = frequency, range = 7, falloff = 4, prefer_mute = TRUE, preference = /datum/client_preference/play_game_music, streaming = TRUE)
+	sound_token = GLOB.sound_player.PlayLoopingSound(src, sound_id, T.GetTrack(), volume = volume, frequency = frequency, range = 7, falloff = 4, prefer_mute = TRUE)
 	playing = 1
 	update_icon()
 	if(prob(break_chance))
 		boombox_break()
 
-/obj/item/boombox/proc/boombox_break()
+/obj/item/device/boombox/proc/boombox_break()
 	audible_message(SPAN_WARNING("\The [src]'s speakers pop with a sharp crack!"))
 	playsound(src.loc, 'sound/effects/snap.ogg', 100, 1)
 	broken = TRUE
 	stop()
 
-/obj/item/boombox/proc/change_volume(var/new_volume)
+/obj/item/device/boombox/proc/change_volume(var/new_volume)
 	volume = Clamp(new_volume, 0, max_volume)
 	if(sound_token)
 		sound_token.SetVolume(volume)
@@ -192,4 +192,4 @@
 /obj/random_multi/single_item/boombox
 	name = "boombox spawnpoint"
 	id = "boomtastic"
-	item_path = /obj/item/boombox/
+	item_path = /obj/item/device/boombox/

@@ -16,14 +16,14 @@
 	response_disarm = "bops"
 	response_harm   = "kicks"
 	see_in_dark = 5
-	mob_size = MOB_SIZE_SMALL
+	mob_size = 8
 	possession_candidate = 1
-	holder_type = /obj/item/holder/corgi
+	holder_type = /obj/item/weapon/holder/corgi
 	pass_flags = PASS_FLAG_TABLE
 
-	meat_type = /obj/item/chems/food/snacks/meat/corgi
+	meat_type = /obj/item/weapon/reagent_containers/food/snacks/meat/corgi
 	meat_amount = 3
-	skin_material = /decl/material/solid/skin/fur/orange
+	skin_material = MATERIAL_SKIN_FUR_ORANGE
 
 	var/obj/item/inventory_head
 	var/obj/item/inventory_back
@@ -40,8 +40,11 @@
 	response_disarm = "bops"
 	response_harm   = "kicks"
 
-/mob/living/simple_animal/corgi/Ian/do_delayed_life_action()
-	..()
+/mob/living/simple_animal/corgi/Ian/Life()
+	. = ..()
+	if(!.)
+		return FALSE
+
 	//Feeding, chasing food, FOOOOODDDD
 	if(!resting && !buckled)
 		turns_since_scan++
@@ -53,7 +56,7 @@
 			if( !movement_target || !(movement_target.loc in oview(src, 3)) )
 				movement_target = null
 				stop_automated_movement = 0
-				for(var/obj/item/chems/food/snacks/S in oview(src,3))
+				for(var/obj/item/weapon/reagent_containers/food/snacks/S in oview(src,3))
 					if(isturf(S.loc) || ishuman(S.loc))
 						movement_target = S
 						break
@@ -84,18 +87,17 @@
 
 		if(prob(1))
 			visible_emote(pick("dances around.","chases their tail."))
-			for(var/i in list(1,2,4,8,4,2,1,2,4,8,4,2,1,2,4,8,4,2))
-				set_dir(i)
-				sleep(1)
-				if(QDELETED(src) || client)
-					return
+			spawn(0)
+				for(var/i in list(1,2,4,8,4,2,1,2,4,8,4,2,1,2,4,8,4,2))
+					set_dir(i)
+					sleep(1)
 
-/obj/item/chems/food/snacks/meat/corgi
+/obj/item/weapon/reagent_containers/food/snacks/meat/corgi
 	name = "Corgi meat"
 	desc = "Tastes like... well you know..."
 
-/mob/living/simple_animal/corgi/attackby(var/obj/item/O, var/mob/user)  //Marker -Agouri
-	if(istype(O, /obj/item/newspaper))
+/mob/living/simple_animal/corgi/attackby(var/obj/item/O as obj, var/mob/user as mob)  //Marker -Agouri
+	if(istype(O, /obj/item/weapon/newspaper))
 		if(!stat)
 			for(var/mob/M in viewers(user, null))
 				if ((M.client && !( M.blinded )))
@@ -168,8 +170,11 @@
 		return TOPIC_HANDLED
 	return ..()
 
-/mob/living/simple_animal/corgi/Lisa/do_delayed_life_action()
-	..()
+/mob/living/simple_animal/corgi/Lisa/Life()
+	. = ..()
+	if(!.)
+		return FALSE
+
 	if(!resting && !buckled)
 		turns_since_scan++
 		if(turns_since_scan > 15)
@@ -194,18 +199,7 @@
 
 		if(prob(1))
 			visible_emote(pick("dances around","chases her tail"))
-			for(var/i in list(1,2,4,8,4,2,1,2,4,8,4,2,1,2,4,8,4,2))
-				set_dir(i)
-				sleep(1)
-				if(QDELETED(src) || client)
-					return
-
-/mob/living/simple_animal/corgi/harvest_skin()
-	. = ..()
-	. += new/obj/item/corgi_hide(get_turf(src))
-
-/obj/item/corgi_hide
-	name = "corgi hide"
-	desc = "The by-product of corgi farming."
-	icon = 'icons/obj/items/sheet_hide.dmi'
-	icon_state = "sheet-corgi"
+			spawn(0)
+				for(var/i in list(1,2,4,8,4,2,1,2,4,8,4,2,1,2,4,8,4,2))
+					set_dir(i)
+					sleep(1)

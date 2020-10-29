@@ -28,10 +28,6 @@ datum/track/proc/GetTrack()
 	clicksound = 'sound/machines/buttonbeep.ogg'
 	pixel_x = -8
 
-	uncreated_component_parts = null
-	stat_immune = 0
-	construct_state = /decl/machine_construction/default/panel_closed
-
 	var/playing = 0
 	var/volume = 20
 
@@ -50,11 +46,14 @@ datum/track/proc/GetTrack()
 	state_base = "jukebox2"
 	pixel_x = 0
 
+/obj/machinery/media/jukebox/New()
+	..()
+	update_icon()
+	sound_id = "[/obj/machinery/media/jukebox]_[sequential_id(/obj/machinery/media/jukebox)]"
+
 /obj/machinery/media/jukebox/Initialize()
 	. = ..()
 	tracks = setup_music_tracks(tracks)
-	queue_icon_update()
-	sound_id = "[/obj/machinery/media/jukebox]_[sequential_id(/obj/machinery/media/jukebox)]"
 
 /obj/machinery/media/jukebox/Destroy()
 	StopPlaying()
@@ -130,7 +129,7 @@ datum/track/proc/GetTrack()
 		else
 			StartPlaying()
 		return TOPIC_REFRESH
-
+	
 	if (href_list["volume"])
 		AdjustVolume(text2num(href_list["volume"]))
 		return TOPIC_REFRESH
@@ -171,8 +170,8 @@ datum/track/proc/GetTrack()
 	new /obj/effect/decal/cleanable/blood/oil(src.loc)
 	qdel(src)
 
-/obj/machinery/media/jukebox/attackby(obj/item/W, mob/user)
-	if(isWrench(W) && !panel_open)
+/obj/machinery/media/jukebox/attackby(obj/item/W as obj, mob/user as mob)
+	if(isWrench(W))
 		add_fingerprint(user)
 		wrench_floor_bolts(user, 0)
 		power_change()
@@ -200,7 +199,7 @@ datum/track/proc/GetTrack()
 		return
 
 	// Jukeboxes cheat massively and actually don't share id. This is only done because it's music rather than ambient noise.
-	sound_token = GLOB.sound_player.PlayLoopingSound(src, sound_id, current_track.GetTrack(), volume = volume, range = 7, falloff = 3, prefer_mute = TRUE, preference = /datum/client_preference/play_game_music, streaming = TRUE)
+	sound_token = GLOB.sound_player.PlayLoopingSound(src, sound_id, current_track.GetTrack(), volume = volume, range = 7, falloff = 3, prefer_mute = TRUE)
 
 	playing = 1
 	update_use_power(POWER_USE_ACTIVE)

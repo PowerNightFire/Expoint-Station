@@ -13,8 +13,8 @@
 	var/strength = 0
 	var/ticks_recovering = 10
 
-/obj/effect/energy_field/Initialize()
-	. = ..()
+/obj/effect/energy_field/New()
+	..()
 	update_nearby_tiles()
 
 /obj/effect/energy_field/Destroy()
@@ -22,8 +22,7 @@
 	update_nearby_tiles()
 	. = ..()
 
-/obj/effect/energy_field/explosion_act(var/severity)
-	SHOULD_CALL_PARENT(FALSE)
+/obj/effect/energy_field/ex_act(var/severity)
 	Stress(0.5 + severity)
 
 /obj/effect/energy_field/bullet_act(var/obj/item/projectile/Proj)

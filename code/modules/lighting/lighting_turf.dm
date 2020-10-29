@@ -10,6 +10,7 @@
 	var/opaque_counter
 
 /turf/set_opacity(new_opacity)
+	. = ..()
 	if(opacity == new_opacity)
 		return FALSE
 

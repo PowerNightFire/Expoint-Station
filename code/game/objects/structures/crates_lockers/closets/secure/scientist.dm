@@ -5,12 +5,13 @@
 
 /obj/structure/closet/secure_closet/scientist/WillContain()
 	return list(
-		/obj/item/clothing/under/color/white,
+		new /datum/atom_creator/weighted(list(/obj/item/weapon/storage/backpack/messenger/tox, /obj/item/weapon/storage/backpack/satchel/tox)),
+		/obj/item/clothing/under/rank/scientist,
 		/obj/item/clothing/suit/storage/toggle/labcoat,
-		/obj/item/clothing/shoes/color/white,
-		/obj/item/radio/headset/headset_sci,
+		/obj/item/clothing/shoes/white,
+		/obj/item/device/radio/headset/headset_sci,
 		/obj/item/clothing/mask/gas,
-		/obj/item/clipboard
+		/obj/item/weapon/material/clipboard
 	)
 
 /obj/structure/closet/secure_closet/xenobio
@@ -20,14 +21,15 @@
 
 /obj/structure/closet/secure_closet/xenobio/WillContain()
 	return list(
-		/obj/item/clothing/under/color/white,
+		new /datum/atom_creator/weighted(list(/obj/item/weapon/storage/backpack/messenger/tox, /obj/item/weapon/storage/backpack/satchel/tox)),
+		/obj/item/clothing/under/rank/scientist,
 		/obj/item/clothing/suit/storage/toggle/labcoat,
-		/obj/item/clothing/shoes/color/white,
-		/obj/item/radio/headset/headset_sci,
+		/obj/item/clothing/shoes/white,
+		/obj/item/device/radio/headset/headset_sci,
 		/obj/item/clothing/mask/gas,
 		/obj/item/clothing/gloves/latex,
-		/obj/item/clipboard,
-		/obj/item/storage/belt/general
+		/obj/item/weapon/material/clipboard,
+		/obj/item/weapon/storage/belt/general
 	)
 
 /obj/structure/closet/secure_closet/RD
@@ -40,12 +42,12 @@
 		/obj/item/clothing/suit/bio_suit/scientist = 2,
 		/obj/item/clothing/head/bio_hood/scientist = 2,
 		/obj/item/clothing/suit/storage/toggle/labcoat,
-		/obj/item/clothing/shoes/color/white,
+		/obj/item/clothing/shoes/white,
 		/obj/item/clothing/gloves/latex,
-		/obj/item/radio/headset/heads/rd,
+		/obj/item/device/radio/headset/heads/rd,
 		/obj/item/clothing/mask/gas,
-		/obj/item/flash,
-		/obj/item/clipboard,
+		/obj/item/device/flash,
+		/obj/item/weapon/material/clipboard,
 	)
 
 /obj/structure/closet/secure_closet/animal
@@ -54,10 +56,11 @@
 
 /obj/structure/closet/secure_closet/animal/WillContain()
 	return list(
-		/obj/item/assembly/signaler,
-		/obj/item/radio/electropack = 3,
-		/obj/item/gun/launcher/syringe/rapid,
-		/obj/item/storage/box/syringegun,
-		/obj/item/storage/box/syringes,
-		/obj/item/chems/glass/bottle/sedatives
+		/obj/item/device/assembly/signaler,
+		/obj/item/device/radio/electropack = 3,
+		/obj/item/weapon/gun/launcher/syringe/rapid,
+		/obj/item/weapon/storage/box/syringegun,
+		/obj/item/weapon/storage/box/syringes,
+		/obj/item/weapon/reagent_containers/glass/bottle/chloralhydrate,
+		/obj/item/weapon/reagent_containers/glass/bottle/stoxin
 	)

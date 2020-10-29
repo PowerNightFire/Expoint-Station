@@ -1,6 +1,7 @@
 /datum/job/assistant
 	title = "Assistant"
-	department_refs = list(DEPT_CIVILIAN)
+	department = "Civilian"
+	department_flag = CIV
 
 	total_positions = -1
 	spawn_positions = -1
@@ -16,6 +17,3 @@
 		return list(access_maint_tunnels)
 	else
 		return list()
-
-/decl/hierarchy/outfit/job/assistant
-	name = OUTFIT_JOB_NAME("Assistant")

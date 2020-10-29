@@ -9,12 +9,12 @@
 	range = -1
 	duration = 0
 	max_targets = 1
-	equipped_summons = list("active hand" = /obj/item/flame/hands)
+	equipped_summons = list("active hand" = /obj/item/weapon/flame/hands)
 	delete_old = 0
 
 	hud_state = "gen_burnhand"
 
-/obj/item/flame/hands
+/obj/item/weapon/flame/hands
 	name = "Burning Hand"
 	icon = 'icons/mob/screen1.dmi'
 	icon_state = "grabbed+1"
@@ -25,13 +25,13 @@
 	var/burn_timer
 	var/obj/item/organ/external/hand/connected
 
-/obj/item/flame/hands/pickup(var/mob/user)
+/obj/item/weapon/flame/hands/pickup(var/mob/user)
 	burn_power = 0
 	burn_timer = world.time + 10 SECONDS
 	START_PROCESSING(SSobj,src)
 
 
-/obj/item/flame/hands/Process()
+/obj/item/weapon/flame/hands/Process()
 	if(world.time < burn_timer)
 		return
 	burn_timer = world.time + 5 SECONDS
@@ -42,12 +42,11 @@
 		return
 	var/mob/living/carbon/human/user = src.loc
 	var/obj/item/organ/external/hand
-	if(src == user.get_equipped_item(BP_L_HAND))
+	if(src == user.l_hand)
 		hand = user.get_organ(BP_L_HAND)
-	else if(src == user.get_equipped_item(BP_R_HAND))
+	else
 		hand = user.get_organ(BP_R_HAND)
-	if(hand)
-		hand.take_external_damage(burn = 2 * burn_power)
+	hand.take_external_damage(burn=2 * burn_power)
 	if(burn_power > 5)
 		user.fire_stacks += 15
 		user.IgniteMob()
@@ -59,9 +58,9 @@
 		else
 			to_chat(user, "<span class='warning'>You feel \the [src] grow hotter and hotter!</span>")
 
-/obj/item/flame/hands/get_storage_cost()
+/obj/item/weapon/flame/hands/get_storage_cost()
 	return ITEM_SIZE_NO_CONTAINER
 
-/obj/item/flame/hands/dropped()
+/obj/item/weapon/flame/hands/dropped()
 	..()
 	qdel(src)

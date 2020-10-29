@@ -5,16 +5,16 @@ var/list/ventcrawl_machinery = list(
 
 // Vent crawling whitelisted items, whoo
 /mob/living/var/list/can_enter_vent_with = list(
-	/mob,
-	/obj/item/implant,
-	/obj/item/radio/borg,
-	/obj/item/holder,
+	/obj/item/weapon/implant,
+	/obj/item/device/radio/borg,
+	/obj/item/weapon/holder,
 	/obj/machinery/camera,
+	/mob/living/simple_animal/borer,
 	/obj/item/clothing/head/culthood,
 	/obj/item/clothing/suit/cultrobes,
-	/obj/item/book/tome,
-	/obj/item/paper/,
-	/obj/item/sword/cultblade
+	/obj/item/weapon/book/tome,
+	/obj/item/weapon/paper/,
+	/obj/item/weapon/melee/cultblade
 	)
 
 /mob/living/var/list/icon/pipes_shown = list()
@@ -61,7 +61,7 @@ var/list/ventcrawl_machinery = list(
 		return TRUE
 	if(carried_item in list(w_uniform, gloves, glasses, wear_mask, l_ear, r_ear, belt, l_store, r_store))
 		return TRUE
-	if(carried_item in get_held_items())
+	if(carried_item in list(l_hand,r_hand))
 		return carried_item.w_class <= ITEM_SIZE_NORMAL
 	return ..()
 

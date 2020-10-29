@@ -9,9 +9,7 @@
 
 	var/obj/item/I = usr.get_active_hand()
 	if(!I)
-		var/list/others = usr.get_inactive_held_items()
-		if(length(others))
-			I = pick(others)
+		I = usr.get_inactive_hand()
 	if(!I)
 		to_chat(usr, SPAN_WARNING("You don't have anything in your hands to give to \the [target]."))
 		return
@@ -33,16 +31,16 @@
 		to_chat(target, SPAN_WARNING("\The [usr] moved too far away."))
 		return
 
-	if(I.loc != usr || !(I in usr.get_held_items()))
+	if(I.loc != usr || (usr.l_hand != I && usr.r_hand != I))
 		to_chat(usr, SPAN_WARNING("You need to keep the item in your hands."))
 		to_chat(target, SPAN_WARNING("\The [usr] seems to have given up on passing \the [I] to you."))
 		return
 
-	if(!target.get_empty_hand_slot())
+	if(target.r_hand != null && target.l_hand != null)
 		to_chat(target, SPAN_WARNING("Your hands are full."))
 		to_chat(usr, SPAN_WARNING("Their hands are full."))
 		return
 
 	if(usr.unEquip(I))
-		target.put_in_hands(I) // If this fails it will just end up on the floor.
+		target.put_in_hands(I) // If this fails it will just end up on the floor, but that's fitting for things like dionaea.
 		usr.visible_message(SPAN_NOTICE("\The [usr] handed \the [I] to \the [target]."), SPAN_NOTICE("You give \the [I] to \the [target]."))

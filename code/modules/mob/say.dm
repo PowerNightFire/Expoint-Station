@@ -10,25 +10,24 @@
 	set name = "Say"
 	set category = "IC"
 	remove_typing_indicator()
-	if(!filter_block_message(usr, message))
-		usr.say(message)
+	usr.say(message)
 
 /mob/verb/me_verb(message as text)
 	set name = "Me"
 	set category = "IC"
 
+	message = sanitize(message)
+
 	remove_typing_indicator()
-	if(!filter_block_message(usr, message))
-		message = sanitize(message)
-		if(use_me)
-			usr.emote("me",usr.emote_type,message)
-		else
-			usr.emote(message)
+	if(use_me)
+		usr.emote("me",usr.emote_type,message)
+	else
+		usr.emote(message)
 
 /mob/proc/say_dead(var/message)
 	communicate(/decl/communication_channel/dsay, client, message)
 
-/mob/proc/say_understands(var/mob/other,var/decl/language/speaking = null)
+/mob/proc/say_understands(var/mob/other,var/datum/language/speaking = null)
 
 	if (src.stat == 2)		//Dead
 		return 1
@@ -53,13 +52,13 @@
 		return 1
 
 	//Language check.
-	for(var/decl/language/L in src.languages)
+	for(var/datum/language/L in src.languages)
 		if(speaking.name == L.name)
 			return 1
 
 	return 0
 
-/mob/proc/say_quote(var/message, var/decl/language/speaking = null)
+/mob/proc/say_quote(var/message, var/datum/language/speaking = null)
 	var/ending = copytext(message, length(message))
 	if(speaking)
 		return speaking.get_spoken_verb(ending)
@@ -106,11 +105,11 @@
 /mob/proc/parse_language(var/message)
 	var/prefix = copytext(message,1,2)
 	if(length(message) >= 1 && prefix == get_prefix_key(/decl/prefix/audible_emote))
-		return decls_repository.get_decl(/decl/language/noise)
+		return all_languages["Noise"]
 
 	if(length(message) >= 2 && is_language_prefix(prefix))
 		var/language_prefix = lowertext(copytext(message, 2 ,3))
-		var/decl/language/L = SSlore.get_language_by_key(language_prefix)
+		var/datum/language/L = language_keys[language_prefix]
 		if (can_speak(L))
 			return L
 

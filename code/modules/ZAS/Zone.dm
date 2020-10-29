@@ -52,7 +52,6 @@ Class Procs:
 	var/list/graphic_add = list()
 	var/list/graphic_remove = list()
 	var/last_air_temperature = TCMB
-	var/condensing = FALSE
 
 /zone/New()
 	SSair.add_zone(src)
@@ -72,11 +71,10 @@ Class Procs:
 	T.zone = src
 	contents.Add(T)
 	if(T.fire)
+		var/obj/effect/decal/cleanable/liquid_fuel/fuel = locate() in T
 		fire_tiles.Add(T)
 		SSair.active_fire_zones |= src
-		var/obj/effect/fluid/fuel = T.return_fluid()
-		if(fuel?.get_fuel_amount()) 
-			fuel_objs += fuel
+		if(fuel) fuel_objs += fuel
 	T.update_graphic(air.graphic)
 
 /zone/proc/remove(turf/simulated/T)
@@ -89,7 +87,8 @@ Class Procs:
 	contents.Remove(T)
 	fire_tiles.Remove(T)
 	if(T.fire)
-		fuel_objs -= T.return_fluid()
+		var/obj/effect/decal/cleanable/liquid_fuel/fuel = locate() in T
+		fuel_objs -= fuel
 	T.zone = null
 	T.update_graphic(graphic_remove = air.graphic)
 	if(contents.len)
@@ -128,7 +127,6 @@ Class Procs:
 	#endif
 
 /zone/proc/rebuild()
-	set waitfor = 0
 	if(invalid) return //Short circuit for explosions where rebuild is called many times over.
 	c_invalidate()
 	for(var/turf/simulated/T in contents)
@@ -136,7 +134,6 @@ Class Procs:
 		//T.dbg(invalid_zone)
 		T.needs_air_update = 0 //Reset the marker so that it will be added to the list.
 		SSair.mark_for_update(T)
-		CHECK_TICK
 
 /zone/proc/add_tile_air(datum/gas_mixture/tile_air)
 	//air.volume += CELL_VOLUME
@@ -149,8 +146,7 @@ Class Procs:
 /zone/proc/tick()
 
 	// Update fires.
-	if(air.temperature >= FLAMMABLE_GAS_FLASHPOINT && !(src in SSair.active_fire_zones) && air.check_combustibility() && contents.len)
-
+	if(air.temperature >= PHORON_FLASHPOINT && !(src in SSair.active_fire_zones) && air.check_combustability() && contents.len)
 		var/turf/T = pick(contents)
 		if(istype(T))
 			T.create_fire(vsc.fire_firelevel_multiplier)
@@ -168,8 +164,18 @@ Class Procs:
 			E.recheck()
 
 	// Handle condensation from the air.
-	if(!condensing)
-		handle_condensation()
+	for(var/g in air.gas)
+		var/product = gas_data.condensation_products[g]
+		if(product && air.temperature <= gas_data.condensation_points[g])
+			var/condensation_area = air.group_multiplier
+			while(condensation_area > 0)
+				condensation_area--
+				var/turf/flooding = pick(contents)
+				var/condense_amt = min(air.gas[g], rand(3,5))
+				if(condense_amt < 1)
+					break
+				air.adjust_gas(g, -condense_amt)
+				flooding.add_fluid(condense_amt, product)
 
 	// Update atom temperature.
 	if(abs(air.temperature - last_air_temperature) >= ATOM_TEMPERATURE_EQUILIBRIUM_THRESHOLD)
@@ -181,33 +187,12 @@ Class Procs:
 					QUEUE_TEMPERATURE_ATOMS(checking)
 			CHECK_TICK
 
-/zone/proc/handle_condensation()
-	set waitfor = FALSE
-	condensing = TRUE
-	for(var/g in air.gas)
-		var/decl/material/mat = decls_repository.get_decl(g)
-		if(air.temperature <= mat.gas_condensation_point)
-			var/condensation_area = air.group_multiplier / length(air.gas)
-			while(condensation_area > 0 && length(contents))
-				condensation_area--
-				var/turf/flooding = pick(contents)
-				var/condense_amt = min(air.gas[g], rand(1,3))
-				if(condense_amt < 1)
-					break
-				air.adjust_gas(g, -condense_amt)
-				var/obj/effect/fluid/F = locate() in flooding
-				if(!F) F = new(flooding)
-				F.reagents.add_reagent(g, condense_amt * REAGENT_UNITS_PER_GAS_MOLE)
-				CHECK_TICK
-	condensing = FALSE
-
 /zone/proc/dbg_data(mob/M)
 	to_chat(M, name)
 	for(var/g in air.gas)
-		var/decl/material/mat = decls_repository.get_decl(g)
-		to_chat(M, "[capitalize(mat.gas_name)]: [air.gas[g]]")
+		to_chat(M, "[gas_data.name[g]]: [air.gas[g]]")
 	to_chat(M, "P: [air.return_pressure()] kPa V: [air.volume]L T: [air.temperature]°K ([air.temperature - T0C]°C)")
-	to_chat(M, "O2 per N2: [(air.gas[/decl/material/gas/nitrogen] ? air.gas[/decl/material/gas/oxygen]/air.gas[/decl/material/gas/nitrogen] : "N/A")] Moles: [air.total_moles]")
+	to_chat(M, "O2 per N2: [(air.gas[GAS_NITROGEN] ? air.gas[GAS_OXYGEN]/air.gas[GAS_NITROGEN] : "N/A")] Moles: [air.total_moles]")
 	to_chat(M, "Simulated: [contents.len] ([air.group_multiplier])")
 //	to_chat(M, "Unsimulated: [unsimulated_contents.len]")
 //	to_chat(M, "Edges: [edges.len]")

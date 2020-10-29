@@ -13,7 +13,7 @@
 /obj/structure/morgue
 	name = "morgue"
 	desc = "Used to keep bodies in until someone fetches them."
-	icon = 'icons/obj/structures/morgue.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "morgue1"
 	dir = EAST
 	density = 1
@@ -36,12 +36,31 @@
 			src.icon_state = "morgue1"
 	return
 
-/obj/structure/morgue/explosion_act(severity)
-	..()
-	if(!QDELETED(src) && (severity == 1 || (severity == 2 && prob(50)) || (severity == 3 && prob(5))))
-		physically_destroyed(src)
+/obj/structure/morgue/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			for(var/atom/movable/A as mob|obj in src)
+				A.forceMove(src.loc)
+				ex_act(severity)
+			qdel(src)
+			return
+		if(2.0)
+			if (prob(50))
+				for(var/atom/movable/A as mob|obj in src)
+					A.forceMove(src.loc)
+					ex_act(severity)
+				qdel(src)
+				return
+		if(3.0)
+			if (prob(5))
+				for(var/atom/movable/A as mob|obj in src)
+					A.forceMove(src.loc)
+					ex_act(severity)
+				qdel(src)
+				return
+	return
 
-/obj/structure/morgue/attack_hand(mob/user)
+/obj/structure/morgue/attack_hand(mob/user as mob)
 	if (src.connected)
 		for(var/atom/movable/A as mob|obj in src.connected.loc)
 			if (!( A.anchored ))
@@ -73,8 +92,8 @@
 		return attack_hand(user)
 	else return ..()
 
-/obj/structure/morgue/attackby(P, mob/user)
-	if (istype(P, /obj/item/pen))
+/obj/structure/morgue/attackby(P as obj, mob/user as mob)
+	if (istype(P, /obj/item/weapon/pen))
 		var/t = input(user, "What would you like the label to be?", text("[]", src.name), null)  as text
 		if (user.get_active_hand() != P)
 			return
@@ -88,7 +107,7 @@
 	src.add_fingerprint(user)
 	return
 
-/obj/structure/morgue/relaymove(mob/user)
+/obj/structure/morgue/relaymove(mob/user as mob)
 	if (user.stat)
 		return
 	src.connected = new /obj/structure/m_tray( src.loc )
@@ -112,7 +131,7 @@
 /obj/structure/m_tray
 	name = "morgue tray"
 	desc = "Apply corpse before closing."
-	icon = 'icons/obj/structures/morgue.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "morguet"
 	density = 1
 	layer = BELOW_OBJ_LAYER
@@ -126,7 +145,7 @@
 	connected = null
 	return ..()
 
-/obj/structure/m_tray/attack_hand(mob/user)
+/obj/structure/m_tray/attack_hand(mob/user as mob)
 	if (src.connected)
 		for(var/atom/movable/A as mob|obj in src.loc)
 			if (!( A.anchored ))
@@ -139,7 +158,7 @@
 		return
 	return
 
-/obj/structure/m_tray/MouseDrop_T(atom/movable/O, mob/user)
+/obj/structure/m_tray/MouseDrop_T(atom/movable/O as mob|obj, mob/user as mob)
 	if ((!( istype(O, /atom/movable) ) || O.anchored || get_dist(user, src) > 1 || get_dist(user, O) > 1 || user.contents.Find(src) || user.contents.Find(O)))
 		return
 	if (!ismob(O) && !istype(O, /obj/structure/closet/body_bag))
@@ -161,7 +180,7 @@
 /obj/structure/crematorium
 	name = "crematorium"
 	desc = "A human incinerator. Works well on barbeque nights."
-	icon = 'icons/obj/structures/crematorium.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "crema1"
 	density = TRUE
 	var/obj/structure/c_tray/connected = null
@@ -187,10 +206,29 @@
 		src.icon_state = "crema1"
 
 
-/obj/structure/crematorium/explosion_act(severity)
-	..()
-	if(!QDELETED(src) && (severity == 1 || (severity == 2 && prob(50)) || (severity == 3 && prob(5))))
-		physically_destroyed(src)
+/obj/structure/crematorium/ex_act(severity)
+	switch(severity)
+		if(1)
+			for(var/atom/movable/A as mob|obj in src)
+				A.forceMove(src.loc)
+				ex_act(severity)
+			qdel(src)
+			return
+		if(2)
+			if (prob(50))
+				for(var/atom/movable/A as mob|obj in src)
+					A.forceMove(src.loc)
+					ex_act(severity)
+				qdel(src)
+				return
+		if(3)
+			if (prob(5))
+				for(var/atom/movable/A as mob|obj in src)
+					A.forceMove(src.loc)
+					ex_act(severity)
+				qdel(src)
+				return
+	return
 
 /obj/structure/crematorium/attack_hand(mob/user)
 	if(cremating)
@@ -218,8 +256,8 @@
 	src.add_fingerprint(user)
 	update()
 
-/obj/structure/crematorium/attackby(P, mob/user)
-	if(istype(P, /obj/item/pen))
+/obj/structure/crematorium/attackby(P as obj, mob/user as mob)
+	if(istype(P, /obj/item/weapon/pen))
 		var/t = input(user, "What would you like the label to be?", text("[]", src.name), null)  as text
 		if(user.get_active_hand() != P)
 			return
@@ -233,7 +271,7 @@
 	src.add_fingerprint(user)
 	return
 
-/obj/structure/crematorium/relaymove(mob/user)
+/obj/structure/crematorium/relaymove(mob/user as mob)
 	if (user.stat || locked)
 		return
 	src.connected = new /obj/structure/c_tray( src.loc )
@@ -249,7 +287,7 @@
 		src.connected = null
 	return
 
-/obj/structure/crematorium/proc/cremate(atom/A, mob/user)
+/obj/structure/crematorium/proc/cremate(atom/A, mob/user as mob)
 	if(cremating)
 		return //don't let you cremate something twice or w/e
 
@@ -258,7 +296,7 @@
 		return
 
 	else
-		if(!isemptylist(src.search_contents_for(/obj/item/disk/nuclear)))
+		if(!isemptylist(src.search_contents_for(/obj/item/weapon/disk/nuclear)))
 			to_chat(loc, "The button's status indicator flashes yellow, indicating that something important is inside the crematorium, and must be removed.")
 			return
 		src.audible_message("<span class='warning'>You hear a roar as the [src] activates.</span>", 1)
@@ -308,17 +346,17 @@
 								else
 									shake_animation()
 
-			if(round_is_spooky())
-				if(prob(50))
-					playsound(src, 'sound/effects/ghost.ogg', 10, 5)
-				else
-					playsound(src, 'sound/effects/ghost2.ogg', 10, 5)
 
-			if (!M.stat)
+			if(M.stat >= DEAD)
+				if(round_is_spooky())
+					if(prob(50))
+						playsound(src, 'sound/effects/ghost.ogg', 10, 5)
+					else
+						playsound(src, 'sound/effects/ghost2.ogg', 10, 5)
+
+				admin_attack_log(M, A, "Cremated their victim.", "Was cremated.", "cremated alive")
 				M.audible_message("[M]'s screams cease, as does any movement within the [src]. All that remains is a dull, empty silence.")
-
-			admin_attack_log(M, A, "Cremated their victim.", "Was cremated.", "cremated")
-			M.dust()
+				M.dust()
 
 		for(var/obj/O in contents) //obj instead of obj/item so that bodybags and ashes get destroyed. We dont want tons and tons of ash piling up
 			qdel(O)
@@ -337,7 +375,7 @@
 /obj/structure/c_tray
 	name = "crematorium tray"
 	desc = "Apply body before burning."
-	icon = 'icons/obj/structures/morgue.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "cremat"
 	density = 1
 	layer = BELOW_OBJ_LAYER
@@ -351,7 +389,7 @@
 	connected = null
 	return ..()
 
-/obj/structure/c_tray/attack_hand(mob/user)
+/obj/structure/c_tray/attack_hand(mob/user as mob)
 	if (src.connected)
 		for(var/atom/movable/A as mob|obj in src.loc)
 			if (!( A.anchored ))
@@ -364,7 +402,7 @@
 		return
 	return
 
-/obj/structure/c_tray/MouseDrop_T(atom/movable/O, mob/user)
+/obj/structure/c_tray/MouseDrop_T(atom/movable/O as mob|obj, mob/user as mob)
 	if ((!( istype(O, /atom/movable) ) || O.anchored || get_dist(user, src) > 1 || get_dist(user, O) > 1 || user.contents.Find(src) || user.contents.Find(O)))
 		return
 	if (!ismob(O) && !istype(O, /obj/structure/closet/body_bag))
@@ -382,7 +420,7 @@
 	desc = "Burn baby burn!"
 	icon = 'icons/obj/power.dmi'
 	icon_state = "crema_switch"
-	initial_access = list(access_crematorium)
+	req_access = list(access_crematorium)
 	id_tag = 1
 
 /obj/machinery/button/crematorium/on_update_icon()

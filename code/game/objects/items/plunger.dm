@@ -1,22 +1,23 @@
-/obj/item/plunger
+/obj/item/clothing/mask/plunger
 	name = "plunger"
 	desc = "This is possibly the least sanitary object around."
-	icon = 'icons/obj/items/plunger.dmi'
 	icon_state = "plunger_black"
 	item_state = "plunger_black"
+	icon = 'icons/obj/plunger.dmi'
 	attack_verb = list("plunged")
 	force = 1
-	w_class = ITEM_SIZE_NORMAL
-	slot_flags = SLOT_HEAD | SLOT_FACE
-	body_parts_covered = SLOT_HEAD
+	w_class = 3
+	slot_flags = SLOT_HEAD | SLOT_MASK
 	hitsound = 'sound/effects/plunger.ogg'
-	material = /decl/material/solid/plastic
+	matter = list("steel" = 5000)
 
-/obj/item/plunger/equipped(mob/user, slot)
-	switch(slot)
-		if(SLOT_FACE)
-			body_parts_covered = SLOT_FACE|SLOT_EYES
-		if(SLOT_HEAD)
-			body_parts_covered = initial(body_parts_covered)
-	return ..()
-
+/obj/item/device/plunger/robot
+	name = "plunger"
+	desc = "a plunger. It unclogs things."
+	icon_state = "plunger_black"
+	item_state = "plunger_black"
+	icon = 'icons/obj/plunger.dmi'
+	attack_verb = list("plunged")
+	force = 1
+	w_class = 3
+	hitsound = 'sound/effects/plunger.ogg'

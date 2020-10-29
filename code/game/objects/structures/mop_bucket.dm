@@ -9,17 +9,17 @@
 	var/amount_per_transfer_from_this = 5	//shit I dunno, adding this so syringes stop runtime erroring. --NeoFite
 
 
-/obj/structure/mopbucket/Initialize()
-	. = ..()
+/obj/structure/mopbucket/New()
 	create_reagents(180)
+	..()
 
 /obj/structure/mopbucket/examine(mob/user, distance)
 	. = ..()
 	if(distance <= 1)
-		to_chat(user, "[src] [html_icon(src)] contains [reagents.total_volume] unit\s of water!")
+		to_chat(user, "[src] [icon2html(src, user)] contains [reagents.total_volume] unit\s of water!")
 
 /obj/structure/mopbucket/attackby(obj/item/I, mob/user)
-	if(istype(I, /obj/item/mop))
+	if(istype(I, /obj/item/weapon/mop))
 		if(reagents.total_volume < 1)
 			to_chat(user, "<span class='warning'>\The [src] is out of water!</span>")
 		else

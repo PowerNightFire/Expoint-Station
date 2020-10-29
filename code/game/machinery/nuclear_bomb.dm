@@ -15,22 +15,20 @@ var/bomb_set
 	var/extended = 0
 	var/lighthack = 0
 	var/timeleft = 120
-	var/minTime = 120
-	var/maxTime = 600
 	var/timing = 0
 	var/r_code = "ADMIN"
 	var/code = ""
 	var/yes_code = 0
 	var/safety = 1
-	var/obj/item/disk/nuclear/auth = null
+	var/obj/item/weapon/disk/nuclear/auth = null
 	var/removal_stage = 0 // 0 is no removal, 1 is covers removed, 2 is covers open, 3 is sealant open, 4 is unwrenched, 5 is removed from bolts.
 	var/lastentered
 	var/previous_level = ""
 	wires = /datum/wires/nuclearbomb
 	var/decl/security_level/original_level
 
-/obj/machinery/nuclearbomb/Initialize()
-	. = ..()
+/obj/machinery/nuclearbomb/New()
+	..()
 	r_code = "[rand(10000, 99999.0)]"//Creates a random code upon object spawn.
 
 /obj/machinery/nuclearbomb/Destroy()
@@ -46,7 +44,7 @@ var/bomb_set
 			addtimer(CALLBACK(src, .proc/explode), 0)
 		SSnano.update_uis(src)
 
-/obj/machinery/nuclearbomb/attackby(obj/item/O, mob/user, params)
+/obj/machinery/nuclearbomb/attackby(obj/item/weapon/O as obj, mob/user as mob, params)
 	if(isScrewdriver(O))
 		add_fingerprint(user)
 		if(auth)
@@ -75,7 +73,7 @@ var/bomb_set
 		return attack_hand(user)
 
 	if(extended)
-		if(istype(O, /obj/item/disk/nuclear))
+		if(istype(O, /obj/item/weapon/disk/nuclear))
 			if(!user.unEquip(O, src))
 				return
 			auth = O
@@ -86,7 +84,7 @@ var/bomb_set
 		switch(removal_stage)
 			if(0)
 				if(isWelder(O))
-					var/obj/item/weldingtool/WT = O
+					var/obj/item/weapon/weldingtool/WT = O
 					if(!WT.isOn()) return
 					if(WT.get_fuel() < 5) // uses up 5 fuel.
 						to_chat(user, "<span class='warning'>You need more fuel to complete this task.</span>")
@@ -112,7 +110,7 @@ var/bomb_set
 
 			if(2)
 				if(isWelder(O))
-					var/obj/item/weldingtool/WT = O
+					var/obj/item/weapon/weldingtool/WT = O
 					if(!WT.isOn()) return
 					if (WT.get_fuel() < 5) // uses up 5 fuel.
 						to_chat(user, "<span class='warning'>You need more fuel to complete this task.</span>")
@@ -157,9 +155,9 @@ var/bomb_set
 		extended = 1
 		if(!src.lighthack)
 			flick("lock", src)
-			update_icon()
+			update_icon()	
 
-/obj/machinery/nuclearbomb/interface_interact(mob/user)
+/obj/machinery/nuclearbomb/interface_interact(mob/user as mob)
 	if(extended && !panel_open)
 		ui_interact(user)
 		return TRUE
@@ -232,7 +230,7 @@ var/bomb_set
 			auth = null
 		else
 			var/obj/item/I = usr.get_active_hand()
-			if(istype(I, /obj/item/disk/nuclear))
+			if(istype(I, /obj/item/weapon/disk/nuclear))
 				if(!usr.unEquip(I, src))
 					return 1
 				auth = I
@@ -265,7 +263,7 @@ var/bomb_set
 
 				var/time = text2num(href_list["time"])
 				timeleft += time
-				timeleft = Clamp(timeleft, minTime, maxTime)
+				timeleft = Clamp(timeleft, 120, 600)
 			if(href_list["timer"])
 				if(timing == -1)
 					return 1
@@ -330,8 +328,7 @@ var/bomb_set
 	timeleft = Clamp(timeleft, 120, 600)
 	update_icon()
 
-/obj/machinery/nuclearbomb/explosion_act(severity)
-	SHOULD_CALL_PARENT(FALSE)
+/obj/machinery/nuclearbomb/ex_act(severity)
 	return
 
 #define NUKERANGE 80
@@ -359,63 +356,64 @@ var/bomb_set
 		icon_state = "idle"
 
 //====The nuclear authentication disc====
-/obj/item/disk/nuclear
+/obj/item/weapon/disk/nuclear
 	name = "nuclear authentication disk"
 	desc = "Better keep this safe."
-	icon = 'icons/obj/items/device/diskette.dmi'
+	icon = 'icons/obj/items.dmi'
 	icon_state = "nucleardisk"
 	item_state = "card-id"
 	w_class = ITEM_SIZE_TINY
 
 
-/obj/item/disk/nuclear/Initialize()
+/obj/item/weapon/disk/nuclear/Initialize()
 	. = ..()
 	nuke_disks |= src
 	// Can never be quite sure that a game mode has been properly initiated or not at this point, so always register
-	GLOB.moved_event.register(src, src, /obj/item/disk/nuclear/proc/check_z_level)
+	GLOB.moved_event.register(src, src, /obj/item/weapon/disk/nuclear/proc/check_z_level)
 
-/obj/item/disk/nuclear/proc/check_z_level()
+/obj/item/weapon/disk/nuclear/proc/check_z_level()
 	if(!(istype(SSticker.mode, /datum/game_mode/nuclear)))
-		GLOB.moved_event.unregister(src, src, /obj/item/disk/nuclear/proc/check_z_level) // However, when we are certain unregister if necessary
+		GLOB.moved_event.unregister(src, src, /obj/item/weapon/disk/nuclear/proc/check_z_level) // However, when we are certain unregister if necessary
 		return
 	var/turf/T = get_turf(src)
 	if(!T || isNotStationLevel(T.z))
 		qdel(src)
 
-/obj/item/disk/nuclear/Destroy()
-	GLOB.moved_event.unregister(src, src, /obj/item/disk/nuclear/proc/check_z_level)
+/obj/item/weapon/disk/nuclear/Destroy()
+	GLOB.moved_event.unregister(src, src, /obj/item/weapon/disk/nuclear/proc/check_z_level)
 	nuke_disks -= src
 	if(!nuke_disks.len)
 		var/turf/T = pick_area_turf(/area/maintenance, list(/proc/is_station_turf, /proc/not_turf_contains_dense_objects))
 		if(T)
-			var/obj/D = new /obj/item/disk/nuclear(T)
+			var/obj/D = new /obj/item/weapon/disk/nuclear(T)
 			log_and_message_admins("[src], the last authentication disk, has been destroyed. Spawning [D] at ([D.x], [D.y], [D.z]).", location = T)
 		else
 			log_and_message_admins("[src], the last authentication disk, has been destroyed. Failed to respawn disc!")
 	return ..()
 
 //====the nuclear football (holds the disk and instructions)====
-/obj/item/storage/secure/briefcase/nukedisk
+/obj/item/weapon/storage/secure/briefcase/nukedisk
 	desc = "A large briefcase with a digital locking system."
 	startswith = list(
-		/obj/item/disk/nuclear,
-		/obj/item/pinpointer,
-		/obj/item/folder/envelope/nuke_instructions,
+		/obj/item/weapon/disk/nuclear,
+		/obj/item/weapon/pinpointer,
+		/obj/item/weapon/folder/envelope/nuke_instructions,
 		/obj/item/modular_computer/laptop/preset/custom_loadout/cheap/
 	)
 
-/obj/item/storage/secure/briefcase/nukedisk/examine(mob/user)
+/obj/item/weapon/storage/secure/briefcase/nukedisk/examine(mob/user)
 	. = ..()
 	to_chat(user,"On closer inspection, you see \a [GLOB.using_map.company_name] emblem is etched into the front of it.")
 
-/obj/item/folder/envelope/nuke_instructions
+/obj/item/weapon/folder/envelope/nuke_instructions
 	name = "instructions envelope"
 	desc = "A small envelope. The label reads 'open only in event of high emergency'."
 
-/obj/item/folder/envelope/nuke_instructions/Initialize()
+/obj/item/weapon/folder/envelope/nuke_instructions/Initialize()
 	. = ..()
-	var/obj/item/paper/R = new(src)
-	R.set_content("<center><b>Warning: Classified<br>[GLOB.using_map.station_name] Self-Destruct System - Instructions</b></center><br><br>\
+	var/obj/item/weapon/paper/R = new(src)
+	R.set_content("<center><img src=sollogo.png><br><br>\
+	<b>Warning: Classified<br>[GLOB.using_map.station_name] Self-Destruct System - Instructions</b></center><br><br>\
 	In the event of a Delta-level emergency, this document will guide you through the activation of the vessel's \
 	on-board nuclear self-destruct system. Please read carefully.<br><br>\
 	1) (Optional) Announce the imminent activation to any surviving crew members, and begin evacuation procedures.<br>\
@@ -439,7 +437,7 @@ var/bomb_set
 	//stamp the paper
 	var/image/stampoverlay = image('icons/obj/bureaucracy.dmi')
 	stampoverlay.icon_state = "paper_stamp-hos"
-	R.stamped += /obj/item/stamp
+	R.stamped += /obj/item/weapon/stamp
 	R.overlays += stampoverlay
 	R.stamps += "<HR><i>This paper has been stamped as 'Top Secret'.</i>"
 
@@ -451,10 +449,6 @@ var/bomb_set
 	anchored = 1
 	deployable = 1
 	extended = 1
-
-	timeleft = 300
-	minTime = 300
-	maxTime = 900
 
 	var/list/flash_tiles = list()
 	var/list/inserters = list()
@@ -474,7 +468,7 @@ var/bomb_set
 	for(var/obj/machinery/self_destruct/ch in get_area(src))
 		inserters += ch
 
-/obj/machinery/nuclearbomb/station/attackby(obj/item/O, mob/user)
+/obj/machinery/nuclearbomb/station/attackby(obj/item/weapon/O as obj, mob/user as mob)
 	if(isWrench(O))
 		return
 
@@ -484,6 +478,15 @@ var/bomb_set
 
 	if(href_list["anchor"])
 		return
+
+	if(href_list["time"])
+		if(timing)
+			to_chat(usr, "<span class='warning'>Cannot alter the timing during countdown.</span>")
+			return
+		var/time = text2num(href_list["time"])
+		timeleft += time
+		timeleft = Clamp(timeleft, 300, 900)
+		return 1
 
 /obj/machinery/nuclearbomb/station/start_bomb()
 	for(var/inserter in inserters)

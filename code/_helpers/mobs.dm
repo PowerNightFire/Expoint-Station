@@ -24,33 +24,31 @@
 
 	return mobs
 
-proc/random_hair_style(gender, species)
-	species = species || GLOB.using_map.default_species
+proc/random_hair_style(gender, species = SPECIES_HUMAN)
 	var/h_style = "Bald"
 
-	var/datum/species/mob_species = get_species_by_key(species)
+	var/datum/species/mob_species = all_species[species]
 	var/list/valid_hairstyles = mob_species.get_hair_styles()
 	if(valid_hairstyles.len)
 		h_style = pick(valid_hairstyles)
 
 	return h_style
 
-proc/random_facial_hair_style(gender, var/species)
-	species = species || GLOB.using_map.default_species
+proc/random_facial_hair_style(gender, var/species = SPECIES_HUMAN)
 	var/f_style = "Shaved"
-	var/datum/species/mob_species = get_species_by_key(species)
+	var/datum/species/mob_species = all_species[species]
 	var/list/valid_facialhairstyles = mob_species.get_facial_hair_styles(gender)
 	if(valid_facialhairstyles.len)
 		f_style = pick(valid_facialhairstyles)
 		return f_style
 
-proc/random_name(gender, species)
+proc/random_name(gender, species = SPECIES_HUMAN)
 	if(species)
-		var/datum/species/current_species = get_species_by_key(species)
+		var/datum/species/current_species = all_species[species]
 		if(current_species)
-			var/decl/cultural_info/current_culture = SSlore.get_culture(current_species.default_cultural_info[TAG_CULTURE])
+			var/decl/cultural_info/current_culture = SSculture.get_culture(current_species.default_cultural_info[TAG_CULTURE])
 			if(current_culture)
-				return current_culture.get_random_name(null, gender)
+				return current_culture.get_random_name(gender)
 	return capitalize(pick(gender == FEMALE ? GLOB.first_names_female : GLOB.first_names_male)) + " " + capitalize(pick(GLOB.last_names))
 
 proc/random_skin_tone(var/datum/species/current_species)
@@ -115,11 +113,6 @@ proc/age2agedescription(age)
 	if(!user || !target)
 		return 0
 	var/user_loc = user.loc
-
-	var/drifting = 0
-	if(!user.Process_Spacemove(0) && user.inertia_dir)
-		drifting = 1
-
 	var/target_loc = target.loc
 
 	var/holding = user.get_active_hand()
@@ -140,11 +133,7 @@ proc/age2agedescription(age)
 		if(uninterruptible)
 			continue
 
-		if(drifting && !user.inertia_dir)
-			drifting = 0
-			user_loc = user.loc
-
-		if(QDELETED(user) || user.incapacitated(incapacitation_flags) || (!drifting && user.loc != user_loc))
+		if(QDELETED(user) || user.incapacitated(incapacitation_flags) || user.loc != user_loc)
 			. = 0
 			break
 
@@ -177,10 +166,6 @@ proc/age2agedescription(age)
 
 	var/atom/original_loc = user.loc
 
-	var/drifting = 0
-	if(!user.Process_Spacemove(0) && user.inertia_dir)
-		drifting = 1
-
 	var/holding = user.get_active_hand()
 
 	var/datum/progressbar/progbar
@@ -195,11 +180,7 @@ proc/age2agedescription(age)
 		if (progress)
 			progbar.update(world.time - starttime)
 
-		if(drifting && !user.inertia_dir)
-			drifting = 0
-			original_loc = user.loc
-
-		if(QDELETED(user) || user.incapacitated(incapacitation_flags) || (!drifting && user.loc != original_loc && !can_move) || (same_direction && user.dir != original_dir))
+		if(QDELETED(user) || user.incapacitated(incapacitation_flags) || (user.loc != original_loc && !can_move) || (same_direction && user.dir != original_dir))
 			. = 0
 			break
 
@@ -304,52 +285,3 @@ proc/age2agedescription(age)
 	if(damflags & DAM_BIO)
 		res += "bio"
 	return english_list(res)
-
-/proc/get_effective_view(var/client/C)
-	var/val = C ? C.view : world.view
-	if(isnum(val))
-		return val
-	if(istext(val))
-		var/list/vals = splittext(val, "x")
-		return Floor(max(text2num(vals[1]), text2num(vals[2]))/2)
-	return 0
-
-// If all of these flags are present, it should come out at exactly 1. Yes, this
-// is horrible. TODO: unify coverage flags with limbs and use organ_rel_size.
-GLOBAL_LIST_INIT(bodypart_coverage_cache, new)
-
-/proc/get_percentage_body_cover(var/checking_flags)
-	var/key = "[checking_flags]"
-	if(isnull(GLOB.bodypart_coverage_cache[key]))
-		var/coverage = 0
-		if(checking_flags & SLOT_FULL_BODY)
-			coverage = 1
-		else
-			if(checking_flags & SLOT_HEAD)
-				coverage += 0.1
-			if(checking_flags & SLOT_FACE)
-				coverage += 0.05
-			if(checking_flags & SLOT_EYES)
-				coverage += 0.05
-			if(checking_flags & SLOT_UPPER_BODY)
-				coverage += 0.15
-			if(checking_flags & SLOT_LOWER_BODY)
-				coverage += 0.15
-			if(checking_flags & SLOT_LEG_LEFT)
-				coverage += 0.075
-			if(checking_flags & SLOT_LEG_RIGHT)
-				coverage += 0.075
-			if(checking_flags & SLOT_FOOT_LEFT)
-				coverage += 0.05
-			if(checking_flags & SLOT_FOOT_RIGHT)
-				coverage += 0.05
-			if(checking_flags & SLOT_ARM_LEFT)
-				coverage += 0.075
-			if(checking_flags & SLOT_ARM_RIGHT)
-				coverage += 0.075
-			if(checking_flags & SLOT_HAND_LEFT)
-				coverage += 0.05
-			if(checking_flags & SLOT_HAND_RIGHT)
-				coverage += 0.05
-		GLOB.bodypart_coverage_cache[key] = coverage
-	. = GLOB.bodypart_coverage_cache[key]

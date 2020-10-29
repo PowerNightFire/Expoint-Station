@@ -1,19 +1,17 @@
-#include "../../../mods/corporate/_corporate.dme"
 #include "errant_pisces_areas.dm"
 
 /obj/effect/overmap/visitable/ship/errant_pisces
-	name = "CV Ahab's Harpoon"
+	name = "XCV Ahab's Harpoon"
 	desc = "Sensors detect civilian vessel with unusual signs of life aboard."
 	color = "#bd6100"
 	max_speed = 1/(3 SECONDS)
-	instant_contact = TRUE
 	burn_delay = 15 SECONDS
 	fore_dir = SOUTH
 
 /datum/map_template/ruin/away_site/errant_pisces
 	name = "Errant Pisces"
 	id = "awaysite_errant_pisces"
-	description = "Carp trawler"
+	description = "Xynergy carp trawler"
 	suffixes = list("errant_pisces/errant_pisces.dmm")
 	cost = 1
 	area_usage_test_exempted_root_areas = list(/area/errant_pisces)
@@ -27,11 +25,13 @@
 	icon_dead = "shark_dead"
 	icon_gib = "shark_dead"
 	turns_per_move = 5
-	meat_type = /obj/item/chems/food/snacks/sharkmeat
+	meat_type = /obj/item/weapon/reagent_containers/food/snacks/sharkmeat
 	speed = 2
 	maxHealth = 100
 	health = 100
-	natural_weapon = /obj/item/natural_weapon/bite/strong
+	harm_intent_damage = 5
+	melee_damage_lower = 15
+	melee_damage_upper = 25
 	break_stuff_probability = 35
 	faction = "shark"
 
@@ -45,10 +45,10 @@
 	..()
 	var/datum/gas_mixture/environment = loc.return_air()
 	if (environment)
-		var/datum/gas_mixture/sharkmaw_chlorine = new
-		sharkmaw_chlorine.adjust_gas(/decl/material/gas/chlorine, 10)
-		environment.merge(sharkmaw_chlorine)
-		visible_message(SPAN_WARNING("\The [src]'s body releases some gas from the gills with a quiet fizz!"))
+		var/datum/gas_mixture/sharkmaw_phoron = new
+		sharkmaw_phoron.adjust_gas(GAS_PHORON,  10)
+		environment.merge(sharkmaw_phoron)
+		visible_message("<span class='warning'>\The [src]'s body releases some gas from the gills with a quiet fizz!</span>")
 
 /mob/living/simple_animal/hostile/carp/shark/AttackingTarget()
 	set waitfor = 0//to deal with sleep() possibly stalling other procs
@@ -67,18 +67,18 @@
 				L.forceMove(T)
 			visible_message("<span class='danger'>\The [src] releases [L].</span>")
 
-/obj/item/chems/food/snacks/sharkmeat
+/obj/item/weapon/reagent_containers/food/snacks/sharkmeat
 	name = "cosmoshark fillet"
 	desc = "A fillet of cosmoshark meat."
 	icon_state = "fishfillet"
 	filling_color = "#cecece"
-	center_of_mass = @"{'x':17,'y':13}"
+	center_of_mass = "x=17;y=13"
 
-/obj/item/chems/food/snacks/sharkmeat/Initialize()
-	. = ..()
-	reagents.add_reagent(/decl/material/liquid/nutriment/protein, 5)
-	reagents.add_reagent(/decl/material/liquid/psychoactives, 1)
-	reagents.add_reagent(/decl/material/gas/chlorine, 1)
+/obj/item/weapon/reagent_containers/food/snacks/sharkmeat/New()
+	..()
+	reagents.add_reagent(/datum/reagent/nutriment/protein, 5)
+	reagents.add_reagent(/datum/reagent/space_drugs, 1)
+	reagents.add_reagent(/datum/reagent/toxin/phoron, 1)
 	src.bitesize = 8
 
 
@@ -89,9 +89,9 @@
 	icon_state = "net_f"
 	anchored = 1
 	layer = CATWALK_LAYER//probably? Should cover cables, pipes and the rest of objects that are secured on the floor
-	maxhealth = 100
+	var/health = 100
 
-/obj/structure/net/Initialize(var/mapload)
+obj/structure/net/Initialize(var/mapload)
 	. = ..()
 	update_connections()
 	if (!mapload)//if it's not mapped object but rather created during round, we should update visuals of adjacent net objects
@@ -102,47 +102,40 @@
 					continue
 				N.update_connections()
 
-/obj/structure/net/show_examined_damage(mob/user, var/perc)
-	if(maxhealth == -1)
-		return
-	if(perc >= 1)
-		to_chat(user, SPAN_NOTICE("It looks fully intact."))
-	else if (perc < 0.2)
-		to_chat(perc, SPAN_DANGER("\The [src] is barely hanging on by the last few threads."))
-	else if (perc < 0.5)
-		to_chat(user, SPAN_WARNING("Large swathes of \the [src] have been cut."))
-	else if (perc < 0.9)
-		to_chat(user, SPAN_NOTICE("A few strands of \the [src] have been severed."))
+/obj/structure/net/examine(mob/user)
+	. = ..()
+	if (health < 20)
+		to_chat(user, "\The [src] is barely hanging on a few last threads.")
+	else if (health < 50)
+		to_chat(user, "Many ribbons of \the [src] are cut away.")
+	else if (health < 90)
+		to_chat(user, "Few ribbons of \the [src] are cut away.")
 
-/obj/structure/net/attackby(obj/item/W, mob/user)
-	if(W.sharp || W.edge)
-		var/obj/item/SH = W
+/obj/structure/net/attackby(obj/item/weapon/W as obj, mob/user as mob)
+	if (istype(W, /obj/item/weapon/material)) //sharp objects can cut thorugh
+		var/obj/item/weapon/material/SH = W
 		if (!(SH.sharp) || (SH.sharp && SH.force < 10))//is not sharp enough or at all
 			to_chat(user,"<span class='warning'>You can't cut throught \the [src] with \the [W], it's too dull.</span>")
 			return
 		visible_message("<span class='warning'>[user] starts to cut through \the [src] with \the [W]!</span>")
-		while(health > 0 && !QDELETED(src) && !QDELETED(user))
+		while (health > 0)
 			if (!do_after(user, 20, src))
 				visible_message("<span class='warning'>[user] stops cutting through \the [src] with \the [W]!</span>")
 				return
-			take_damage(20 * (1 + (SH.force-10)/10)) //the sharper the faster, every point of force above 10 adds 10 % to damage
+			health -= 20 * (1 + (SH.force-10)/10)//the sharper the faster, every point of force above 10 adds 10 % to damage
+		visible_message("<span class='warning'>[user] cuts through \the [src]!</span>")
 		new /obj/item/stack/net(src.loc)
 		qdel(src)
-		return TRUE
-	. = ..()
-
-/obj/structure/net/physically_destroyed()
-	SHOULD_CALL_PARENT(FALSE)
-	visible_message("<span class='warning'>\The [src] is torn apart!</span>")
-	qdel(src)
-	. = TRUE
 
 /obj/structure/net/bullet_act(obj/item/projectile/P)
 	. = PROJECTILE_CONTINUE //few cloth ribbons won't stop bullet or energy ray
 	if(P.damage_type != BURN)//beams, lasers, fire. Bullets won't make a lot of damage to the few hanging belts.
 		return
 	visible_message("<span class='warning'>\The [P] hits \the [src] and tears it!</span>")
-	take_damage(P.damage)
+	health -= P.damage
+	if (health < 0)
+		visible_message("<span class='warning'>\The [src] is torn apart!</span>")
+		qdel(src)
 
 /obj/structure/net/update_connections()//maybe this should also be called when any of the walls nearby is removed but no idea how I can make it happen
 	overlays.Cut()
@@ -171,7 +164,7 @@
 	overlays.Cut()
 	var/turf/T = get_turf(src)
 	for (var/turf/AT in T.CardinalTurfs(FALSE))
-		if ((locate(/obj/structure/net/net_wall) in AT) || istype(AT, /turf/simulated/wall)  || istype(AT, /turf/unsimulated/wall))//connects to another net-wall objects or walls
+		if ((locate(/obj/structure/net/net_wall) in AT) || istype(AT, /turf/simulated/wall)  || istype(AT, /turf/unsimulated/wall) || istype(AT, /turf/simulated/mineral))//connects to another net-wall objects or walls
 			var/image/I = image(icon,"[icon_state]_ol_[get_dir(src,AT)]")
 			overlays += I
 
@@ -206,11 +199,12 @@
 		icon_state = "net_roll"
 
 /obj/item/stack/net/proc/attach_wall_check()//checks if wall can be attached to something vertical such as walls or another net-wall
-	if (!has_gravity())
+	var/area/A = get_area(src)
+	if (!A.has_gravity)
 		return 1
 	var/turf/T = get_turf(src)
 	for (var/turf/AT in T.CardinalTurfs(FALSE))
-		if ((locate(/obj/structure/net/net_wall) in AT) || istype(AT, /turf/simulated/wall)  || istype(AT, /turf/unsimulated/wall))//connects to another net-wall objects or walls
+		if ((locate(/obj/structure/net/net_wall) in AT) || istype(AT, /turf/simulated/wall)  || istype(AT, /turf/unsimulated/wall) || istype(AT, /turf/simulated/mineral))//connects to another net-wall objects or walls
 			return 1
 	return 0
 
@@ -243,11 +237,12 @@
 /obj/effect/landmark/corpse/carp_fisher
 	name = "carp fisher"
 	corpse_outfits = list(/decl/hierarchy/outfit/corpse/carp_fisher)
+	species = list(SPECIES_HUMAN = 70, SPECIES_IPC = 20, SPECIES_UNATHI = 10)
 
 /decl/hierarchy/outfit/corpse/carp_fisher
 	name = "Dead carp fisher"
 	uniform = /obj/item/clothing/under/color/green
 	suit = /obj/item/clothing/suit/apron/overalls
-	belt = /obj/item/knife/combat
+	belt = /obj/item/weapon/material/knife/combat
 	shoes = /obj/item/clothing/shoes/jackboots
 	head = /obj/item/clothing/head/hardhat/dblue

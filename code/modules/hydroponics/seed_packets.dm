@@ -52,10 +52,10 @@ var/global/list/plant_seed_sprites = list()
 
 	if(is_seeds)
 		src.SetName("packet of [seed.seed_name] [seed.seed_noun]")
-		src.desc = "It has a picture of \a [seed.display_name] on the front."
+		src.desc = "It has a picture of [seed.display_name] on the front."
 	else
 		src.SetName("sample of [seed.seed_name] [seed.seed_noun]")
-		src.desc = "It's labelled as coming from \a [seed.display_name]."
+		src.desc = "It's labelled as coming from [seed.display_name]."
 
 /obj/item/seeds/examine(mob/user)
 	. = ..()
@@ -77,6 +77,9 @@ var/global/list/plant_seed_sprites = list()
 	seed = SSplants.create_random_seed()
 	seed_type = seed.name
 	. = ..()
+
+/obj/item/seeds/replicapod
+	seed_type = "diona"
 
 /obj/item/seeds/chiliseed
 	seed_type = "chili"
@@ -129,8 +132,8 @@ var/global/list/plant_seed_sprites = list()
 /obj/item/seeds/bluetomatoseed
 	seed_type = "bluetomato"
 
-/obj/item/seeds/quantumatoseed
-	seed_type = "quantumato"
+/obj/item/seeds/bluespacetomatoseed
+	seed_type = "bluespacetomato"
 
 /obj/item/seeds/cornseed
 	seed_type = "corn"
@@ -171,11 +174,11 @@ var/global/list/plant_seed_sprites = list()
 /obj/item/seeds/chantermycelium
 	seed_type = "mushrooms"
 
-/obj/item/seeds/corkwood
-	seed_type = "corkwood"
+/obj/item/seeds/towermycelium
+	seed_type = "towercap"
 
-/obj/item/seeds/glowbell
-	seed_type = "glowbell"
+/obj/item/seeds/glowshroom
+	seed_type = "glowshroom"
 
 /obj/item/seeds/plumpmycelium
 	seed_type = "plumphelmet"
@@ -214,7 +217,7 @@ var/global/list/plant_seed_sprites = list()
 	seed_type = "goldapple"
 
 /obj/item/seeds/ambrosiavulgarisseed
-	seed_type = "biteleaf"
+	seed_type = "ambrosia"
 
 /obj/item/seeds/ambrosiadeusseed
 	seed_type = "ambrosiadeus"
@@ -282,14 +285,58 @@ var/global/list/plant_seed_sprites = list()
 /obj/item/seeds/bamboo
 	seed_type = "bamboo"
 
-/obj/item/seeds/bruisegrassseed
-	seed_type = "bruisegrass"
+// fruit expansion
 
-/obj/item/seeds/clam
-	seed_type = "clam"
+/obj/item/seeds/melonseed
+	seed_type = "melon"
 
-/obj/item/seeds/barnacle
-	seed_type = "barnacle"
+/obj/item/seeds/coffeeseed
+	seed_type = "coffee"
 
-/obj/item/seeds/mollusc
-	seed_type = "mollusc"
+/obj/item/seeds/whitegrapeseed
+	seed_type = "whitegrapes"
+
+/obj/item/seeds/vanillaseed
+	seed_type = "vanilla"
+
+/obj/item/seeds/pineappleseed
+	seed_type = "pineapples"
+
+/obj/item/seeds/gukhe
+	seed_type = "gukhe"
+
+/obj/item/seeds/hrukhza
+	seed_type = "hrukhza"
+
+/obj/item/seeds/okrri
+	seed_type = "okrri"
+
+/obj/item/seeds/ximikoa
+	seed_type = "ximikoa"
+
+/obj/item/seeds/pearseed
+	seed_type = "pears"
+
+/obj/item/seeds/coconutseed
+	seed_type = "coconuts"
+
+/obj/item/seeds/qokkloa
+	seed_type = "qokkloa"
+
+/obj/item/seeds/aghrassh
+	seed_type = "aghrassh"
+
+/obj/item/seeds/cinnamon
+	seed_type = "cinnamon"
+
+/obj/item/seeds/olives
+	seed_type = "olives"
+
+/obj/item/seeds/gummen
+	seed_type = "gummen"
+
+/obj/item/seeds/iridast
+	seed_type = "iridast"
+
+/obj/item/seeds/affelerin
+	seed_type = "affelerin"

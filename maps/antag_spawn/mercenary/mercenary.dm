@@ -1,16 +1,12 @@
 /datum/map_template/ruin/antag_spawn/mercenary
 	name = "Mercenary Base"
-	id = MODE_MERCENARY + "_spawn"
 	suffixes = list("mercenary/mercenary_base.dmm")
 	shuttles_to_initialise = list(/datum/shuttle/autodock/overmap/merc_shuttle)
-	apc_test_exempt_areas = list(
-		/area/map_template/merc_spawn = NO_SCRUBBER|NO_VENT
-	)
 
 /obj/effect/overmap/visitable/merc_base
 	name = "TCV Tersten Tenacity"
 	desc = "Sensor array detects a medium cargo vessel with high structural damage."
-	sector_flags = OVERMAP_SECTOR_IN_SPACE
+	in_space = 1
 	icon_state = "ship"
 	hide_from_reports = TRUE
 	initial_generic_waypoints = list(
@@ -23,7 +19,7 @@
 
 /obj/effect/overmap/visitable/ship/landable/merc
 	name = "Desperado"
-	desc = "A military gunship of ICCG design. Scanner detects heavy modification to the framework of the vessel and no designation."
+	desc = "A military gunship of unknown design. Scanner detects heavy modification to the framework of the vessel and no designation."
 	shuttle = "Desperado"
 	fore_dir = NORTH
 	vessel_size = SHIP_SIZE_SMALL

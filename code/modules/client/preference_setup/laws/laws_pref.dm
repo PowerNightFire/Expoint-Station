@@ -15,17 +15,17 @@
 	sort_order = 1
 
 /datum/category_item/player_setup_item/law_pref/load_character(var/savefile/S)
-	from_file(S["laws"], pref.laws)
-	from_file(S["is_shackled"], pref.is_shackled)
+	from_save(S["laws"], pref.laws)
+	from_save(S["is_shackled"], pref.is_shackled)
 
 /datum/category_item/player_setup_item/law_pref/save_character(var/savefile/S)
-	to_file(S["laws"], pref.laws)
-	to_file(S["is_shackled"], pref.is_shackled)
+	to_save(S["laws"], pref.laws)
+	to_save(S["is_shackled"], pref.is_shackled)
 
 /datum/category_item/player_setup_item/law_pref/sanitize_character()
 	if(!istype(pref.laws))	pref.laws = list()
 
-	var/datum/species/species = get_species_by_key(pref.species)
+	var/datum/species/species = all_species[pref.species]
 	if(!(species && species.has_organ[BP_POSIBRAIN]))
 		pref.is_shackled = initial(pref.is_shackled)
 	else
@@ -33,7 +33,7 @@
 
 /datum/category_item/player_setup_item/law_pref/content()
 	. = list()
-	var/datum/species/species = get_species_by_key(pref.species)
+	var/datum/species/species = all_species[pref.species]
 
 	if(!(species && species.has_organ[BP_POSIBRAIN]))
 		. += "<b>Your Species Has No Laws</b><br>"

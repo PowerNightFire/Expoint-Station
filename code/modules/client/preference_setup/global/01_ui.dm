@@ -1,34 +1,28 @@
-var/list/valid_icon_sizes = list(32, 48, 64, 96, 128)
-
 /datum/preferences
 	var/clientfps = 0
 	var/ooccolor = "#010000" //Whatever this is set to acts as 'reset' color and is thus unusable as an actual custom color
-	var/icon_size = 48
+
 	var/UI_style = "Midnight"
 	var/UI_style_color = "#ffffff"
 	var/UI_style_alpha = 255
-	//Style for popup tooltips
-	var/tooltip_style = "Midnight"
 
 /datum/category_item/player_setup_item/player_global/ui
 	name = "UI"
 	sort_order = 1
 
 /datum/category_item/player_setup_item/player_global/ui/load_preferences(var/savefile/S)
-	from_file(S["icon_size"],      pref.icon_size)
-	from_file(S["UI_style"],       pref.UI_style)
-	from_file(S["UI_style_color"], pref.UI_style_color)
-	from_file(S["UI_style_alpha"], pref.UI_style_alpha)
-	from_file(S["ooccolor"],       pref.ooccolor)
-	from_file(S["clientfps"],      pref.clientfps)
+	from_save(S["UI_style"], pref.UI_style)
+	from_save(S["UI_style_color"], pref.UI_style_color)
+	from_save(S["UI_style_alpha"], pref.UI_style_alpha)
+	from_save(S["ooccolor"], pref.ooccolor)
+	from_save(S["clientfps"], pref.clientfps)
 
 /datum/category_item/player_setup_item/player_global/ui/save_preferences(var/savefile/S)
-	to_file(S["icon_size"],        pref.icon_size)
-	to_file(S["UI_style"],         pref.UI_style)
-	to_file(S["UI_style_color"],   pref.UI_style_color)
-	to_file(S["UI_style_alpha"],   pref.UI_style_alpha)
-	to_file(S["ooccolor"],         pref.ooccolor)
-	to_file(S["clientfps"],        pref.clientfps)
+	to_save(S["UI_style"], pref.UI_style)
+	to_save(S["UI_style_color"], pref.UI_style_color)
+	to_save(S["UI_style_alpha"], pref.UI_style_alpha)
+	to_save(S["ooccolor"], pref.ooccolor)
+	to_save(S["clientfps"], pref.clientfps)
 
 /datum/category_item/player_setup_item/player_global/ui/sanitize_preferences()
 	pref.UI_style		= sanitize_inlist(pref.UI_style, all_ui_styles, initial(pref.UI_style))
@@ -37,19 +31,12 @@ var/list/valid_icon_sizes = list(32, 48, 64, 96, 128)
 	pref.ooccolor		= sanitize_hexcolor(pref.ooccolor, initial(pref.ooccolor))
 	pref.clientfps	    = sanitize_integer(pref.clientfps, CLIENT_MIN_FPS, CLIENT_MAX_FPS, initial(pref.clientfps))
 
-	if(!isnum(pref.icon_size)) 
-		pref.icon_size = initial(pref.icon_size)
-	pref.client?.SetWindowIconSize(pref.icon_size)
-
 /datum/category_item/player_setup_item/player_global/ui/content(var/mob/user)
 	. += "<b>UI Settings</b><br>"
 	. += "<b>UI Style:</b> <a href='?src=\ref[src];select_style=1'><b>[pref.UI_style]</b></a><br>"
 	. += "<b>Custom UI</b> (recommended for White UI):<br>"
 	. += "-Color: <a href='?src=\ref[src];select_color=1'><b>[pref.UI_style_color]</b></a> <table style='display:inline;' bgcolor='[pref.UI_style_color]'><tr><td>__</td></tr></table> <a href='?src=\ref[src];reset=ui'>reset</a><br>"
 	. += "-Alpha(transparency): <a href='?src=\ref[src];select_alpha=1'><b>[pref.UI_style_alpha]</b></a> <a href='?src=\ref[src];reset=alpha'>reset</a><br>"
-	. += "<b>Tooltip Style:</b> <a href='?src=\ref[src];select_tooltip_style=1'><b>[pref.tooltip_style]</b></a><br>"
-	. += "<b>Default icon size:</b> <a href='?src=\ref[src];select_icon_size=1'>[pref.icon_size]x[pref.icon_size]</a><br>"
-
 	if(can_select_ooc_color(user))
 		. += "<b>OOC Color:</b> "
 		if(pref.ooccolor == initial(pref.ooccolor))
@@ -98,13 +85,6 @@ var/list/valid_icon_sizes = list(32, 48, 64, 96, 128)
 				target_mob.client.apply_fps(pref.clientfps)
 			return TOPIC_REFRESH
 
-	else if(href_list["select_tooltip_style"])
-		var/tooltip_style_new = input(user, "Choose tooltip style.", "Global Preference", pref.tooltip_style) as null|anything in all_tooltip_styles
-		if(!tooltip_style_new || !CanUseTopic(user))
-			return TOPIC_NOACTION
-		pref.tooltip_style = tooltip_style_new
-		return TOPIC_REFRESH
-
 	else if(href_list["reset"])
 		switch(href_list["reset"])
 			if("ui")
@@ -114,13 +94,6 @@ var/list/valid_icon_sizes = list(32, 48, 64, 96, 128)
 			if("ooc")
 				pref.ooccolor = initial(pref.ooccolor)
 		return TOPIC_REFRESH
-
-	else if(href_list["select_icon_size"])
-		var/new_icon_size = input(user, "Enter a new default icon size.", "Default Icon Size", pref.icon_size) as null|anything in global.valid_icon_sizes
-		if(new_icon_size && pref.icon_size != new_icon_size)
-			pref.icon_size = new_icon_size
-			pref.client?.SetWindowIconSize(pref.icon_size)
-			return TOPIC_REFRESH
 
 	return ..()
 

@@ -1,22 +1,20 @@
-/obj/item/aicard
+/obj/item/weapon/aicard
 	name = "inteliCard"
-	icon = 'icons/obj/items/device/ai_card.dmi'
+	icon = 'icons/obj/pda.dmi'
 	icon_state = "aicard" // aicard-full
 	item_state = "electronic"
 	w_class = ITEM_SIZE_SMALL
-	slot_flags = SLOT_LOWER_BODY
-	origin_tech = "{'programming':4,'materials':4}"
-	material = /decl/material/solid/glass
-	matter = list(/decl/material/solid/metal/gold = MATTER_AMOUNT_REINFORCEMENT)
+	slot_flags = SLOT_BELT
+	var/flush = null
+	origin_tech = list(TECH_DATA = 4, TECH_MATERIAL = 4)
 
-	var/flush
 	var/mob/living/silicon/ai/carded_ai
 
-/obj/item/aicard/attack_self(mob/user)
+/obj/item/weapon/aicard/attack_self(mob/user)
 
 	ui_interact(user)
 
-/obj/item/aicard/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = GLOB.inventory_state)
+/obj/item/weapon/aicard/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = GLOB.inventory_state)
 	var/data[0]
 	data["has_ai"] = carded_ai != null
 	if(carded_ai)
@@ -41,7 +39,7 @@
 		ui.open()
 		ui.set_auto_update(1)
 
-/obj/item/aicard/Topic(href, href_list, state)
+/obj/item/weapon/aicard/Topic(href, href_list, state)
 	if(..())
 		return 1
 
@@ -71,11 +69,11 @@
 		update_icon()
 	return 1
 
-/obj/item/aicard/on_update_icon()
+/obj/item/weapon/aicard/on_update_icon()
 	overlays.Cut()
 	if(carded_ai)
 		if (!carded_ai.control_disabled)
-			overlays += image(icon, "aicard-on")
+			overlays += image('icons/obj/pda.dmi', "aicard-on")
 		if(carded_ai.stat)
 			icon_state = "aicard-404"
 		else
@@ -83,7 +81,7 @@
 	else
 		icon_state = "aicard"
 
-/obj/item/aicard/proc/grab_ai(var/mob/living/silicon/ai/ai, var/mob/living/user)
+/obj/item/weapon/aicard/proc/grab_ai(var/mob/living/silicon/ai/ai, var/mob/living/user)
 	if(!ai.client)
 		to_chat(user, "<span class='danger'>ERROR:</span> AI [ai.name] is offline. Unable to download.")
 		return 0
@@ -97,7 +95,7 @@
 		return 0
 
 	if(istype(ai.loc, /turf/))
-		new /obj/structure/aicore/deactivated(get_turf(ai))
+		new /obj/structure/AIcore/deactivated(get_turf(ai))
 
 	ai.carded = 1
 	admin_attack_log(user, ai, "Carded with [src.name]", "Was carded with [src.name]", "used the [src.name] to card")
@@ -119,7 +117,7 @@
 	update_icon()
 	return 1
 
-/obj/item/aicard/proc/clear()
+/obj/item/weapon/aicard/proc/clear()
 	if(carded_ai && istype(carded_ai.loc, /turf))
 		carded_ai.carded = 0
 	SetName(initial(name))
@@ -127,21 +125,21 @@
 	carded_ai = null
 	update_icon()
 
-/obj/item/aicard/see_emote(mob/living/M, text)
+/obj/item/weapon/aicard/see_emote(mob/living/M, text)
 	if(carded_ai && carded_ai.client)
 		var/rendered = "<span class='message'>[text]</span>"
 		carded_ai.show_message(rendered, 2)
 	..()
 
-/obj/item/aicard/show_message(msg, type, alt, alt_type)
+/obj/item/weapon/aicard/show_message(msg, type, alt, alt_type)
 	if(carded_ai && carded_ai.client)
 		var/rendered = "<span class='message'>[msg]</span>"
 		carded_ai.show_message(rendered, type)
 	..()
 
-/obj/item/aicard/relaymove(var/mob/user, var/direction)
+/obj/item/weapon/aicard/relaymove(var/mob/user, var/direction)
 	if(user.stat || user.stunned)
 		return
-	var/obj/item/rig/rig = src.get_rig()
+	var/obj/item/weapon/rig/rig = src.get_rig()
 	if(istype(rig))
 		rig.forced_move(direction, user)

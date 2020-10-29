@@ -1,13 +1,9 @@
-/obj/item/assembly/timer
+/obj/item/device/assembly/timer
 	name = "timer"
 	desc = "Used to time things. Works well with contraptions which have to count down. Tick tock."
 	icon_state = "timer"
-	origin_tech = "{'magnets':1}"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/slag = MATTER_AMOUNT_TRACE
-	)
+	origin_tech = list(TECH_MAGNET = 1)
+	matter = list(MATERIAL_STEEL = 500, MATERIAL_GLASS = 50, MATERIAL_WASTE = 10)
 
 	wires = WIRE_PULSE
 
@@ -16,10 +12,10 @@
 	var/timing = 0
 	var/time = 10
 
-/obj/item/assembly/timer/proc/timer_end()
+/obj/item/device/assembly/timer/proc/timer_end()
 
 
-/obj/item/assembly/timer/activate()
+/obj/item/device/assembly/timer/activate()
 	if(!..())	return 0//Cooldown check
 
 	timing = !timing
@@ -28,7 +24,7 @@
 	return 0
 
 
-/obj/item/assembly/timer/toggle_secure()
+/obj/item/device/assembly/timer/toggle_secure()
 	secured = !secured
 	if(secured)
 		START_PROCESSING(SSobj, src)
@@ -39,18 +35,18 @@
 	return secured
 
 
-/obj/item/assembly/timer/timer_end()
+/obj/item/device/assembly/timer/timer_end()
 	if(!secured)	return 0
 	pulse(0)
 	if(!holder)
-		visible_message("[html_icon(src)] *beep* *beep*", "*beep* *beep*")
+		visible_message("[icon2html(src, viewers(get_turf(src)))] *beep* *beep*", "*beep* *beep*")
 	cooldown = 2
 	spawn(10)
 		process_cooldown()
 	return
 
 
-/obj/item/assembly/timer/Process()
+/obj/item/device/assembly/timer/Process()
 	if(timing && (time > 0))
 		time--
 		playsound(loc, 'sound/items/timer.ogg', 50)
@@ -61,7 +57,7 @@
 	return
 
 
-/obj/item/assembly/timer/on_update_icon()
+/obj/item/device/assembly/timer/on_update_icon()
 	overlays.Cut()
 	attached_overlays = list()
 	if(timing)
@@ -72,7 +68,7 @@
 	return
 
 
-/obj/item/assembly/timer/interact(mob/user)//TODO: Have this use the wires
+/obj/item/device/assembly/timer/interact(mob/user as mob)//TODO: Have this use the wires
 	if(!secured)
 		user.show_message("<span class='warning'>\The [name] is unsecured!</span>")
 		return 0
@@ -86,7 +82,7 @@
 	return
 
 
-/obj/item/assembly/timer/Topic(href, href_list, state = GLOB.physical_state)
+/obj/item/device/assembly/timer/Topic(href, href_list, state = GLOB.physical_state)
 	if((. = ..()))
 		close_browser(usr, "window=timer")
 		onclose(usr, "timer")

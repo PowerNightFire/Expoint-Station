@@ -6,13 +6,16 @@
 	item_state = ""	//no inhands
 	slot_flags = SLOT_TIE
 	w_class = ITEM_SIZE_SMALL
-
 	var/slot = ACCESSORY_SLOT_DECOR
 	var/obj/item/clothing/has_suit = null		//the suit the tie may be attached to
 	var/image/inv_overlay = null	//overlay used when attached to clothing.
 	var/list/mob_overlay = list()
 	var/overlay_state = null
 	var/list/accessory_icons = list(slot_w_uniform_str = 'icons/mob/onmob/onmob_accessories.dmi', slot_wear_suit_str = 'icons/mob/onmob/onmob_accessories.dmi')
+	sprite_sheets = list(
+		SPECIES_NABBER = 'icons/mob/species/nabber/onmob_accessories_gas.dmi',
+		SPECIES_UNATHI = 'icons/mob/species/unathi/generated/onmob_accessories_unathi.dmi'
+		)
 	var/list/on_rolled = list()	//used when jumpsuit sleevels are rolled ("rolled" entry) or it's rolled down ("down"). Set to "none" to hide in those states.
 	var/high_visibility	//if it should appear on examine without detailed view
 	var/slowdown //used when an accessory is meant to slow the wearer down when attached to clothing
@@ -24,25 +27,20 @@
 
 /obj/item/clothing/accessory/proc/get_inv_overlay()
 	if(!inv_overlay)
-		if(use_single_icon)
-			inv_overlay = image(icon, "inventory")
-			inv_overlay.color = color
+		var/tmp_icon_state = overlay_state? overlay_state : icon_state
+		if(icon_override && ("[tmp_icon_state]_tie" in icon_states(icon_override)))
+			inv_overlay = image(icon = icon_override, icon_state = "[tmp_icon_state]_tie", dir = SOUTH)
+		else if("[tmp_icon_state]_tie" in icon_states(default_onmob_icons[slot_tie_str]))
+			inv_overlay = image(icon = default_onmob_icons[slot_tie_str], icon_state = "[tmp_icon_state]_tie", dir = SOUTH)
 		else
-			var/tmp_icon_state = overlay_state? overlay_state : icon_state
-			if(icon_override && ("[tmp_icon_state]_tie" in icon_states(icon_override)))
-				inv_overlay = image(icon = icon_override, icon_state = "[tmp_icon_state]_tie", dir = SOUTH)
-			else if("[tmp_icon_state]_tie" in icon_states(default_onmob_icons[slot_tie_str]))
-				inv_overlay = image(icon = global.default_onmob_icons[slot_tie_str], icon_state = "[tmp_icon_state]_tie", dir = SOUTH)
-			else
-				inv_overlay = image(icon = global.default_onmob_icons[slot_tie_str], icon_state = tmp_icon_state, dir = SOUTH)
+			inv_overlay = image(icon = default_onmob_icons[slot_tie_str], icon_state = tmp_icon_state, dir = SOUTH)
 	inv_overlay.color = color
-	inv_overlay.appearance_flags = RESET_COLOR
 	return inv_overlay
 
-/obj/item/clothing/accessory/get_mob_overlay(mob/user_mob, slot, bodypart)
-	if(!istype(loc,/obj/item/clothing) || use_single_icon)	//don't need special handling if it's worn as normal item.
+/obj/item/clothing/accessory/get_mob_overlay(mob/user_mob, slot)
+	if(!istype(loc,/obj/item/clothing/))	//don't need special handling if it's worn as normal item.
 		return ..()
-	var/bodytype = BODYTYPE_HUMANOID
+	var/bodytype = "Default"
 	if(ishuman(user_mob))
 		var/mob/living/carbon/human/user_human = user_mob
 		if(user_human.species.get_bodytype(user_human) in sprite_sheets)
@@ -94,7 +92,7 @@
 	..()
 
 //default attack_hand behaviour
-/obj/item/clothing/accessory/attack_hand(mob/user)
+/obj/item/clothing/accessory/attack_hand(mob/user as mob)
 	if(has_suit)
 		return	//we aren't an object on the ground so don't call parent
 	..()
@@ -109,7 +107,7 @@
 	name = "necklace"
 	desc = "A simple necklace."
 	icon_state = "necklace"
-	slot_flags = SLOT_FACE | SLOT_TIE
+	slot_flags = SLOT_MASK | SLOT_TIE
 
 //Misc
 /obj/item/clothing/accessory/kneepads

@@ -1,8 +1,12 @@
 /atom/movable
 	layer = OBJ_LAYER
+
 	appearance_flags = TILE_BOUND
 	glide_size = 8
+
+	var/waterproof = TRUE
 	var/movable_flags
+
 	var/last_move = null
 	var/anchored = 0
 	// var/elevation = 2    - not used anywhere
@@ -13,117 +17,23 @@
 	var/throw_speed = 2
 	var/throw_range = 7
 	var/moved_recently = 0
+	var/mob/pulledby = null
 	var/item_state = null // Used to specify the item state for the on-mob overlays.
 	var/does_spin = TRUE // Does the atom spin when thrown (of course it does :P)
-	var/list/grabbed_by
-
-	var/inertia_dir = 0
-	var/atom/inertia_last_loc
-	var/inertia_moving = 0
-	var/inertia_next_move = 0
-	var/inertia_move_delay = 5
-	var/atom/movable/inertia_ignore
-
-//call this proc to start space drifting
-/atom/movable/proc/space_drift(direction)//move this down
-	if(!loc || direction & (UP|DOWN) || Process_Spacemove(0))
-		inertia_dir = 0
-		inertia_ignore = null
-		return 0
-
-	inertia_dir = direction
-	if(!direction)
-		return 1
-	inertia_last_loc = loc
-	SSspacedrift.processing[src] = src
-	return 1
-
-//return 0 to space drift, 1 to stop, -1 for mobs to handle space slips
-/atom/movable/proc/Process_Spacemove(var/allow_movement)
-	if(!simulated)
-		return 1
-
-	if(has_gravity())
-		return 1
-
-	if(length(grabbed_by))
-		return 1
-
-	if(throwing)
-		return 1
-
-	if(anchored)
-		return 1
-
-	if(!isturf(loc))
-		return 1
-
-	if(locate(/obj/structure/lattice) in range(1, get_turf(src))) //Not realistic but makes pushing things in space easier
-		return -1
-
-	return 0
-
-/atom/movable/hitby(var/atom/movable/AM, var/datum/thrownthing/TT)
-	..()
-	process_momentum(AM,TT)
-
-/atom/movable/proc/process_momentum(var/atom/movable/AM, var/datum/thrownthing/TT)//physic isn't an exact science
-	. = momentum_power(AM,TT)
-
-	if(.)
-		momentum_do(.,TT,AM)
-
-/atom/movable/proc/momentum_power(var/atom/movable/AM, var/datum/thrownthing/TT)
-	if(anchored)
-		return 0
-
-	. = (AM.get_mass()*TT.speed)/(get_mass()*min(AM.throw_speed,2))
-	if(has_gravity())
-		. *= 0.5
-
-/atom/movable/proc/momentum_do(var/power, var/datum/thrownthing/TT)
-	var/direction = TT.init_dir
-	switch(power)
-		if(0.75 to INFINITY)		//blown backward, also calls being pinned to walls
-			throw_at(get_edge_target_turf(src, direction), min((TT.maxrange - TT.dist_travelled) * power, 10), throw_speed * min(power, 1.5))
-
-		if(0.5 to 0.75)	//knocks them back and changes their direction
-			step(src, direction)
-
-		if(0.25 to 0.5)	//glancing change in direction
-			var/drift_dir
-			if(direction & (NORTH|SOUTH))
-				if(inertia_dir & (NORTH|SOUTH))
-					drift_dir |= (direction & (NORTH|SOUTH)) & (inertia_dir & (NORTH|SOUTH))
-				else
-					drift_dir |= direction & (NORTH|SOUTH)
-			else
-				drift_dir |= inertia_dir & (NORTH|SOUTH)
-			if(direction & (EAST|WEST))
-				if(inertia_dir & (EAST|WEST))
-					drift_dir |= (direction & (EAST|WEST)) & (inertia_dir & (EAST|WEST))
-				else
-					drift_dir |= direction & (EAST|WEST)
-			else
-				drift_dir |= inertia_dir & (EAST|WEST)
-			space_drift(drift_dir)
-
-/atom/movable/proc/get_mass()
-	return 1.5
 
 /atom/movable/Destroy()
 	. = ..()
-#ifdef DISABLE_DEBUG_CRASH
-	// meh do nothing. we know what we're doing. pro engineers.
-#else
 	if(!(atom_flags & ATOM_FLAG_INITIALIZED))
-		crash_with("Was deleted before initialization")
-#endif
+		crash_with("Was deleted before initalization")
 
 	for(var/A in src)
 		qdel(A)
 
 	forceMove(null)
+	if (pulledby)
+		if (pulledby.pulling == src)
+			pulledby.pulling = null
+		pulledby = null
 
 	if(LAZYLEN(movement_handlers) && !ispath(movement_handlers[1]))
 		QDEL_NULL_LIST(movement_handlers)
@@ -139,16 +49,13 @@
 	if(!QDELETED(throwing))
 		throwing.hit_atom(A)
 
-	if(inertia_dir)
-		inertia_dir = 0
-
 	if (A && yes)
 		A.last_bumped = world.time
 		INVOKE_ASYNC(A, /atom/proc/Bumped, src) // Avoids bad actors sleeping or unexpected side effects, as the legacy behavior was to spawn here
 	..()
 
 /atom/movable/proc/forceMove(atom/destination)
-	if(QDELETED(src) && !QDESTROYING(src) && !isnull(destination))
+	if((gc_destroyed && gc_destroyed != GC_CURRENTLY_BEING_QDELETED) && !isnull(destination))
 		CRASH("Attempted to forceMove a QDELETED [src] out of nullspace!!!")
 	if(loc == destination)
 		return 0
@@ -215,16 +122,27 @@
 
 //called when src is thrown into hit_atom
 /atom/movable/proc/throw_impact(atom/hit_atom, var/datum/thrownthing/TT)
-	SHOULD_CALL_PARENT(TRUE)
-	if(istype(hit_atom) && !QDELETED(hit_atom))
-		hit_atom.hitby(src, TT)
+	if(istype(hit_atom,/mob/living))
+		var/mob/living/M = hit_atom
+		M.hitby(src,TT)
+
+	else if(isobj(hit_atom))
+		var/obj/O = hit_atom
+		if(!O.anchored)
+			step(O, src.last_move)
+		O.hitby(src,TT)
+
+	else if(isturf(hit_atom))
+		var/turf/T = hit_atom
+		T.hitby(src,TT)
 
 /atom/movable/proc/throw_at(atom/target, range, speed, mob/thrower, spin = TRUE, datum/callback/callback) //If this returns FALSE then callback will not be called.
 	. = TRUE
 	if (!target || speed <= 0 || QDELETED(src) || (target.z != src.z))
 		return FALSE
 
-	QDEL_NULL_LIST(grabbed_by)
+	if (pulledby)
+		pulledby.stop_pulling()
 
 	var/datum/thrownthing/TT = new(src, target, range, speed, thrower, callback)
 	throwing = TT
@@ -320,13 +238,3 @@
 
 /atom/movable/proc/get_bullet_impact_effect_type()
 	return BULLET_IMPACT_NONE
-
-/atom/movable/attack_hand(mob/living/user)
-	// Anchored check so we can operate switches etc on grab intent without getting grab failure msgs.
-	if(istype(user) && !user.lying && user.a_intent == I_GRAB && !anchored)
-		user.make_grab(src)
-		return 0
-	. = ..()
-
-/atom/movable/CanPass(atom/movable/mover, turf/target, height=1.5, air_group = 0)
-	. = ..() || (mover && !(mover.movable_flags & MOVABLE_FLAG_NONDENSE_COLLISION) && !mover.density)

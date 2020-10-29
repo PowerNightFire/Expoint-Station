@@ -3,7 +3,7 @@
 /obj/machinery/flasher
 	name = "mounted flash"
 	desc = "A wall-mounted flashbulb device."
-	icon = 'icons/obj/machines/flash_mounted.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "mflash1"
 	var/range = 2 //this is roughly the size of brig cell
 	var/disable = 0
@@ -15,8 +15,8 @@
 	movable_flags = MOVABLE_FLAG_PROXMOVE
 
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/radio/receiver,
-		/obj/item/stock_parts/power/apc
+		/obj/item/weapon/stock_parts/radio/receiver,
+		/obj/item/weapon/stock_parts/power/apc
 	)
 	public_methods = list(
 		/decl/public_access/public_method/flasher_flash
@@ -33,7 +33,7 @@
 //		src.sd_SetLuminosity(0)
 
 //Don't want to render prison breaks impossible
-/obj/machinery/flasher/attackby(obj/item/W, mob/user)
+/obj/machinery/flasher/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isWirecutter(W))
 		add_fingerprint(user, 0, W)
 		src.disable = !src.disable
@@ -105,13 +105,12 @@
 	name = "portable flasher"
 	desc = "A portable flashing device. Wrench to activate and deactivate. Cannot detect slow movements."
 	icon_state = "pflash1"
-	icon = 'icons/obj/machines/flash_portable.dmi'
 	strength = 8
 	anchored = 0
 	base_state = "pflash"
 	density = 1
 
-/obj/machinery/flasher/portable/HasProximity(atom/movable/AM)
+/obj/machinery/flasher/portable/HasProximity(atom/movable/AM as mob|obj)
 	if(!anchored || disable || last_flash && world.time < last_flash + 150)
 		return
 
@@ -119,11 +118,11 @@
 		var/mob/living/carbon/M = AM
 		if(!MOVING_DELIBERATELY(M))
 			flash()
-
+	
 	if(isanimal(AM))
 		flash()
 
-/obj/machinery/flasher/portable/attackby(obj/item/W, mob/user)
+/obj/machinery/flasher/portable/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isWrench(W))
 		add_fingerprint(user)
 		src.anchored = !src.anchored

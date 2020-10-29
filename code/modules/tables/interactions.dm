@@ -53,7 +53,7 @@
 	visible_message("<span class='warning'>\The [P] hits [src]!</span>")
 	return 0
 
-/obj/structure/table/CheckExit(atom/movable/O, target)
+/obj/structure/table/CheckExit(atom/movable/O as mob|obj, target as turf)
 	if(istype(O) && O.checkpass(PASS_FLAG_TABLE))
 		return 1
 	if (flipped==1)
@@ -64,25 +64,19 @@
 	return 1
 
 
-/obj/structure/table/MouseDrop_T(obj/O, mob/user)
-	if ((!( istype(O, /obj/item) ) || user.get_active_hand() != O))
+/obj/structure/table/MouseDrop_T(obj/O as obj, mob/user as mob)
+
+	if ((!( istype(O, /obj/item/weapon) ) || user.get_active_hand() != O))
 		return ..()
 	if(isrobot(user))
 		return
-	user.unEquip(O)
+	user.unequip_item()
 	if (O.loc != src.loc)
 		step(O, get_dir(O, src))
+	return
 
 /obj/structure/table/attackby(obj/item/W, mob/user, var/click_params)
-
-	if(!W)
-		return
-
-	if(user.a_intent == I_HURT && W.force)
-		return ..()
-
-	if(health != maxhealth && user.a_intent == I_HELP && istype(W, /obj/item/stack/material))
-		return ..()
+	if (!W) return
 
 	// Handle dismantling or placing things on the table from here on.
 	if(isrobot(user))
@@ -91,7 +85,7 @@
 	if(W.loc != user) // This should stop mounted modules ending up outside the module.
 		return
 
-	if(W.is_special_cutting_tool())
+	if(istype(W, /obj/item/weapon/melee/energy/blade) || istype(W,/obj/item/psychic_power/psiblade/master/grand/paramount))
 		var/datum/effect/effect/system/spark_spread/spark_system = new /datum/effect/effect/system/spark_spread()
 		spark_system.set_up(5, 0, src.loc)
 		spark_system.start()
@@ -121,7 +115,7 @@ auto_align() will then place the sprite so the defined center_of_mass is at the 
 closest to where the cursor has clicked on.
 Note: This proc can be overwritten to allow for different types of auto-alignment.
 */
-/obj/item/var/center_of_mass = @"{'x':16,'y':16}" //can be null for no exact placement behaviour
+/obj/item/var/center_of_mass = "x=16;y=16" //can be null for no exact placement behaviour
 /obj/structure/table/proc/auto_align(obj/item/W, click_params)
 	if (!W.center_of_mass) // Clothing, material stacks, generally items with large sprites where exact placement would be unhandy.
 		W.pixel_x = rand(-W.randpixel, W.randpixel)
@@ -143,7 +137,7 @@ Note: This proc can be overwritten to allow for different types of auto-alignmen
 	var/cell_x = Clamp(round(mouse_x/CELLSIZE), 0, CELLS-1) // Ranging from 0 to CELLS-1
 	var/cell_y = Clamp(round(mouse_y/CELLSIZE), 0, CELLS-1)
 
-	var/list/center = cached_json_decode(W.center_of_mass)
+	var/list/center = cached_key_number_decode(W.center_of_mass)
 
 	W.pixel_x = (CELLSIZE * (cell_x + 0.5)) - center["x"]
 	W.pixel_y = (CELLSIZE * (cell_y + 0.5)) - center["y"]

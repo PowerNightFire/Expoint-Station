@@ -19,38 +19,6 @@
 	tracer_type = /obj/effect/projectile/laser/tracer
 	impact_type = /obj/effect/projectile/laser/impact
 
-/obj/item/projectile/beam/variable
-	muzzle_type = /obj/effect/projectile/laser/variable/muzzle
-	tracer_type = /obj/effect/projectile/laser/variable/tracer
-	impact_type = /obj/effect/projectile/laser/variable/impact
-
-/obj/item/projectile/beam/variable/split
-	muzzle_type = /obj/effect/projectile/laser/variable/heavy_muzzle
-	tracer_type = /obj/effect/projectile/laser/variable/heavy_tracer
-	impact_type = /obj/effect/projectile/laser/variable/heavy_impact
-	var/split_type = /obj/item/projectile/beam/variable
-	var/split_count = 3
-
-/obj/item/projectile/beam/variable/split/on_impact(var/atom/A)
-	if(split_type)
-		var/list/targets = list()
-		var/split_loc = get_turf(A)
-		if(split_loc)
-			for(var/turf/T in view(5, split_loc))
-				targets += T
-			for(var/i = 1 to split_count)
-				if(!length(targets))
-					break
-				var/obj/item/projectile/P = new split_type(split_loc)
-				P.color = color
-				P.light_color = color
-				P.firer = firer
-				P.shot_from = shot_from
-				P.damage = Floor(damage/split_count)
-				P.armor_penetration = Floor(armor_penetration/split_count)
-				P.launch(pick_n_take(targets), def_zone)
-	. = ..()
-
 /obj/item/projectile/beam/practice
 	fire_sound = 'sound/weapons/Taser.ogg'
 	damage = 2
@@ -103,6 +71,12 @@
 	tracer_type = /obj/effect/projectile/laser/pulse/tracer
 	impact_type = /obj/effect/projectile/laser/pulse/impact
 
+/obj/item/projectile/beam/pulse/mid
+	damage = 20
+
+/obj/item/projectile/beam/pulse/heavy
+	damage = 25
+
 /obj/item/projectile/beam/pulse/destroy
 	name = "destroyer pulse"
 	damage = 100 //badmins be badmins I don't give a fuck
@@ -110,8 +84,21 @@
 
 /obj/item/projectile/beam/pulse/destroy/on_hit(var/atom/target, var/blocked = 0)
 	if(isturf(target))
-		target.explosion_act(2)
+		target.ex_act(2)
 	..()
+
+/obj/item/projectile/beam/pulse/skrell
+	icon_state = "pu_laser"
+	damage = 20
+	muzzle_type = /obj/effect/projectile/laser/pulse/skrell/muzzle
+	tracer_type = /obj/effect/projectile/laser/pulse/skrell/tracer
+	impact_type = /obj/effect/projectile/laser/pulse/skrell/impact
+
+/obj/item/projectile/beam/pulse/skrell/heavy
+	damage = 30
+
+/obj/item/projectile/beam/pulse/skrell/single
+	damage = 50
 
 /obj/item/projectile/beam/emitter
 	name = "emitter beam"
@@ -237,9 +224,9 @@
 	impact_type = /obj/effect/projectile/trilaser/impact
 
 /obj/item/projectile/beam/plasmacutter/on_impact(var/atom/A)
-	if(istype(A, /turf/simulated/wall/natural))
-		var/turf/simulated/wall/natural/M = A
-		M.dismantle_wall()
+	if(istype(A, /turf/simulated/mineral))
+		var/turf/simulated/mineral/M = A
+		M.GetDrilled(1)
 	. = ..()
 
 /obj/item/projectile/beam/confuseray
@@ -269,6 +256,9 @@
 		L.eye_blurry += potency
 		if(L.confused >= 10)
 			L.Stun(1)
+			L.drop_l_hand()
+			L.drop_r_hand()
+
 	return 1
 
 /obj/item/projectile/beam/particle
@@ -341,12 +331,3 @@
 		L.adjust_fire_stacks(rand(2,4))
 		if(L.fire_stacks >= 3)
 			L.IgniteMob()
-
-/obj/item/projectile/beam/pop
-	icon_state = "bluelaser"
-	fire_sound = 'sound/weapons/gunshot/laserbulb.ogg'
-	fire_sound_vol = 100
-
-	muzzle_type = /obj/effect/projectile/laser/blue/muzzle
-	tracer_type = /obj/effect/projectile/laser/blue/tracer
-	impact_type = /obj/effect/projectile/laser/blue/impact

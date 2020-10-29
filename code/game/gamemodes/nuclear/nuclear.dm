@@ -7,10 +7,13 @@ var/list/nuke_disks = list()
 /datum/game_mode/nuclear
 	name = "Mercenary"
 	round_description = "A mercenary strike force is approaching!"
-	extended_round_description = "A heavily armed merc team is approaching in their warship; whatever their goal is, it can't be good for the crew."
+	extended_round_description = "The Company's majority control of phoron in Nyx has marked the \
+		station to be a highly valuable target for many competing organizations and individuals. Being a \
+		colony of sizable population and considerable wealth causes it to often be the target of various \
+		attempts of robbery, fraud and other malicious actions."
 	config_tag = "mercenary"
 	required_players = 15
-	required_enemies = 1
+	required_enemies = 3
 	end_on_antag_death = FALSE
 	var/nuke_off_station = 0 //Used for tracking if the syndies actually haul the nuke to the station
 	var/syndies_didnt_escape = 0 //Used for tracking if the syndies got the shuttle off of the z-level
@@ -23,7 +26,7 @@ var/list/nuke_disks = list()
 
 //checks if L has a nuke disk on their person
 /datum/game_mode/nuclear/proc/check_mob(mob/living/L)
-	for(var/obj/item/disk/nuclear/N in nuke_disks)
+	for(var/obj/item/weapon/disk/nuclear/N in nuke_disks)
 		if(N.storage_depth(L) >= 0)
 			return TRUE
 	return FALSE
@@ -34,12 +37,12 @@ var/list/nuke_disks = list()
 		..()
 		return
 	var/disk_rescued = TRUE
-	for(var/obj/item/disk/nuclear/D in world)
+	for(var/obj/item/weapon/disk/nuclear/D in world)
 		var/disk_area = get_area(D)
 		if(!is_type_in_list(disk_area, GLOB.using_map.post_round_safe_areas))
 			disk_rescued = FALSE
 			break
-	var/crew_evacuated = (SSevac.evacuation_controller.has_evacuated())
+	var/crew_evacuated = (evacuation_controller.has_evacuated())
 
 	if(!disk_rescued &&  station_was_nuked && !syndies_didnt_escape)
 		SSstatistics.set_field_details("round_end_result","win - syndicate nuke")

@@ -17,10 +17,10 @@
 	//when the shuttle leaves this landmark, it will leave behind the base area
 	//also used to determine if the shuttle can arrive here without obstruction
 	var/area/base_area
-	//Will also leave this type of turf behind if set, if the turfs do not have prev_type set.
+	//Will also leave this type of turf behind if set.
 	var/turf/base_turf
 	//Name of the shuttle, null for generic waypoint
-	var/shuttle_restricted
+	var/shuttle_restricted 
 	var/flags = 0
 
 /obj/effect/shuttle_landmark/Initialize()
@@ -71,7 +71,7 @@
 	for(var/area/A in shuttle.shuttle_area)
 		var/list/translation = get_turf_translation(get_turf(shuttle.current_location), get_turf(src), A.contents)
 		if(check_collision(base_area, list_values(translation)))
-			return FALSE
+			return FALSE		
 	var/conn = GetConnectedZlevels(z)
 	for(var/w in (z - shuttle.multiz) to z)
 		if(!(w in conn))
@@ -82,13 +82,6 @@
 	return FALSE
 
 /obj/effect/shuttle_landmark/proc/shuttle_arrived(datum/shuttle/shuttle)
-
-/obj/effect/shuttle_landmark/proc/shuttle_departed(datum/shuttle/shuttle)
-
-// Used to trigger effects prior to the shuttle's actual landing
-/obj/effect/shuttle_landmark/proc/landmark_selected(datum/shuttle/shuttle)
-
-/obj/effect/shuttle_landmark/proc/landmark_deselected(datum/shuttle/shuttle)
 
 /proc/check_collision(area/target_area, list/target_turfs)
 	for(var/target_turf in target_turfs)
@@ -128,43 +121,20 @@
 	for(var/turf/T in range(radius, src))
 		if(T.density)
 			T.ChangeTurf(get_base_turf_by_area(T))
-		T.turf_flags |= TURF_FLAG_NORUINS
 
-//Used for custom landing locations. Self deletes after a shuttle leaves.
-/obj/effect/shuttle_landmark/temporary
-	name = "Landing Point"
-	landmark_tag = "landing"
-	flags = SLANDMARK_FLAG_AUTOSET
-
-/obj/effect/shuttle_landmark/temporary/Initialize()
-	landmark_tag += "-[random_id("landmarks",1,9999)]"
-	. = ..()
-
-/obj/effect/shuttle_landmark/temporary/Destroy()
-	SSshuttle.unregister_landmark(landmark_tag)
-	return ..()
-
-/obj/effect/shuttle_landmark/temporary/landmark_deselected(datum/shuttle/shuttle)
-	if(shuttle.moving_status != SHUTTLE_INTRANSIT && shuttle.current_location != src)
-		qdel(src)
-
-/obj/effect/shuttle_landmark/temporary/shuttle_departed(datum/shuttle/shuttle)
-	qdel(src)
-
-/obj/item/spaceflare
-	name = "long-range flare"
+/obj/item/device/spaceflare
+	name = "bluespace flare"
 	desc = "Burst transmitter used to broadcast all needed information for shuttle navigation systems. Has a flare attached for marking the spot where you probably shouldn't be standing."
-	icon = 'icons/obj/items/device/long_range_flare.dmi'
 	icon_state = "bluflare"
 	light_color = "#3728ff"
 	var/active
 
-/obj/item/spaceflare/attack_self(var/mob/user)
+/obj/item/device/spaceflare/attack_self(var/mob/user)
 	if(!active)
 		visible_message("<span class='notice'>[user] pulls the cord, activating the [src].</span>")
 		activate()
 
-/obj/item/spaceflare/proc/activate()
+/obj/item/device/spaceflare/proc/activate()
 	if(active)
 		return
 	var/turf/T = get_turf(src)
@@ -180,7 +150,7 @@
 	T.hotspot_expose(1500, 5)
 	update_icon()
 
-/obj/item/spaceflare/on_update_icon()
+/obj/item/device/spaceflare/on_update_icon()
 	if(active)
 		icon_state = "bluflare_on"
 		set_light(0.3, 0.1, 6, 2, "85d1ff")

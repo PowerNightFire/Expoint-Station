@@ -1,8 +1,4 @@
-/mob/living/carbon/human/say(var/message, var/decl/language/speaking = null, whispering)
-	set waitfor = FALSE
-	var/prefix = copytext(message,1,2)
-	if(prefix == get_prefix_key(/decl/prefix/custom_emote) || prefix == get_prefix_key(/decl/prefix/visible_emote) || prefix == get_prefix_key(/decl/prefix/audible_emote))
-		return ..(message, null, null)
+/mob/living/carbon/human/say(var/message, var/datum/language/speaking = null, whispering)
 	if(name != GetVoice())
 		if(get_id_name("Unknown") == GetVoice())
 			SetName(get_id_name("Unknown"))
@@ -39,10 +35,6 @@
 			whisper_say(length(message) > 5 ? stars(message) : message, speaking)
 		else if(L.breath_fail_ratio > 0.4 && length(message) > 10)
 			whisper_say(message, speaking)
-		else if(L.breath_fail_ratio > 0.2 && length(message) > 30)
-			whisper_say(message, speaking)
-		else
-			return ..(message, speaking = speaking, whispering = whispering)
 	else
 		return ..(message, speaking = speaking, whispering = whispering)
 
@@ -81,13 +73,19 @@
 					say(temp)
 				winset(client, "input", "text=[null]")
 
-/mob/living/carbon/human/say_understands(var/mob/other,var/decl/language/speaking = null)
+/mob/living/carbon/human/say_understands(var/mob/other,var/datum/language/speaking = null)
+
+	if(has_brain_worms()) //Brain worms translate everything. Even mice and alien speak.
+		return 1
 
 	if(species.can_understand(other))
 		return 1
 
 	//These only pertain to common. Languages are handled by mob/say_understands()
 	if (!speaking)
+		if (istype(other, /mob/living/carbon/alien/diona))
+			if(other.languages.len >= 2) //They've sucked down some blood and can speak common now.
+				return 1
 		if (istype(other, /mob/living/silicon))
 			return 1
 		if (istype(other, /mob/living/carbon/brain))
@@ -106,8 +104,8 @@
 /mob/living/carbon/human/GetVoice()
 
 	var/voice_sub
-	if(istype(back,/obj/item/rig))
-		var/obj/item/rig/rig = back
+	if(istype(back,/obj/item/weapon/rig))
+		var/obj/item/weapon/rig/rig = back
 		// todo: fix this shit
 		if(rig.speech && rig.speech.voice_holder && rig.speech.voice_holder.active && rig.speech.voice_holder.voice)
 			voice_sub = rig.speech.voice_holder.voice
@@ -133,7 +131,7 @@
 		return mind.changeling.mimicing
 	return real_name
 
-/mob/living/carbon/human/say_quote(var/message, var/decl/language/speaking = null)
+/mob/living/carbon/human/say_quote(var/message, var/datum/language/speaking = null)
 	var/verb = "says"
 	var/ending = copytext(message, length(message))
 
@@ -166,41 +164,39 @@
 	switch(message_mode)
 		if("intercom")
 			if(!src.restrained())
-				for(var/obj/item/radio/intercom/I in view(1))
+				for(var/obj/item/device/radio/intercom/I in view(1))
 					I.talk_into(src, message, null, verb, speaking)
 					I.add_fingerprint(src)
 					used_radios += I
 		if("headset")
-			if(l_ear && istype(l_ear,/obj/item/radio))
-				var/obj/item/radio/R = l_ear
+			if(l_ear && istype(l_ear,/obj/item/device/radio))
+				var/obj/item/device/radio/R = l_ear
 				R.talk_into(src,message,null,verb,speaking)
 				used_radios += l_ear
-			else if(r_ear && istype(r_ear,/obj/item/radio))
-				var/obj/item/radio/R = r_ear
+			else if(r_ear && istype(r_ear,/obj/item/device/radio))
+				var/obj/item/device/radio/R = r_ear
 				R.talk_into(src,message,null,verb,speaking)
 				used_radios += r_ear
 		if("right ear")
-			var/obj/item/radio/R
+			var/obj/item/device/radio/R
 			var/has_radio = 0
-			if(r_ear && istype(r_ear,/obj/item/radio))
+			if(r_ear && istype(r_ear,/obj/item/device/radio))
 				R = r_ear
 				has_radio = 1
-			var/datum/inventory_slot/inv_slot = LAZYACCESS(held_item_slots, BP_R_HAND)
-			if(istype(inv_slot?.holding, /obj/item/radio))
-				R = inv_slot.holding
+			if(r_hand && istype(r_hand, /obj/item/device/radio))
+				R = r_hand
 				has_radio = 1
 			if(has_radio)
 				R.talk_into(src,message,null,verb,speaking)
 				used_radios += R
 		if("left ear")
-			var/obj/item/radio/R
+			var/obj/item/device/radio/R
 			var/has_radio = 0
-			if(l_ear && istype(l_ear,/obj/item/radio))
+			if(l_ear && istype(l_ear,/obj/item/device/radio))
 				R = l_ear
 				has_radio = 1
-			var/datum/inventory_slot/inv_slot = LAZYACCESS(held_item_slots, BP_L_HAND)
-			if(istype(inv_slot?.holding, /obj/item/radio))
-				R = inv_slot.holding
+			if(l_hand && istype(l_hand,/obj/item/device/radio))
+				R = l_hand
 				has_radio = 1
 			if(has_radio)
 				R.talk_into(src,message,null,verb,speaking)
@@ -210,27 +206,22 @@
 			return 1
 		else
 			if(message_mode)
-				if(l_ear && istype(l_ear,/obj/item/radio))
+				if(l_ear && istype(l_ear,/obj/item/device/radio))
 					l_ear.talk_into(src,message, message_mode, verb, speaking)
 					used_radios += l_ear
-				else if(r_ear && istype(r_ear,/obj/item/radio))
+				else if(r_ear && istype(r_ear,/obj/item/device/radio))
 					r_ear.talk_into(src,message, message_mode, verb, speaking)
 					used_radios += r_ear
 
 /mob/living/carbon/human/handle_speech_sound()
 	if(species.speech_sounds && prob(species.speech_chance))
 		var/list/returns[2]
-		var/sound_to_play = species.speech_sounds
-		if(islist(species.speech_sounds))
-			sound_to_play = species.speech_sounds[gender] || species.speech_sounds
-		returns[1] = sound(pick(sound_to_play))
+		returns[1] = sound(pick(species.speech_sounds))
 		returns[2] = 50
 		return returns
 	return ..()
 
-/mob/living/carbon/human/can_speak(decl/language/speaking)
-	if(ispath(speaking, /decl/language))
-		speaking = decls_repository.get_decl(speaking)
+/mob/living/carbon/human/can_speak(datum/language/speaking)
 	if(species && speaking && (speaking.name in species.assisted_langs))
 		for(var/obj/item/organ/internal/voicebox/I in src.internal_organs)
 			if(I.is_usable() && I.assists_languages[speaking])
@@ -241,11 +232,11 @@
 /mob/living/carbon/human/parse_language(var/message)
 	var/prefix = copytext(message,1,2)
 	if(length(message) >= 1 && prefix == get_prefix_key(/decl/prefix/audible_emote))
-		return decls_repository.get_decl(/decl/language/noise)
+		return all_languages["Noise"]
 
 	if(length(message) >= 2 && is_language_prefix(prefix))
 		var/language_prefix = lowertext(copytext(message, 2 ,3))
-		var/decl/language/L = SSlore.get_language_by_key(language_prefix)
+		var/datum/language/L = language_keys[language_prefix]
 		if (can_speak(L))
 			return L
 

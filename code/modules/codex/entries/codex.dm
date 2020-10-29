@@ -26,17 +26,14 @@
 	var/list/dat = list(get_header(presenting_to))
 	dat += "[mechanics_text]"
 	dat += "<h3>Categories</h3>"
-	var/list/category_strings
-	var/list/categories = decls_repository.get_decls_of_subtype(/decl/codex_category)
-	for(var/ctype in categories)
-		var/decl/codex_category/C = categories[ctype]
-		if(!C?.name)
-			continue
+	var/list/categories = list()
+	for(var/type in subtypesof(/datum/codex_category))
+		var/datum/codex_category/C = type
 		var/key = "[initial(C.name)] (category)"
 		var/datum/codex_entry/entry = SScodex.get_codex_entry(key)
 		if(entry)
-			LAZYADD(category_strings, "<li><span codexlink='[key]'>[initial(C.name)]</span> - [initial(C.desc)]")
-	dat += jointext(category_strings, " ")
+			categories += "<li><span codexlink='[key]'>[initial(C.name)]</span> - [initial(C.desc)]"
+	dat += jointext(categories, " ")
 	return "<font color = '[CODEX_COLOR_MECHANICS]'>[jointext(dat, null)]</font>"
 
 /client/proc/codex_topic(href, href_list)

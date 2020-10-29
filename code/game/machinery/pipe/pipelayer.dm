@@ -1,9 +1,7 @@
-// Note: this machine is not compatible with the current pipe construction code. Needs a refactor of the lay pipe and pipe selection procs before using.
-
 /obj/machinery/pipelayer
 
 	name = "automatic pipe layer"
-	icon = 'icons/obj/machines/pipe_dispenser.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "pipe_d"
 	density = 1
 	var/turf/old_turf
@@ -14,12 +12,12 @@
 	var/P_type_t = ""
 	var/max_metal = 50
 	var/metal = 10
-	var/obj/item/wrench/W
+	var/obj/item/weapon/wrench/W
 	var/list/Pipes = list("regular pipes"=0,"scrubbers pipes"=31,"supply pipes"=29,"heat exchange pipes"=2, "fuel pipes"=45)
 
-/obj/machinery/pipelayer/Initialize()
-	. = ..()
+/obj/machinery/pipelayer/New()
 	W = new(src)
+	..()
 
 /obj/machinery/pipelayer/Move(new_turf,M_Dir)
 	..()
@@ -39,7 +37,7 @@
 	user.visible_message("<span class='notice'>[user] has [!on?"de":""]activated \the [src].</span>", "<span class='notice'>You [!on?"de":""]activate \the [src].</span>")
 	return TRUE
 
-/obj/machinery/pipelayer/attackby(var/obj/item/W, var/mob/user)
+/obj/machinery/pipelayer/attackby(var/obj/item/W as obj, var/mob/user as mob)
 
 	if(isWrench(W))
 		P_type_t = input("Choose pipe type", "Pipe type") as null|anything in Pipes
@@ -52,7 +50,7 @@
 		user.visible_message("<span class='notice'>[user] has [!a_dis?"de":""]activated auto-dismantling.</span>", "<span class='notice'>You [!a_dis?"de":""]activate auto-dismantling.</span>")
 		return
 
-	if(istype(W, /obj/item/stack/material) && W.get_material_type() == /decl/material/solid/metal/steel)
+	if(istype(W, /obj/item/stack/material) && W.get_material_name() == MATERIAL_STEEL)
 
 		var/result = load_metal(W)
 		if(isnull(result))

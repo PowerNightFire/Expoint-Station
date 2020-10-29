@@ -5,7 +5,7 @@
 /mob/living/silicon/ai/var/max_locations = 10
 /mob/living/silicon/ai/var/stored_locations[0]
 
-/proc/InvalidPlayerTurf(turf/T)
+/proc/InvalidPlayerTurf(turf/T as turf)
 	return !(T && (T.z in GLOB.using_map.player_levels))
 
 /mob/living/silicon/ai/proc/get_camera_list()
@@ -149,7 +149,7 @@
 	cameraFollow.tracking_cancelled()
 	cameraFollow = null
 
-/mob/living/silicon/ai/proc/ai_actual_track(mob/living/target)
+/mob/living/silicon/ai/proc/ai_actual_track(mob/living/target as mob)
 	if(!istype(target))	return
 	var/mob/living/silicon/ai/U = usr
 
@@ -183,7 +183,7 @@
 				return
 			sleep(10)
 
-/obj/machinery/camera/attack_ai(var/mob/living/silicon/ai/user)
+/obj/machinery/camera/attack_ai(var/mob/living/silicon/ai/user as mob)
 	if (!istype(user))
 		return
 	if (!src.can_use())
@@ -191,7 +191,7 @@
 	user.eyeobj.setLoc(get_turf(src))
 
 
-/mob/living/silicon/ai/attack_ai(var/mob/user)
+/mob/living/silicon/ai/attack_ai(var/mob/user as mob)
 	ai_camera_list()
 
 /proc/camera_sort(list/L)
@@ -220,7 +220,7 @@ mob/living/proc/near_camera()
 
 /mob/living/proc/tracking_status()
 	// Easy checks first.
-	var/obj/item/card/id/id = GetIdCard()
+	var/obj/item/weapon/card/id/id = GetIdCard()
 	if(id && id.prevent_tracking())
 		return TRACKING_TERMINATE
 	if(InvalidPlayerTurf(get_turf(src)))

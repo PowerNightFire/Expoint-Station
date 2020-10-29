@@ -14,8 +14,11 @@
 	stop_automated_movement_when_pulled = 0
 	maxHealth = 100
 	health = 100
-	natural_weapon = /obj/item/natural_weapon/punch
+	harm_intent_damage = 5
+	melee_damage_lower = 10
+	melee_damage_upper = 10
 	can_escape = TRUE
+	attacktext = "punched"
 	a_intent = I_HURT
 	var/corpse = /obj/effect/landmark/corpse/syndicate
 	var/weapon1
@@ -39,13 +42,16 @@
 ///////////////Sword and shield////////////
 
 /mob/living/simple_animal/hostile/syndicate/melee
+	melee_damage_lower = 20
+	melee_damage_upper = 25
 	icon_state = "syndicatemelee"
 	icon_living = "syndicatemelee"
-	natural_weapon = /obj/item/energy_blade/sword/red/activated
-	weapon2 = /obj/item/shield/energy
+	weapon1 = /obj/item/weapon/melee/energy/sword/red
+	weapon2 = /obj/item/weapon/shield/energy
+	attacktext = "slashed"
 	status_flags = 0
 
-/mob/living/simple_animal/hostile/syndicate/melee/attackby(var/obj/item/O, var/mob/user)
+/mob/living/simple_animal/hostile/syndicate/melee/attackby(var/obj/item/O as obj, var/mob/user as mob)
 	if(O.force)
 		if(prob(80))
 			var/damage = O.force
@@ -55,6 +61,7 @@
 			visible_message("<span class='danger'>\The [src] has been attacked with \the [O] by \the [user].</span>")
 		else
 			visible_message("<span class='danger'>\The [src] blocks the [O] with its shield!</span>")
+		//user.do_attack_animation(src)
 	else
 		to_chat(usr, "<span class='warning'>This weapon is ineffective, it does no damage.</span>")
 		visible_message("<span class='warning'>\The [user] gently taps \the [src] with \the [O].</span>")
@@ -88,7 +95,7 @@
 	projectilesound = 'sound/weapons/gunshot/gunshot_smg.ogg'
 	projectiletype = /obj/item/projectile/bullet/pistol
 
-	weapon1 = /obj/item/gun/projectile/automatic/smg
+	weapon1 = /obj/item/weapon/gun/projectile/automatic/merc_smg
 
 /mob/living/simple_animal/hostile/syndicate/ranged/space
 	icon_state = "syndicaterangedpsace"
@@ -109,7 +116,10 @@
 	pass_flags = PASS_FLAG_TABLE
 	health = 15
 	maxHealth = 15
-	natural_weapon = /obj/item/natural_weapon/rotating_blade
+	melee_damage_lower = 15
+	melee_damage_upper = 15
+	attacktext = "cut"
+	attack_sound = 'sound/weapons/bladeslice.ogg'
 	faction = "syndicate"
 	min_gas = null
 	max_gas = null
@@ -121,14 +131,6 @@
 	bone_amount =   0
 	skin_material = null
 	skin_amount =   0
-
-/obj/item/natural_weapon/rotating_blade
-	name = "rotating blades"
-	attack_verb = list("sliced", "cut")
-	hitsound = 'sound/weapons/bladeslice.ogg'
-	force = 15
-	edge = 1
-	sharp = 1
 
 /mob/living/simple_animal/hostile/viscerator/death(gibbed, deathmessage, show_dead_message)
 	..(null,"is smashed into pieces!", show_dead_message)

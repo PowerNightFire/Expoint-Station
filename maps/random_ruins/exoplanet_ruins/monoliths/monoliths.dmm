@@ -11,17 +11,20 @@
 /turf/simulated/floor/fixed/alium/ruin,
 /area/template_noop)
 "d" = (
-/obj/structure/artifact,
-/obj/structure/window/borosilicate_reinforced{
-	dir = 4
+/obj/machinery/artifact,
+/obj/structure/window/phoronreinforced{
+	dir = 4;
+	icon_state = "phoronrwindow"
 	},
-/obj/structure/window/borosilicate_reinforced{
-	dir = 1
+/obj/structure/window/phoronreinforced{
+	dir = 1;
+	icon_state = "phoronrwindow"
 	},
-/obj/structure/window/borosilicate_reinforced{
-	dir = 8
+/obj/structure/window/phoronreinforced{
+	dir = 8;
+	icon_state = "phoronrwindow"
 	},
-/obj/structure/window/borosilicate_reinforced,
+/obj/structure/window/phoronreinforced,
 /turf/simulated/floor/fixed/alium/ruin,
 /area/template_noop)
 "e" = (

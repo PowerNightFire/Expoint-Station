@@ -13,11 +13,11 @@
 	cinematic.plane = HUD_PLANE
 	cinematic.layer = HUD_ABOVE_ITEM_LAYER
 	cinematic.mouse_opacity = 2
-	cinematic.screen_loc = "LEFT+1,BOTTOM"
+	cinematic.screen_loc = "1,0"
 
 /datum/universal_state/nuclear_explosion/OnEnter()
 	if(SSticker.mode)
-		SSticker.mode.station_explosion_in_progress = TRUE
+		SSticker.mode.explosion_in_progress = 1
 
 	start_cinematic_intro()
 
@@ -43,13 +43,13 @@
 
 	if(SSticker.mode)
 		SSticker.mode.station_was_nuked = 1
-		SSticker.mode.station_explosion_in_progress = FALSE
+		SSticker.mode.explosion_in_progress = 0
 		if(!SSticker.mode.check_finished())//If the mode does not deal with the nuke going off so just reboot because everyone is stuck as is
 			universe_has_ended = 1
 
 /datum/universal_state/nuclear_explosion/OnExit()
 	if(SSticker.mode)
-		SSticker.mode.station_explosion_in_progress = FALSE
+		SSticker.mode.explosion_in_progress = 0
 
 /datum/universal_state/nuclear_explosion/proc/dust_mobs(var/list/affected_z_levels)
 	for(var/mob/living/L in SSmobs.mob_list)

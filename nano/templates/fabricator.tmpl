@@ -1,25 +1,5 @@
 {{if data.functional}}
 	<table width = '100%'>
-		{{if data.color_selectable}}
-		<tr>
-			<td>
-				<font color = {{:data.color}}>Color</font>
-			</td>
-			<td>
-				{{:helper.link('(Set)', null, {'color_select' : 1})}}
-			</td>
-		</tr>
-		{{/if}}
-		{{if data.network}}
-		<tr>
-			<td>
-				Connected to local network.
-			</td>
-				{{:helper.link(data.network, null, { 'settings': 1 }, null)}}
-			</td>
-			<td>
-		</tr>
-		{{/if}}
 		<tr>
 			<td colspan = 2>
 				<table width = '85%' style = 'border:1px solid #333333;'>

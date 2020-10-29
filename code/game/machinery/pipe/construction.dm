@@ -15,16 +15,15 @@ Buildable meters
 	item_state = "buildpipe"
 	w_class = ITEM_SIZE_NORMAL
 	level = 2
-	obj_flags = OBJ_FLAG_ROTATABLE
+	obj_flags = OBJ_FLAG_ROTATABLE 
 	dir = SOUTH
 	var/constructed_path = /obj/machinery/atmospherics/pipe/simple/hidden
 	var/pipe_class = PIPE_CLASS_BINARY
 	var/rotate_class = PIPE_ROTATE_STANDARD
 
 /obj/item/pipe/Initialize(var/mapload, var/obj/machinery/atmospherics/P)
-	. = ..(mapload, null)
-	set_extension(src, /datum/extension/parts_stash)
-	if(!istype(P))
+	. = ..()
+	if(!P)
 		return
 	if(!P.dir)
 		set_dir(SOUTH)
@@ -39,7 +38,7 @@ Buildable meters
 	icon_state = P.build_icon_state
 	pipe_class = P.pipe_class
 	rotate_class = P.rotate_class
-	constructed_path = P.base_type || P.type
+	constructed_path = P.type
 
 //called when a turf is attacked with a pipe item
 /obj/item/pipe/afterattack(turf/simulated/floor/target, mob/user, proximity)
@@ -68,7 +67,7 @@ Buildable meters
 		if(PIPE_ROTATE_ONEDIR)
 			set_dir(2)
 
-/obj/item/pipe/attack_self(mob/user)
+/obj/item/pipe/attack_self(mob/user as mob)
 	return rotate(user)
 
 /obj/item/pipe/proc/build_unary(var/obj/machinery/atmospherics/unary/P, var/pipefailtext)
@@ -77,7 +76,7 @@ Buildable meters
 		to_chat(usr, pipefailtext)
 		return 1
 	P.build_network()
-	if(P.node)
+	if(P.node)		
 		P.node.atmos_init()
 		P.node.build_network()
 	return 0
@@ -100,8 +99,8 @@ Buildable meters
 	P.atmos_init()
 	if (QDELETED(P))
 		to_chat(usr, pipefailtext)
-		return 1
-	P.build_network()
+		return 1	
+	P.build_network()	
 	if(P.node1)
 		P.node1.atmos_init()
 		P.node1.build_network()
@@ -133,7 +132,7 @@ Buildable meters
 		P.node4.build_network()
 	return 0
 
-/obj/item/pipe/attackby(var/obj/item/W, var/mob/user)
+/obj/item/pipe/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
 	if(!isWrench(W))
 		return ..()
 	if (!isturf(loc))
@@ -153,9 +152,6 @@ Buildable meters
 
 	//TODO: Move all of this stuff into the various pipe constructors.
 	var/obj/machinery/atmospherics/P = new constructed_path(get_turf(src))
-	var/datum/extension/parts_stash/stash = get_extension(src, /datum/extension/parts_stash)
-	if(stash)
-		stash.install_into(P)
 
 	P.pipe_color = color
 	P.set_dir(dir)
@@ -188,25 +184,39 @@ Buildable meters
 		"You hear ratchet.")
 	qdel(src)	// remove the pipe item
 
+/obj/item/pipe/injector
+	name = "Injector"
+	desc = "Passively injects air into its surroundings. Has a valve attached to it that can control flow rate."
+	connect_types =  CONNECT_TYPE_REGULAR|CONNECT_TYPE_FUEL
+	icon = 	'icons/atmos/injector.dmi'
+	icon_state = "map_injector"
+	constructed_path = /obj/machinery/atmospherics/unary/outlet_injector
+	pipe_class = PIPE_CLASS_UNARY
+
+	var/frequency
+	var/id
+
+/obj/item/pipe/injector/New(loc, obj/machinery/atmospherics/P)
+	..(loc, null)
+	var/obj/machinery/atmospherics/unary/outlet_injector/I = P
+	if(!I)
+		return
+	frequency = I.frequency
+	id = I.id
+	set_dir(I.dir)
+	name = I.name
+	desc = I.desc
+	connect_types = I.connect_types
+
 /obj/item/machine_chassis
 	var/build_type
 
-/obj/item/machine_chassis/Initialize()
-	. = ..()
-	set_extension(src, /datum/extension/parts_stash)
-
-/obj/item/machine_chassis/examine(mob/user, distance)
-	. = ..()
-	if(distance <= 2)
-		to_chat(user, "Use a wrench to secure \the [src] here.")
-
-/obj/item/machine_chassis/attackby(var/obj/item/W, var/mob/user)
+/obj/item/machine_chassis/attackby(var/obj/item/weapon/W, var/mob/user)
 	if(!isWrench(W))
 		return ..()
-	var/obj/machinery/machine = new build_type(get_turf(src), dir, TRUE)
-	var/datum/extension/parts_stash/stash = get_extension(src, /datum/extension/parts_stash)
-	if(stash)
-		stash.install_into(machine)
+	var/obj/machinery/machine = new build_type(get_turf(src), dir, FALSE)
+	machine.apply_component_presets()
+	machine.RefreshParts()
 	if(machine.construct_state)
 		machine.construct_state.post_construct(machine)
 	playsound(loc, 'sound/items/Ratchet.ogg', 50, 1)
@@ -216,13 +226,10 @@ Buildable meters
 /obj/item/machine_chassis/air_sensor
 	name = "gas sensor"
 	desc = "A sensor. It detects gasses."
-	icon = 'icons/obj/machines/gas_sensor.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "gsensor1"
 	w_class = ITEM_SIZE_LARGE
 	build_type = /obj/machinery/air_sensor
-
-/obj/item/machine_chassis/air_sensor/base
-	build_type = /obj/machinery/air_sensor/buildable
 
 /obj/item/machine_chassis/pipe_meter
 	name = "meter"
@@ -232,25 +239,3 @@ Buildable meters
 	item_state = "buildpipe"
 	w_class = ITEM_SIZE_LARGE
 	build_type = /obj/machinery/meter
-
-/obj/item/machine_chassis/pipe_meter/base
-	build_type = /obj/machinery/meter/buildable
-
-/obj/item/machine_chassis/igniter
-	name = "igniter"
-	desc = "A device which will ignite surrounding gasses."
-	icon = 'icons/obj/machines/igniter.dmi'
-	icon_state = "igniter1"
-	w_class = ITEM_SIZE_NORMAL
-	build_type = /obj/machinery/igniter
-
-/obj/item/machine_chassis/igniter/base
-	build_type = /obj/machinery/igniter/buildable
-
-/obj/item/machine_chassis/power_sensor
-	name = "power sensor"
-	desc = "A small machine which transmits data about specific powernet."
-	icon = 'icons/obj/objects.dmi'
-	icon_state = "floor_beacon" // If anyone wants to make better sprite, feel free to do so without asking me.
-	w_class = ITEM_SIZE_NORMAL
-	build_type = /obj/machinery/power/sensor

@@ -4,11 +4,13 @@
 	gender = FEMALE
 	health = 750 //how sweet it is to be a god!
 	maxHealth = 750
-	mob_size = MOB_SIZE_LARGE
+	mob_size = MOB_LARGE
 	speak = list("...")
 	speak_emote = list("professes","speaks unto you","elaborates","proclaims")
 	emote_hear = list("sings a song to herself", "preens herself")
-	natural_weapon = /obj/item/natural_weapon/giant
+	melee_damage_lower = 20
+	melee_damage_upper = 40
+	attacktext = "pecked"
 	min_gas = null
 	max_gas = null
 	minbodytemp = 0
@@ -58,8 +60,8 @@
 			cooldown_ability(ability_cooldown / 1.5)
 			visible_message(SPAN_MFAUNA("\The [src] flaps its wings mightily and bowls over \the [H] with a gust!"))
 
-		else if(H.get_equipped_item(slot_head_str))
-			var/obj/item/clothing/head/HAT = H.get_equipped_item(slot_head_str)
+		else if(H.get_equipped_item(slot_head))
+			var/obj/item/clothing/head/HAT = H.get_equipped_item(slot_head)
 			if(H.canUnEquip(HAT))
 				visible_message(SPAN_MFAUNA("\The [src] rips \the [H]'s [HAT] off!"))
 				cooldown_ability(ability_cooldown)
@@ -77,7 +79,8 @@
 	name = "Avatar of the Howling Dark"
 	subspecies = list(/decl/parrot_subspecies/black)
 	get_subspecies_name = FALSE
-	natural_weapon = /obj/item/natural_weapon/large
+	melee_damage_lower = 15
+	melee_damage_upper = 20
 	health = 300
 	maxHealth = 300
 
@@ -89,6 +92,7 @@
 	maxHealth = 350
 	speak_emote = list("squawks")
 	emote_hear = list("preens itself")
-	natural_weapon = /obj/item/natural_weapon/large
+	melee_damage_lower = 15
+	melee_damage_upper = 18
 	relax_chance = 30
 	impatience = 5

@@ -58,8 +58,7 @@
 	return FALSE
 
 // No blowing up abstract objects.
-/atom/movable/openspace/explosion_act(ex_sev)
-	SHOULD_CALL_PARENT(FALSE)
+/atom/movable/openspace/ex_act(ex_sev)
 	return
 
 /atom/movable/openspace/singularity_act()
@@ -142,8 +141,6 @@
 	var/queued = FALSE
 	var/destruction_timer
 	var/mimiced_type
-	var/original_z
-	var/override_depth
 
 /atom/movable/openspace/overlay/New()
 	atom_flags |= ATOM_FLAG_INITIALIZED
@@ -167,8 +164,10 @@
 /atom/movable/openspace/overlay/attack_hand(mob/user)
 	to_chat(user, SPAN_NOTICE("You cannot reach \the [src] from here."))
 
+/atom/movable/openspace/overlay/attack_generic(mob/user)
+	to_chat(user, SPAN_NOTICE("You cannot reach \the [src] from here."))
+
 /atom/movable/openspace/overlay/examine(...)
-	SHOULD_CALL_PARENT(FALSE)
 	. = associated_atom.examine(arglist(args))	// just pass all the args to the copied atom
 
 /atom/movable/openspace/overlay/forceMove(turf/dest)
@@ -184,3 +183,19 @@
 /atom/movable/openspace/overlay/proc/owning_turf_changed()
 	if (!destruction_timer)
 		destruction_timer = addtimer(CALLBACK(src, /datum/.proc/qdel_self), 10 SECONDS, TIMER_STOPPABLE)
+
+// This one's a little different because it's mimicing a turf.
+/atom/movable/openspace/turf_overlay
+	plane = OPENTURF_MAX_PLANE
+
+/atom/movable/openspace/turf_overlay/attackby(obj/item/W, mob/user)
+	loc.attackby(W, user)
+
+/atom/movable/openspace/turf_overlay/attack_hand(mob/user as mob)
+	loc.attack_hand(user)
+
+/atom/movable/openspace/turf_overlay/attack_generic(mob/user as mob)
+	loc.attack_generic(user)
+
+/atom/movable/openspace/turf_overlay/examine(mob/examiner)
+	loc.examine(examiner)

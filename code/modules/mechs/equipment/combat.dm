@@ -2,7 +2,7 @@
 	name = "mounted electrolaser carbine"
 	desc = "A dual fire mode electrolaser system connected to the exosuit's targetting system."
 	icon_state = "mech_taser"
-	holding_type = /obj/item/gun/energy/taser/mounted/mech
+	holding_type = /obj/item/weapon/gun/energy/taser/carbine/mounted/mech
 	restricted_hardpoints = list(HARDPOINT_LEFT_HAND, HARDPOINT_RIGHT_HAND)
 	restricted_software = list(MECH_SOFTWARE_WEAPONS)
 
@@ -10,58 +10,51 @@
 	name = "mounted ion rifle"
 	desc = "An exosuit-mounted ion rifle. Handle with care."
 	icon_state = "mech_ionrifle"
-	holding_type = /obj/item/gun/energy/ionrifle/mounted/mech
+	holding_type = /obj/item/weapon/gun/energy/ionrifle/mounted/mech
 
 /obj/item/mech_equipment/mounted_system/taser/laser
 	name = "\improper CH-PS \"Immolator\" laser"
 	desc = "An exosuit-mounted laser rifle. Handle with care."
 	icon_state = "mech_lasercarbine"
-	holding_type = /obj/item/gun/energy/laser/mounted/mech
+	holding_type = /obj/item/weapon/gun/energy/laser/mounted/mech
 
-/obj/item/gun/energy/taser/mounted/mech
-	use_external_power = TRUE
-	has_safety = FALSE
-	self_recharge = TRUE
-	projectile_type = /obj/item/projectile/beam/stun/heavy
-
-/obj/item/gun/energy/ionrifle/mounted/mech
+/obj/item/weapon/gun/energy/taser/carbine/mounted/mech
 	use_external_power = TRUE
 	has_safety = FALSE
 	self_recharge = TRUE
 
-/obj/item/gun/energy/laser/mounted/mech
+/obj/item/weapon/gun/energy/ionrifle/mounted/mech
+	use_external_power = TRUE
+	has_safety = FALSE
+	self_recharge = TRUE
+
+/obj/item/weapon/gun/energy/laser/mounted/mech
 	name = "\improper CH-PS \"Immolator\" laser"
 	use_external_power = TRUE
 	has_safety = FALSE
 	self_recharge = TRUE
 
-/obj/item/gun/energy/get_hardpoint_maptext()
+/obj/item/weapon/gun/energy/get_hardpoint_maptext()
 	return "[round(power_supply.charge / charge_cost)]/[max_shots]"
 
-/obj/item/gun/energy/get_hardpoint_status_value()
-	var/obj/item/cell/C = get_cell()
+/obj/item/weapon/gun/energy/get_hardpoint_status_value()
+	var/obj/item/weapon/cell/C = get_cell()
 	if(istype(C))
 		return C.charge/C.maxcharge
 	return null
 
 /obj/item/mech_equipment/shields
 	name = "exosuit shield droid"
-	desc = "The Armature system is a well-liked energy deflector designed to stop any projectile before it has a chance to become a threat."
+	desc = "The Hephaestus Armature system is a well liked energy deflector system designed to stop any projectile before it has a chance to become a threat."
 	icon_state = "shield_droid"
-	restricted_hardpoints = list(HARDPOINT_BACK)
-	restricted_software = list(MECH_SOFTWARE_WEAPONS)
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/metal/silver = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE
-	)
-
 	var/obj/aura/mechshield/aura = null
 	var/max_charge = 150
 	var/charge = 150
 	var/last_recharge = 0
 	var/charging_rate = 7500 * CELLRATE
 	var/cooldown = 3.5 SECONDS //Time until we can recharge again after a blocked impact
+	restricted_hardpoints = list(HARDPOINT_BACK)
+	restricted_software = list(MECH_SOFTWARE_WEAPONS)
 
 /obj/item/mech_equipment/shields/installed(var/mob/living/exosuit/_owner)
 	. = ..()
@@ -116,7 +109,7 @@
 		return
 	if((world.time - last_recharge) < cooldown)
 		return	
-	var/obj/item/cell/cell = owner.get_cell()
+	var/obj/item/weapon/cell/cell = owner.get_cell()
 	
 	var/actual_required_power = Clamp(max_charge - charge, 0, charging_rate)
 

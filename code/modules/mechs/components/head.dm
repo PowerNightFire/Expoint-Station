@@ -2,15 +2,15 @@
 	name = "head"
 	icon_state = "loader_head"
 	gender = NEUTER
-	has_hardpoints = list(HARDPOINT_HEAD)
-	power_use = 15
 
 	var/vision_flags = 0
 	var/see_invisible = 0
 	var/obj/item/robot_parts/robot_component/radio/radio
 	var/obj/item/robot_parts/robot_component/camera
 	var/obj/item/mech_component/control_module/software
+	has_hardpoints = list(HARDPOINT_HEAD)
 	var/active_sensors = 0
+	power_use = 15
 
 /obj/item/mech_component/sensors/Destroy()
 	QDEL_NULL(camera)
@@ -91,6 +91,7 @@
 	else
 		to_chat(user, SPAN_WARNING(" Camera Missing or Non-functional."))
 
+
 /obj/item/mech_component/control_module
 	name = "exosuit control module"
 	desc = "A clump of circuitry and software chip docks, used to program exosuits."
@@ -98,7 +99,6 @@
 	icon = 'icons/mecha/mech_equipment.dmi'
 	gender = NEUTER
 	color = COLOR_WHITE
-	material = /decl/material/solid/metal/steel
 	var/list/installed_software = list()
 	var/max_installed_software = 2
 
@@ -108,7 +108,7 @@
 
 /obj/item/mech_component/control_module/attackby(var/obj/item/thing, var/mob/user)
 
-	if(istype(thing, /obj/item/circuitboard/exosystem))
+	if(istype(thing, /obj/item/weapon/circuitboard/exosystem))
 		install_software(thing, user)
 		return
 
@@ -119,7 +119,7 @@
 	else
 		return ..()
 
-/obj/item/mech_component/control_module/proc/install_software(var/obj/item/circuitboard/exosystem/software, var/mob/user)
+/obj/item/mech_component/control_module/proc/install_software(var/obj/item/weapon/circuitboard/exosystem/software, var/mob/user)
 	if(installed_software.len >= max_installed_software)
 		if(user)
 			to_chat(user, SPAN_WARNING("\The [src] can only hold [max_installed_software] software modules."))
@@ -129,11 +129,11 @@
 
 	if(user)
 		to_chat(user, SPAN_NOTICE("You load \the [software] into \the [src]'s memory."))
-
+		
 	software.forceMove(src)
 	update_software()
 
 /obj/item/mech_component/control_module/proc/update_software()
 	installed_software = list()
-	for(var/obj/item/circuitboard/exosystem/program in contents)
+	for(var/obj/item/weapon/circuitboard/exosystem/program in contents)
 		installed_software |= program.contains_software

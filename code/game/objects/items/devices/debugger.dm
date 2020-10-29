@@ -4,7 +4,7 @@
  *
  */
 
-/obj/item/debugger
+/obj/item/device/debugger
 	name = "debugger"
 	desc = "Used to debug electronic equipment."
 	icon = 'icons/obj/hacktool.dmi'
@@ -17,16 +17,12 @@
 	throw_speed = 3
 	desc = "You can use this on airlocks or APCs to try to hack them without cutting wires."
 
-	material = /decl/material/solid/plastic
-	matter = list(
-		/decl/material/solid/metal/steel = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/glass = MATTER_AMOUNT_TRACE
-	)
+	matter = list(MATERIAL_PLASTIC = 50, MATERIAL_STEEL = 50, MATERIAL_GLASS = 20)
 
-	origin_tech = "{'magnets':1,'engineering':1}"
+	origin_tech = list(TECH_MAGNET = 1, TECH_ENGINEERING = 1)
 	var/obj/machinery/telecomms/buffer // simple machine buffer for device linkage
 
-/obj/item/debugger/is_used_on(obj/O, mob/user)
+/obj/item/device/debugger/is_used_on(obj/O, mob/user)
 	if(istype(O, /obj/machinery/power/apc))
 		var/obj/machinery/power/apc/A = O
 		if(A.emagged || A.hacker)

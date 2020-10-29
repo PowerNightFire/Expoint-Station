@@ -3,14 +3,11 @@
 /mob/living/carbon/var/next_hallucination
 /mob/living/carbon/var/list/hallucinations = list()
 
-/mob/living/proc/adjust_hallucination(duration, power)
-	return
-
 /mob/living/carbon/proc/hallucination(duration, power)
 	hallucination_duration = max(hallucination_duration, duration)
 	hallucination_power = max(hallucination_power, power)
 
-/mob/living/carbon/adjust_hallucination(duration, power)
+/mob/living/carbon/proc/adjust_hallucination(duration, power)
 	hallucination_duration = max(0, hallucination_duration + duration)
 	hallucination_power = max(0, hallucination_power + power)
 
@@ -167,7 +164,7 @@
 			to_chat(holder,"<span class='game say'><span class='name'>[talker.name]</span> says something softly.</span>")
 		var/image/speech_bubble = image('icons/mob/talk.dmi',talker,"h[holder.say_test(message)]")
 		spawn(30) qdel(speech_bubble)
-		show_image(holder,speech_bubble)
+		image_to(holder,speech_bubble)
 		sanity-- //don't spam them in very populated rooms.
 		if(!sanity)
 			return
@@ -223,7 +220,7 @@
 	number = 2
 
 /datum/hallucination/mirage/money/generate_mirage()
-	return image('icons/obj/items/money.dmi', "spacecash[pick(1000,500,200,100,50)]", layer = BELOW_TABLE_LAYER)
+	return image('icons/obj/items.dmi', "spacecash[pick(1000,500,200,100,50)]", layer = BELOW_TABLE_LAYER)
 
 //Blood and aftermath of firefight
 /datum/hallucination/mirage/carnage
@@ -304,4 +301,4 @@
 	min_power = 30
 
 /datum/hallucination/fakeattack/hypo/start()
-	to_chat(holder, "<span class='notice'>You feel a tiny prick!</span>")
+	holder.custom_pain(SPAN_WARNING("You feel a tiny prick!"), 1, TRUE)

@@ -23,7 +23,7 @@
 	icon_state = "gcircuit"
 	initial_flooring = /decl/flooring/reinforced/circuit/green
 	light_outer_range = 2
-	light_max_bright = 1
+	light_max_bright = 3
 	light_color = COLOR_GREEN
 
 /turf/simulated/floor/blackgrid
@@ -32,7 +32,7 @@
 	icon_state = "rcircuit"
 	initial_flooring = /decl/flooring/reinforced/circuit/red
 	light_outer_range = 2
-	light_max_bright = 1
+	light_max_bright = 2
 	light_color = COLOR_RED
 
 /turf/simulated/floor/greengrid/airless
@@ -131,29 +131,35 @@
 	initial_gas = null
 
 /turf/simulated/floor/reinforced/airmix
-	initial_gas = list(/decl/material/gas/oxygen = MOLES_O2ATMOS, /decl/material/gas/nitrogen = MOLES_N2ATMOS)
+	initial_gas = list(GAS_OXYGEN = MOLES_O2ATMOS, GAS_NITROGEN = MOLES_N2ATMOS)
 
 /turf/simulated/floor/reinforced/nitrogen
-	initial_gas = list(/decl/material/gas/nitrogen = ATMOSTANK_NITROGEN)
+	initial_gas = list(GAS_NITROGEN = ATMOSTANK_NITROGEN)
 
 /turf/simulated/floor/reinforced/hydrogen
-	initial_gas = list(/decl/material/gas/hydrogen = ATMOSTANK_HYDROGEN)
+	initial_gas = list(GAS_HYDROGEN = ATMOSTANK_HYDROGEN)
 
 /turf/simulated/floor/reinforced/oxygen
-	initial_gas = list(/decl/material/gas/oxygen = ATMOSTANK_OXYGEN)
+	initial_gas = list(GAS_OXYGEN = ATMOSTANK_OXYGEN)
+
+/turf/simulated/floor/reinforced/phoron
+	initial_gas = list(GAS_PHORON = ATMOSTANK_PHORON)
 
 /turf/simulated/floor/reinforced/nitrogen/engine
 	name = "engine floor"
-	initial_gas = list(/decl/material/gas/nitrogen = MOLES_N2STANDARD)
+	initial_gas = list(GAS_NITROGEN = MOLES_N2STANDARD)
+
+/turf/simulated/floor/reinforced/phoron/fuel
+	initial_gas = list(GAS_PHORON = ATMOSTANK_PHORON_FUEL)
 
 /turf/simulated/floor/reinforced/hydrogen/fuel
-	initial_gas = list(/decl/material/gas/hydrogen = ATMOSTANK_HYDROGEN_FUEL)
+	initial_gas = list(GAS_HYDROGEN = ATMOSTANK_HYDROGEN_FUEL)
 
 /turf/simulated/floor/reinforced/carbon_dioxide
-	initial_gas = list(/decl/material/gas/carbon_dioxide = ATMOSTANK_CO2)
+	initial_gas = list(GAS_CO2 = ATMOSTANK_CO2)
 
 /turf/simulated/floor/reinforced/n20
-	initial_gas = list(/decl/material/gas/nitrous_oxide = ATMOSTANK_NITROUSOXIDE)
+	initial_gas = list(GAS_N2O = ATMOSTANK_NITROUSOXIDE)
 
 
 /turf/simulated/floor/cult
@@ -268,6 +274,31 @@
 	icon_state = "techfloor_grid"
 	initial_flooring = /decl/flooring/tiling/tech/grid
 
+/turf/simulated/floor/tiled/skrell
+	icon = 'icons/turf/skrellturf.dmi'
+	icon_state = "skrellblack"
+	initial_flooring = /decl/flooring/reinforced/shuttle/skrell
+
+/turf/simulated/floor/tiled/skrell/white
+	icon_state = "skrellwhite"
+	initial_flooring = /decl/flooring/reinforced/shuttle/skrell/white
+
+/turf/simulated/floor/tiled/skrell/red
+	icon_state = "skrellred"
+	initial_flooring = /decl/flooring/reinforced/shuttle/skrell/red
+
+/turf/simulated/floor/tiled/skrell/blue
+	icon_state = "skrellblue"
+	initial_flooring = /decl/flooring/reinforced/shuttle/skrell/blue
+
+/turf/simulated/floor/tiled/skrell/orange
+	icon_state = "skrellorange"
+	initial_flooring = /decl/flooring/reinforced/shuttle/skrell/orange
+
+/turf/simulated/floor/tiled/skrell/green
+	icon_state = "skrellgreen"
+	initial_flooring = /decl/flooring/reinforced/shuttle/skrell/green
+
 /turf/simulated/floor/lino
 	name = "lino"
 	icon = 'icons/turf/flooring/linoleum.dmi'
@@ -301,7 +332,7 @@
 	temperature = TCMB
 
 /turf/simulated/floor/greengrid/nitrogen
-	initial_gas = list(/decl/material/gas/nitrogen = MOLES_N2STANDARD)
+	initial_gas = list(GAS_NITROGEN = MOLES_N2STANDARD)
 
 // Placeholders
 /turf/simulated/floor/airless/lava
@@ -311,14 +342,17 @@
 
 /turf/simulated/floor/ice
 	name = "ice"
-	icon = 'icons/turf/exterior/ice.dmi'
-	icon_state = "0"
+	icon = 'icons/turf/snow.dmi'
+	icon_state = "ice"
 
 /turf/simulated/floor/snow
 	name = "snow"
 	icon = 'icons/turf/snow.dmi'
 	icon_state = "snow"
-	initial_flooring = /decl/flooring/snow
+
+/turf/simulated/floor/snow/New()
+	icon_state = pick("snow[rand(1,12)]","snow0")
+	..()
 
 /turf/simulated/floor/light
 /turf/simulated/floor/airless/ceiling
@@ -333,10 +367,11 @@
 
 /turf/simulated/floor/beach/sand/desert
 	icon_state = "desert"
+	has_resources = 1
 
-/turf/simulated/floor/beach/sand/desert/Initialize()
-	. = ..()
+/turf/simulated/floor/beach/sand/desert/New()
 	icon_state = "desert[rand(0,5)]"
+	..()
 
 /turf/simulated/floor/beach/coastline
 	name = "coastline"
@@ -358,8 +393,8 @@
 /turf/simulated/floor/beach/water/ocean
 	icon_state = "seadeep"
 
-/turf/simulated/floor/beach/water/Initialize()
-	. = ..()
+/turf/simulated/floor/beach/water/New()
+	..()
 	overlays += image("icon"='icons/misc/beach.dmi',"icon_state"="water5","layer"=MOB_LAYER+0.1)
 
 /turf/simulated/floor/crystal
@@ -367,3 +402,9 @@
 	icon = 'icons/turf/flooring/crystal.dmi'
 	icon_state = ""
 	initial_flooring = /decl/flooring/crystal
+
+/turf/simulated/floor/scales
+	name = "scale floor"
+	icon = 'icons/turf/flooring/flesh.dmi'
+	icon_state = "scales0"
+	initial_flooring = /decl/flooring/flesh

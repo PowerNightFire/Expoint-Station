@@ -5,7 +5,7 @@
 
 /obj/effect/wingrille_spawn
 	name = "window grille spawner"
-	icon = 'icons/obj/structures/grille.dmi'
+	icon = 'icons/obj/structures.dmi'
 	icon_state = "wingrille"
 	density = 1
 	anchored = 1.0
@@ -18,16 +18,26 @@
 	return 0
 
 /obj/effect/wingrille_spawn/attack_hand()
-	activate()
+	attack_generic()
 
 /obj/effect/wingrille_spawn/attack_ghost()
+	attack_generic()
+
+/obj/effect/wingrille_spawn/attack_generic()
 	activate()
 
 /obj/effect/wingrille_spawn/Initialize(mapload)
 	. = ..()
 	if(!win_path)
 		return
-	if(mapload || (GAME_STATE < RUNLEVEL_GAME))
+
+	// sometimes it's useful to plonk these down and activate them all manually,
+	// once all your ducks are in a row. So if we're already playing, only
+	// auto-activate if this has been put down by a maploader, not a creative admin
+	// see https://github.com/Baystation12/Baystation12/pull/9907#issuecomment-114896669
+	var/auto_activate = mapload || (GAME_STATE < RUNLEVEL_GAME)
+
+	if(auto_activate)
 		activate()
 		return INITIALIZE_HINT_QDEL
 
@@ -91,20 +101,20 @@
 	name = "Crescent window grille spawner"
 	win_path = /obj/structure/window/reinforced/crescent
 
-/obj/effect/wingrille_spawn/borosilicate
-	name = "borosilicate window grille spawner"
+/obj/effect/wingrille_spawn/phoron
+	name = "phoron window grille spawner"
 	icon_state = "p-wingrille"
-	win_path = /obj/structure/window/borosilicate
+	win_path = /obj/structure/window/phoronbasic
 
-/obj/effect/wingrille_spawn/reinforced_borosilicate
-	name = "reinforced borosilicate window grille spawner"
+/obj/effect/wingrille_spawn/reinforced_phoron
+	name = "reinforced phoron window grille spawner"
 	icon_state = "pr-wingrille"
-	win_path = /obj/structure/window/borosilicate_reinforced
+	win_path = /obj/structure/window/phoronreinforced
 
-/obj/effect/wingrille_spawn/reinforced_borosilicate/full
-	name = "reinforced borosilicate window grille spawner - full tile"
+/obj/effect/wingrille_spawn/reinforced_phoron/full
+	name = "reinforced phoron window grille spawner - full tile"
 	fulltile = TRUE
-	win_path = /obj/structure/window/borosilicate_reinforced/full
+	win_path = /obj/structure/window/phoronreinforced/full
 
 /obj/effect/wingrille_spawn/reinforced/polarized
 	name = "polarized window grille spawner"

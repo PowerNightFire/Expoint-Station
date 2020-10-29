@@ -163,11 +163,11 @@ mob
 			// Send the icon to src's local cache
 			send_rsc(src, getFlatIcon(src), iconName)
 			// Display the icon in their browser
-			src<<browse("<body bgcolor='#000000'><p><img src='[iconName]'></p></body>")
+			show_browser(src, "<body bgcolor='#000000'><p><img src='[iconName]'></p></body>", null)
 
 		Output_Icon()
 			set name = "2. Output Icon"
-			to_chat(src, "Icon is: [html_icon(getFlatIcon(src))]")
+			to_chat(src, "Icon is: \icon[getFlatIcon(src)]")
 
 		Label_Icon()
 			set name = "3. Label Icon"
@@ -926,4 +926,3 @@ proc/generate_image(var/tx as num, var/ty as num, var/tz as num, var/range as nu
 				cap.Blend(img, blendMode2iconMode(A.blend_mode),  A.pixel_x + xoff, A.pixel_y + yoff)
 
 	return cap
-

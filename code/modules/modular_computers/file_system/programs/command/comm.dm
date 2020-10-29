@@ -12,7 +12,7 @@
 	nanomodule_path = /datum/nano_module/program/comm
 	extended_desc = "Used to command and control. Can relay long-range communications. This program can not be run on tablet computers."
 	required_access = access_bridge
-	requires_network = 1
+	requires_ntnet = 1
 	size = 12
 	usage_flags = PROGRAM_CONSOLE | PROGRAM_LAPTOP
 	network_destination = "long-range communication array"
@@ -46,8 +46,8 @@
 	var/list/data = host.initial_data()
 
 	if(program)
-		data["net_comms"] = !!program.get_signal(NETWORK_COMMUNICATION) //Double !! is needed to get 1 or 0 answer
-		data["net_syscont"] = !!program.get_signal(NETWORK_SYSTEMCONTROL)
+		data["net_comms"] = !!program.get_signal(NTNET_COMMUNICATION) //Double !! is needed to get 1 or 0 answer
+		data["net_syscont"] = !!program.get_signal(NTNET_SYSTEMCONTROL)
 		if(program.computer)
 			data["emagged"] = program.computer.emagged()
 			data["have_printer"] =  program.computer.has_component(PART_PRINTER)
@@ -88,8 +88,8 @@
 		data["message_current"] = current_viewing_message
 
 	var/list/processed_evac_options = list()
-	if(!isnull(SSevac.evacuation_controller))
-		for (var/datum/evacuation_option/EO in SSevac.evacuation_controller.available_evac_options())
+	if(!isnull(evacuation_controller))
+		for (var/datum/evacuation_option/EO in evacuation_controller.available_evac_options())
 			if(EO.abandon_ship)
 				continue
 			var/list/option = list()
@@ -122,8 +122,8 @@
 	if(..())
 		return 1
 	var/mob/user = usr
-	var/ntn_comm = program ? !!program.get_signal(NETWORK_COMMUNICATION) : 1
-	var/ntn_cont = program ? !!program.get_signal(NETWORK_SYSTEMCONTROL) : 1
+	var/ntn_comm = program ? !!program.get_signal(NTNET_COMMUNICATION) : 1
+	var/ntn_cont = program ? !!program.get_signal(NTNET_SYSTEMCONTROL) : 1
 	var/datum/comm_message_listener/l = obtain_message_listener()
 	switch(href_list["action"])
 		if("sw_menu")
@@ -133,7 +133,7 @@
 			. = 1
 			if(is_autenthicated(user) && !issilicon(usr) && ntn_comm)
 				if(user)
-					var/obj/item/card/id/id_card = user.GetIdCard()
+					var/obj/item/weapon/card/id/id_card = user.GetIdCard()
 					crew_announcement.announcer = GetNameAndAssignmentFromId(id_card)
 				else
 					crew_announcement.announcer = "Unknown"
@@ -141,7 +141,7 @@
 					to_chat(usr, "Please allow at least one minute to pass between announcements")
 					return TRUE
 				var/input = input(usr, "Please write a message to announce to the [station_name()].", "Priority Announcement") as null|message
-				if(!input || !can_still_topic() || filter_block_message(usr, input))
+				if(!input || !can_still_topic())
 					return 1
 				var/affected_zlevels = GetConnectedZlevels(get_host_z())
 				crew_announcement.Announce(input, zlevels = affected_zlevels)
@@ -158,7 +158,7 @@
 							SSnano.update_uis(src)
 							return
 						var/input = sanitize(input(usr, "Please choose a message to transmit to \[ABNORMAL ROUTING CORDINATES\] via quantum entanglement.  Please be aware that this process is very expensive, and abuse will lead to... termination. Transmission does not guarantee a response. There is a 30 second delay before you may send another message, be clear, full and concise.", "To abort, send an empty message.", "") as null|text)
-						if(!input || !can_still_topic() || filter_block_message(usr, input))
+						if(!input || !can_still_topic())
 							return 1
 						Syndicate_announce(input, usr)
 						to_chat(usr, "<span class='notice'>Message transmitted.</span>")
@@ -173,10 +173,10 @@
 						SSnano.update_uis(src)
 						return
 					if(!is_relay_online())//Contact Centcom has a check, Syndie doesn't to allow for Traitor funs.
-						to_chat(usr, "<span class='warning'>No emergency communication relay detected. Unable to transmit message.</span>")
+						to_chat(usr, "<span class='warning'>No Emergency Bluespace Relay detected. Unable to transmit message.</span>")
 						return 1
 					var/input = sanitize(input("Please choose a message to transmit to [GLOB.using_map.boss_short] via quantum entanglement.  Please be aware that this process is very expensive, and abuse will lead to... termination.  Transmission does not guarantee a response. There is a 30 second delay before you may send another message, be clear, full and concise.", "To abort, send an empty message.", "") as null|text)
-					if(!input || !can_still_topic() || filter_block_message(usr, input))
+					if(!input || !can_still_topic())
 						return 1
 					Centcomm_announce(input, usr)
 					to_chat(usr, "<span class='notice'>Message transmitted.</span>")
@@ -187,7 +187,7 @@
 		if("evac")
 			. = 1
 			if(is_autenthicated(user))
-				var/datum/evacuation_option/selected_evac_option = SSevac.evacuation_controller.evacuation_options[href_list["target"]]
+				var/datum/evacuation_option/selected_evac_option = evacuation_controller.evacuation_options[href_list["target"]]
 				if (isnull(selected_evac_option) || !istype(selected_evac_option))
 					return
 				if (!selected_evac_option.silicon_allowed && issilicon(user))
@@ -196,7 +196,7 @@
 					return
 				var/confirm = alert("Are you sure you want to [selected_evac_option.option_desc]?", name, "No", "Yes")
 				if (confirm == "Yes" && can_still_topic())
-					SSevac.evacuation_controller.handle_evac_option(selected_evac_option.option_target, user)
+					evacuation_controller.handle_evac_option(selected_evac_option.option_target, user)
 		if("setstatus")
 			. = 1
 			if(is_autenthicated(user) && ntn_cont)
@@ -315,54 +315,58 @@ var/last_message_id = 0
 	frequency.post_signal(signal = status_signal)
 
 /proc/cancel_call_proc(var/mob/user)
-	if (!SSevac.evacuation_controller)
+	if (!evacuation_controller)
 		return
 
-	if(SSevac.evacuation_controller.cancel_evacuation())
+	if(evacuation_controller.cancel_evacuation())
 		log_and_message_admins("has cancelled the evacuation.", user)
 
 	return
 
 
 /proc/is_relay_online()
-	for(var/obj/machinery/commsrelay/M in SSmachines.machinery)
+	for(var/obj/machinery/bluespacerelay/M in SSmachines.machinery)
 		if(M.stat == 0)
 			return 1
 	return 0
 
 /proc/call_shuttle_proc(var/mob/user, var/emergency)
-	if (!SSevac.evacuation_controller)
+	if (!evacuation_controller)
 		return
 
 	if(isnull(emergency))
 		emergency = 1
 
 	if(!GLOB.universe.OnShuttleCall(usr))
-		to_chat(user, "<span class='notice'>Cannot establish a connection.</span>")
+		to_chat(user, "<span class='notice'>Cannot establish a bluespace connection.</span>")
 		return
 
-	if(SSevac.evacuation_controller.deny)
+	if(GLOB.deathsquad.deployed)
+		to_chat(user, "[GLOB.using_map.boss_short] will not allow an evacuation to take place. Consider all contracts terminated.")
+		return
+
+	if(evacuation_controller.deny)
 		to_chat(user, "An evacuation cannot be called at this time. Please try again later.")
 		return
 
-	if(SSevac.evacuation_controller.is_on_cooldown()) // Ten minute grace period to let the game get going without lolmetagaming. -- TLE
-		to_chat(user, SSevac.evacuation_controller.get_cooldown_message())
+	if(evacuation_controller.is_on_cooldown()) // Ten minute grace period to let the game get going without lolmetagaming. -- TLE
+		to_chat(user, evacuation_controller.get_cooldown_message())
 
-	if(SSevac.evacuation_controller.is_evacuating())
+	if(evacuation_controller.is_evacuating())
 		to_chat(user, "An evacuation is already underway.")
 		return
 
-	if(SSevac.evacuation_controller.call_evacuation(user, _emergency_evac = emergency))
+	if(evacuation_controller.call_evacuation(user, _emergency_evac = emergency))
 		log_and_message_admins("[user? key_name(user) : "Autotransfer"] has called the shuttle.")
 
 /proc/init_autotransfer()
 
-	if (!SSevac.evacuation_controller)
+	if (!evacuation_controller)
 		return
 
-	. = SSevac.evacuation_controller.call_evacuation(null, _emergency_evac = FALSE, autotransfer = TRUE)
+	. = evacuation_controller.call_evacuation(null, _emergency_evac = FALSE, autotransfer = TRUE)
 	if(.)
 		//delay events in case of an autotransfer
-		var/delay = SSevac.evacuation_controller.evac_arrival_time - world.time + (2 MINUTES)
+		var/delay = evacuation_controller.evac_arrival_time - world.time + (2 MINUTES)
 		SSevent.delay_events(EVENT_LEVEL_MODERATE, delay)
 		SSevent.delay_events(EVENT_LEVEL_MAJOR, delay)

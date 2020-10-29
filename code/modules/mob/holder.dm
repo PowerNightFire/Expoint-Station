@@ -1,62 +1,56 @@
 var/list/holder_mob_icon_cache = list()
 
-//Helper object for picking creatures up.
-/obj/item/holder
+//Helper object for picking dionaea (and other creatures) up.
+/obj/item/weapon/holder
 	name = "holder"
 	desc = "You shouldn't ever see this."
 	icon = 'icons/obj/objects.dmi'
 	slot_flags = SLOT_HEAD | SLOT_HOLSTER
 
+	sprite_sheets = list(
+		SPECIES_VOX = 'icons/mob/species/vox/onmob_head_vox.dmi',
+		SPECIES_VOX_ARMALIS = 'icons/mob/species/vox/onmob_head_vox_armalis.dmi'
+		)
+
 	origin_tech = null
 	item_icons = list(
-		BP_L_HAND = 'icons/mob/onmob/items/lefthand_holder.dmi',
-		BP_R_HAND = 'icons/mob/onmob/items/righthand_holder.dmi'
-	)
+		slot_l_hand_str = 'icons/mob/onmob/items/lefthand_holder.dmi',
+		slot_r_hand_str = 'icons/mob/onmob/items/righthand_holder.dmi',
+		)
 	pixel_y = 8
 
 	var/last_holder
 
-/obj/item/holder/Initialize()
-	. = ..()
+/obj/item/weapon/holder/New()
+	..()
 	START_PROCESSING(SSobj, src)
 
-/obj/item/holder/proc/destroy_all()
+/obj/item/weapon/holder/proc/destroy_all()
 	for(var/atom/movable/AM in src)
 		qdel(AM)
 	qdel(src)
 
-/obj/item/holder/Destroy()
+/obj/item/weapon/holder/Destroy()
 	for(var/atom/movable/AM in src)
 		AM.forceMove(get_turf(src))
 	last_holder = null
 	STOP_PROCESSING(SSobj, src)
 	return ..()
 
-/obj/item/holder/Process()
+/obj/item/weapon/holder/Process()
 	update_state()
 
-/obj/item/holder/dropped()
+/obj/item/weapon/holder/dropped()
 	..()
-	update_state(1)
+	spawn(1)
+		update_state()
 
-/obj/item/holder/throw_impact(atom/hit_atom, datum/thrownthing/TT)
-	..()
-	update_state(1)
-
-/obj/item/holder/proc/update_state(var/delay)
-	set waitfor = 0
-
+/obj/item/weapon/holder/proc/update_state()
 	if(last_holder != loc)
 		for(var/mob/M in contents)
 			unregister_all_movement(last_holder, M)
 
-	if(delay)
-		sleep(delay)
-
-	if(QDELETED(src) || throwing)
-		return
-
-	if(istype(loc,/turf) || !contents.len)
+	if(istype(loc,/turf) || !(contents.len))
 		for(var/mob/M in contents)
 			var/atom/movable/mob_container = M
 			mob_container.dropInto(loc)
@@ -68,27 +62,27 @@ var/list/holder_mob_icon_cache = list()
 
 	last_holder = loc
 
-/obj/item/holder/onDropInto(var/atom/movable/AM)
+/obj/item/weapon/holder/onDropInto(var/atom/movable/AM)
 	if(ismob(loc))   // Bypass our holding mob and drop directly to its loc
 		return loc.loc
 	return ..()
 
-/obj/item/holder/GetIdCard()
+/obj/item/weapon/holder/GetIdCard()
 	for(var/mob/M in contents)
 		var/obj/item/I = M.GetIdCard()
 		if(I)
 			return I
 	return null
 
-/obj/item/holder/GetAccess()
+/obj/item/weapon/holder/GetAccess()
 	var/obj/item/I = GetIdCard()
 	return I ? I.GetAccess() : ..()
 
-/obj/item/holder/attack_self()
+/obj/item/weapon/holder/attack_self()
 	for(var/mob/M in contents)
 		M.show_inv(usr)
 
-/obj/item/holder/attack(mob/target, mob/user)
+/obj/item/weapon/holder/attack(mob/target, mob/user)
 	// Devour on click on self with holder
 	if(target == user && istype(user,/mob/living/carbon))
 		var/mob/living/carbon/M = user
@@ -100,14 +94,14 @@ var/list/holder_mob_icon_cache = list()
 
 	..()
 
-/obj/item/holder/proc/sync(var/mob/living/M)
-	set_dir(SOUTH)
+/obj/item/weapon/holder/proc/sync(var/mob/living/M)
+	dir = 2
 	overlays.Cut()
 	icon = M.icon
 	icon_state = M.icon_state
 	item_state = M.item_state
 	color = M.color
-	SetName(M.name)
+	name = M.name
 	desc = M.desc
 	overlays |= M.overlays
 	var/mob/living/carbon/human/H = loc
@@ -117,17 +111,20 @@ var/list/holder_mob_icon_cache = list()
 	update_held_icon()
 
 //Mob specific holders.
-/obj/item/holder/drone
-	origin_tech = "{'magnets':3,'engineering':5}"
+/obj/item/weapon/holder/drone
+	origin_tech = list(TECH_MAGNET = 3, TECH_ENGINEERING = 5)
 
-/obj/item/holder/mouse
+/obj/item/weapon/holder/mouse
 	w_class = ITEM_SIZE_TINY
 
-//need own subtype to work with recipes
-/obj/item/holder/corgi
-	origin_tech = "{'biotech':4}"
+/obj/item/weapon/holder/borer
+	origin_tech = list(TECH_BIO = 6)
 
-/obj/item/holder/attackby(obj/item/W, mob/user)
+//need own subtype to work with recipies
+/obj/item/weapon/holder/corgi
+	origin_tech = list(TECH_BIO = 4)
+
+/obj/item/weapon/holder/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	for(var/mob/M in src.contents)
 		M.attackby(W,user)
 
@@ -135,7 +132,6 @@ var/list/holder_mob_icon_cache = list()
 /mob/living/var/holder_type
 
 /mob/living/proc/get_scooped(var/mob/living/carbon/human/grabber, var/self_grab)
-
 	if(!holder_type || buckled || pinned.len)
 		return
 
@@ -144,10 +140,10 @@ var/list/holder_mob_icon_cache = list()
 	else
 		if(grabber.incapacitated()) return
 
-	var/obj/item/holder/H = new holder_type(get_turf(src))
+	var/obj/item/weapon/holder/H = new holder_type(get_turf(src))
 
 	if(self_grab)
-		if(!grabber.equip_to_slot_if_possible(H, slot_back_str, del_on_fail=0, disable_warning=1))
+		if(!grabber.equip_to_slot_if_possible(H, slot_back, del_on_fail=0, disable_warning=1))
 			to_chat(src, "<span class='warning'>You can't climb onto [grabber]!</span>")
 			return
 
@@ -167,45 +163,32 @@ var/list/holder_mob_icon_cache = list()
 	H.sync(src)
 	return H
 
-/mob/living/attack_hand(mob/user)
-
-	var/datum/extension/hattable/hattable = get_extension(src, /datum/extension/hattable)
-	if(hattable && hattable.hat)
-		hattable.hat.forceMove(get_turf(src))
-		user.put_in_hands(hattable.hat)
-		user.visible_message(SPAN_DANGER("\The [user] removes \the [src]'s [hattable.hat]!"))
-		hattable.hat = null
-		update_icons()
-		return TRUE
-
-	if(ishuman(user))
-		var/mob/living/carbon/H = user
-		if(H.a_intent == I_GRAB && scoop_check(user))
-			get_scooped(user, FALSE)
-			return TRUE
-
-	. = ..()
+/mob/living/MouseDrop(var/mob/living/carbon/human/over_object)
+	if(istype(over_object) && Adjacent(over_object) && (usr == src || usr == over_object) && over_object.a_intent == I_GRAB)
+		if(scoop_check(over_object))
+			get_scooped(over_object, (usr == src))
+			return
+	return ..()
 
 /mob/living/proc/scoop_check(var/mob/living/scooper)
-	. = TRUE
+	return 1
 
 /mob/living/carbon/human/scoop_check(var/mob/living/scooper)
-	. = ..() && scooper.mob_size > src.mob_size
+	return (scooper.mob_size > src.mob_size && a_intent == I_HELP)
 
-/obj/item/holder/human
+/obj/item/weapon/holder/human
 	icon = 'icons/mob/holder_complex.dmi'
-	var/mob_blend_mode = ICON_ADD
+	var/list/generate_for_slots = list(slot_l_hand_str, slot_r_hand_str, slot_back_str)
 	slot_flags = SLOT_BACK
-	var/list/generate_for_slots = list(BP_L_HAND, BP_R_HAND, slot_back_str)
 
-/obj/item/holder/human/sync(var/mob/living/M)
+/obj/item/weapon/holder/human/sync(var/mob/living/M)
 	// Generate appropriate on-mob icons.
 	var/mob/living/carbon/human/owner = M
-	if(istype(owner) && owner.species && LAZYLEN(generate_for_slots))
+	if(istype(owner) && owner.species)
 
-		var/skin_colour = owner.skin_colour
-		var/hair_colour = owner.hair_colour
-		var/eye_colour =  owner.eye_colour
+		var/skin_colour = rgb(owner.r_skin, owner.g_skin, owner.b_skin)
+		var/hair_colour = rgb(owner.r_hair, owner.g_hair, owner.b_hair)
+		var/eye_colour =  rgb(owner.r_eyes, owner.g_eyes, owner.b_eyes)
 		var/species_name = lowertext(owner.species.get_bodytype(owner))
 
 		for(var/cache_entry in generate_for_slots)

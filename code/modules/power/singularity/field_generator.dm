@@ -55,8 +55,8 @@ field_generator power level display
 	return
 
 
-/obj/machinery/field_generator/Initialize()
-	. = ..()
+/obj/machinery/field_generator/New()
+	..()
 	fields = list()
 	connected_gens = list()
 
@@ -120,7 +120,7 @@ field_generator power level display
 				to_chat(user, "<span class='warning'> The [src.name] needs to be unwelded from the floor.</span>")
 				return
 	else if(isWelder(W))
-		var/obj/item/weldingtool/WT = W
+		var/obj/item/weapon/weldingtool/WT = W
 		switch(state)
 			if(0)
 				to_chat(user, "<span class='warning'>The [src.name] needs to be wrenched to the floor.</span>")
@@ -259,7 +259,7 @@ field_generator power level display
 		return
 	for(var/dist = 0, dist <= 9, dist += 1) // checks out to 8 tiles away for another generator
 		T = get_step(T, NSEW)
-		if(T.density)//We cant shoot a field though this
+		if(T.density)//We can't shoot a field though this
 			return 0
 		for(var/atom/A in T.contents)
 			if(ismob(A))

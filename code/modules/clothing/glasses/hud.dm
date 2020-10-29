@@ -1,13 +1,12 @@
 /obj/item/clothing/glasses/hud
 	name = "HUD"
 	desc = "A heads-up display that provides important info in (almost) real time."
-	origin_tech = "{'magnets':3,'biotech':2}"
+	origin_tech = list(TECH_MAGNET = 3, TECH_BIO = 2)
+	var/list/icon/current = list() //the current hud icons
 	electric = 1
 	gender = NEUTER
-	material = /decl/material/solid/metal/aluminium
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
-	bodytype_restricted = null
-	var/list/icon/current = list() //the current hud icons
+
+	species_restricted = null
 
 /obj/item/clothing/glasses/proc/process_hud(var/mob/M)
 	if(hud)
@@ -15,14 +14,6 @@
 
 /obj/item/clothing/glasses/hud/process_hud(var/mob/M)
 	return
-
-/obj/item/clothing/glasses/hud/Initialize()
-	. = ..()
-	set_extension(src, /datum/extension/network_device/lazy)
-	var/obj/verb_holder = src
-	if(istype(loc, /obj/item/clothing/glasses)) //we're a HUD inside other glasses
-		verb_holder = loc
-	verb_holder.verbs |= /obj/item/clothing/glasses/proc/network_setup
 
 /obj/item/clothing/glasses/hud/health
 	name = "health scanner HUD"
@@ -32,8 +23,7 @@
 	body_parts_covered = 0
 
 /obj/item/clothing/glasses/hud/health/process_hud(var/mob/M)
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	process_med_hud(M, 1, network = D?.get_network())
+	process_med_hud(M, 1)
 
 /obj/item/clothing/glasses/hud/health/prescription
 	name = "prescription health scanner HUD"
@@ -47,6 +37,7 @@
 	desc = "A medical HUD integrated with a wide visor."
 	icon_state = "medhud_visor"
 	item_state = "medhud_visor"
+	body_parts_covered = EYES
 
 /obj/item/clothing/glasses/hud/security
 	name = "security HUD"
@@ -55,7 +46,7 @@
 	hud_type = HUD_SECURITY
 	body_parts_covered = 0
 	var/global/list/jobs[0]
-	
+
 /obj/item/clothing/glasses/hud/security/prescription
 	name = "prescription security HUD"
 	desc = "A security HUD integrated with a set of prescription glasses."
@@ -74,8 +65,7 @@
 
 
 /obj/item/clothing/glasses/hud/security/process_hud(var/mob/M)
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	process_sec_hud(M, 1, network = D?.get_network())
+	process_sec_hud(M, 1)
 
 /obj/item/clothing/glasses/hud/janitor
 	name = "janiHUD"

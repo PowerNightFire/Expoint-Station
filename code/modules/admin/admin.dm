@@ -83,6 +83,7 @@ var/global/floorIsLava = 0
 
 	if(M.client)
 		body += "| <A HREF='?src=\ref[src];sendtoprison=\ref[M]'>Prison</A> | "
+		body += "<A HREF='?src=\ref[src];reloadsave=\ref[M]'>Reload Save</A> | "
 		var/muted = M.client.prefs.muted
 		body += {"<br><b>Mute: </b>
 			\[<A href='?src=\ref[src];mute=\ref[M];mute_type=[MUTE_IC]'><font color='[(muted & MUTE_IC)?"red":"blue"]'>IC</font></a> |
@@ -116,14 +117,26 @@ var/global/floorIsLava = 0
 		body += "<br>"
 		body += "<a href='?src=\ref[M.mind];add_goal=1'>Add Random Goal</a>"
 
-	var/list/all_modpacks = decls_repository.get_decls_of_subtype(/decl/modpack)
-	for(var/package in all_modpacks)
-		var/decl/modpack/manifest = all_modpacks[package]
-		var/extra_body = manifest.get_player_panel_options(M)
-		if(extra_body)
-			body += "<br><br>"
-			body += extra_body
-			
+	body += "<br><br>"
+	body += "<b>Psionics:</b><br/>"
+	if(isliving(M))
+		var/mob/living/psyker = M
+		if(psyker.psi)
+			body += "<a href='?src=\ref[psyker.psi];remove_psionics=1'>Remove psionics.</a><br/><br/>"
+			body += "<a href='?src=\ref[psyker.psi];trigger_psi_latencies=1'>Trigger latencies.</a><br/>"
+		body += "<table width = '100%'>"
+		for(var/faculty in list(PSI_COERCION, PSI_PSYCHOKINESIS, PSI_REDACTION, PSI_ENERGISTICS))
+			var/decl/psionic_faculty/faculty_decl = SSpsi.get_faculty(faculty)
+			var/faculty_rank = psyker.psi ? psyker.psi.get_rank(faculty) : 0
+			body += "<tr><td><b>[faculty_decl.name]</b></td>"
+			for(var/i = 1 to LAZYLEN(GLOB.psychic_ranks_to_strings))
+				var/psi_title = GLOB.psychic_ranks_to_strings[i]
+				if(i == faculty_rank)
+					psi_title = "<b>[psi_title]</b>"
+				body += "<td><a href='?src=\ref[psyker.mind];set_psi_faculty_rank=[i];set_psi_faculty=[faculty]'>[psi_title]</a></td>"
+			body += "</tr>"
+		body += "</table>"
+
 	if (M.client)
 		if(!istype(M, /mob/new_player))
 			body += "<br><br>"
@@ -182,6 +195,11 @@ var/global/floorIsLava = 0
 				<A href='?src=\ref[src];simplemake=observer;mob=\ref[M]'>Observer</A> |
 				\[ Xenos: <A href='?src=\ref[src];simplemake=larva;mob=\ref[M]'>Larva</A>
 				\[ Crew: <A href='?src=\ref[src];simplemake=human;mob=\ref[M]'>Human</A>
+				<A href='?src=\ref[src];simplemake=human;species=Unathi;mob=\ref[M]'>Unathi</A>
+				<A href='?src=\ref[src];simplemake=human;species=Skrell;mob=\ref[M]'>Skrell</A>
+				<A href='?src=\ref[src];simplemake=human;species=Vox;mob=\ref[M]'>Vox</A> \] | \[
+				<A href='?src=\ref[src];simplemake=nymph;mob=\ref[M]'>Nymph</A>
+				<A href='?src=\ref[src];simplemake=human;species='Diona';mob=\ref[M]'>Diona</A> \] |
 				\[ slime: <A href='?src=\ref[src];simplemake=slime;mob=\ref[M]'>Baby</A>,
 				<A href='?src=\ref[src];simplemake=adultslime;mob=\ref[M]'>Adult</A> \]
 				<A href='?src=\ref[src];simplemake=monkey;mob=\ref[M]'>Monkey</A> |
@@ -213,18 +231,15 @@ var/global/floorIsLava = 0
 	// language toggles
 	body += "<br><br><b>Languages:</b><br>"
 	var/f = 1
-	var/list/language_types = decls_repository.get_decls_of_subtype(/decl/language)
-	for(var/k in language_types)
-		var/decl/language/L = language_types[k]
+	for(var/k in all_languages)
+		var/datum/language/L = all_languages[k]
 		if(!(L.flags & INNATE))
-			if(!f)
-				body += " | "
-			else
-				f = 0
+			if(!f) body += " | "
+			else f = 0
 			if(L in M.languages)
-				body += "<a href='?src=\ref[src];toglang=\ref[M];lang=[L.name]' style='color:#006600'>[L.name]</a>"
+				body += "<a href='?src=\ref[src];toglang=\ref[M];lang=[html_encode(k)]' style='color:#006600'>[k]</a>"
 			else
-				body += "<a href='?src=\ref[src];toglang=\ref[M];lang=[L.name]' style='color:#ff0000'>[L.name]</a>"
+				body += "<a href='?src=\ref[src];toglang=\ref[M];lang=[html_encode(k)]' style='color:#ff0000'>[k]</a>"
 
 	body += {"<br>
 		</body></html>
@@ -255,7 +270,7 @@ var/global/floorIsLava = 0
 	dat += "<B>Player notes</B><HR>"
 	var/savefile/S=new("data/player_notes.sav")
 	var/list/note_keys
-	S >> note_keys
+	from_save(S, note_keys)
 
 	if(filter_term)
 		for(var/t in note_keys)
@@ -282,7 +297,7 @@ var/global/floorIsLava = 0
 /datum/admins/proc/player_has_info(var/key as text)
 	var/savefile/info = new("data/player_saves/[copytext(key, 1, 2)]/[key]/info.sav")
 	var/list/infos
-	info >> infos
+	from_save(info, infos)
 	if(!infos || !infos.len) return 0
 	else return 1
 
@@ -308,7 +323,7 @@ var/global/floorIsLava = 0
 
 	var/savefile/info = new("data/player_saves/[copytext(key, 1, 2)]/[key]/info.sav")
 	var/list/infos
-	info >> infos
+	from_save(info, infos)
 	if(!infos)
 		dat += "No information found on the given key.<br>"
 	else
@@ -326,7 +341,7 @@ var/global/floorIsLava = 0
 			if(I.author == usr.key || I.author == "Adminbot" || ishost(usr))
 				dat += "<A href='?src=\ref[src];remove_player_info=[key];remove_index=[i]'>Remove</A>"
 			dat += "<hr></li>"
-		if(update_file) info << infos
+		if(update_file) to_save(info, infos)
 
 	dat += "</ul><br><A href='?src=\ref[src];add_player_info=[key]'>Add Comment</A><br>"
 
@@ -639,7 +654,7 @@ var/global/floorIsLava = 0
 		<A href='?src=\ref[src];create_turf=1'>Create Turf</A><br>
 		<A href='?src=\ref[src];create_mob=1'>Create Mob</A><br>
 		<br><A href='?src=\ref[src];vsc=airflow'>Edit Airflow Settings</A><br>
-		<A href='?src=\ref[src];vsc=contam'>Edit Contaminant Settings</A><br>
+		<A href='?src=\ref[src];vsc=phoron'>Edit Phoron Settings</A><br>
 		<A href='?src=\ref[src];vsc=default'>Choose a default ZAS setting</A><br>
 		"}
 
@@ -739,9 +754,9 @@ var/global/floorIsLava = 0
 
 	config.aooc_allowed = !(config.aooc_allowed)
 	if (config.aooc_allowed)
-		communicate_broadcast(/decl/communication_channel/aooc, "The AOOC channel has been globally enabled!", TRUE)
+		to_world("<B>The AOOC channel has been globally enabled!</B>")
 	else
-		communicate_broadcast(/decl/communication_channel/aooc, "The AOOC channel has been globally disabled!", TRUE)
+		to_world("<B>The AOOC channel has been globally disabled!</B>")
 	log_and_message_admins("toggled AOOC.")
 	SSstatistics.add_field_details("admin_verb","TAOOC") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
@@ -839,24 +854,6 @@ var/global/floorIsLava = 0
 		to_chat(usr, "<span class='bigwarning'>Error: Start Now: Game has already started.</span>")
 		return 0
 
-/datum/admins/proc/endnow()
-	set category = "Server"
-	set desc = "Ending game round"
-	set name = "End Round"
-	if(!usr.client.holder || !check_rights(R_ADMIN))
-		return
-
-	if(GAME_STATE != RUNLEVEL_GAME)
-		to_chat(usr, "<span class='bigdanger'>The round has not started yet!</span>")
-		return
-
-	var/confirm = alert("End the game round?", "Game Ending", "Yes", "Cancel")
-	if(confirm == "Yes")
-		SSticker.force_ending = 1
-		log_and_message_admins("initiated a game ending.")
-		to_world("<span class='danger'>Game ending!</span> <span class='notice'>Initiated by [usr.key]!</span>")
-		SSstatistics.add_field("admin_verb","ER") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
-
 /datum/admins/proc/toggleenter()
 	set category = "Server"
 	set desc="People can't enter"
@@ -866,7 +863,7 @@ var/global/floorIsLava = 0
 		to_world("<B>New players may no longer enter the game.</B>")
 	else
 		to_world("<B>New players may now enter the game.</B>")
-	log_and_message_admins("toggled new player game entering.")
+	log_and_message_admins("[key_name_admin(usr)] toggled new player game entering.")
 	world.update_status()
 	SSstatistics.add_field_details("admin_verb","TE") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
@@ -943,7 +940,7 @@ var/global/floorIsLava = 0
 	set desc="Toggle admin jumping"
 	set name="Toggle Jump"
 	config.allow_admin_jump = !(config.allow_admin_jump)
-	log_and_message_admins("toggled admin jumping to [config.allow_admin_jump].")
+	log_and_message_admins("Toggled admin jumping to [config.allow_admin_jump].")
 	SSstatistics.add_field_details("admin_verb","TJ") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
 /datum/admins/proc/adspawn()
@@ -1039,22 +1036,6 @@ var/global/floorIsLava = 0
 			var/turf/T = locate(usr.x+x, usr.y+y, usr.z)
 			if(T)
 				new /obj/structure/closet/debug(T, check_appearance)
-
-/datum/admins/proc/check_unconverted_single_icon_items()
-	set category = "Debug"
-	set desc = "Count items missing single icon definition."
-	set name = "Check Single Mob Icons"
-	if(!check_rights(R_DEBUG))
-		return
-	var/types_missing_icons
-	for(var/checktype in typesof(/obj/item))
-		var/obj/item/I = checktype
-		var/check_icon = initial(I.icon)
-		if(!check_state_in_icon(ICON_STATE_INV, check_icon) && !check_state_in_icon(ICON_STATE_WORLD, check_icon))
-			LAZYADD(types_missing_icons, checktype)
-	if(alert("[LAZYLEN(types_missing_icons)] item\s are missing world or inventory states. Do you wish to see the full list?", "Check missing icons", "Yes", "No") == "Yes")
-		for(var/checktype in types_missing_icons)
-			to_chat(usr, checktype)
 
 /datum/admins/proc/spawn_fruit(seedtype in SSplants.seeds)
 	set category = "Debug"
@@ -1312,7 +1293,7 @@ var/global/floorIsLava = 0
 	NM = new NM(usr, override = M.skillset)
 	NM.ui_interact(usr)
 
-/client/proc/update_mob_sprite(mob/living/carbon/human/H)
+/client/proc/update_mob_sprite(mob/living/carbon/human/H as mob)
 	set category = "Admin"
 	set name = "Update Mob Sprite"
 	set desc = "Should fix any mob sprite update errors."
@@ -1473,7 +1454,7 @@ var/global/floorIsLava = 0
 
 			var/replyorigin = input(src.owner, "Please specify who the fax is coming from", "Origin") as text|null
 
-			var/obj/item/paper/admin/P = new /obj/item/paper/admin( null ) //hopefully the null loc won't cause trouble for us
+			var/obj/item/weapon/paper/admin/P = new /obj/item/weapon/paper/admin( null ) //hopefully the null loc won't cause trouble for us
 			faxreply = P
 
 			P.admindatum = src
@@ -1483,9 +1464,23 @@ var/global/floorIsLava = 0
 			P.adminbrowse()
 
 
-datum/admins/var/obj/item/paper/admin/faxreply // var to hold fax replies in
+/client/proc/check_fax_history()
+	set category = "Special Verbs"
+	set name = "Check Fax History"
+	set desc = "Look up the faxes sent this round."
 
-/datum/admins/proc/faxCallback(var/obj/item/paper/admin/P, var/obj/machinery/photocopier/faxmachine/destination)
+	var/data = "<center><b>Fax History:</b></center><br>"
+
+	if(GLOB.adminfaxes)
+		for(var/obj/item/item in GLOB.adminfaxes)
+			data += "[item.name] - <a href='?_src_=holder;AdminFaxView=\ref[item]'>view message</a><br>"
+	else
+		data += "<center>No faxes yet.</center>"
+	show_browser(usr, "<HTML><HEAD><TITLE>Fax History</TITLE></HEAD><BODY>[data]</BODY></HTML>", "window=FaxHistory;size=450x400")
+
+datum/admins/var/obj/item/weapon/paper/admin/faxreply // var to hold fax replies in
+
+/datum/admins/proc/faxCallback(var/obj/item/weapon/paper/admin/P, var/obj/machinery/photocopier/faxmachine/destination)
 	var/customname = input(src.owner, "Pick a title for the report", "Title") as text|null
 
 	P.SetName("[P.origin] - [customname]")
@@ -1517,7 +1512,7 @@ datum/admins/var/obj/item/paper/admin/faxreply // var to hold fax replies in
 
 		if(!P.stamped)
 			P.stamped = new
-		P.stamped += /obj/item/stamp/boss
+		P.stamped += /obj/item/weapon/stamp/boss
 		P.overlays += stampoverlay
 
 	var/obj/item/rcvdcopy

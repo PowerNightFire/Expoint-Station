@@ -8,7 +8,7 @@
 
  *THINGS TO KNOW
  *ARTIFACT_TURF_CHAR is used for room walls, used primarily for code used for corridors.
- *ARTIFACT_TURF is used to mark gaps in walls for rooms - this is checked so that we dont have three corridors in a row. This isn't done for corridors so that we can have branching paths.
+ *ARTIFACT_TURF is used to mark gaps in walls for rooms - this is checked so that we don't have three corridors in a row. This isn't done for corridors so that we can have branching paths.
  *Rooms will generate a room_theme, a datum that points to a few different types to generate the room with.
  *room_themes will also generate stuff inside. This is a random_room datum.
 
@@ -18,7 +18,7 @@
 
 /datum/random_map/winding_dungeon
 	descriptor = "winding dungeon"
-	wall_type = /turf/simulated/wall/natural
+	wall_type = /turf/simulated/mineral
 	floor_type = /turf/simulated/floor/tiled
 	var/room_wall_type = /turf/simulated/wall
 	var/border_wall_type = /turf/unsimulated/mineral

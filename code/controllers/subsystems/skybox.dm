@@ -15,8 +15,7 @@ SUBSYSTEM_DEF(skybox)
 
 /datum/controller/subsystem/skybox/Initialize()
 	. = ..()
-	if(isnull(background_color))
-		background_color = RANDOM_RGB
+	background_color = RANDOM_RGB
 
 /datum/controller/subsystem/skybox/Recover()
 	background_color = SSskybox.background_color

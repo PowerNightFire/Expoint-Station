@@ -13,7 +13,7 @@
 	bone_material = null
 	bone_amount = 0
 
-	var/obj/item/card/id/botcard = null
+	var/obj/item/weapon/card/id/botcard = null
 	var/list/botcard_access = list()
 	var/on = 1
 	var/open = 0
@@ -46,15 +46,15 @@
 
 	layer = HIDING_MOB_LAYER
 
-/mob/living/bot/Initialize()
-	. = ..()
+/mob/living/bot/New()
+	..()
 	update_icons()
 
-	botcard = new /obj/item/card/id(src)
-	botcard.access = botcard_access?.Copy()
+	botcard = new /obj/item/weapon/card/id(src)
+	botcard.access = botcard_access.Copy()
 
 	access_scanner = new /obj(src)
-	access_scanner.req_access = req_access?.Copy()
+	access_scanner.req_access = req_access.Copy()
 
 /mob/living/bot/Initialize()
 	. = ..()
@@ -73,7 +73,8 @@
 	paralysis = 0
 
 	if(on && !client && !busy)
-		handleAI()
+		spawn(0)
+			handleAI()
 
 /mob/living/bot/updatehealth()
 	if(status_flags & GODMODE)
@@ -210,7 +211,6 @@
 	return 0
 
 /mob/living/bot/proc/handleAI()
-	set waitfor = FALSE
 	if(ignore_list.len)
 		for(var/atom/A in ignore_list)
 			if(!A || !A.loc || prob(1))
@@ -221,7 +221,7 @@
 			handleAdjacentTarget()
 		else
 			handleRangedTarget()
-		if(!wait_if_pulled || !LAZYLEN(grabbed_by))
+		if(!wait_if_pulled || !pulledby)
 			for(var/i = 1 to target_speed)
 				sleep(20 / (target_speed + 1))
 				stepToTarget()
@@ -230,7 +230,7 @@
 	else
 		resetTarget()
 		lookForTargets()
-		if(will_patrol && !LAZYLEN(grabbed_by) && !target)
+		if(will_patrol && !pulledby && !target)
 			if(patrol_path && patrol_path.len)
 				for(var/i = 1 to patrol_speed)
 					sleep(20 / (patrol_speed + 1))
@@ -370,7 +370,7 @@
 
 // Returns the surrounding cardinal turfs with open links
 // Including through doors openable with the ID
-/turf/proc/CardinalTurfsWithAccess(var/obj/item/card/id/ID)
+/turf/proc/CardinalTurfsWithAccess(var/obj/item/weapon/card/id/ID)
 	var/L[] = new()
 
 	//	for(var/turf/simulated/t in oview(src,1))
@@ -385,7 +385,7 @@
 
 // Returns true if a link between A and B is blocked
 // Movement through doors allowed if ID has access
-/proc/LinkBlockedWithAccess(turf/A, turf/B, obj/item/card/id/ID)
+/proc/LinkBlockedWithAccess(turf/A, turf/B, obj/item/weapon/card/id/ID)
 
 	if(A == null || B == null) return 1
 	var/adir = get_dir(A,B)
@@ -414,7 +414,7 @@
 
 // Returns true if direction is blocked from loc
 // Checks doors against access with given ID
-/proc/DirBlockedWithAccess(turf/loc,var/dir,var/obj/item/card/id/ID)
+/proc/DirBlockedWithAccess(turf/loc,var/dir,var/obj/item/weapon/card/id/ID)
 	for(var/obj/structure/window/D in loc)
 		if(!D.density)			continue
 		if(D.dir == SOUTHWEST)	return 1

@@ -16,11 +16,7 @@
 
 	var/on = 0
 	use_power = POWER_USE_OFF
-
 	uncreated_component_parts = null
-	frame_type = /obj/item/pipe
-	construct_state = /decl/machine_construction/pipe
-
 	level = 1
 
 	connect_types = CONNECT_TYPE_REGULAR|CONNECT_TYPE_FUEL
@@ -55,11 +51,15 @@
 
 // Housekeeping and pipe network stuff below
 /obj/machinery/atmospherics/portables_connector/network_expand(datum/pipe_network/new_network, obj/machinery/atmospherics/pipe/reference)
-	if((reference == node) && (network != new_network))
-		qdel(network)
+	if(reference == node)
 		network = new_network
 
-	new_network.normal_members |= src
+	if(new_network.normal_members.Find(src))
+		return 0
+
+	new_network.normal_members += src
+
+	return null
 
 /obj/machinery/atmospherics/portables_connector/Destroy()
 	if(connected_device)
@@ -129,17 +129,27 @@
 
 	return null
 
-/obj/machinery/atmospherics/portables_connector/deconstruction_pressure_check()
+
+/obj/machinery/atmospherics/portables_connector/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
+	if(!isWrench(W))
+		return ..()
+	if (connected_device)
+		to_chat(user, "<span class='warning'>You cannot unwrench \the [src], dettach \the [connected_device] first.</span>")
+		return 1
+	if (locate(/obj/machinery/portable_atmospherics, src.loc))
+		return 1
 	var/datum/gas_mixture/int_air = return_air()
 	var/datum/gas_mixture/env_air = loc.return_air()
 	if ((int_air.return_pressure()-env_air.return_pressure()) > 2*ONE_ATMOSPHERE)
-		return FALSE
-	return TRUE
-
-/obj/machinery/atmospherics/portables_connector/cannot_transition_to(state_path, mob/user)
-	if(state_path == /decl/machine_construction/default/deconstructed)
-		if (connected_device)
-			return SPAN_WARNING("You cannot unwrench \the [src], dettach \the [connected_device] first.")
-		if (locate(/obj/machinery/portable_atmospherics, src.loc))
-			return MCS_BLOCK
-	return ..()
+		to_chat(user, "<span class='warning'>You cannot unwrench \the [src], it too exerted due to internal pressure.</span>")
+		add_fingerprint(user)
+		return 1
+	playsound(src.loc, 'sound/items/Ratchet.ogg', 50, 1)
+	to_chat(user, "<span class='notice'>You begin to unfasten \the [src]...</span>")
+	if (do_after(user, 40, src))
+		user.visible_message( \
+			"<span class='notice'>\The [user] unfastens \the [src].</span>", \
+			"<span class='notice'>You have unfastened \the [src].</span>", \
+			"You hear a ratchet.")
+		new /obj/item/pipe(loc, src)
+		qdel(src)

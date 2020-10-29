@@ -6,8 +6,12 @@ Specifically made to do radiation burns.
 
 /mob/living/carbon/apply_radiation(damage)
 	..()
-	if(!isSynthetic() && !ignore_rads)
-		damage = 0.25 * damage * (species ? species.get_radiation_mod(src) : 1)
+
+	if(species && !isSynthetic())
+		if(species.name == SPECIES_DIONA)
+			return FALSE
+		damage = 0.25 * damage * species.get_radiation_mod(src)
 		adjustFireLoss(damage)
-		updatehealth()
+
+	updatehealth()
 	return TRUE

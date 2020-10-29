@@ -6,7 +6,7 @@
 	var/datum/gas_mixture/air_contents = new
 
 	var/obj/machinery/atmospherics/portables_connector/connected_port
-	var/obj/item/tank/holding
+	var/obj/item/weapon/tank/holding
 
 	var/volume = 0
 	var/destroyed = 0
@@ -15,16 +15,22 @@
 	var/maximum_pressure = 90 * ONE_ATMOSPHERE
 	atom_flags = ATOM_FLAG_NO_TEMP_CHANGE | ATOM_FLAG_CLIMBABLE
 
-/obj/machinery/portable_atmospherics/Initialize()
+/obj/machinery/portable_atmospherics/New()
 	..()
+
 	air_contents.volume = volume
 	air_contents.temperature = T20C
-	return INITIALIZE_HINT_LATELOAD
+
+	return 1
 
 /obj/machinery/portable_atmospherics/Destroy()
 	QDEL_NULL(air_contents)
 	QDEL_NULL(holding)
 	. = ..()
+
+/obj/machinery/portable_atmospherics/Initialize()
+	..()
+	return INITIALIZE_HINT_LATELOAD
 
 /obj/machinery/portable_atmospherics/LateInitialize()
 	var/obj/machinery/atmospherics/portables_connector/port = locate() in loc
@@ -41,8 +47,8 @@
 
 /obj/machinery/portable_atmospherics/proc/StandardAirMix()
 	return list(
-		/decl/material/gas/oxygen = O2STANDARD * MolesForPressure(),
-		/decl/material/gas/nitrogen = N2STANDARD *  MolesForPressure())
+		GAS_OXYGEN = O2STANDARD * MolesForPressure(),
+		GAS_NITROGEN = N2STANDARD *  MolesForPressure())
 
 /obj/machinery/portable_atmospherics/proc/MolesForPressure(var/target_pressure = start_pressure)
 	return (target_pressure * air_contents.volume) / (R_IDEAL_GAS_EQUATION * air_contents.temperature)
@@ -97,8 +103,8 @@
 	if (network)
 		network.update = 1
 
-/obj/machinery/portable_atmospherics/attackby(var/obj/item/W, var/mob/user)
-	if ((istype(W, /obj/item/tank) && !( src.destroyed )))
+/obj/machinery/portable_atmospherics/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
+	if ((istype(W, /obj/item/weapon/tank) && !( src.destroyed )))
 		if (src.holding)
 			return
 		if(!user.unEquip(W, src))
@@ -107,7 +113,7 @@
 		update_icon()
 		return
 
-	else if(isWrench(W) && !panel_open)
+	else if(isWrench(W))
 		if(connected_port)
 			disconnect()
 			to_chat(user, "<span class='notice'>You disconnect \the [src] from the port.</span>")
@@ -127,7 +133,7 @@
 				to_chat(user, "<span class='notice'>Nothing happens.</span>")
 				return ..()
 
-	else if (istype(W, /obj/item/scanner/gas))
+	else if (istype(W, /obj/item/device/scanner/gas))
 		return
 
 	return ..()
@@ -168,3 +174,6 @@
 		playsound(loc, 'sound/effects/spray.ogg', 10, 1, -3)
 		loc.assume_air(air_contents)
 	. = ..()
+
+/obj/machinery/portable_atmospherics/MouseDrop_T(mob/living/M, mob/living/user)
+	do_climb(user, FALSE)

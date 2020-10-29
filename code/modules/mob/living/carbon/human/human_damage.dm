@@ -71,7 +71,7 @@
 /mob/living/carbon/human/getBruteLoss()
 	var/amount = 0
 	for(var/obj/item/organ/external/O in organs)
-		if(BP_IS_PROSTHETIC(O) && !O.vital)
+		if(BP_IS_ROBOTIC(O) && !O.vital)
 			continue //robot limbs don't count towards shock and crit
 		amount += O.brute_dam
 	return amount
@@ -79,7 +79,7 @@
 /mob/living/carbon/human/getFireLoss()
 	var/amount = 0
 	for(var/obj/item/organ/external/O in organs)
-		if(BP_IS_PROSTHETIC(O) && !O.vital)
+		if(BP_IS_ROBOTIC(O) && !O.vital)
 			continue //robot limbs don't count towards shock and crit
 		amount += O.burn_dam
 	return amount
@@ -212,8 +212,7 @@
 		pick_organs -= brain
 		pick_organs += brain
 
-	for(var/internal in pick_organs)
-		var/obj/item/organ/internal/I = internal
+	for(var/obj/item/organ/internal/I in pick_organs)
 		if(amount <= 0)
 			break
 		if(heal)
@@ -345,13 +344,13 @@ This function restores the subjects blood to max.
 	if(!should_have_organ(BP_HEART))
 		return
 	if(vessel.total_volume < species.blood_volume)
-		vessel.add_reagent(species.blood_reagent, species.blood_volume - vessel.total_volume)
+		vessel.add_reagent(/datum/reagent/blood, species.blood_volume - vessel.total_volume)
 
 /*
 This function restores all organs.
 */
 /mob/living/carbon/human/restore_all_organs(var/ignore_prosthetic_prefs)
-	for(var/bodypart in global.all_limb_tags_by_depth)
+	for(var/bodypart in BP_BY_DEPTH)
 		var/obj/item/organ/external/current_organ = organs_by_name[bodypart]
 		if(istype(current_organ))
 			current_organ.rejuvenate(ignore_prosthetic_prefs)
@@ -366,8 +365,9 @@ This function restores all organs.
 		return 0
 	return
 
-/mob/living/carbon/human/get_organ(var/zone)
-	return organs_by_name[check_zone(zone, src, base_zone_only = TRUE)]
+
+/mob/living/carbon/human/proc/get_organ(var/zone)
+	return organs_by_name[check_zone(zone)]
 
 /mob/living/carbon/human/apply_damage(var/damage = 0, var/damagetype = BRUTE, var/def_zone = null, var/damage_flags = 0, var/obj/used_weapon = null, var/armor_pen, var/silent = FALSE, var/obj/item/organ/external/given_organ = null)
 
@@ -388,8 +388,8 @@ This function restores all organs.
 						def_zone = zone
 						. = .() || .
 					return
-				def_zone = ran_zone(def_zone, target = src)
-			organ = get_organ(check_zone(def_zone, src))
+				def_zone = ran_zone(def_zone)
+			organ = get_organ(check_zone(def_zone))
 
 	//Handle other types of damage
 	if(!(damagetype in list(BRUTE, BURN, PAIN, CLONE)))
@@ -407,7 +407,7 @@ This function restores all organs.
 		return 0
 
 	if(damage > 15 && prob(damage*4) && organ.can_feel_pain())
-		make_reagent(round(damage/10), /decl/material/liquid/adrenaline)
+		make_reagent(round(damage/10), /datum/reagent/adrenaline)
 	var/datum/wound/created_wound
 	damageoverlaytemp = 20
 	switch(damagetype)

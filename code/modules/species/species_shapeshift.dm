@@ -13,69 +13,57 @@ var/list/wrapped_species_by_ref = list()
 
 	var/list/valid_transform_species = list()
 	var/monochromatic
-	var/default_form
-
-/datum/species/shapeshifter/New()
-	default_form = GLOB.using_map.default_species
-	valid_transform_species |= default_form
-	..()
+	var/default_form = SPECIES_HUMAN
 
 /datum/species/shapeshifter/get_valid_shapeshifter_forms(var/mob/living/carbon/human/H)
 	return valid_transform_species
 
 /datum/species/shapeshifter/get_icobase(var/mob/living/carbon/human/H, var/get_deform)
 	if(!H) return ..(null, get_deform)
-	var/datum/species/S = get_species_by_key(wrapped_species_by_ref["\ref[H]"])
+	var/datum/species/S = all_species[wrapped_species_by_ref["\ref[H]"]]
 	return S.get_icobase(H, get_deform)
 
-/datum/species/shapeshifter/get_icon_cache_uid(var/mob/H)
-	. = ..()
-	if(H)
-		. = "[.]-[wrapped_species_by_ref["\ref[H]"]]"
+/datum/species/shapeshifter/get_race_key(var/mob/living/carbon/human/H)
+	return "[..()]-[wrapped_species_by_ref["\ref[H]"]]"
 
 /datum/species/shapeshifter/get_bodytype(var/mob/living/carbon/human/H)
 	if(!H) return ..()
-	var/datum/species/S = get_species_by_key(wrapped_species_by_ref["\ref[H]"])
+	var/datum/species/S = all_species[wrapped_species_by_ref["\ref[H]"]]
 	return S.get_bodytype(H)
-
-/datum/species/shapeshifter/get_root_species_name(var/mob/living/carbon/human/H)
-	if(!H) return ..()
-	var/datum/species/S = get_species_by_key(wrapped_species_by_ref["\ref[H]"])
-	return S.get_root_species_name(H)
 
 /datum/species/shapeshifter/get_blood_mask(var/mob/living/carbon/human/H)
 	if(!H) return ..()
-	var/datum/species/S = get_species_by_key(wrapped_species_by_ref["\ref[H]"])
+	var/datum/species/S = all_species[wrapped_species_by_ref["\ref[H]"]]
 	return S.get_blood_mask(H)
 
 /datum/species/shapeshifter/get_damage_mask(var/mob/living/carbon/human/H)
 	if(!H) return ..()
-	var/datum/species/S = get_species_by_key(wrapped_species_by_ref["\ref[H]"])
+	var/datum/species/S = all_species[wrapped_species_by_ref["\ref[H]"]]
 	return S.get_damage_mask(H)
 
 /datum/species/shapeshifter/get_damage_overlays(var/mob/living/carbon/human/H)
 	if(!H) return ..()
-	var/datum/species/S = get_species_by_key(wrapped_species_by_ref["\ref[H]"])
+	var/datum/species/S = all_species[wrapped_species_by_ref["\ref[H]"]]
 	return S.get_damage_overlays(H)
 
 /datum/species/shapeshifter/get_tail(var/mob/living/carbon/human/H)
 	if(!H) return ..()
-	var/datum/species/S = get_species_by_key(wrapped_species_by_ref["\ref[H]"])
+	var/datum/species/S = all_species[wrapped_species_by_ref["\ref[H]"]]
 	return S.get_tail(H)
 
 /datum/species/shapeshifter/get_tail_animation(var/mob/living/carbon/human/H)
 	if(!H) return ..()
-	var/datum/species/S = get_species_by_key(wrapped_species_by_ref["\ref[H]"])
+	var/datum/species/S = all_species[wrapped_species_by_ref["\ref[H]"]]
 	return S.get_tail_animation(H)
 
 /datum/species/shapeshifter/get_tail_hair(var/mob/living/carbon/human/H)
 	if(!H) return ..()
-	var/datum/species/S = get_species_by_key(wrapped_species_by_ref["\ref[H]"])
+	var/datum/species/S = all_species[wrapped_species_by_ref["\ref[H]"]]
 	return S.get_tail_hair(H)
 
 /datum/species/shapeshifter/get_husk_icon(var/mob/living/carbon/human/H)
 	if(H)
-		var/datum/species/S = get_species_by_key(wrapped_species_by_ref["\ref[H]"])
+		var/datum/species/S = all_species[wrapped_species_by_ref["\ref[H]"]]
 		if(S) return S.get_husk_icon(H)
 	 return ..()
 
@@ -85,8 +73,12 @@ var/list/wrapped_species_by_ref = list()
 
 /datum/species/shapeshifter/handle_post_spawn(var/mob/living/carbon/human/H)
 	if(monochromatic)
-		H.hair_colour = H.skin_colour
-		H.facial_hair_colour = H.skin_colour
+		H.r_hair =   H.r_skin
+		H.g_hair =   H.g_skin
+		H.b_hair =   H.b_skin
+		H.r_facial = H.r_skin
+		H.g_facial = H.g_skin
+		H.b_facial = H.b_skin
 	..()
 
 /datum/species/shapeshifter/post_organ_rejuvenate(var/obj/item/organ/org, var/mob/living/carbon/human/H)
@@ -95,7 +87,7 @@ var/list/wrapped_species_by_ref = list()
 		E.sync_colour_to_human(H)
 
 /datum/species/shapeshifter/get_pain_emote(var/mob/living/carbon/human/H, var/pain_power)
-	var/datum/species/S = get_species_by_key(wrapped_species_by_ref["\ref[H]"])
+	var/datum/species/S = all_species[wrapped_species_by_ref["\ref[H]"]]
 	return S.get_pain_emote(H, pain_power)
 
 // Verbs follow.
@@ -145,7 +137,7 @@ var/list/wrapped_species_by_ref = list()
 	last_special = world.time + 50
 
 	var/new_species = input("Please select a species to emulate.", "Shapeshifter Body") as null|anything in species.get_valid_shapeshifter_forms(src)
-	if(!new_species || !get_species_by_key(new_species) || wrapped_species_by_ref["\ref[src]"] == new_species)
+	if(!new_species || !all_species[new_species] || wrapped_species_by_ref["\ref[src]"] == new_species)
 		return
 
 	wrapped_species_by_ref["\ref[src]"] = new_species
@@ -169,12 +161,18 @@ var/list/wrapped_species_by_ref = list()
 
 /mob/living/carbon/human/proc/shapeshifter_set_colour(var/new_skin)
 
-	skin_colour = new_skin
+	r_skin =   hex2num(copytext(new_skin, 2, 4))
+	g_skin =   hex2num(copytext(new_skin, 4, 6))
+	b_skin =   hex2num(copytext(new_skin, 6, 8))
 
 	var/datum/species/shapeshifter/S = species
 	if(S.monochromatic)
-		hair_colour = skin_colour
-		facial_hair_colour = skin_colour
+		r_hair =   r_skin
+		g_hair =   g_skin
+		b_hair =   b_skin
+		r_facial = r_skin
+		g_facial = g_skin
+		b_facial = b_skin
 
 	for(var/obj/item/organ/external/E in organs)
 		E.sync_colour_to_human(src)

@@ -22,8 +22,8 @@
 
 	var/obj/structure/reagent_dispensers/watertank/tank
 
-/mob/living/bot/farmbot/Initialize(mapload, var/newTank)
-	. = ..(mapload)
+/mob/living/bot/farmbot/New(var/newloc, var/newTank)
+	..(newloc)
 	if(!newTank)
 		newTank = new /obj/structure/reagent_dispensers/watertank(src)
 	tank = newTank
@@ -185,7 +185,7 @@
 				busy = 1
 				if(do_after(src, 30, A))
 					visible_message("<span class='notice'>[src] fertilizes \the [A].</span>")
-					T.reagents.add_reagent(/decl/material/gas/ammonia, 10)
+					T.reagents.add_reagent(/datum/reagent/ammonia, 10)
 		busy = 0
 		action = ""
 		update_icons()
@@ -198,7 +198,7 @@
 		visible_message("<span class='notice'>[src] starts refilling its tank from \the [A].</span>")
 		busy = 1
 		while(do_after(src, 10) && tank.reagents.total_volume < tank.reagents.maximum_volume)
-			tank.reagents.add_reagent(/decl/material/liquid/water, 100)
+			tank.reagents.add_reagent(/datum/reagent/water, 100)
 			if(prob(5))
 				playsound(loc, 'sound/effects/slosh.ogg', 25, 1)
 		busy = 0
@@ -228,10 +228,10 @@
 	visible_message("<span class='danger'>[src] blows apart!</span>")
 	var/turf/Tsec = get_turf(src)
 
-	new /obj/item/minihoe(Tsec)
-	new /obj/item/chems/glass/bucket(Tsec)
-	new /obj/item/assembly/prox_sensor(Tsec)
-	new /obj/item/scanner/plant(Tsec)
+	new /obj/item/weapon/material/minihoe(Tsec)
+	new /obj/item/weapon/reagent_containers/glass/bucket(Tsec)
+	new /obj/item/device/assembly/prox_sensor(Tsec)
+	new /obj/item/device/scanner/plant(Tsec)
 
 	if(tank)
 		tank.forceMove(Tsec)
@@ -269,7 +269,7 @@
 	if(tray.dead && removes_dead || tray.harvest && collects_produce)
 		return FARMBOT_COLLECT
 
-	else if(refills_water && tray.waterlevel < 40 && !tray.reagents.has_reagent(/decl/material/liquid/water))
+	else if(refills_water && tray.waterlevel < 40 && !tray.reagents.has_reagent(/datum/reagent/water))
 		return FARMBOT_WATER
 
 	else if(uproots_weeds && tray.weedlevel > 3)

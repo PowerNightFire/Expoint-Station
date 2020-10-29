@@ -1,15 +1,29 @@
 /mob/living/carbon/human
 
+	//Hair colour and style
+	var/r_hair = 0
+	var/g_hair = 0
+	var/b_hair = 0
 	var/h_style = "Bald"
+
+	//Facial hair colour and style
+	var/r_facial = 0
+	var/g_facial = 0
+	var/b_facial = 0
 	var/f_style = "Shaved"
 
-	var/hair_colour
-	var/facial_hair_colour
-	var/skin_colour
-	var/eye_colour
+	//Eye colour
+	var/r_eyes = 0
+	var/g_eyes = 0
+	var/b_eyes = 0
 
-	var/skin_tone = 0  //Skin tone
-	var/skin_base = "" //Skin base
+	var/s_tone = 0  //Skin tone
+	var/s_base = "" //Skin base
+
+	//Skin colour
+	var/r_skin = 0
+	var/g_skin = 0
+	var/b_skin = 0
 
 	var/size_multiplier = 1 //multiplier for the mob's icon size
 	var/damage_multiplier = 1 //multiplies melee combat damage
@@ -84,10 +98,12 @@
 
 	var/stance_damage = 0 //Whether this mob's ability to stand has been affected
 
-	var/decl/natural_attack/default_attack	//default unarmed attack
+	var/datum/unarmed_attack/default_attack	//default unarmed attack
 
 	var/obj/machinery/machine_visual //machine that is currently applying visual effects to this mob. Only used for camera monitors currently.
 	var/shock_stage
+
+	var/obj/item/grab/current_grab_type 	// What type of grab they use when they grab someone.
 
 	//vars for fountain of youth examine lines
 	var/became_older
@@ -95,6 +111,4 @@
 
 	var/list/descriptors
 
-	var/list/smell_cooldown
-
-	ai = /datum/ai/human
+	var/last_smelt = 0

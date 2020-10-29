@@ -8,7 +8,7 @@
 	extended_desc = "This program connects to sensors to provide information about electrical systems"
 	ui_header = "power_norm.gif"
 	required_access = access_engine
-	requires_network = 1
+	requires_ntnet = 1
 	network_destination = "power monitoring system"
 	size = 9
 	category = PROG_ENG
@@ -64,10 +64,10 @@
 	// Build list of data from sensor readings.
 	for(var/obj/machinery/power/sensor/S in grid_sensors)
 		sensors.Add(list(list(
-		"name" = S.id_tag,
+		"name" = S.name_tag,
 		"alarm" = S.check_grid_warning()
 		)))
-		if(S.id_tag == active_sensor)
+		if(S.name_tag == active_sensor)
 			focus = S
 
 	data["all_sensors"] = sensors
@@ -77,7 +77,7 @@
 	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "power_monitor.tmpl", "Power Monitoring Console", 800, 500, state = state)
-		if(host.update_layout()) // This is necessary to ensure the status bar remains updated along with rest of the UI.
+		if(host && host.update_layout()) // This is necessary to ensure the status bar remains updated along with rest of the UI.
 			ui.auto_update_layout = 1
 		ui.set_initial_data(data)
 		ui.open()
@@ -88,9 +88,12 @@
 	grid_sensors = list()
 	var/connected_z_levels = GetConnectedZlevels(get_host_z())
 	for(var/obj/machinery/power/sensor/S in SSmachines.machinery)
-		if(get_z(S) in connected_z_levels) // Consoles have range on their Z-Level. Sensors with long_range var will work between Z levels.
-			grid_sensors += S
-			GLOB.destroyed_event.register(S, src, /datum/nano_module/power_monitor/proc/remove_sensor)
+		if((S.long_range) || (S.loc.z in connected_z_levels)) // Consoles have range on their Z-Level. Sensors with long_range var will work between Z levels.
+			if(S.name_tag == "#UNKN#") // Default name. Shouldn't happen!
+				warning("Powernet sensor with unset ID Tag! [S.x]X [S.y]Y [S.z]Z")
+			else
+				grid_sensors += S
+				GLOB.destroyed_event.register(S, src, /datum/nano_module/power_monitor/proc/remove_sensor)
 
 /datum/nano_module/power_monitor/proc/remove_sensor(var/removed_sensor, var/update_ui = TRUE)
 	if(active_sensor == removed_sensor)

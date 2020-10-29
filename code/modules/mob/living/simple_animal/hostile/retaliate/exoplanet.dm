@@ -71,7 +71,10 @@
 	maxHealth = 125
 	health = 125
 	speed = 2
-	natural_weapon = /obj/item/natural_weapon/claws
+	melee_damage_lower = 5
+	melee_damage_upper = 15
+	melee_damage_flags = DAM_SHARP
+	attacktext = "mauled"
 	cold_damage_per_tick = 0
 	speak_chance = 5
 	speak = list("Hruuugh!","Hrunnph")
@@ -98,13 +101,16 @@
 	maxHealth = 25
 	health = 25
 	speed = 1
-	natural_weapon = /obj/item/natural_weapon/claws/weak
+	melee_damage_lower = 1
+	melee_damage_upper = 8
+	melee_damage_flags = DAM_SHARP
+	attacktext = "gouged"
 	cold_damage_per_tick = 0
 	speak_chance = 5
 	speak = list("Awrr?","Aowrl!","Worrl")
 	emote_see = list("sniffs the air cautiously","looks around")
 	emote_hear = list("snuffles")
-	mob_size = MOB_SIZE_SMALL
+	mob_size = MOB_SMALL
 
 /mob/living/simple_animal/hostile/retaliate/beast/shantak
 	name = "shantak"
@@ -117,7 +123,10 @@
 	maxHealth = 75
 	health = 75
 	speed = 1
-	natural_weapon = /obj/item/natural_weapon/claws
+	melee_damage_lower = 3
+	melee_damage_upper = 12
+	melee_damage_flags = DAM_SHARP
+	attacktext = "gouged"
 	cold_damage_per_tick = 0
 	speak_chance = 2
 	speak = list("Shuhn","Shrunnph?","Shunpf")
@@ -136,7 +145,7 @@
 	icon_state = "yithian"
 	icon_living = "yithian"
 	icon_dead = "yithian_dead"
-	mob_size = MOB_SIZE_TINY
+	mob_size = MOB_TINY
 
 /mob/living/simple_animal/tindalos
 	name = "tindalos"
@@ -144,7 +153,7 @@
 	icon_state = "tindalos"
 	icon_living = "tindalos"
 	icon_dead = "tindalos_dead"
-	mob_size = MOB_SIZE_TINY
+	mob_size = MOB_TINY
 
 /mob/living/simple_animal/thinbug
 	name = "taki"
@@ -154,7 +163,7 @@
 	icon_dead = "thinbug_dead"
 	speak_chance = 1
 	emote_hear = list("scratches the ground","chitters")
-	mob_size = MOB_SIZE_MINISCULE
+	mob_size = MOB_MINISCULE
 
 /mob/living/simple_animal/hostile/retaliate/royalcrab
 	name = "cragenoy"
@@ -167,7 +176,9 @@
 	maxHealth = 150
 	health = 150
 	speed = 1
-	natural_weapon = /obj/item/natural_weapon/pincers
+	melee_damage_lower = 2
+	melee_damage_upper = 5
+	attacktext = "pinched"
 	speak_chance = 1
 	emote_see = list("skitters","oozes liquid from its mouth", "scratches at the ground", "clicks its claws")
 	natural_armor = list(
@@ -180,14 +191,17 @@
 	icon_state = "char"
 	icon_living = "char"
 	icon_dead = "char_dead"
-	mob_size = MOB_SIZE_LARGE
+	mob_size = MOB_LARGE
+	damtype = BURN
 	health = 45
 	maxHealth = 45
-	natural_weapon = /obj/item/natural_weapon/charbaby
+	melee_damage_lower = 2
+	melee_damage_upper = 3
 	speed = 2
 	response_help =  "pats briefly"
 	response_disarm = "gently pushes"
 	response_harm = "strikes"
+	attacktext = "singed"
 	return_damage_min = 2
 	return_damage_max = 3
 	harm_intent_damage = 1
@@ -195,12 +209,6 @@
 	natural_armor = list(
 		laser = ARMOR_LASER_HANDGUNS
 		)
-
-/obj/item/natural_weapon/charbaby
-	name = "scalding hide"
-	damtype = BURN
-	force = 5
-	attack_verb = list("singed")
 
 /mob/living/simple_animal/hostile/retaliate/beast/charbaby/attack_hand(mob/living/carbon/human/H)
 	. = ..()
@@ -219,4 +227,5 @@
 	icon_state = "lavadog"
 	icon_living = "lavadog"
 	icon_dead = "lavadog_dead"
+	attacktext = "bit"
 	speak = list("Karuph","Karump")

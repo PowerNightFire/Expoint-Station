@@ -12,10 +12,6 @@
 				UNSETEMPTY(pilots)
 		update_pilots()
 
-	if(!body && !QDELETED(src))
-		qdel(src)
-		return
-
 	if(radio)
 		radio.on = (head && head.radio && head.radio.is_functional())
 
@@ -30,8 +26,6 @@
 
 	..() //Handles stuff like environment
 
-	handle_mutations_and_radiation()
-
 	handle_hud_icons()
 
 	lying = FALSE // Fuck off, carp.
@@ -44,7 +38,7 @@
 		radiation--
 
 /mob/living/exosuit/get_cell()
-	RETURN_TYPE(/obj/item/cell)
+	RETURN_TYPE(/obj/item/weapon/cell)
 	return body ? body.cell : null
 
 /mob/living/exosuit/proc/calc_power_draw()

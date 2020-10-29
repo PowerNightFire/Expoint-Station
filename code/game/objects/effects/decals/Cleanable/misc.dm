@@ -19,6 +19,10 @@
 		F.dirt += 4
 	qdel(src)
 
+/obj/effect/decal/cleanable/greenglow/Initialize()
+	. = ..()
+	addtimer(CALLBACK(src, /datum/proc/qdel_self), 2 MINUTES)
+
 /obj/effect/decal/cleanable/dirt
 	name = "dirt"
 	desc = "Someone should clean that up."
@@ -36,6 +40,16 @@
 	icon_state = "flour"
 	persistent = TRUE
 
+/obj/effect/decal/cleanable/greenglow
+	name = "glowing goo"
+	desc = "Jeez. I hope that's not for lunch."
+	gender = PLURAL
+	light_outer_range = 1
+	icon = 'icons/effects/effects.dmi'
+	icon_state = "greenglow"
+	persistent = TRUE
+	generic_filth = TRUE
+
 /obj/effect/decal/cleanable/cobweb
 	name = "cobweb"
 	desc = "Somebody should remove that."
@@ -46,7 +60,7 @@
 /obj/effect/decal/cleanable/molten_item
 	name = "gooey grey mass"
 	desc = "It looks like a melted... something."
-	icon = 'icons/effects/molten_item.dmi'
+	icon = 'icons/obj/chemical.dmi'
 	icon_state = "molten"
 	persistent = TRUE
 	generic_filth = TRUE
@@ -68,9 +82,9 @@
 	persistent = TRUE
 	generic_filth = TRUE
 
-/obj/effect/decal/cleanable/vomit/Initialize(ml, _age)
+/obj/effect/decal/cleanable/vomit/New()
 	random_icon_states = icon_states(icon)
-	. = ..()
+	..()
 	atom_flags |= ATOM_FLAG_OPEN_CONTAINER
 	create_reagents(30, src)
 	if(prob(75))

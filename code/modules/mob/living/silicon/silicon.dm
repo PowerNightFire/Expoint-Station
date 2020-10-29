@@ -14,7 +14,7 @@
 	var/const/MAIN_CHANNEL = "Main Frequency"
 	var/lawchannel = MAIN_CHANNEL // Default channel on which to state laws
 	var/list/stating_laws = list()// Channels laws are currently being stated on
-	var/obj/item/radio/silicon_radio
+	var/obj/item/device/radio/silicon_radio
 
 	var/list/hud_list[10]
 	var/list/speech_synthesizer_langs = list()	//which languages can be vocalized by the speech synthesizer
@@ -24,7 +24,7 @@
 	var/speak_exclamation = "declares"
 	var/speak_query = "queries"
 	var/pose //Yes, now AIs can pose too.
-	var/obj/item/camera/siliconcam/silicon_camera = null //photography
+	var/obj/item/device/camera/siliconcam/silicon_camera = null //photography
 	var/local_transmit //If set, can only speak to others of the same type within a short range.
 
 	var/sensor_mode = 0 //Determines the current HUD.
@@ -33,15 +33,7 @@
 	var/list/datum/alarm/queued_alarms = new()
 
 	var/list/access_rights
-	var/obj/item/card/id/idcard = /obj/item/card/id/synthetic
-	// Various machinery stock parts used by stuff like NTOS (should be merged with above at some point)
-	var/list/stock_parts = list()
-	var/list/starting_stock_parts = list(
-		/obj/item/stock_parts/computer/processor_unit,
-		/obj/item/stock_parts/computer/hard_drive/silicon,
-		/obj/item/stock_parts/computer/network_card
-	)
-	var/ntos_type = /datum/extension/interactive/ntos/silicon
+	var/obj/item/weapon/card/id/idcard = /obj/item/weapon/card/id/synthetic
 
 	#define SEC_HUD 1 //Security HUD mode
 	#define MED_HUD 2 //Medical HUD mode
@@ -54,14 +46,9 @@
 		silicon_radio = new silicon_radio(src)
 	if(silicon_camera)
 		silicon_camera = new silicon_camera(src)
-	for(var/T in starting_stock_parts)
-		stock_parts += new T(src)
-	if(ntos_type)
-		set_extension(src, ntos_type)
-		verbs |= /mob/living/silicon/proc/access_computer
 
-	add_language(/decl/language/human/common)
-	default_language = /decl/language/human/common
+	add_language(LANGUAGE_HUMAN_EURO)
+	default_language = all_languages[LANGUAGE_HUMAN_EURO]
 	init_id()
 	init_subsystems()
 
@@ -87,11 +74,9 @@
 /mob/living/silicon/proc/show_laws()
 	return
 
-/mob/living/silicon/drop_item(var/Target)
-	for(var/obj/item/grab/grab in get_active_grabs())
-		qdel(grab)
-		. = TRUE
-	
+/mob/living/silicon/drop_item()
+	return
+
 /mob/living/silicon/emp_act(severity)
 	switch(severity)
 		if(1)
@@ -127,6 +112,9 @@
 
 /mob/living/silicon/proc/damage_mob(var/brute = 0, var/fire = 0, var/tox = 0)
 	return
+
+/mob/living/silicon/IsAdvancedToolUser()
+	return 1
 
 /mob/living/silicon/bullet_act(var/obj/item/projectile/Proj)
 
@@ -166,8 +154,8 @@
 
 // this function displays the shuttles ETA in the status panel if the shuttle has been called
 /mob/living/silicon/proc/show_emergency_shuttle_eta()
-	if(SSevac.evacuation_controller)
-		var/eta_status = SSevac.evacuation_controller.get_status_panel_eta()
+	if(evacuation_controller)
+		var/eta_status = evacuation_controller.get_status_panel_eta()
 		if(eta_status)
 			stat(null, eta_status)
 
@@ -188,13 +176,11 @@
 
 //Silicon mob language procs
 
-/mob/living/silicon/can_speak(decl/language/speaking)
+/mob/living/silicon/can_speak(datum/language/speaking)
 	return universal_speak || (speaking in src.speech_synthesizer_langs)	//need speech synthesizer support to vocalize a language
 
 /mob/living/silicon/add_language(var/language, var/can_speak=1)
-	if(!ispath(language, /decl/language))
-		return
-	var/decl/language/added_language = decls_repository.get_decl(language)
+	var/datum/language/added_language = all_languages[language]
 	if(!added_language)
 		return
 
@@ -204,9 +190,7 @@
 		return 1
 
 /mob/living/silicon/remove_language(var/rem_language)
-	if(!ispath(rem_language, /decl/language))
-		return
-	var/decl/language/removed_language = decls_repository.get_decl(rem_language)
+	var/datum/language/removed_language = all_languages[rem_language]
 	if(!removed_language)
 		return
 
@@ -221,10 +205,9 @@
 	var/dat = "<b><font size = 5>Known Languages</font></b><br/><br/>"
 
 	if(default_language)
-		var/decl/language/lang = decls_repository.get_decl(default_language)
-		dat += "Current default language: [lang.name] - <a href='byond://?src=\ref[src];default_lang=reset'>reset</a><br/><br/>"
+		dat += "Current default language: [default_language] - <a href='byond://?src=\ref[src];default_lang=reset'>reset</a><br/><br/>"
 
-	for(var/decl/language/L in languages)
+	for(var/datum/language/L in languages)
 		if(!(L.flags & NONGLOBAL))
 			var/default_str
 			if(L == default_language)
@@ -268,19 +251,22 @@
 /mob/living/silicon/binarycheck()
 	return 1
 
-/mob/living/silicon/explosion_act(severity)
-	..()
+/mob/living/silicon/ex_act(severity)
+	if(!blinded)
+		flash_eyes()
+
 	var/brute
 	var/burn
 	switch(severity)
-		if(1)
+		if(1.0)
 			brute = 400
 			burn = 100
-		if(2)
+		if(2.0)
 			brute = 60
 			burn = 60
-		if(3)
+		if(3.0)
 			brute = 30
+
 	apply_damage(brute, BRUTE, damage_flags = DAM_EXPLODE)
 	apply_damage(burn, BURN, damage_flags = DAM_EXPLODE)
 
@@ -348,6 +334,12 @@
 /mob/living/silicon/proc/is_traitor()
 	return mind && (mind in GLOB.traitors.current_antagonists)
 
+/mob/living/silicon/proc/is_malf()
+	return mind && (mind in GLOB.malf.current_antagonists)
+
+/mob/living/silicon/proc/is_malf_or_traitor()
+	return is_traitor() || is_malf()
+
 /mob/living/silicon/adjustEarDamage()
 	return
 
@@ -380,52 +372,3 @@
 
 /mob/living/silicon/get_bullet_impact_effect_type(var/def_zone)
 	return BULLET_IMPACT_METAL
-	
-/mob/living/silicon/proc/get_computer_network()
-	var/datum/extension/interactive/ntos/os = get_extension(src, /datum/extension/interactive/ntos)
-	if(os)
-		return os.get_network()
-
-
-/mob/living/silicon/proc/try_stock_parts_install(obj/item/stock_parts/W, mob/user)
-	if(istype(W) && user.unEquip(W))
-		W.forceMove(src)
-		stock_parts += W
-		to_chat(usr, "<span class='notice'>You install the [W.name].</span>")
-		return TRUE
-
-/mob/living/silicon/proc/try_stock_parts_removal(obj/item/W, mob/user)
-	if(!isCrowbar(W) || user.a_intent == I_HURT)
-		return
-	if(!length(stock_parts))
-		to_chat(user, SPAN_WARNING("No parts left to remove"))
-		return
-	
-	var/obj/item/stock_parts/remove = input(user, "Which component do you want to pry out?", "Remove Component") as null|anything in stock_parts
-	if(!remove || !(remove in stock_parts) || !Adjacent(user))
-		return
-	stock_parts -= remove
-	to_chat(user, SPAN_NOTICE("You remove \the [remove]."))
-	user.put_in_hands(remove)
-	return TRUE
-
-/mob/living/silicon/proc/access_computer()
-	set category = "Silicon Commands"
-	set name = "Boot NTOS Device"
-
-	if(incapacitated())
-		to_chat(src, SPAN_WARNING("You are in no state to do that right now."))
-		return
-
-	var/datum/extension/interactive/ntos/os = get_extension(src, /datum/extension/interactive/ntos)
-	if(!istype(os))
-		to_chat(src, SPAN_WARNING("You seem to be lacking an NTOS capable device!"))
-		return
-	
-	if(!os.on)
-		os.system_boot()
-	if(!os.on)
-		to_chat(src, SPAN_WARNING("ERROR: NTOS failed to boot."))
-		return
-
-	os.ui_interact(src)

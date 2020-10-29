@@ -18,9 +18,9 @@
 	var/active =    0          // Is our owner intending to take hostages?
 	var/target_permissions = TARGET_CAN_MOVE | TARGET_CAN_CLICK | TARGET_CAN_RADIO	// Permission bitflags.
 
-/obj/aiming_overlay/Initialize()
-	. = ..()
-	owner = loc
+/obj/aiming_overlay/New(var/newowner)
+	..()
+	owner = newowner
 	loc = null
 	verbs.Cut()
 
@@ -109,18 +109,18 @@ obj/aiming_overlay/proc/update_aiming_deferred()
 
 	var/cancel_aim = 1
 
-	if(!(aiming_with in owner) || (istype(owner, /mob/living/carbon/human) && !(aiming_with in owner.get_held_items())))
-		to_chat(owner, SPAN_WARNING("You must keep hold of your weapon!"))
+	if(!(aiming_with in owner) || (istype(owner, /mob/living/carbon/human) && (owner.l_hand != aiming_with && owner.r_hand != aiming_with)))
+		to_chat(owner, "<span class='warning'>You must keep hold of your weapon!</span>")
 	else if(owner.eye_blind)
-		to_chat(owner, SPAN_WARNING("You are blind and cannot see your target!"))
+		to_chat(owner, "<span class='warning'>You are blind and cannot see your target!</span>")
 	else if(!aiming_at || !istype(aiming_at.loc, /turf))
-		to_chat(owner, SPAN_WARNING("You have lost sight of your target!"))
+		to_chat(owner, "<span class='warning'>You have lost sight of your target!</span>")
 	else if(owner.incapacitated() || owner.lying || owner.restrained())
-		to_chat(owner, SPAN_WARNING("You must be conscious and standing to keep track of your target!"))
+		to_chat(owner, "<span class='warning'>You must be conscious and standing to keep track of your target!</span>")
 	else if(aiming_at.is_invisible_to(owner))
-		to_chat(owner, SPAN_WARNING("Your target has become invisible!"))
+		to_chat(owner, "<span class='warning'>Your target has become invisible!</span>")
 	else if(!(aiming_at in view(owner)))
-		to_chat(owner, SPAN_WARNING("Your target is too far away to track!"))
+		to_chat(owner, "<span class='warning'>Your target is too far away to track!</span>")
 	else
 		cancel_aim = 0
 
@@ -162,7 +162,7 @@ obj/aiming_overlay/proc/update_aiming_deferred()
 	to_chat(target, "<span class='danger'>You now have a gun pointed at you. No sudden moves!</span>")
 	aiming_with = thing
 	aiming_at = target
-	if(istype(aiming_with, /obj/item/gun))
+	if(istype(aiming_with, /obj/item/weapon/gun))
 		sound_to(aiming_at, sound('sound/weapons/TargetOn.ogg'))
 		sound_to(owner, sound('sound/weapons/TargetOn.ogg'))
 
@@ -207,7 +207,7 @@ obj/aiming_overlay/proc/update_aiming_deferred()
 /obj/aiming_overlay/proc/cancel_aiming(var/no_message = 0)
 	if(!aiming_with || !aiming_at)
 		return
-	if(istype(aiming_with, /obj/item/gun))
+	if(istype(aiming_with, /obj/item/weapon/gun))
 		sound_to(aiming_at, sound('sound/weapons/TargetOff.ogg'))
 		sound_to(owner, sound('sound/weapons/TargetOff.ogg'))
 	if(!no_message)

@@ -16,7 +16,7 @@
 	anchored = 1.0
 	var/invuln = null
 	var/bugged = 0
-	var/obj/item/camera_assembly/assembly = null
+	var/obj/item/weapon/camera_assembly/assembly = null
 
 	var/toughness = 5 //sorta fragile
 
@@ -69,9 +69,7 @@
 	M.machine_visual = null
 	return 1
 
-/obj/machinery/camera/Initialize()
-	. = ..()
-
+/obj/machinery/camera/New()
 	assembly = new(src)
 	assembly.state = 4
 
@@ -90,7 +88,10 @@
 			error("[src.name] in [get_area(src)]has errored. [src.network?"Empty network list":"Null network list"]")
 		ASSERT(src.network)
 		ASSERT(src.network.len > 0)
+	..()
 
+/obj/machinery/camera/Initialize()
+	. = ..()
 	if(!c_tag)
 		number = 1
 		var/area/A = get_area(src)
@@ -133,12 +134,17 @@
 /obj/machinery/camera/bullet_act(var/obj/item/projectile/P)
 	take_damage(P.get_structure_damage())
 
-/obj/machinery/camera/explosion_act(severity)
-	..()
-	if(!invuln && !QDELETED(src) && (severity == 1 || prob(50)))
+/obj/machinery/camera/ex_act(severity)
+	if(src.invuln)
+		return
+
+	//camera dies if an explosion touches it!
+	if(severity <= 2 || prob(50))
 		destroy()
 
-/obj/machinery/camera/hitby(var/atom/movable/AM)
+	..() //and give it the regular chance of being deleted outright
+
+/obj/machinery/camera/hitby(AM as mob|obj)
 	..()
 	if (istype(AM, /obj))
 		var/obj/O = AM
@@ -162,7 +168,7 @@
 		destroy()
 		return TRUE
 
-/obj/machinery/camera/attackby(obj/item/W, mob/living/user)
+/obj/machinery/camera/attackby(obj/item/W as obj, mob/living/user as mob)
 	update_coverage()
 	var/datum/wires/camera/camera_wires = wires
 	// DECONSTRUCTION
@@ -185,7 +191,7 @@
 				assembly.camera_name = c_tag
 				assembly.camera_network = english_list(network, "Exodus", ",", ",")
 				assembly.update_icon()
-				assembly.set_dir(src.dir)
+				assembly.dir = src.dir
 				if(stat & BROKEN)
 					assembly.state = 2
 					to_chat(user, "<span class='notice'>You repaired \the [src] frame.</span>")
@@ -193,15 +199,15 @@
 				else
 					assembly.state = 1
 					to_chat(user, "<span class='notice'>You cut \the [src] free from the wall.</span>")
-					new /obj/item/stack/cable_coil(loc, 2)
+					new /obj/item/stack/cable_coil(src.loc, length=2)
 				assembly = null //so qdel doesn't eat it.
 			qdel(src)
 			return
 
 	// OTHER
-	else if (can_use() && istype(W, /obj/item/paper) && isliving(user))
+	else if (can_use() && istype(W, /obj/item/weapon/paper) && isliving(user))
 		var/mob/living/U = user
-		var/obj/item/paper/X = W
+		var/obj/item/weapon/paper/X = W
 		var/itemname = X.name
 		var/info = X.info
 		to_chat(U, "You hold \a [itemname] up to the camera ...")
@@ -225,7 +231,7 @@
 	else
 		..()
 
-/obj/machinery/camera/proc/deactivate(mob/user, var/choice = 1)
+/obj/machinery/camera/proc/deactivate(user as mob, var/choice = 1)
 	// The only way for AI to reactivate cameras are malf abilities, this gives them different messages.
 	if(istype(user, /mob/living/silicon/ai))
 		user = null
@@ -251,7 +257,7 @@
 		icon_state = initial(icon_state)
 		add_hiddenprint(user)
 
-/obj/machinery/camera/take_damage(var/force, var/message)
+/obj/machinery/camera/proc/take_damage(var/force, var/message)
 	//prob(25) gives an average of 3-4 hits
 	if (force >= toughness && (force > toughness*4 || prob(25)))
 		destroy()
@@ -359,12 +365,14 @@
 	return null
 
 /proc/near_range_camera(var/mob/M)
+
 	for(var/obj/machinery/camera/C in range(4, M))
 		if(C.can_use())	// check if camera disabled
 			return C
+
 	return null
 
-/obj/machinery/camera/proc/weld(var/obj/item/weldingtool/WT, var/mob/user)
+/obj/machinery/camera/proc/weld(var/obj/item/weapon/weldingtool/WT, var/mob/user)
 
 	if(busy)
 		return 0

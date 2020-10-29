@@ -90,7 +90,7 @@
 		var/confirm = input("[choice.key] isn't ghosting right now. Are you sure you want to yank them out of them out of their body and place them in this pAI?", "Spawn pAI Confirmation", "No") in list("Yes", "No")
 		if(confirm != "Yes")
 			return 0
-	var/obj/item/paicard/card = new(T)
+	var/obj/item/device/paicard/card = new(T)
 	var/mob/living/silicon/pai/pai = new(card)
 	pai.SetName(sanitizeSafe(input(choice, "Enter your pAI name:", "pAI Name", "Personal AI") as text))
 	pai.real_name = pai.name
@@ -159,18 +159,18 @@
 		return
 	if (istype(M, /mob/living/carbon/human))
 		var/mob/living/carbon/human/H = M
-		var/obj/item/card/id/id = H.GetIdCard()
+		var/obj/item/weapon/card/id/id = H.GetIdCard()
 		if(id)
 			id.icon_state = "gold"
 			id.access = get_all_accesses()
 		else
-			id = new/obj/item/card/id(M);
+			id = new/obj/item/weapon/card/id(M);
 			id.icon_state = "gold"
 			id.access = get_all_accesses()
 			id.registered_name = H.real_name
 			id.assignment = "Captain"
 			id.SetName("[id.registered_name]'s ID Card ([id.assignment])")
-			H.equip_to_slot_or_del(id, slot_wear_id_str)
+			H.equip_to_slot_or_del(id, slot_wear_id)
 			H.update_inv_wear_id()
 	else
 		alert("Invalid mob")
@@ -243,7 +243,7 @@
 		if(!(A.type in areas_with_LS))
 			areas_with_LS.Add(A.type)
 
-	for(var/obj/item/radio/intercom/I in world)
+	for(var/obj/item/device/radio/intercom/I in world)
 		var/area/A = get_area(I)
 		if(!(A.type in areas_with_intercom))
 			areas_with_intercom.Add(A.type)
@@ -355,10 +355,13 @@
 
 	for(var/obj/machinery/power/rad_collector/Rad in world)
 		if(Rad.anchored)
-			if(!Rad.loaded_tank)
-				Rad.loaded_tank = new /obj/item/tank/hydrogen(Rad)
-				Rad.loaded_tank.air_contents.gas[/decl/material/gas/hydrogen] = 70
+			if(!Rad.P)
+				var/obj/item/weapon/tank/phoron/Phoron = new/obj/item/weapon/tank/phoron(Rad)
+				Phoron.air_contents.gas[GAS_PHORON] = 70
 				Rad.drainratio = 0
+				Rad.P = Phoron
+				Phoron.forceMove(Rad)
+
 			if(!Rad.active)
 				Rad.toggle_power()
 
@@ -478,24 +481,3 @@
 
 	images -= powernet_markers
 	QDEL_NULL_LIST(powernet_markers)
-
-/client/proc/spawn_material()
-	set category = "Debug"
-	set name = "Spawn Material Stack"
-	if(!check_rights(R_DEBUG)) return
-
-	var/material = input("Select material to spawn") as null|anything in SSmaterials.materials_by_name
-	if(!material)
-		return
-	var/decl/material/M = decls_repository.get_decl(material)
-	new M.stack_type(get_turf(mob), 50, M)
-
-/client/proc/force_ghost_trap_trigger()
-	set category = "Debug"
-	set name = "Force Ghost Trap Trigger"
-	if(!check_rights(R_DEBUG)) return
-	var/decl/ghosttrap/trap = input("Select a ghost trap.", "Force Ghost Trap Trigger") as null|anything in typesof(/decl/ghosttrap)
-	if(!trap)
-		return
-	trap = decls_repository.get_decl(trap)
-	trap.forced(mob)

@@ -10,14 +10,13 @@
 	opacity = 1
 	density = 1
 	blocks_air = 1
-	explosion_resistance = 10
 
 /turf/simulated/shuttle/wall/corner
 	var/corner_overlay_state = "diagonalWall"
 	var/image/corner_overlay
 
-/turf/simulated/shuttle/wall/corner/Initialize()
-	. = ..()
+/turf/simulated/shuttle/wall/corner/New()
+	..()
 	reset_base_appearance()
 	reset_overlay()
 
@@ -43,34 +42,34 @@
 	icon_state = "corner_white" //for mapping preview
 	corner_overlay_state = "corner_white"
 /turf/simulated/shuttle/wall/corner/smoothwhite/ne
-	dir = NORTHEAST
+	dir = NORTH|EAST
 /turf/simulated/shuttle/wall/corner/smoothwhite/nw
-	dir = NORTHWEST
+	dir = NORTH|WEST
 /turf/simulated/shuttle/wall/corner/smoothwhite/se
-	dir = SOUTHEAST
+	dir = SOUTH|EAST
 /turf/simulated/shuttle/wall/corner/smoothwhite/sw
-	dir = SOUTHWEST
+	dir = SOUTH|WEST
 
 /turf/simulated/shuttle/wall/corner/blockwhite
 	icon_state = "corner_white_block"
 	corner_overlay_state = "corner_white_block"
 /turf/simulated/shuttle/wall/corner/blockwhite/ne
-	dir = NORTHEAST
+	dir = NORTH|EAST
 /turf/simulated/shuttle/wall/corner/blockwhite/nw
-	dir = NORTHWEST
+	dir = NORTH|WEST
 /turf/simulated/shuttle/wall/corner/blockwhite/se
-	dir = SOUTHEAST
+	dir = SOUTH|EAST
 /turf/simulated/shuttle/wall/corner/blockwhite/sw
-	dir = SOUTHWEST
+	dir = SOUTH|WEST
 
 /turf/simulated/shuttle/wall/corner/dark
 	icon_state = "corner_dark"
 	corner_overlay_state = "corner_dark"
 /turf/simulated/shuttle/wall/corner/dark/ne
-	dir = NORTHEAST
+	dir = NORTH|EAST
 /turf/simulated/shuttle/wall/corner/dark/nw
-	dir = NORTHWEST
+	dir = NORTH|WEST
 /turf/simulated/shuttle/wall/corner/dark/se
-	dir = SOUTHEAST
+	dir = SOUTH|EAST
 /turf/simulated/shuttle/wall/corner/dark/sw
-	dir = SOUTHWEST
+	dir = SOUTH|WEST

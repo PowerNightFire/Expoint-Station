@@ -18,6 +18,16 @@
 	desc = "A ring commemorating graduation from Mariner University."
 	icon_state = "mariner-grad"
 
+/obj/item/clothing/ring/fleet
+	name = "Fleet ring"
+	desc = "A ring commemorating honorable service with the Sol Government's Fleet."
+	icon_state = "fleet"
+
+/obj/item/clothing/ring/ec
+	name = "Expeditionary Corps ring"
+	desc = "A ring commemorating honorable service with the Sol Government's Expeditionary Corps."
+	icon_state = "ec"
+
 /////////////////////////////////////////
 //Magic Rings
 
@@ -28,7 +38,7 @@
 
 /obj/item/clothing/ring/magic/equipped(var/mob/living/carbon/human/H, var/slot)
 	..()
-	if(istype(H) && slot == SLOT_HANDS)
+	if(istype(H) && slot == SLOT_GLOVES)
 		H.add_cloaking_source(src)
 
 /obj/item/clothing/ring/magic/dropped(var/mob/living/carbon/human/H)
@@ -43,21 +53,21 @@
 
 /obj/item/clothing/ring/reagent
 	atom_flags = ATOM_FLAG_OPEN_CONTAINER
-	origin_tech = "{'materials':2,'esoteric':4}"
+	origin_tech = list(TECH_MATERIAL = 2, TECH_ESOTERIC = 4)
 
-/obj/item/clothing/ring/reagent/Initialize()
-	. = ..()
+/obj/item/clothing/ring/reagent/New()
+	..()
 	create_reagents(15)
 
 /obj/item/clothing/ring/reagent/equipped(var/mob/living/carbon/human/H)
 	..()
 	if(istype(H) && H.gloves==src)
-		to_chat(H, "<font color='blue'><b>You feel a prick as you slip on the ring.</b></font>")
+		to_chat(H, "<span class='info'><b>You feel a prick as you slip on the ring.</b></span>")
 
 		if(reagents.total_volume)
 			if(H.reagents)
 				var/contained_reagents = reagents.get_reagents()
-				var/trans = reagents.trans_to_mob(H, 15, CHEM_INJECT)
+				var/trans = reagents.trans_to_mob(H, 15, CHEM_BLOOD)
 				admin_inject_log(usr, H, src, contained_reagents, trans)
 	return
 
@@ -66,12 +76,11 @@
 	name = "silver ring"
 	desc = "A ring made from what appears to be silver."
 	icon_state = "material"
-	origin_tech = "{'materials':2,'esoteric':5}"
+	origin_tech = list(TECH_MATERIAL = 2, TECH_ESOTERIC = 5)
 
-/obj/item/clothing/ring/reagent/sleepy/Initialize()
-	. = ..()
-	reagents.add_reagent(/decl/material/liquid/paralytics, 10) // Less than a sleepy-pen, but still enough to knock someone out
-	reagents.add_reagent(/decl/material/liquid/sedatives, 5)  
+/obj/item/clothing/ring/reagent/sleepy/New()
+	..()
+	reagents.add_reagent(/datum/reagent/chloralhydrate, 15) // Less than a sleepy-pen, but still enough to knock someone out
 
 /////////////////////////////////////////
 //Seals and Signet Rings

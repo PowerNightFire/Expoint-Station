@@ -5,21 +5,21 @@
 
 /obj/machinery/computer/modular/preset/full
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc,
-		/obj/item/stock_parts/computer/card_slot,
-		/obj/item/stock_parts/computer/ai_slot,
+		/obj/item/weapon/stock_parts/power/apc,
+		/obj/item/weapon/stock_parts/computer/card_slot,
+		/obj/item/weapon/stock_parts/computer/ai_slot
 		)
 
 /obj/machinery/computer/modular/preset/aislot
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc,
-		/obj/item/stock_parts/computer/ai_slot
+		/obj/item/weapon/stock_parts/power/apc,
+		/obj/item/weapon/stock_parts/computer/ai_slot
 		)
 
 /obj/machinery/computer/modular/preset/cardslot
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc,
-		/obj/item/stock_parts/computer/card_slot
+		/obj/item/weapon/stock_parts/power/apc,
+		/obj/item/weapon/stock_parts/computer/card_slot
 		)
 
 /obj/machinery/computer/modular/preset/Initialize()
@@ -53,7 +53,8 @@
 
 /obj/machinery/computer/modular/preset/aislot/research
 	default_software = list(
-		/datum/computer_file/program/network_monitor,
+		/datum/computer_file/program/ntnetmonitor,
+		/datum/computer_file/program/nttransfer,
 		/datum/computer_file/program/camera_monitor,
 		/datum/computer_file/program/aidiag,
 		/datum/computer_file/program/email_client,
@@ -62,7 +63,8 @@
 
 /obj/machinery/computer/modular/preset/aislot/sysadmin
 	default_software = list(
-		/datum/computer_file/program/network_monitor,
+		/datum/computer_file/program/ntnetmonitor,
+		/datum/computer_file/program/nttransfer,
 		/datum/computer_file/program/camera_monitor,
 		/datum/computer_file/program/aidiag,
 		/datum/computer_file/program/email_client,
@@ -78,8 +80,19 @@
 		/datum/computer_file/program/email_client,
 		/datum/computer_file/program/records,
 		/datum/computer_file/program/docking,
-		/datum/computer_file/program/records,
 		/datum/computer_file/program/wordprocessor
+	)
+
+/obj/machinery/computer/modular/preset/cardslot/command_sec
+	default_software = list(
+		/datum/computer_file/program/comm,
+		/datum/computer_file/program/camera_monitor,
+		/datum/computer_file/program/email_client,
+		/datum/computer_file/program/records,
+		/datum/computer_file/program/docking,
+		/datum/computer_file/program/wordprocessor,
+		/datum/computer_file/program/digitalwarrant,
+		/datum/computer_file/program/forceauthorization
 	)
 
 /obj/machinery/computer/modular/preset/security
@@ -93,6 +106,7 @@
 
 /obj/machinery/computer/modular/preset/civilian
 	default_software = list(
+		/datum/computer_file/program/newsbrowser,
 		/datum/computer_file/program/camera_monitor,
 		/datum/computer_file/program/records,
 		/datum/computer_file/program/email_client,
@@ -117,6 +131,7 @@
 
 /obj/machinery/computer/modular/preset/full/ert
 	default_software = list(
+		/datum/computer_file/program/nttransfer,
 		/datum/computer_file/program/camera_monitor/ert,
 		/datum/computer_file/program/email_client,
 		/datum/computer_file/program/alarm_monitor,
@@ -136,6 +151,15 @@
 /obj/machinery/computer/modular/preset/full/merc/Initialize()
 	. = ..()
 	emag_act(INFINITY)
+
+/obj/machinery/computer/modular/preset/library
+	default_software = list(
+		/datum/computer_file/program/nttransfer,
+		/datum/computer_file/program/newsbrowser,
+		/datum/computer_file/program/email_client,
+		/datum/computer_file/program/library,
+		/datum/computer_file/program/wordprocessor
+	)
 
 /obj/machinery/computer/modular/preset/merchant
 	default_software = list(

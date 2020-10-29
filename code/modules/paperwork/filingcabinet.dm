@@ -18,11 +18,11 @@
 	atom_flags = ATOM_FLAG_NO_TEMP_CHANGE | ATOM_FLAG_CLIMBABLE
 	obj_flags = OBJ_FLAG_ANCHORABLE
 	var/list/can_hold = list(
-		/obj/item/paper,
-		/obj/item/folder,
-		/obj/item/photo,
-		/obj/item/paper_bundle,
-		/obj/item/forensics/sample)
+		/obj/item/weapon/paper,
+		/obj/item/weapon/folder,
+		/obj/item/weapon/photo,
+		/obj/item/weapon/paper_bundle,
+		/obj/item/weapon/sample)
 
 /obj/structure/filingcabinet/chestdrawer
 	name = "chest drawer"
@@ -46,7 +46,7 @@
 			I.forceMove(src)
 	. = ..()
 
-/obj/structure/filingcabinet/attackby(obj/item/P, mob/user)
+/obj/structure/filingcabinet/attackby(obj/item/P as obj, mob/user as mob)
 	if(is_type_in_list(P, can_hold))
 		if(!user.unEquip(P, src))
 			return
@@ -57,7 +57,7 @@
 	else
 		..()
 
-/obj/structure/filingcabinet/attack_hand(mob/user)
+/obj/structure/filingcabinet/attack_hand(mob/user as mob)
 	if(contents.len <= 0)
 		to_chat(user, "<span class='notice'>\The [src] is empty.</span>")
 		return

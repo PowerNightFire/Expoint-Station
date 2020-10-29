@@ -13,19 +13,22 @@
 	var/graffiti_age = 0
 	var/author = "unknown"
 
-/obj/effect/decal/writing/Initialize(mapload, var/_age, var/_message, var/_author)
+/obj/effect/decal/writing/New(var/newloc, var/_age, var/_message, var/_author)
+	..(newloc)
+	if(!isnull(_age))
+		graffiti_age = _age
+	message = _message
+	if(!isnull(author))
+		author = _author
+
+/obj/effect/decal/writing/Initialize()
 	var/list/random_icon_states = icon_states(icon)
 	for(var/obj/effect/decal/writing/W in loc)
 		random_icon_states.Remove(W.icon_state)
 	if(random_icon_states.len)
 		icon_state = pick(random_icon_states)
 	SSpersistence.track_value(src, /datum/persistent/graffiti)
-	. = ..(mapload)
-	if(!isnull(_age))
-		graffiti_age = _age
-	message = _message
-	if(!isnull(author))
-		author = _author
+	. = ..()
 
 /obj/effect/decal/writing/Destroy()
 	SSpersistence.forget_value(src, /datum/persistent/graffiti)
@@ -33,13 +36,11 @@
 
 /obj/effect/decal/writing/examine(mob/user)
 	. = ..(user)
-	var/processed_message = user.handle_reading_literacy(user, message)
-	if(processed_message)
-		to_chat(user,  "It reads \"[processed_message]\".")
+	to_chat(user,  "It reads \"[message]\".")
 
 /obj/effect/decal/writing/attackby(var/obj/item/thing, var/mob/user)
 	if(isWelder(thing))
-		var/obj/item/weldingtool/welder = thing
+		var/obj/item/weapon/weldingtool/welder = thing
 		if(welder.isOn() && welder.remove_fuel(0,user) && do_after(user, 5, src) && !QDELETED(src))
 			playsound(src.loc, 'sound/items/Welder2.ogg', 50, 1)
 			user.visible_message("<span class='notice'>\The [user] clears away some graffiti.</span>")

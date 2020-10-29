@@ -1,4 +1,4 @@
-/obj/item/armblade
+/obj/item/weapon/material/armblade
 	icon_state = "armblade"
 	item_state = null
 	name = "armblade"
@@ -7,7 +7,7 @@
 	desc = "A handy utility blade for the discerning augmentee. Warranty void if used for cutting."
 	base_parry_chance = 30
 	unbreakable = 1
-	material_force_multiplier = 0.2
+	force_divisor = 0.2
 	sharp = 1
 	edge = 1
 	attack_verb = list("stabbed", "sliced", "cut")
@@ -19,18 +19,16 @@
 	action_button_name = "Deploy blade"
 	icon_state = "armblade"
 	allowed_organs = list(BP_AUGMENT_R_ARM, BP_AUGMENT_L_ARM)
-	holding_type = /obj/item/armblade
+	holding_type = /obj/item/weapon/material/armblade
 	//Limited to robolimbs
 	augment_flags = AUGMENTATION_MECHANIC
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
 
-/obj/item/armblade/claws
+/obj/item/weapon/material/armblade/claws
 	icon_state = "wolverine"
 	name = "combat claws"
 	desc = "These do not grow back."
 	base_parry_chance = 40
-	material_force_multiplier = 0.3
+	force_divisor = 0.3
 
 //Alternate look
 /obj/item/organ/internal/augment/active/simple/wolverine
@@ -39,8 +37,6 @@
 	action_button_name = "Deploy claws"
 	icon_state = "wolverine"
 	allowed_organs = list(BP_AUGMENT_R_HAND, BP_AUGMENT_L_HAND)
-	holding_type = /obj/item/armblade/claws
+	holding_type = /obj/item/weapon/material/armblade/claws
 	//Limited to robolimbs
 	augment_flags = AUGMENTATION_MECHANIC
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/gemstone/diamond = MATTER_AMOUNT_REINFORCEMENT)

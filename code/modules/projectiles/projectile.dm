@@ -47,7 +47,6 @@
 	var/drowsy = 0
 	var/agony = 0
 	var/embed = 0 // whether or not the projectile can embed itself in the mob
-	var/space_knockback = 0	//whether or not it will knock things back in space
 	var/penetration_modifier = 0.2 //How much internal damage this projectile can deal, as a multiplier.
 
 	var/hitscan = 0		// whether the projectile should be hitscan
@@ -59,11 +58,10 @@
 	var/impact_type
 
 	var/fire_sound
-	var/fire_sound_vol = 50
 	var/miss_sounds
 	var/ricochet_sounds
 	var/list/impact_sounds	//for different categories, IMPACT_MEAT etc
-	var/shrapnel_type = /obj/item/shard/shrapnel
+	var/shrapnel_type = /obj/item/weapon/material/shard/shrapnel
 
 	var/vacuum_traversal = 1 //Determines if the projectile can exist in vacuum, if false, the projectile will be deleted if it enters vacuum.
 
@@ -105,17 +103,6 @@
 		if(T)
 			T.hotspot_expose(700, 5)
 
-	if(space_knockback && ismovable(A))
-		var/atom/movable/AM = A
-		if(!AM.anchored && !AM.has_gravity())
-			if(ismob(AM))
-				var/mob/M = AM
-				if(M.check_space_footing())
-					return
-			var/old_dir = AM.dir
-			step(AM,get_dir(firer,AM))
-			AM.set_dir(old_dir)
-
 //Checks if the projectile is eligible for embedding. Not that it necessarily will.
 /obj/item/projectile/can_embed()
 	//embed must be enabled and damage type must be brute
@@ -132,7 +119,7 @@
 /obj/item/projectile/proc/check_penetrate(var/atom/A)
 	return 1
 
-/obj/item/projectile/proc/check_fire(atom/target, var/mob/living/user)  //Checks if you can hit them or not.
+/obj/item/projectile/proc/check_fire(atom/target as mob, var/mob/living/user as mob)  //Checks if you can hit them or not.
 	check_trajectory(target, user, pass_flags, item_flags, obj_flags)
 
 //sets the click point of the projectile using mouse input params
@@ -175,7 +162,7 @@
 		QDEL_NULL_LIST(segments)
 
 //called to launch a projectile from a gun
-/obj/item/projectile/proc/launch_from_gun(atom/target, mob/user, obj/item/gun/launcher, var/target_zone, var/x_offset=0, var/y_offset=0)
+/obj/item/projectile/proc/launch_from_gun(atom/target, mob/user, obj/item/weapon/gun/launcher, var/target_zone, var/x_offset=0, var/y_offset=0)
 	if(user == target) //Shooting yourself
 		user.bullet_act(src, target_zone)
 		qdel(src)
@@ -255,7 +242,7 @@
 
 	return 1
 
-/obj/item/projectile/Bump(atom/A, forced=0)
+/obj/item/projectile/Bump(atom/A as mob|obj|turf|area, forced=0)
 	if(A == src)
 		return 0 //no
 
@@ -316,9 +303,8 @@
 	qdel(src)
 	return 1
 
-/obj/item/projectile/explosion_act()
-	SHOULD_CALL_PARENT(FALSE)
-	return 
+/obj/item/projectile/ex_act()
+	return //explosions probably shouldn't delete projectiles
 
 /obj/item/projectile/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
 	return 1
@@ -397,7 +383,7 @@
 		return
 
 	if(ispath(muzzle_type))
-		var/obj/effect/projectile/M = new muzzle_type(get_turf(src), src)
+		var/obj/effect/projectile/M = new muzzle_type(get_turf(src))
 
 		if(istype(M))
 			M.set_transform(T)
@@ -410,7 +396,7 @@
 
 /obj/item/projectile/proc/tracer_effect(var/matrix/M)
 	if(ispath(tracer_type))
-		var/obj/effect/projectile/P = new tracer_type(location.loc, src)
+		var/obj/effect/projectile/P = new tracer_type(location.loc)
 
 		if(istype(P))
 			P.set_transform(M)
@@ -423,7 +409,7 @@
 
 /obj/item/projectile/proc/impact_effect(var/matrix/M)
 	if(ispath(impact_type))
-		var/obj/effect/projectile/P = new impact_type(location ? location.loc : get_turf(src), src)
+		var/obj/effect/projectile/P = new impact_type(location ? location.loc : get_turf(src))
 
 		if(istype(P) && location)
 			P.set_transform(M)
@@ -438,7 +424,7 @@
 	xo = null
 	var/result = 0 //To pass the message back to the gun.
 
-/obj/item/projectile/test/Bump(atom/A, forced=0)
+/obj/item/projectile/test/Bump(atom/A as mob|obj|turf|area, forced=0)
 	if(A == firer)
 		forceMove(A.loc)
 		return //cannot shoot yourself
@@ -483,7 +469,7 @@
 				return 1
 
 //Helper proc to check if you can hit them or not.
-/proc/check_trajectory(atom/target, atom/firer, var/pass_flags=PASS_FLAG_TABLE|PASS_FLAG_GLASS|PASS_FLAG_GRILLE, item_flags, obj_flags)
+/proc/check_trajectory(atom/target as mob|obj, atom/firer as mob|obj, var/pass_flags=PASS_FLAG_TABLE|PASS_FLAG_GLASS|PASS_FLAG_GRILLE, item_flags = null, obj_flags = null)
 	if(!istype(target) || !istype(firer))
 		return 0
 
@@ -525,9 +511,3 @@
 		SP.SetName((name != "shrapnel")? "[name] shrapnel" : "shrapnel")
 		SP.desc += " It looks like it was fired from [shot_from]."
 		return SP
-	
-/obj/item/projectile/get_autopsy_descriptors()
-	return list(name)
-
-/obj/item/projectile/Process_Spacemove()
-	return TRUE	//Bullets don't drift in space

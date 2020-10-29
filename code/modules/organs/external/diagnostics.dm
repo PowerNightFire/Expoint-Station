@@ -1,6 +1,6 @@
 
 /obj/item/organ/external/proc/get_wounds_desc()
-	if(BP_IS_PROSTHETIC(src))
+	if(BP_IS_ROBOTIC(src))
 		var/list/descriptors = list()
 		if(brute_dam)
 			switch(brute_dam)
@@ -54,13 +54,13 @@
 		var/bone = encased ? encased : "bone"
 		if(status & ORGAN_BROKEN)
 			bone = "broken [bone]"
-		wound_descriptors["[bone] exposed"] = 1
+		wound_descriptors["a [bone] exposed"] = 1
 
 		if(!encased || how_open() >= SURGERY_ENCASED)
 			var/list/bits = list()
 			for(var/obj/item/organ/internal/organ in internal_organs)
 				bits += organ.get_visible_state()
-			for(var/obj/item/implant in implants)
+			for(var/obj/item/weapon/implant in implants)
 				bits += implant.name
 			if(bits.len)
 				wound_descriptors["[english_list(bits)] visible in the wounds"] = 1
@@ -95,8 +95,8 @@
 	if (implants.len)
 		var/unknown_body = 0
 		for(var/I in implants)
-			var/obj/item/implant/imp = I
-			if(istype(I,/obj/item/implant))
+			var/obj/item/weapon/implant/imp = I
+			if(istype(I,/obj/item/weapon/implant))
 				if(imp.hidden)
 					continue
 				if (imp.known)

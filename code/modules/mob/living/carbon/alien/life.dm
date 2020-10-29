@@ -16,6 +16,9 @@
 
 /mob/living/carbon/alien/handle_mutations_and_radiation()
 
+	// Currently both Dionaea and larvae like to eat radiation, so I'm defining the
+	// rad absorbtion here. This will need to be changed if other baby aliens are added.
+
 	if(!radiation)
 		return
 
@@ -65,7 +68,7 @@
 				adjustHalLoss(-1)
 
 		// Eyes and blindness.
-		if(!check_has_eyes())
+		if(!has_eyes())
 			eye_blind =  1
 			blinded =    1
 			eye_blurry = 1
@@ -108,7 +111,7 @@
 			clear_fullscreen("blind")
 			set_fullscreen(disabilities & NEARSIGHTED, "impaired", /obj/screen/fullscreen/impaired, 1)
 			set_fullscreen(eye_blurry, "blurry", /obj/screen/fullscreen/blurry)
-			set_fullscreen(drugged, "high", /obj/screen/fullscreen/high)
+			set_fullscreen(druggy, "high", /obj/screen/fullscreen/high)
 		if(machine)
 			if(machine.check_eye(src) < 0)
 				reset_view(null)

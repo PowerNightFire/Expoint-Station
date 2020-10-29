@@ -22,7 +22,7 @@
 	var/turf/simulated/open/O = GetAbove(src)
 	var/atom/climb_target
 	if(istype(O))
-		for(var/turf/T in RANGE_TURFS(O, 1))
+		for(var/turf/T in trange(1,O))
 			if(!isopenspace(T) && T.is_floor())
 				climb_target = T
 			else
@@ -35,6 +35,33 @@
 
 	if(climb_target)
 		climb_up(climb_target)
+
+/mob/proc/zPull(direction)
+	//checks and handles pulled items across z levels
+	if(!pulling)
+		return 0
+
+	var/turf/start = pulling.loc
+	var/turf/destination = (direction == UP) ? GetAbove(pulling) : GetBelow(pulling)
+
+	if(!start.CanZPass(pulling, direction))
+		to_chat(src, "<span class='warning'>\The [start] blocked your pulled object!</span>")
+		stop_pulling()
+		return 0
+
+	if(!destination.CanZPass(pulling, direction))
+		to_chat(src, "<span class='warning'>The [pulling] you were pulling bumps up against \the [destination].</span>")
+		stop_pulling()
+		return 0
+
+	for(var/atom/A in destination)
+		if(!A.CanMoveOnto(pulling, start, 1.5, direction))
+			to_chat(src, "<span class='warning'>\The [A] blocks the [pulling] you were pulling.</span>")
+			stop_pulling()
+			return 0
+
+	pulling.forceMove(destination)
+	return 1
 
 /atom/proc/CanMoveOnto(atom/movable/mover, turf/target, height=1.5, direction = 0)
 	//Purpose: Determines if the object can move through this
@@ -56,7 +83,7 @@
 
 		//Last check, list of items that could plausibly be used to climb but aren't climbable themselves
 		var/list/objects_to_stand_on = list(
-				/obj/item/stool,
+				/obj/item/weapon/stool,
 				/obj/structure/bed,
 			)
 		for(var/type in objects_to_stand_on)
@@ -68,19 +95,19 @@
 	return 0
 
 /mob/living/carbon/human/can_ztravel()
-	if(Process_Spacemove())
+	if(Allow_Spacemove())
 		return 1
 
 	if(Check_Shoegrip())	//scaling hull with magboots
-		for(var/turf/simulated/T in RANGE_TURFS(src, 1))
+		for(var/turf/simulated/T in trange(1,src))
 			if(T.density)
 				return 1
 
 /mob/living/silicon/robot/can_ztravel()
-	if(Process_Spacemove()) //Checks for active jetpack
+	if(Allow_Spacemove()) //Checks for active jetpack
 		return 1
 
-	for(var/turf/simulated/T in RANGE_TURFS(src, 1)) //Robots get "magboots"
+	for(var/turf/simulated/T in trange(1,src)) //Robots get "magboots"
 		if(T.density)
 			return 1
 
@@ -100,7 +127,8 @@
 		return
 
 	// No gravity in space, apparently.
-	if(!has_gravity())
+	var/area/area = get_area(src)
+	if(!area.has_gravity())
 		return
 
 	if(throwing)
@@ -116,14 +144,11 @@
 	addtimer(CALLBACK(src, /atom/movable/proc/fall_callback, below), 0)
 
 /atom/movable/proc/fall_callback(var/turf/below)
-	if(!QDELETED(src))
-		handle_fall(below)
-
-/mob/fall_callback(var/turf/below)
-	var/was_moving = moving
-	..()
-	if(was_moving)
-		moving = FALSE
+	var/mob/M = src
+	var/is_client_moving = (ismob(M) && M.moving)
+	if(is_client_moving) M.moving = 1
+	handle_fall(below)
+	if(is_client_moving) M.moving = 0
 
 //For children to override
 /atom/movable/proc/can_fall(var/anchor_bypass = FALSE, var/turf/location_override = loc)
@@ -183,7 +208,7 @@
 	if(istype(landing, /turf/simulated/open))
 		visible_message("\The [src] falls through \the [landing]!", "You hear a whoosh of displaced air.")
 	else
-		visible_message("\The [src] slams into \the [landing]!", "You hear something slam into the [GLOB.using_map.ground_noun].")
+		visible_message("\The [src] slams into \the [landing]!", "You hear something slam into the deck.")
 		if(fall_damage())
 			for(var/mob/living/M in landing.contents)
 				if(M == src)
@@ -197,7 +222,7 @@
 /obj/fall_damage()
 	if(w_class == ITEM_SIZE_TINY)
 		return 0
-	if(w_class >= ITEM_SIZE_NO_CONTAINER)
+	if(w_class == ITEM_SIZE_NO_CONTAINER)
 		return 100
 	return BASE_STORAGE_COST(w_class)
 
@@ -222,17 +247,12 @@
 		var/list/victims = list()
 		for(var/tag in list(BP_L_FOOT, BP_R_FOOT, BP_L_ARM, BP_R_ARM))
 			var/obj/item/organ/external/E = get_organ(tag)
-			if(E && !E.is_stump() && !E.dislocated && !BP_IS_PROSTHETIC(E))
+			if(E && !E.is_stump() && !E.dislocated && !BP_IS_ROBOTIC(E))
 				victims += E
 		if(victims.len)
 			var/obj/item/organ/external/victim = pick(victims)
 			victim.dislocate()
 			to_chat(src, "<span class='warning'>You feel a sickening pop as your [victim.joint] is wrenched out of the socket.</span>")
-
-	if(client)
-		var/area/A = get_area(landing)
-		if(A)
-			A.alert_on_fall(src)
 	updatehealth()
 
 
@@ -243,7 +263,8 @@
 	var/turf/T = get_turf(A)
 	var/turf/above = GetAbove(src)
 	if(above && T.Adjacent(bound_overlay) && above.CanZPass(src, UP)) //Certain structures will block passage from below, others not
-		if(loc.has_gravity() && !can_overcome_gravity())
+		var/area/location = get_area(loc)
+		if(location.has_gravity && !can_overcome_gravity())
 			return FALSE
 
 		visible_message("<span class='notice'>[src] starts climbing onto \the [A]!</span>", "<span class='notice'>You start climbing onto \the [A]!</span>")
@@ -253,103 +274,3 @@
 		else
 			visible_message("<span class='warning'>[src] gives up on trying to climb onto \the [A]!</span>", "<span class='warning'>You give up on trying to climb onto \the [A]!</span>")
 		return TRUE
-
-/mob/living/verb/lookup()
-	set name = "Look Up"
-	set desc = "If you want to know what's above."
-	set category = "IC"
-
-	if(client && !is_physically_disabled())
-		if(z_eye)
-			reset_view(null)
-			qdel(z_eye)
-			z_eye = null
-			return
-		var/turf/above = GetAbove(src)
-		if(istype(above) && above.is_open())
-			z_eye = new /atom/movable/z_observer/z_up(src, src)
-			to_chat(src, "<span class='notice'>You look up.</span>")
-			reset_view(z_eye)
-			return
-		to_chat(src, "<span class='notice'>You can see \the [above ? above : "ceiling"].</span>")
-	else
-		to_chat(src, "<span class='notice'>You can't look up right now.</span>")
-
-/mob/living/verb/lookdown()
-	set name = "Look Down"
-	set desc = "If you want to know what's below."
-	set category = "IC"
-
-	if(client && !is_physically_disabled())
-		if(z_eye)
-			reset_view(null)
-			qdel(z_eye)
-			z_eye = null
-			return
-		var/turf/T = get_turf(src)
-		if(T && T.is_open() && HasBelow(T.z))
-			z_eye = new /atom/movable/z_observer/z_down(src, src)
-			to_chat(src, "<span class='notice'>You look down.</span>")
-			reset_view(z_eye)
-			return
-		to_chat(src, "<span class='notice'>You can see \the [T ? T : "floor"].</span>")
-	else
-		to_chat(src, "<span class='notice'>You can't look below right now.</span>")
-
-/mob/living
-	var/atom/movable/z_observer/z_eye
-
-/atom/movable/z_observer
-	name = ""
-	simulated = FALSE
-	anchored = TRUE
-	mouse_opacity = FALSE
-	var/mob/living/owner
-
-/atom/movable/z_observer/Initialize(mapload, var/mob/living/user)
-	. = ..()
-	owner = user
-	follow()
-	GLOB.moved_event.register(owner, src, /atom/movable/z_observer/proc/follow)
-
-/atom/movable/z_observer/proc/follow()
-
-/atom/movable/z_observer/z_up/follow()
-	forceMove(get_step(owner, UP))
-	if(isturf(src.loc))
-		var/turf/T = src.loc
-		if(T.is_open())
-			return
-	owner.reset_view(null)
-	owner.z_eye = null
-	qdel(src)
-
-/atom/movable/z_observer/z_down/follow()
-	forceMove(get_step(owner, DOWN))
-	var/turf/T = get_turf(owner)
-	if(T && T.is_open())
-		return
-	owner.reset_view(null)
-	owner.z_eye = null
-	qdel(src)
-
-/atom/movable/z_observer/Destroy()
-	GLOB.moved_event.unregister(owner, src, /atom/movable/z_observer/proc/follow)
-	owner = null
-	. = ..()
-
-/atom/movable/z_observer/can_fall()
-	return FALSE
-
-/atom/movable/z_observer/explosion_act()
-	SHOULD_CALL_PARENT(FALSE)
-	return
-
-/atom/movable/z_observer/singularity_act()
-	return
-
-/atom/movable/z_observer/singularity_pull()
-	return
-
-/atom/movable/z_observer/singuloCanEat()
-	return

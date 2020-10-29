@@ -1,25 +1,25 @@
 
-/obj/item/scanner/plant
+/obj/item/device/scanner/plant
 	name = "plant analyzer"
 	desc = "A hand-held botanical scanner used to analyze plants."
-	icon = 'icons/obj/items/device/scanner/plant_scanner.dmi'
+	icon = 'icons/obj/device.dmi'
 	icon_state = "hydro"
 	item_state = "analyzer"
 	scan_sound = 'sound/effects/fastbeep.ogg'
 	printout_color = "#eeffe8"
 	var/global/list/valid_targets = list(
-		/obj/item/chems/food/snacks/grown,
-		/obj/item/grown,
+		/obj/item/weapon/reagent_containers/food/snacks/grown,
+		/obj/item/weapon/grown,
 		/obj/machinery/portable_atmospherics/hydroponics,
 		/obj/item/seeds
 	)
 
-/obj/item/scanner/plant/is_valid_scan_target(atom/O)
+/obj/item/device/scanner/plant/is_valid_scan_target(atom/O)
 	if(is_type_in_list(O, valid_targets))
 		return TRUE
 	return FALSE
 
-/obj/item/scanner/plant/scan(atom/A, mob/user)
+/obj/item/device/scanner/plant/scan(atom/A, mob/user)
 	scan_title = "[A] at [get_area(A)]"
 	scan_data = plant_scan_results(A)
 	show_menu(user)
@@ -27,13 +27,13 @@
 /proc/plant_scan_results(obj/target)
 	var/datum/seed/grown_seed
 	var/datum/reagents/grown_reagents
-	if(istype(target,/obj/item/chems/food/snacks/grown))
-		var/obj/item/chems/food/snacks/grown/G = target
+	if(istype(target,/obj/item/weapon/reagent_containers/food/snacks/grown))
+		var/obj/item/weapon/reagent_containers/food/snacks/grown/G = target
 		grown_seed = SSplants.seeds[G.plantname]
 		grown_reagents = G.reagents
 
-	else if(istype(target,/obj/item/grown))
-		var/obj/item/grown/G = target
+	else if(istype(target,/obj/item/weapon/grown))
+		var/obj/item/weapon/grown/G = target
 		grown_seed = SSplants.seeds[G.plantname]
 		grown_reagents = G.reagents
 
@@ -53,7 +53,7 @@
 		grown_seed.scanned = TRUE
 		var/area/map = locate(/area/overmap)
 		for(var/obj/effect/overmap/visitable/sector/exoplanet/P in map)
-			if(grown_seed in P.small_flora_types)
+			if(grown_seed in P.seeds)
 				SSstatistics.add_field(STAT_XENOPLANTS_SCANNED, 1)
 				break
 
@@ -72,12 +72,12 @@
 	dat += "<tr><td><b>Potency</b></td><td>[grown_seed.get_trait(TRAIT_POTENCY)]</td></tr>"
 	dat += "</table>"
 
-	if(LAZYLEN(grown_reagents?.reagent_volumes))
+	if(grown_reagents && grown_reagents.reagent_list && grown_reagents.reagent_list.len)
 		dat += "<h2>Reagent Data</h2>"
+
 		dat += "<br>This sample contains: "
-		for(var/rtype in grown_reagents.reagent_volumes)
-			var/decl/material/R = decls_repository.get_decl(rtype)
-			dat += "<br>- [R.name], [REAGENT_VOLUME(grown_reagents, rtype)] unit(s)"
+		for(var/datum/reagent/R in grown_reagents.reagent_list)
+			dat += "<br>- [R.name], [grown_reagents.get_reagent_amount(R.type)] unit(s)"
 
 	dat += "<h2>Other Data</h2>"
 

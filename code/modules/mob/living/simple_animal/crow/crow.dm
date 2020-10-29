@@ -1,4 +1,4 @@
-/obj/item/storage/messenger
+/obj/item/weapon/storage/messenger
 	name = "messenger bag"
 	desc = "A small green-grey messenger bag with a blue Corvid Couriers logo on it."
 	icon = 'icons/mob/simple_animal/crow.dmi'
@@ -15,14 +15,15 @@
 	icon_living = "crow"
 	icon_dead = "crow_dead"
 	pass_flags = PASS_FLAG_TABLE
-	mob_size = MOB_SIZE_SMALL
+	mob_size = MOB_SMALL
 
 	speak = list("Caw.", "Caw?", "Caw!", "CAW.")
 	speak_emote = list("caws")
 	emote_hear = list("caws")
 	emote_see = list("hops")
 
-	natural_weapon = /obj/item/natural_weapon/crow_claws
+	melee_damage_lower = 5
+	melee_damage_upper = 10
 
 	response_help  = "pets"
 	response_disarm = "gently moves aside"
@@ -31,18 +32,11 @@
 	universal_speak = TRUE
 	pass_flags = PASS_FLAG_TABLE
 
-	var/obj/item/storage/messenger/messenger_bag
-	var/obj/item/card/id/access_card
+	var/obj/item/weapon/storage/messenger/messenger_bag
+	var/obj/item/weapon/card/id/access_card
 
-/obj/item/natural_weapon/crow_claws
-	name = "claws"
-	gender = PLURAL
-	attack_verb = list("clawed")
-	sharp = TRUE
-	force = 7
-
-/mob/living/simple_animal/crow/Initialize()
-	. = ..()
+/mob/living/simple_animal/crow/New()
+	..()
 	messenger_bag = new(src)
 	update_icon()
 
@@ -99,10 +93,10 @@
 		switch(href_list["add_inv"])
 			if("access cuff")
 				equipped = access_card
-				checktype = /obj/item/card/id
+				checktype = /obj/item/weapon/card/id
 			if("back")
 				equipped = messenger_bag
-				checktype = /obj/item/storage/messenger
+				checktype = /obj/item/weapon/storage/messenger
 		if(equipped)
 			to_chat(user, "<span class='warning'>There is already something worn on \the [src]'s [href_list["add_inv"]].</span>")
 			return TOPIC_HANDLED

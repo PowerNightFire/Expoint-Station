@@ -10,14 +10,11 @@
 		if (stat == DEAD)
 			return say_dead(message)
 
-		if(findlasttextEx(message, get_prefix_key(/decl/prefix/custom_emote)) == 1)
+		if(copytext(message,1,2) == "*")
 			return emote(copytext(message,2))
 
-		if(findlasttextEx(message, get_prefix_key(/decl/prefix/visible_emote)) == 1)
-			return custom_emote(1, copytext(message,2))
-
 		if(copytext(message,1,2) == ";")
-			var/decl/language/L = decls_repository.get_decl(/decl/language/binary/drone)
+			var/datum/language/L = all_languages[LANGUAGE_DRONE_GLOBAL]
 			if(istype(L))
 				return L.broadcast(src,trim(copytext(message,2)))
 

@@ -1,7 +1,7 @@
 /obj/structure/bigDelivery
 	desc = "A big wrapped package."
 	name = "large parcel"
-	icon = 'icons/obj/items/storage/deliverypackage.dmi'
+	icon = 'icons/obj/storage.dmi'
 	icon_state = "deliverycloset"
 	var/obj/wrapped = null
 	density = 1
@@ -13,10 +13,10 @@
 	var/label_x
 	var/tag_x
 
-/obj/structure/bigDelivery/attack_robot(mob/user)
+/obj/structure/bigDelivery/attack_robot(mob/user as mob)
 	unwrap(user)
 
-/obj/structure/bigDelivery/attack_hand(mob/user)
+/obj/structure/bigDelivery/attack_hand(mob/user as mob)
 	unwrap(user)
 
 /obj/structure/bigDelivery/proc/unwrap(var/mob/user)
@@ -24,9 +24,9 @@
 		// Destroy will drop our wrapped object on the turf, so let it.
 		qdel(src)
 
-/obj/structure/bigDelivery/attackby(obj/item/W, mob/user)
-	if(istype(W, /obj/item/destTagger))
-		var/obj/item/destTagger/O = W
+/obj/structure/bigDelivery/attackby(obj/item/W as obj, mob/user as mob)
+	if(istype(W, /obj/item/device/destTagger))
+		var/obj/item/device/destTagger/O = W
 		if(O.currTag)
 			if(src.sortTag != O.currTag)
 				to_chat(user, "<span class='notice'>You have labeled the destination as [O.currTag].</span>")
@@ -41,7 +41,7 @@
 		else
 			to_chat(user, "<span class='warning'>You need to set a destination first!</span>")
 
-	else if(istype(W, /obj/item/pen))
+	else if(istype(W, /obj/item/weapon/pen))
 		switch(alert("What would you like to alter?",,"Title","Description", "Cancel"))
 			if("Title")
 				var/str = sanitizeSafe(input(usr,"Label text?","Set label",""), MAX_NAME_LEN)
@@ -75,7 +75,7 @@
 /obj/structure/bigDelivery/on_update_icon()
 	overlays.Cut()
 	if(nameset || examtext)
-		var/image/I = new/image(icon,"delivery_label")
+		var/image/I = new/image('icons/obj/storage.dmi',"delivery_label")
 		if(icon_state == "deliverycloset")
 			I.pixel_x = 2
 			if(label_y == null)
@@ -88,7 +88,7 @@
 			I.pixel_y = -3
 		overlays += I
 	if(src.sortTag)
-		var/image/I = new/image(icon,"delivery_tag")
+		var/image/I = new/image('icons/obj/storage.dmi',"delivery_tag")
 		if(icon_state == "deliverycloset")
 			if(tag_x == null)
 				tag_x = rand(-2, 3)
@@ -124,7 +124,7 @@
 /obj/item/smallDelivery
 	desc = "A small wrapped package."
 	name = "small parcel"
-	icon = 'icons/obj/items/storage/deliverypackage.dmi'
+	icon = 'icons/obj/storage.dmi'
 	icon_state = "deliverycrate3"
 	var/obj/item/wrapped = null
 	var/sortTag = null
@@ -143,15 +143,15 @@
 
 	qdel(src)
 
-/obj/item/smallDelivery/attack_robot(mob/user)
+/obj/item/smallDelivery/attack_robot(mob/user as mob)
 	unwrap(user)
 
-/obj/item/smallDelivery/attack_self(mob/user)
+/obj/item/smallDelivery/attack_self(mob/user as mob)
 	unwrap(user)
 
-/obj/item/smallDelivery/attackby(obj/item/W, mob/user)
-	if(istype(W, /obj/item/destTagger))
-		var/obj/item/destTagger/O = W
+/obj/item/smallDelivery/attackby(obj/item/W as obj, mob/user as mob)
+	if(istype(W, /obj/item/device/destTagger))
+		var/obj/item/device/destTagger/O = W
 		if(O.currTag)
 			if(src.sortTag != O.currTag)
 				to_chat(user, "<span class='notice'>You have labeled the destination as [O.currTag].</span>")
@@ -166,7 +166,7 @@
 		else
 			to_chat(user, "<span class='warning'>You need to set a destination first!</span>")
 
-	else if(istype(W, /obj/item/pen))
+	else if(istype(W, /obj/item/weapon/pen))
 		switch(alert("What would you like to alter?",,"Title","Description", "Cancel"))
 			if("Title")
 				var/str = sanitizeSafe(input(usr,"Label text?","Set label",""), MAX_NAME_LEN)
@@ -201,12 +201,12 @@
 /obj/item/smallDelivery/on_update_icon()
 	overlays.Cut()
 	if((nameset || examtext) && icon_state != "deliverycrate1")
-		var/image/I = new/image(icon,"delivery_label")
+		var/image/I = new/image('icons/obj/storage.dmi',"delivery_label")
 		if(icon_state == "deliverycrate5")
 			I.pixel_y = -1
 		overlays += I
 	if(src.sortTag)
-		var/image/I = new/image(icon,"delivery_tag")
+		var/image/I = new/image('icons/obj/storage.dmi',"delivery_tag")
 		switch(icon_state)
 			if("deliverycrate1")
 				I.pixel_y = -5
@@ -236,7 +236,7 @@
 	desc = "Heavy duty brown paper used to wrap packages to protect them during shipping."
 	singular_name = "sheet"
 	max_amount = 25
-	icon = 'icons/obj/items/gift_wrapper.dmi'
+	icon = 'icons/obj/items.dmi'
 	icon_state = "deliveryPaper"
 	w_class = ITEM_SIZE_NORMAL
 
@@ -244,22 +244,22 @@
 	amount = 25
 
 
-/obj/item/c_tube
+/obj/item/weapon/c_tube
 	name = "cardboard tube"
 	desc = "A tube... of cardboard."
-	icon = 'icons/obj/items/gift_wrapper.dmi'
+	icon = 'icons/obj/items.dmi'
 	icon_state = "c_tube"
 	throwforce = 1
 	w_class = ITEM_SIZE_SMALL
 	throw_speed = 4
 	throw_range = 5
 
-/obj/item/stack/package_wrap/afterattack(var/obj/target, mob/user, proximity)
+/obj/item/stack/package_wrap/afterattack(var/obj/target as obj, mob/user as mob, proximity)
 	if(!proximity) return
 	if(!istype(target))	//this really shouldn't be necessary (but it is).	-Pete
 		return
 	if(istype(target, /obj/item/smallDelivery) || istype(target,/obj/structure/bigDelivery) \
-	|| istype(target, /obj/item/gift) || istype(target, /obj/item/evidencebag))
+	|| istype(target, /obj/item/weapon/gift) || istype(target, /obj/item/weapon/evidencebag))
 		return
 	if(target.anchored)
 		return
@@ -268,7 +268,7 @@
 	if(user in target) //no wrapping closets that you are inside - it's not physically possible
 		return
 
-	if (istype(target, /obj/item) && !(istype(target, /obj/item/storage) && !istype(target,/obj/item/storage/box)))
+	if (istype(target, /obj/item) && !(istype(target, /obj/item/weapon/storage) && !istype(target,/obj/item/weapon/storage/box)))
 		var/obj/item/O = target
 		if (src.get_amount() >= 1)
 			var/obj/item/smallDelivery/P = new /obj/item/smallDelivery(get_turf(O.loc))	//Aaannd wrap it up!
@@ -333,20 +333,18 @@
 
 	return
 
-/obj/item/destTagger
+/obj/item/device/destTagger
 	name = "destination tagger"
 	desc = "Used to set the destination of properly wrapped packages."
-	icon = 'icons/obj/items/device/destination_tagger.dmi'
 	icon_state = "dest_tagger"
 	var/currTag = 0
 	w_class = ITEM_SIZE_SMALL
 	item_state = "electronic"
 	obj_flags = OBJ_FLAG_CONDUCTIBLE
-	slot_flags = SLOT_LOWER_BODY
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
+	slot_flags = SLOT_BELT
+	matter = list(MATERIAL_STEEL = 100, MATERIAL_GLASS = 34)
 
-/obj/item/destTagger/proc/openwindow(mob/user)
+/obj/item/device/destTagger/proc/openwindow(mob/user as mob)
 	var/dat = "<tt><center><h1><b>TagMaster 2.3</b></h1></center>"
 
 	dat += "<table style='width:100%; padding:4px;'><tr>"
@@ -361,10 +359,10 @@
 	show_browser(user, dat, "window=destTagScreen;size=450x375")
 	onclose(user, "destTagScreen")
 
-/obj/item/destTagger/attack_self(mob/user)
+/obj/item/device/destTagger/attack_self(mob/user as mob)
 	openwindow(user)
 
-/obj/item/destTagger/OnTopic(user, href_list, state)
+/obj/item/device/destTagger/OnTopic(user, href_list, state)
 	if(href_list["nextTag"] && (href_list["nextTag"] in GLOB.tagger_locations))
 		src.currTag = href_list["nextTag"]
 		to_chat(user, "<span class='notice'>You set [src] to <b>[src.currTag]</b>.</span>")
@@ -389,23 +387,19 @@
 		openwindow(user)
 
 /obj/machinery/disposal/deliveryChute
-	name = "delivery chute"
+	name = "Delivery chute"
 	desc = "A chute for big and small packages alike!"
 	density = 1
 	icon_state = "intake"
-	base_type = /obj/machinery/disposal/deliveryChute/buildable
-	frame_type = /obj/structure/disposalconstruct/machine/chute
 
 	var/c_mode = 0
 
-/obj/machinery/disposal/deliveryChute/buildable
-	uncreated_component_parts = null
-
-/obj/machinery/disposal/deliveryChute/Initialize()
-	. = ..()
-	trunk = locate() in src.loc
-	if(trunk)
-		trunk.linked = src	// link the pipe trunk to self
+/obj/machinery/disposal/deliveryChute/New()
+	..()
+	spawn(5)
+		trunk = locate() in src.loc
+		if(trunk)
+			trunk.linked = src	// link the pipe trunk to self
 
 /obj/machinery/disposal/deliveryChute/interact()
 	return
@@ -413,17 +407,18 @@
 /obj/machinery/disposal/deliveryChute/on_update_icon()
 	return
 
-/obj/machinery/disposal/deliveryChute/CanPass(atom/movable/mover, turf/target, height=1.5, air_group = 0)
-	. = (get_dir(src, mover) != dir) && ..()
-
 /obj/machinery/disposal/deliveryChute/Bumped(var/atom/movable/AM) //Go straight into the chute
-
-	if(istype(AM, /obj/item/projectile) || istype(AM, /obj/effect))	
-		return
-
-	if(get_dir(src, AM) != dir)
-		return
-
+	if(istype(AM, /obj/item/projectile) || istype(AM, /obj/effect))	return
+	switch(dir)
+		if(NORTH)
+			if(AM.loc.y != src.loc.y+1) return
+		if(EAST)
+			if(AM.loc.x != src.loc.x+1) return
+		if(SOUTH)
+			if(AM.loc.y != src.loc.y-1) return
+		if(WEST)
+			if(AM.loc.x != src.loc.x-1) return
+			
 	var/mob/living/L = AM
 	if (istype(L) && L.ckey)
 		log_and_message_admins("has flushed themselves down \the [src].", L)
@@ -484,7 +479,7 @@
 			to_chat(user, "You attach the screws around the power connection.")
 			return
 	else if(isWelder(I) && c_mode==1)
-		var/obj/item/weldingtool/W = I
+		var/obj/item/weapon/weldingtool/W = I
 		if(W.remove_fuel(1,user))
 			to_chat(user, "You start slicing the floorweld off the delivery chute.")
 			if(do_after(user,20, src))
@@ -506,7 +501,7 @@
 
 /obj/item/stack/package_wrap/cyborg
 	name = "package wrapper synthesizer"
-	icon = 'icons/obj/items/gift_wrapper.dmi'
+	icon = 'icons/obj/items.dmi'
 	icon_state = "deliveryPaper"
 	gender = NEUTER
 	matter = null

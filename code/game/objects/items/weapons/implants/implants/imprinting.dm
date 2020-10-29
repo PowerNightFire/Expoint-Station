@@ -1,12 +1,12 @@
-/obj/item/implant/imprinting
+/obj/item/weapon/implant/imprinting
 	name = "imprinting implant"
 	desc = "Latest word in training your peons."
-	origin_tech = "{'materials':1,'biotech':2,'programming':3}"
+	origin_tech = list(TECH_MATERIAL = 1, TECH_BIO = 2, TECH_DATA = 3)
 	hidden = 1
 	var/list/instructions = list("Do your job.", "Respect your superiors.", "Wash you hands after using the toilet.")
 	var/brainwashing = 0
 
-/obj/item/implant/imprinting/get_data()
+/obj/item/weapon/implant/imprinting/get_data()
 	. = {"
 	<b>Implant Specifications:</b><BR>
 	<b>Name:</b> BB-56 "Educator" Employee Assistance Implant<BR>
@@ -22,7 +22,7 @@
 		. += "- [instructions[i]] <A href='byond://?src=\ref[src];edit=[i]'>Edit</A> <A href='byond://?src=\ref[src];del=[i]'>Remove</A><br>"
 	. += "<A href='byond://?src=\ref[src];add=1'>Add</A>"
 
-/obj/item/implant/imprinting/Topic(href, href_list)
+/obj/item/weapon/implant/imprinting/Topic(href, href_list)
 	..()
 	if (href_list["add"])
 		var/mod = sanitize(input("Add an instruction", "Instructions") as text|null)
@@ -39,11 +39,11 @@
 		instructions -= instructions[text2num(href_list["del"])]
 		interact(usr)
 
-/obj/item/implant/imprinting/implanted(mob/M)
+/obj/item/weapon/implant/imprinting/implanted(mob/M)
 	var/mob/living/carbon/human/H = M
 	if(!istype(H))
 		return FALSE
-	if(H.reagents.has_reagent(/decl/material/liquid/hallucinogenics))
+	if(H.reagents.has_reagent(/datum/reagent/mindbreaker))
 		brainwashing = 1
 	var/msg = get_instructions()
 	to_chat(M, msg)
@@ -54,7 +54,7 @@
 	addtimer(CALLBACK(src,.proc/activate),3000,(TIMER_UNIQUE|TIMER_OVERRIDE))
 	return TRUE
 
-/obj/item/implant/imprinting/proc/get_instructions()
+/obj/item/weapon/implant/imprinting/proc/get_instructions()
 	. = list()
 	if(brainwashing)
 		. += "<span class='danger'>The fog in your head clears, and you remember some important things. You hold following things as deep convictions, almost like synthetics' laws:</span><br>"
@@ -64,18 +64,18 @@
 		. += "- [thing]<br>"
 	. = JOINTEXT(.)
 
-/obj/item/implant/imprinting/disable(time)
+/obj/item/weapon/implant/imprinting/disable(time)
 	. = ..()
 	if(. && brainwashing)//add deactivate and reactivate messages?
 		to_chat(imp_in,"<span class='warning'>A wave of nausea comes over you.</span><br><span class='good'>You are no longer so sure of those beliefs you've had...</span>")
 
-/obj/item/implant/imprinting/restore()
+/obj/item/weapon/implant/imprinting/restore()
 	. = ..()
 	if(. && brainwashing)
 		to_chat(imp_in, get_instructions())
 		activate()
 
-/obj/item/implant/imprinting/activate()
+/obj/item/weapon/implant/imprinting/activate()
 	if(malfunction || !implanted || imp_in) return
 	var/instruction = pick(instructions)
 	if(brainwashing)
@@ -85,39 +85,39 @@
 	to_chat(imp_in, instruction)
 	addtimer(CALLBACK(src,.proc/activate),3000,(TIMER_UNIQUE|TIMER_OVERRIDE))
 
-/obj/item/implant/imprinting/removed()
+/obj/item/weapon/implant/imprinting/removed()
 	if(brainwashing && !malfunction)
 		to_chat(imp_in,"<span class='warning'>A wave of nausea comes over you.</span><br><span class='good'>You are no longer so sure of those beliefs you've had...</span>")
 	..()
 
-/obj/item/implant/imprinting/emp_act(severity)
+/obj/item/weapon/implant/imprinting/emp_act(severity)
 	var/power = 4 - severity
 	if(prob(power * 15))
 		meltdown()
 	else if(prob(power * 40))
 		disable(rand(power*100,power*1000))//a few precious seconds of freedom
 
-/obj/item/implant/imprinting/meltdown()
+/obj/item/weapon/implant/imprinting/meltdown()
 	if(brainwashing && !malfunction)//if it's already broken don't send the message again
 		to_chat(imp_in,"<span class='warning'>A wave of nausea comes over you.</span><br><span class='good'> You are no longer so sure of those beliefs you've had...</span>")
 	. = ..()
 
-/obj/item/implant/imprinting/can_implant(mob/M, mob/user, target_zone)
+/obj/item/weapon/implant/imprinting/can_implant(mob/M, mob/user, target_zone)
 	var/mob/living/carbon/human/H = M	
 	if(istype(H))
 		var/obj/item/organ/internal/B = H.internal_organs_by_name[BP_BRAIN]
 		if(!B || H.isSynthetic())
 			to_chat(user, "<span class='warning'>\The [M] cannot be imprinted.</span>")
 			return FALSE
-		if(!(B.parent_organ == check_zone(target_zone, H)))
+		if(!(B.parent_organ == check_zone(target_zone)))
 			to_chat(user, "<span class='warning'>\The [src] must be implanted in [H.get_organ(B.parent_organ)].</span>")
 			return FALSE
 	return TRUE
 
-/obj/item/implanter/imprinting
+/obj/item/weapon/implanter/imprinting
 	name = "imprinting implanter"
-	imp = /obj/item/implant/imprinting
+	imp = /obj/item/weapon/implant/imprinting
 
-/obj/item/implantcase/imprinting
+/obj/item/weapon/implantcase/imprinting
 	name = "glass case - 'imprinting'"
-	imp = /obj/item/implant/imprinting
+	imp = /obj/item/weapon/implant/imprinting

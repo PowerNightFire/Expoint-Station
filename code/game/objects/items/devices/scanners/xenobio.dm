@@ -1,17 +1,11 @@
-/obj/item/scanner/xenobio
+/obj/item/device/scanner/xenobio
 	name = "xenolife scanner"
 	desc = "Multipurpose organic life scanner. With spectral breath analyzer you can find out what snacks Ian had! Or what gasses alien life breathes."
-	icon = 'icons/obj/items/device/scanner/xenobio_scanner.dmi'
 	icon_state = "xenobio"
 	item_state = "analyzer"
 	scan_sound = 'sound/effects/scanbeep.ogg'
 	printout_color = "#f3e6ff"
-	origin_tech = "{'magnets':1,'biotech':1}"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE
-	)
+	origin_tech = list(TECH_MAGNET = 1, TECH_BIO = 1)
 
 	var/list/valid_targets = list(
 		/mob/living/carbon/human,
@@ -19,7 +13,7 @@
 		/mob/living/carbon/slime
 	)
 
-/obj/item/scanner/xenobio/is_valid_scan_target(atom/O)
+/obj/item/device/scanner/xenobio/is_valid_scan_target(atom/O)
 	if(is_type_in_list(O, valid_targets))
 		return TRUE
 	if(istype(O, /obj/structure/stasis_cage))
@@ -27,7 +21,7 @@
 		return !!cagie.contained
 	return FALSE
 
-/obj/item/scanner/xenobio/scan(mob/O, mob/user)
+/obj/item/device/scanner/xenobio/scan(mob/O, mob/user)
 	scan_title = O.name
 	scan_data = xenobio_scan_results(O)
 	user.show_message(SPAN_NOTICE(scan_data))
@@ -35,8 +29,7 @@
 /proc/list_gases(var/gases)
 	. = list()
 	for(var/g in gases)
-		var/decl/material/mat = decls_repository.get_decl(g)
-		. += "[capitalize(mat.gas_name)] ([gases[g]]%)"
+		. += "[gas_data.name[g]] ([gases[g]]%)"
 	return english_list(.)
 
 /proc/xenobio_scan_results(mob/target)
@@ -48,12 +41,10 @@
 		var/mob/living/carbon/human/H = target
 		. += "Data for [H]:"
 		. += "Species:\t[H.species]"
-		if(H.species.breath_type)
-			var/decl/material/mat = decls_repository.get_decl(H.species.breath_type)
-			. += "Breathes:\t[mat.gas_name]"
+		if(H.species.breath_type) 
+			. += "Breathes:\t[gas_data.name[H.species.breath_type]]"
 		if(H.species.exhale_type)
-			var/decl/material/mat = decls_repository.get_decl(H.species.exhale_type)
-			. += "Exhales:\t[mat.gas_name]"
+			. += "Exhales:\t[gas_data.name[H.species.exhale_type]]"
 		. += "Known toxins:\t[english_list(H.species.poison_types)]"
 		. += "Temperature comfort zone:\t[H.species.cold_discomfort_level] K to [H.species.heat_discomfort_level] K"
 		. += "Pressure comfort zone:\t[H.species.warning_low_pressure] kPa to [H.species.warning_high_pressure] kPa"
@@ -61,9 +52,12 @@
 		var/mob/living/simple_animal/A = target
 		. += "Data for [A]:"
 		. += "Species:\t[initial(A.name)]"
-		. += "Breathes:\t[list_gases(A.min_gas)]"
-		. += "Known toxins:\t[list_gases(A.max_gas)]"
-		. += "Temperature comfort zone:\t[A.minbodytemp] K to [A.maxbodytemp] K"
+		if(A.min_gas)
+			. += "Breathes:\t[list_gases(A.min_gas)]"
+		if(A.max_gas)
+			. += "Known toxins:\t[list_gases(A.max_gas)]"
+		if(A.minbodytemp && A.maxbodytemp)
+			. += "Temperature comfort zone:\t[A.minbodytemp] K to [A.maxbodytemp] K"
 		var/area/map = locate(/area/overmap)
 		for(var/obj/effect/overmap/visitable/sector/exoplanet/P in map)
 			if((A in P.animals) || is_type_in_list(A, P.repopulate_types))

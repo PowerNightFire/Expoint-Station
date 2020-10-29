@@ -1,17 +1,17 @@
 // sprite stolen from vgstation
 
-/obj/item/bell
+/obj/item/weapon/material/bell
 	name = "bell"
 	desc = "A bell to ring to get people's attention. Don't break it."
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "bell"
-	thrown_material_force_multiplier = 0.3
+	max_force = 5
+	force_divisor = 0.8
+	thrown_force_divisor = 0.3
 	hitsound = 'sound/items/oneding.ogg'
-	material = /decl/material/solid/metal/aluminium
-	applies_material_colour = TRUE
-	applies_material_name = TRUE
+	default_material = MATERIAL_ALUMINIUM
 
-/obj/item/bell/attack_hand(mob/user)
+/obj/item/weapon/material/bell/attack_hand(mob/user as mob)
 	if (user.a_intent == I_GRAB)
 		return ..()
 	else if (user.a_intent == I_HURT)
@@ -22,6 +22,6 @@
 		playsound(user.loc, 'sound/items/oneding.ogg', 20)
 	flick("bell_dingeth", src)
 
-/obj/item/bell/apply_hit_effect()
+/obj/item/weapon/material/bell/apply_hit_effect()
 	. = ..()
 	shatter()

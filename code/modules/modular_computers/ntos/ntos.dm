@@ -37,7 +37,7 @@
 		process_updates()
 		return
 	for(var/datum/computer_file/program/P in running_programs)
-		if(P.requires_network && !get_network_status(P.requires_network_feature))
+		if(P.requires_ntnet && !get_ntnet_status(P.requires_ntnet_feature))
 			P.event_networkfailure(P != active_program)
 		else
 			P.process_tick()
@@ -46,33 +46,27 @@
 /datum/extension/interactive/ntos/proc/host_status()
 	return TRUE
 
-/datum/extension/interactive/ntos/proc/get_network()
-	var/datum/extension/network_device/D = get_extension(get_component(PART_NETWORK), /datum/extension/network_device)
-	if(D)
-		return D.get_network()
-
 /datum/extension/interactive/ntos/proc/system_shutdown()
 	on = FALSE
 	for(var/datum/computer_file/program/P in running_programs)
 		kill_program(P, 1)
 	
-	var/obj/item/stock_parts/computer/network_card/network_card = get_component(PART_NETWORK)
+	var/obj/item/weapon/stock_parts/computer/network_card/network_card = get_component(PART_NETWORK)
 	if(network_card)
-		var/datum/extension/network_device/D = get_extension(network_card, /datum/extension/network_device)
-		D?.disconnect()
+		ntnet_global.unregister(network_card.identification_id)
 
 	if(updating)
 		updating = FALSE
 		updates = 0
 		update_progress = 0
-		var/obj/item/stock_parts/computer/hard_drive/hard_drive = get_component(PART_HDD)
+		var/obj/item/weapon/stock_parts/computer/hard_drive/hard_drive = get_component(PART_HDD)
 		if(hard_drive)
 			if(prob(10))
 				hard_drive.visible_message("<span class='warning'>[src] emits some ominous clicks.</span>")
-				hard_drive.take_damage(0.5 * hard_drive.health)
+				hard_drive.take_damage(hard_drive.damage_malfunction)
 			else if(prob(5))
 				hard_drive.visible_message("<span class='warning'>[src] emits some ominous clicks.</span>")
-				hard_drive.take_damage(hard_drive.health)
+				hard_drive.take_damage(hard_drive.damage_failure)
 	update_host_icon()
 
 /datum/extension/interactive/ntos/proc/system_boot()
@@ -80,10 +74,9 @@
 	var/datum/computer_file/data/autorun = get_file("autorun")
 	if(istype(autorun))
 		run_program(autorun.stored_data)
-	var/obj/item/stock_parts/computer/network_card/network_card = get_component(PART_NETWORK)
+	var/obj/item/weapon/stock_parts/computer/network_card/network_card = get_component(PART_NETWORK)
 	if(network_card)
-		var/datum/extension/network_device/D = get_extension(network_card, /datum/extension/network_device)
-		D.connect()
+		ntnet_global.register(network_card.identification_id, src)
 	update_host_icon()
 
 /datum/extension/interactive/ntos/proc/kill_program(var/datum/computer_file/program/P, var/forced = 0)
@@ -139,9 +132,9 @@
 		create_file("autorun", "[program]")
 
 /datum/extension/interactive/ntos/proc/add_log(var/text)
-	var/datum/extension/network_device/D = get_extension(get_component(PART_NETWORK), /datum/extension/network_device)
-	if(D)
-		D.add_log(text)
+	if(!get_ntnet_status())
+		return 0
+	return ntnet_global.add_log(text, get_component(PART_NETWORK))
 
 /datum/extension/interactive/ntos/proc/get_physical_host()
 	var/atom/A = holder
@@ -194,7 +187,3 @@
 
 /datum/extension/interactive/ntos/proc/emagged()
 	return FALSE
-
-/datum/extension/interactive/ntos/proc/get_processing_power()
-	var/obj/item/stock_parts/computer/processor_unit/CPU = get_component(PART_CPU)
-	return CPU?.processing_power

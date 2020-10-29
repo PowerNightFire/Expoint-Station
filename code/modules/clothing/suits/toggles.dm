@@ -5,9 +5,9 @@
 	var/hoodtype = null //so the chaplain hoodie or other hoodies can override this
 	var/suittoggled = 0
 
-/obj/item/clothing/suit/storage/hooded/Initialize()
-	. = ..()
+/obj/item/clothing/suit/storage/hooded/New()
 	MakeHood()
+	..()
 
 /obj/item/clothing/suit/storage/hooded/Destroy()
 	QDEL_NULL(hood)
@@ -21,7 +21,7 @@
 	ToggleHood()
 
 /obj/item/clothing/suit/storage/hooded/equipped(mob/user, slot)
-	if(slot != slot_wear_suit_str)
+	if(slot != slot_wear_suit)
 		RemoveHood()
 	..()
 
@@ -50,7 +50,7 @@
 				to_chat(H, "<span class='warning'>You're already wearing something on your head!</span>")
 				return
 			else
-				H.equip_to_slot_if_possible(hood, slot_head_str, 0, 0, 1)
+				H.equip_to_slot_if_possible(hood,slot_head,0,0,1)
 				suittoggled = 1
 				update_icon()
 				H.update_inv_wear_suit()
@@ -63,39 +63,34 @@
 	else
 		icon_state = "[initial(icon_state)]"
 
-/obj/item/clothing/suit/storage/hooded/experimental_mob_overlay(mob/user_mob, slot, var/bodypart)
-	var/image/I = ..()
-	if(suittoggled)
-		I.icon_state += "_t"
-	return I
 
 /obj/item/clothing/suit/storage/hooded/wintercoat
 	name = "winter coat"
 	desc = "A heavy jacket made from 'synthetic' animal furs."
-	icon = 'icons/clothing/suit/wintercoat/coat.dmi'
-	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_ARMS
-	cold_protection = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_ARMS
+	icon_state = "coatwinter"
+	body_parts_covered = UPPER_TORSO|LOWER_TORSO|ARMS
+	cold_protection = UPPER_TORSO|LOWER_TORSO|ARMS
 	min_cold_protection_temperature = ARMOR_MIN_COLD_PROTECTION_TEMPERATURE
 	armor = list(
 		bio = ARMOR_BIO_MINOR
 		)
 	action_button_name = "Toggle Winter Hood"
 	hoodtype = /obj/item/clothing/head/winterhood
-	allowed = list (/obj/item/pen, /obj/item/paper, /obj/item/flashlight,/obj/item/storage/fancy/cigarettes, /obj/item/storage/box/matches, /obj/item/chems/food/drinks/flask)
+	allowed = list (/obj/item/weapon/pen, /obj/item/weapon/paper, /obj/item/device/flashlight,/obj/item/weapon/storage/fancy/cigarettes, /obj/item/weapon/storage/box/matches, /obj/item/weapon/reagent_containers/food/drinks/flask)
 	siemens_coefficient = 0.6
 
 /obj/item/clothing/head/winterhood
 	name = "winter hood"
 	desc = "A hood attached to a heavy winter jacket."
 	icon_state = "generic_hood"
-	body_parts_covered = SLOT_HEAD
-	cold_protection = SLOT_HEAD
+	body_parts_covered = HEAD
+	cold_protection = HEAD
 	flags_inv = HIDEEARS | BLOCKHAIR
 	min_cold_protection_temperature = ARMOR_MIN_COLD_PROTECTION_TEMPERATURE
 
 /obj/item/clothing/suit/storage/hooded/wintercoat/captain
 	name = "captain's winter coat"
-	icon = 'icons/clothing/suit/wintercoat/captain.dmi'
+	icon_state = "coatcaptain"
 	armor = list(
 		melee = ARMOR_MELEE_KNIVES, 
 		bullet = ARMOR_BALLISTIC_MINOR, 
@@ -106,7 +101,7 @@
 
 /obj/item/clothing/suit/storage/hooded/wintercoat/security
 	name = "security winter coat"
-	icon = 'icons/clothing/suit/wintercoat/sec.dmi'
+	icon_state = "coatsecurity"
 	armor = list(
 		melee = ARMOR_MELEE_KNIVES, 
 		bullet = ARMOR_BALLISTIC_SMALL, 
@@ -117,40 +112,50 @@
 
 /obj/item/clothing/suit/storage/hooded/wintercoat/medical
 	name = "medical winter coat"
-	icon = 'icons/clothing/suit/wintercoat/med.dmi'
+	icon_state = "coatmedical"
 	armor = list(
 		bio = ARMOR_BIO_RESISTANT
 		)
 
 /obj/item/clothing/suit/storage/hooded/wintercoat/science
 	name = "science winter coat"
-	icon = 'icons/clothing/suit/wintercoat/sci.dmi'
+	icon_state = "coatscience"
 	armor = list(
 		bomb = ARMOR_BOMB_MINOR
 		)
 
 /obj/item/clothing/suit/storage/hooded/wintercoat/engineering
 	name = "engineering winter coat"
-	icon = 'icons/clothing/suit/wintercoat/eng.dmi'
+	icon_state = "coatengineer"
 	armor = list(
 		rad = ARMOR_RAD_MINOR
 		)
 
 /obj/item/clothing/suit/storage/hooded/wintercoat/engineering/atmos
 	name = "atmospherics winter coat"
-	icon = 'icons/clothing/suit/wintercoat/atmos.dmi'
+	icon_state = "coatatmos"
+
+/obj/item/clothing/suit/storage/hooded/wintercoat/dais
+	name = "\improper DAIS winter coat"
+	icon_state = "coat_dais"
+	siemens_coefficient = 0.5
+	armor = list(
+		melee = ARMOR_MELEE_SMALL, 
+		energy = ARMOR_ENERGY_MINOR
+		)
+	desc = "A hooded winter coat colored blue and white and bearing the logo of Deimos Advanced Information Systems."
 
 /obj/item/clothing/suit/storage/hooded/wintercoat/hydro
 	name = "hydroponics winter coat"
-	icon = 'icons/clothing/suit/wintercoat/hydro.dmi'
+	icon_state = "coathydro"
 
 /obj/item/clothing/suit/storage/hooded/wintercoat/cargo
 	name = "cargo winter coat"
-	icon = 'icons/clothing/suit/wintercoat/cargo.dmi'
+	icon_state = "coatcargo"
 
 /obj/item/clothing/suit/storage/hooded/wintercoat/miner
 	name = "mining winter coat"
-	icon = 'icons/clothing/suit/wintercoat/mining.dmi'
+	icon_state = "coatminer"
 	armor = list(
 		melee = ARMOR_MELEE_SMALL
 		)
@@ -158,18 +163,17 @@
 /obj/item/clothing/suit/storage/hooded/hoodie
 	name = "hoodie"
 	desc = "A warm sweatshirt."
-	icon = 'icons/clothing/suit/hoodie.dmi'
+	icon_state = "hoodie"
 	min_cold_protection_temperature = T0C - 20
-	cold_protection = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_ARMS
+	cold_protection = UPPER_TORSO|LOWER_TORSO|ARMS
 	action_button_name = "Toggle Hood"
 	hoodtype = /obj/item/clothing/head/hoodiehood
 
 /obj/item/clothing/head/hoodiehood
 	name = "hoodie hood"
 	desc = "A hood attached to a warm sweatshirt."
-	icon_state = "hood"
-	icon = 'icons/clothing/suit/hoodie.dmi'
-	body_parts_covered = SLOT_HEAD
+	icon_state = "generic_hood"
+	body_parts_covered = HEAD
 	min_cold_protection_temperature = T0C - 20
-	cold_protection = SLOT_HEAD
+	cold_protection = HEAD
 	flags_inv = HIDEEARS | BLOCKHAIR

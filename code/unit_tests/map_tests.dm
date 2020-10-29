@@ -191,14 +191,11 @@
 
 /datum/unit_test/closet_containment_test
 	name = "MAP: Closet Containment Test Player Z levels"
-	var/list/exceptions = list()
 
 /datum/unit_test/closet_containment_test/start_test()
 	var/bad_tests = 0
 
 	for(var/obj/structure/closet/C in world)
-		if(exceptions[C.type])
-			continue
 		if(!C.opened && isPlayerLevel(C.z))
 			var/contents_pre_open = C.contents.Copy()
 			C.dump_contents()
@@ -227,7 +224,7 @@
 /datum/unit_test/storage_map_test/start_test()
 	var/bad_tests = 0
 
-	for(var/obj/item/storage/S in world)
+	for(var/obj/item/weapon/storage/S in world)
 		if(isPlayerLevel(S.z))
 			var/bad_msg = "[ascii_red]--------------- [S.name] \[[S.type]\] \[[S.x] / [S.y] / [S.z]\]"
 			bad_tests += test_storage_capacity(S, bad_msg)
@@ -272,7 +269,7 @@ datum/unit_test/correct_allowed_spawn_test/start_test()
 		if(!spawnpoint)
 			log_unit_test("Map allows spawning in [spawn_name], but [spawn_name] is null!")
 			failed = TRUE
-		else if(!length(spawnpoint.turfs))
+		else if(!spawnpoint.turfs.len)
 			log_unit_test("Map allows spawning in [spawn_name], but [spawn_name] has no associated spawn turfs.")
 			failed = TRUE
 
@@ -306,23 +303,39 @@ datum/unit_test/ladder_check
 	name = "MAP: Ladder Check"
 
 datum/unit_test/ladder_check/start_test()
-	var/failed
+	var/succeeded = TRUE
 	for(var/obj/structure/ladder/L)
-		if(HasAbove(L.z))
-			var/turf/T = GetAbove(L)
-			if(!istype(T, /turf/simulated/open) && (locate(/obj/structure/ladder) in T))
-				LAZYADD(failed, "[L.x],[L.y],[L.z]")
-				continue
-		if(HasBelow(L.z))
-			var/turf/T = GetBelow(L)
-			if(!istype(L.loc, /turf/simulated/open) && (locate(/obj/structure/ladder) in T))
-				LAZYADD(failed, "[L.x],[L.y],[L.z]")
-				continue
-	if(LAZYLEN(failed))
-		fail("[LAZYLEN(failed)] ladder\s are incorrectly setup: [english_list(failed)].")
-	else
+		if(L.allowed_directions & UP)
+			succeeded = check_direction(L, GetAbove(L), UP, DOWN) && succeeded
+		if(L.allowed_directions & DOWN)
+			succeeded = check_direction(L, GetBelow(L), DOWN, UP) && succeeded
+			succeeded = check_open_space(L) && succeeded
+	if(succeeded)
 		pass("All ladders are correctly setup.")
+	else
+		fail("One or more ladders are incorrectly setup.")
+
 	return 1
+
+/datum/unit_test/ladder_check/proc/check_direction(var/obj/structure/ladder/L, var/turf/destination_turf, var/check_direction, var/other_ladder_direction)
+	if(!destination_turf)
+		log_bad("Unable to acquire turf in the [dir2text(check_direction)] for [log_info_line(L)]")
+		return FALSE
+	var/obj/structure/ladder/other_ladder = (locate(/obj/structure/ladder) in destination_turf)
+	if(!other_ladder)
+		log_bad("Unable to acquire ladder in the direction [dir2text(check_direction)] for [log_info_line(L)]")
+		return FALSE
+	if(!(other_ladder.allowed_directions & other_ladder_direction))
+		log_bad("The ladder in the direction [dir2text(check_direction)] is not allowed to connect to [log_info_line(L)]")
+		return FALSE
+	return TRUE
+
+/datum/unit_test/ladder_check/proc/check_open_space(var/obj/structure/ladder/L)
+	if(!istype(get_turf(L), /turf/simulated/open))
+		log_bad("There is a non-open turf blocking the way for [log_info_line(L)]")
+		return FALSE
+	return TRUE
+
 
 //=======================================================================================
 
@@ -445,8 +458,6 @@ datum/unit_test/ladder_check/start_test()
 		num2text(WEST)  = list(list(EAST,  list(NORTH, EAST)), list(SOUTH, list(SOUTH, EAST))))
 
 	for(var/obj/structure/disposalpipe/segment/D in world)
-		if(!D.loc)
-			continue
 		if(D.icon_state == "pipe-s")
 			if(!(D.dir == SOUTH || D.dir == EAST))
 				log_bad("Following disposal pipe has an invalid direction set: [log_info_line(D)]")
@@ -680,8 +691,6 @@ datum/unit_test/ladder_check/start_test()
 	. = 1
 	var/fail = FALSE
 	for(var/obj/structure/disposalpipe/sortjunction/sort in world)
-		if(!sort.loc)
-			continue
 		if(is_type_in_list(sort, exempt_junctions))
 			continue
 		var/obj/machinery/disposal/bin = get_bin_from_junction(sort)
@@ -768,7 +777,7 @@ datum/unit_test/ladder_check/start_test()
 			return trunk.linked
 		var/obj/structure/disposalpipe/next_pipe
 		for(var/obj/structure/disposalpipe/P in get_step(our_pipe, current_dir))
-			if(GLOB.reverse_dir[current_dir] & P.dpdir)
+			if(turn(current_dir, 180) & P.dpdir)
 				next_pipe = P
 				break
 		if(!istype(next_pipe))

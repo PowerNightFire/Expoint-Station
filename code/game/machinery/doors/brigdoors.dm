@@ -1,7 +1,7 @@
 #define CHARS_PER_LINE 5
 #define FONT_SIZE "5pt"
 #define FONT_COLOR "#09f"
-#define FONT_STYLE "Small Fonts"
+#define FONT_STYLE "Arial Black"
 
 //This file was auto-corrected by findeclaration.exe on 25.5.2012 20:42:31
 
@@ -18,7 +18,7 @@
 	icon = 'icons/obj/status_display.dmi'
 	icon_state = "frame"
 	desc = "A remote control for a door."
-	initial_access = list(access_brig)
+	req_access = list(access_brig)
 	anchored = 1.0    		// can't pick it up
 	density = 0       		// can walk through it.
 	var/id = null     		// id of door it controls.
@@ -30,7 +30,6 @@
 
 	maptext_height = 26
 	maptext_width = 32
-	maptext_y = -1
 
 /obj/machinery/door_timer/Initialize()
 	..()
@@ -221,7 +220,7 @@
 	if(src.timing)
 		var/disp1 = id
 		var/timeleft = timeleft()
-		var/disp2 = "[add_zero(num2text((timeleft / 60) % 60),2)]:[add_zero(num2text(timeleft % 60), 2)]"
+		var/disp2 = "[add_zero(num2text((timeleft / 60) % 60),2)]~[add_zero(num2text(timeleft % 60), 2)]"
 		if(length(disp2) > CHARS_PER_LINE)
 			disp2 = "Error"
 		update_display(disp1, disp2)
@@ -242,8 +241,6 @@
 //Checks to see if there's 1 line or 2, adds text-icons-numbers/letters over display
 // Stolen from status_display
 /obj/machinery/door_timer/proc/update_display(var/line1, var/line2)
-	line1 = uppertext(line1)
-	line2 = uppertext(line2)
 	var/new_text = {"<div style="font-size:[FONT_SIZE];color:[FONT_COLOR];font:'[FONT_STYLE]';text-align:center;" valign="top">[line1]<br>[line2]</div>"}
 	if(maptext != new_text)
 		maptext = new_text

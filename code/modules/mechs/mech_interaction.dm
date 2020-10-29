@@ -21,7 +21,7 @@
 	if(body)
 		if(!body.MouseDrop(over_object))
 			return ..()
-
+	
 /mob/living/exosuit/RelayMouseDrag(src_object, over_object, src_location, over_location, src_control, over_control, params, var/mob/user)
 	if(user && (user in pilots) && user.loc == src)
 		return OnMouseDrag(src_object, over_object, src_location, over_location, src_control, over_control, params, user)
@@ -61,7 +61,8 @@
 	. = ..()
 	if(!hatch_closed)
 		return max(shared_living_nano_distance(src_object), .) //Either visible to mech(outside) or visible to user (inside)
-
+	
+	
 /mob/living/exosuit/ClickOn(var/atom/A, var/params, var/mob/user)
 
 	if(!user || incapacitated() || user.incapacitated())
@@ -74,18 +75,20 @@
 	if(modifiers["shift"])
 		user.examinate(A)
 		return
-
-	if(modifiers["ctrl"] && selected_system == A)
-		selected_system.CtrlClick(user)
-		setClickCooldown(3)
-		return
+		
+	if(modifiers["ctrl"])
+		if(selected_system)
+			if(selected_system == A)
+				selected_system.CtrlClick(user)
+				setClickCooldown(3)
+			return	
 
 	if(!(user in pilots) && user != src)
 		return
 
 	if(!canClick())
 		return
-
+	
 	// Are we facing the target?
 	if(A.loc != src && !(get_dir(src, A) & dir))
 		return
@@ -174,7 +177,7 @@
 				log_and_message_admins("used [temp_system] targetting [A]", user, src.loc)
 			//Mech equipment subtypes can add further click delays
 			var/extra_delay = 0
-			if(ME != null)
+			if(!isnull(selected_system))
 				ME = selected_system
 				extra_delay = ME.equipment_delay
 			setClickCooldown(arms ? arms.action_delay + extra_delay : 15 + extra_delay)
@@ -187,7 +190,6 @@
 		return attack_self(user)
 	else if(adj)
 		setClickCooldown(arms ? arms.action_delay : 15)
-		admin_attack_log(user, A, "Attacked using \a [arms]", "Was attacked with \a [arms]", "used \a [arms] to attack")
 		return A.attack_generic(src, arms.melee_damage, "attacked")
 	return
 
@@ -244,7 +246,7 @@
 	LAZYDISTINCTADD(pilots, user)
 	sync_access()
 	playsound(src, 'sound/machines/windowdoor.ogg', 50, 1)
-	user.playsound_local(get_turf(src), 'sound/mecha/nominal.ogg', 50)
+	user.playsound_local(null, 'sound/mecha/nominal.ogg', 50)
 	if(user.client) user.client.screen |= hud_elements
 	LAZYDISTINCTADD(user.additional_vision_handlers, src)
 	update_pilots()
@@ -252,7 +254,7 @@
 	return 1
 
 /mob/living/exosuit/proc/sync_access()
-	access_card.access = saved_access?.Copy()
+	access_card.access = saved_access.Copy()
 	if(sync_access)
 		for(var/mob/pilot in pilots)
 			access_card.access |= pilot.GetAccess()
@@ -307,9 +309,9 @@
 		to_chat(user, SPAN_WARNING("\The [src] could not be installed in that hardpoint."))
 		return
 
-	else if(istype(thing, /obj/item/kit/paint))
+	else if(istype(thing, /obj/item/device/kit/paint))
 		user.visible_message(SPAN_NOTICE("\The [user] opens \the [thing] and spends some quality time customising \the [src]."))
-		var/obj/item/kit/paint/P = thing
+		var/obj/item/device/kit/paint/P = thing
 		SetName(P.new_name)
 		desc = P.new_desc
 		for(var/obj/item/mech_component/comp in list(arms, legs, head, body))
@@ -372,7 +374,7 @@
 				if(CanPhysicallyInteract(user) && !QDELETED(to_fix) && (to_fix in src) && to_fix.burn_damage)
 					to_fix.repair_burn_generic(thing, user)
 				return
-			else if(isScrewdriver(thing))
+			else if(isCrowbar(thing))
 				if(!maintenance_protocols)
 					to_chat(user, SPAN_WARNING("The cell compartment remains locked while maintenance protocols are disabled."))
 					return
@@ -386,36 +388,17 @@
 				user.put_in_hands(body.cell)
 				to_chat(user, SPAN_NOTICE("You remove \the [body.cell] from \the [src]."))
 				playsound(user.loc, 'sound/items/Crowbar.ogg', 50, 1)
-				visible_message(SPAN_NOTICE("\The [user] pries out \the [body.cell] using \the [thing]."))
+				visible_message(SPAN_NOTICE("\The [user] pries out \the [body.cell] using the \the [thing]."))
 				body.cell = null
 				return
-			else if(isCrowbar(thing))
-				if(!hatch_locked)
-					to_chat(user, SPAN_NOTICE("The cockpit isn't locked. There is no need for this."))
-					return
-				if(!body) //Error
-					return
-				var/delay = min(50 * user.skill_delay_mult(SKILL_DEVICES), 50 * user.skill_delay_mult(SKILL_EVA))
-				visible_message(SPAN_NOTICE("\The [user] starts forcing the \the [src]'s emergency [body.hatch_descriptor] release using \the [thing]."))
-				if(!do_after(user, delay, src))
-					return
-				visible_message(SPAN_NOTICE("\The [user] forces \the [src]'s [body.hatch_descriptor] open using the \the [thing]."))
-				playsound(user.loc, 'sound/machines/bolts_up.ogg', 25, 1)
-				hatch_locked = FALSE
-				hatch_closed = FALSE
-				for(var/mob/pilot in pilots)
-					eject(pilot, silent = 1)
-				hud_open.queue_icon_update()
-				queue_icon_update()
-				return
-			else if(istype(thing, /obj/item/cell))
+			else if(istype(thing, /obj/item/weapon/cell))
 				if(!maintenance_protocols)
 					to_chat(user, SPAN_WARNING("The cell compartment remains locked while maintenance protocols are disabled."))
 					return
 				if(!body || body.cell)
 					to_chat(user, SPAN_WARNING("There is already a cell in there!"))
 					return
-
+				
 				if(user.unEquip(thing))
 					thing.forceMove(body)
 					body.cell = thing
@@ -423,7 +406,7 @@
 					playsound(user.loc, 'sound/items/Screwdriver.ogg', 50, 1)
 					visible_message(SPAN_NOTICE("\The [user] installs \the [body.cell] into \the [src]."))
 				return
-			else if(istype(thing, /obj/item/robotanalyzer))
+			else if(istype(thing, /obj/item/device/robotanalyzer))
 				to_chat(user, SPAN_NOTICE("Diagnostic Report for \the [src]:"))
 				for(var/obj/item/mech_component/MC in list(arms, legs, body, head))
 					if(MC)
@@ -442,17 +425,17 @@
 			if(do_after(user, 30) && user.Adjacent(src) && (pilot in pilots) && !hatch_closed)
 				user.visible_message(SPAN_DANGER("\The [user] drags \the [pilot] out of \the [src]!"))
 				eject(pilot, silent=1)
-		return TRUE
+		return
 
 	// Otherwise toggle the hatch.
 	if(hatch_locked)
 		to_chat(user, SPAN_WARNING("The [body.hatch_descriptor] is locked."))
-		return TRUE
+		return
 	hatch_closed = !hatch_closed
 	to_chat(user, SPAN_NOTICE("You [hatch_closed ? "close" : "open"] the [body.hatch_descriptor]."))
 	hud_open.queue_icon_update()
 	queue_icon_update()
-	return TRUE
+	return
 
 /mob/living/exosuit/proc/attack_self(var/mob/user)
 	return visible_message("\The [src] pokes itself.")

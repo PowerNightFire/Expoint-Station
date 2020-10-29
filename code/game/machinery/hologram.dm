@@ -34,7 +34,6 @@ var/const/HOLOPAD_MODE = RANGE_BASED
 /obj/machinery/hologram/holopad
 	name = "\improper holopad"
 	desc = "It's a floor-mounted device for projecting holographic images."
-	icon = 'icons/obj/machines/holopad.dmi'
 	icon_state = "holopad-B0"
 
 	layer = ABOVE_TILE_LAYER
@@ -57,8 +56,8 @@ var/const/HOLOPAD_MODE = RANGE_BASED
 
 	var/allow_ai = TRUE
 
-/obj/machinery/hologram/holopad/Initialize()
-	. = ..()
+/obj/machinery/hologram/holopad/New()
+	..()
 	desc = "It's a floor-mounted device for projecting holographic images. Its ID is '[loc.loc]'"
 
 /obj/machinery/hologram/holopad/interface_interact(var/mob/living/carbon/human/user) //Carn: Hologram requests.
@@ -82,7 +81,14 @@ var/const/HOLOPAD_MODE = RANGE_BASED
 
 	. = TRUE
 	var/handle_type = "Holocomms"
-	if(allow_ai)
+	var/ai_exists = FALSE
+
+	for(var/mob/living/silicon/ai/AI in GLOB.living_mob_list_)
+		if(!AI.client)	continue
+		ai_exists = TRUE
+		break
+
+	if(allow_ai && ai_exists)
 		handle_type = alert(user,"Would you like to request an AI's presence or establish communications with another pad?", "Holopad","AI","Holocomms","Cancel")
 
 	switch(handle_type)
@@ -203,7 +209,7 @@ var/const/HOLOPAD_MODE = RANGE_BASED
 /*This is the proc for special two-way communication between AI and holopad/people talking near holopad.
 For the other part of the code, check silicon say.dm. Particularly robot talk.*/
 // Note that speaking may be null here, presumably due to echo effects/non-mob transmission.
-/obj/machinery/hologram/holopad/hear_talk(mob/living/M, text, verb, decl/language/speaking)
+/obj/machinery/hologram/holopad/hear_talk(mob/living/M, text, verb, datum/language/speaking)
 	if(M)
 		for(var/mob/living/silicon/ai/master in masters)
 			var/ai_text = text
@@ -236,7 +242,7 @@ For the other part of the code, check silicon say.dm. Particularly robot talk.*/
 			return
 		sourcepad.audible_message(message)
 
-/obj/machinery/hologram/holopad/proc/get_hear_message(name_used, text, verb, decl/language/speaking, prefix = "")
+/obj/machinery/hologram/holopad/proc/get_hear_message(name_used, text, verb, datum/language/speaking, prefix = "")
 	if(speaking)
 		return "<i><span class='game say'>Holopad received, <span class='name'>[name_used]</span>[prefix] [speaking.format_message(text, verb)]</span></i>"
 	return "<i><span class='game say'>Holopad received, <span class='name'>[name_used]</span>[prefix] [verb], <span class='message'>\"[text]\"</span></span></i>"
@@ -336,7 +342,7 @@ For the other part of the code, check silicon say.dm. Particularly robot talk.*/
 		end_call()
 	if (caller_id&&sourcepad)
 		if(caller_id.loc!=sourcepad.loc)
-			sourcepad.to_chat(caller_id, "Severing connection to distant holopad.")
+			to_chat(sourcepad.caller_id, "Severing connection to distant holopad.")
 			end_call()
 			audible_message("The connection has been terminated by the caller.")
 	return 1
@@ -366,7 +372,8 @@ For the other part of the code, check silicon say.dm. Particularly robot talk.*/
 /obj/machinery/hologram/holopad/proc/set_dir_hologram(new_dir, mob/living/silicon/ai/user)
 	if(masters[user])
 		var/obj/effect/overlay/hologram = masters[user]
-		hologram.set_dir(new_dir)
+		hologram.dir = new_dir
+
 
 
 /*
@@ -379,10 +386,17 @@ For the other part of the code, check silicon say.dm. Particularly robot talk.*/
 	active_power_usage = 100
 
 //Destruction procs.
-/obj/machinery/hologram/explosion_act(severity)
-	. = ..()
-	if(. && !QDELETED(src) && (severity == 1 || (severity == 2 && prob(50)) || (severity == 3 && prob(5))))
-		physically_destroyed(src)
+/obj/machinery/hologram/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			qdel(src)
+		if(2.0)
+			if (prob(50))
+				qdel(src)
+		if(3.0)
+			if (prob(5))
+				qdel(src)
+	return
 
 /obj/machinery/hologram/holopad/Destroy()
 	for (var/mob/living/master in masters)
@@ -417,12 +431,12 @@ Holographic project of everything else.
 /obj/machinery/hologram/projector
 	name = "hologram projector"
 	desc = "It makes a hologram appear...with magnets or something..."
-	icon = 'icons/obj/machines/holopad.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "hologram0"
 
 /obj/machinery/hologram/holopad/longrange
 	name = "long range holopad"
-	desc = "It's a floor-mounted device for projecting holographic images. This one utilizes micro-width wormholes to communicate with far away locations."
+	desc = "It's a floor-mounted device for projecting holographic images. This one utilizes bluespace transmitter to communicate with far away locations."
 	icon_state = "holopad-Y0"
 	power_per_hologram = 1000 //per usage per hologram
 	holopadType = HOLOPAD_LONG_RANGE

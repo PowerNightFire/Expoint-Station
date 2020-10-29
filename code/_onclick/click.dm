@@ -34,7 +34,7 @@
 
 /turf/allow_click_through(var/atom/A, var/params, var/mob/user)
 	return TRUE
-
+	
 /*
 	Standard mob ClickOn()
 	Handles exceptions: middle click, modified clicks, exosuit actions
@@ -79,7 +79,7 @@
 		return
 
 	// Do not allow player facing change in fixed chairs
-	if(!istype(buckled) || buckled.buckle_movable || buckled.buckle_allow_rotation)
+	if(!istype(buckled) || buckled.buckle_movable)
 		face_atom(A) // change direction to face what you clicked on
 
 	if(!canClick()) // in the year 2000...
@@ -102,7 +102,10 @@
 	if(W == A) // Handle attack_self
 		W.attack_self(src)
 		trigger_aiming(TARGET_CAN_CLICK)
-		update_inv_hands(0)
+		if(hand)
+			update_inv_l_hand(0)
+		else
+			update_inv_r_hand(0)
 		return 1
 
 	//Atoms on your person
@@ -160,7 +163,7 @@
 
 // Default behavior: ignore double clicks, the second click that makes the doubleclick call already calls for a normal click
 /mob/proc/DblClickOn(var/atom/A, var/params)
-	. = A.show_atom_list_for_turf(src, get_turf(A))
+	return
 
 /*
 	Translates into attack_hand, etc.
@@ -217,10 +220,11 @@
 */
 /mob/proc/MiddleClickOn(var/atom/A)
 	swap_hand()
+	return
 
 // In case of use break glass
 /*
-/atom/proc/MiddleClick(var/mob/M)
+/atom/proc/MiddleClick(var/mob/M as mob)
 	return
 */
 
@@ -247,9 +251,10 @@
 /atom/proc/CtrlClick(var/mob/user)
 	return FALSE
 
-/atom/movable/CtrlClick(var/mob/living/user)
-	if(istype(user) && CanPhysicallyInteract(user) && !user.lying)
-		return user.make_grab(src)
+/atom/movable/CtrlClick(var/mob/user)
+	if(Adjacent(user))
+		user.start_pulling(src)
+		return TRUE
 	. = ..()
 
 /*
@@ -263,16 +268,14 @@
 	A.AltClick(src)
 
 /atom/proc/AltClick(var/mob/user)
-	. = show_atom_list_for_turf(user, get_turf(src))
-
-/atom/proc/show_atom_list_for_turf(var/mob/user, var/turf/T)
+	var/turf/T = get_turf(src)
 	if(T && user.TurfAdjacent(T))
 		if(user.listed_turf == T)
 			user.listed_turf = null
 		else
 			user.listed_turf = T
 			user.client.statpanel = "Turf"
-	. = TRUE
+	return 1
 
 /mob/proc/TurfAdjacent(var/turf/T)
 	return T.AdjacentQuick(src)
@@ -280,7 +283,7 @@
 /mob/observer/ghost/TurfAdjacent(var/turf/T)
 	if(!isturf(loc) || !client)
 		return FALSE
-	return z == T.z && (get_dist(loc, T) <= get_effective_view(client))
+	return z == T.z && (get_dist(loc, T) <= client.view)
 
 /*
 	Control+Shift click
@@ -297,8 +300,9 @@
 	Control+Alt click
 */
 /mob/proc/CtrlAltClickOn(var/atom/A)
-	A.CtrlAltClick(src)
-	return
+	if(A.CtrlAltClick(src))
+		return
+	pointed(A)
 
 /atom/proc/CtrlAltClick(var/mob/user)
 	return
@@ -344,8 +348,6 @@
 		if(dx > 0)	direction = EAST
 		else		direction = WEST
 	if(direction != dir)
-		if(facing_dir)
-			facing_dir = direction
 		facedir(direction)
 
 GLOBAL_LIST_INIT(click_catchers, create_click_catcher())
@@ -358,7 +360,6 @@ GLOBAL_LIST_INIT(click_catchers, create_click_catcher())
 	screen_loc = "CENTER-7,CENTER-7"
 
 /obj/screen/click_catcher/Destroy()
-	SHOULD_CALL_PARENT(FALSE)
 	return QDEL_HINT_LETMELIVE
 
 /proc/create_click_catcher()
@@ -366,7 +367,7 @@ GLOBAL_LIST_INIT(click_catchers, create_click_catcher())
 	for(var/i = 0, i<15, i++)
 		for(var/j = 0, j<15, j++)
 			var/obj/screen/click_catcher/CC = new()
-			CC.screen_loc = "TOP-[i],RIGHT-[j]"
+			CC.screen_loc = "NORTH-[i],EAST-[j]"
 			. += CC
 
 /obj/screen/click_catcher/Click(location, control, params)

@@ -1,24 +1,24 @@
-/obj/item/scanner/health
+/obj/item/device/scanner/health
 	name = "health analyzer"
 	desc = "A hand-held body scanner able to distinguish vital signs of the subject."
-	icon = 'icons/obj/items/device/scanner/health_scanner.dmi'
 	icon_state = "health"
 	item_state = "analyzer"
 	item_flags = ITEM_FLAG_NO_BLUDGEON
-	material = /decl/material/solid/metal/aluminium
-	origin_tech = "{'magnets':1,'biotech':1}"
+	matter = list(MATERIAL_ALUMINIUM = 200)
+	origin_tech = list(TECH_MAGNET = 1, TECH_BIO = 1)
 	printout_color = "#deebff"
 	var/mode = 1
 
-/obj/item/scanner/health/is_valid_scan_target(atom/O)
+/obj/item/device/scanner/health/is_valid_scan_target(atom/O)
 	return istype(O, /mob/living/carbon/human) || istype(O, /obj/structure/closet/body_bag)
 
-/obj/item/scanner/health/scan(atom/A, mob/user)
+/obj/item/device/scanner/health/scan(atom/A, mob/user)
 	scan_data = medical_scan_action(A, user, src, mode)
 	playsound(src, 'sound/effects/fastbeep.ogg', 20)
 
 /proc/medical_scan_action(atom/target, mob/living/user, obj/scanner, var/verbose)
-	if (!user.check_dexterity(DEXTERITY_COMPLEX_TOOLS))
+	if (!user.IsAdvancedToolUser())
+		to_chat(user, "<span class='warning'>You are not nimble enough to use this device.</span>")
 		return
 
 	if ((MUTATION_CLUMSY in user.mutations) && prob(50))
@@ -86,24 +86,27 @@
 		if(!brain || H.stat == DEAD || (H.status_flags & FAKEDEATH))
 			brain_result = "<span class='scan_danger'>none, patient is braindead</span>"
 		else if(H.stat != DEAD)
-			if(skill_level < SKILL_BASIC)
-				brain_result = "there's movement on the graph"
-			else if(istype(brain))
-				switch(brain.get_current_damage_threshold())
-					if(0)
-						brain_result = "normal"
-					if(1 to 2)
-						brain_result = "<span class='scan_notice'>minor brain damage</span>"
-					if(3 to 5)
-						brain_result = "<span class='scan_warning'>weak</span>"
-					if(6 to 8)
-						brain_result = "<span class='scan_danger'>extremely weak</span>"
-					if(9 to INFINITY)
-						brain_result = "<span class='scan_danger'>fading</span>"
-					else
-						brain_result = "<span class='scan_danger'>ERROR - Hardware fault</span>"
+			if(H.has_brain_worms())
+				brain_result = "<span class='scan_danger'>ERROR - aberrant/unknown brainwave patterns, advanced scanner recommended</span>"
 			else
-				brain_result = "<span class='scan_danger'>ERROR - Organ not recognized</span>"
+				if(skill_level < SKILL_BASIC)
+					brain_result = "there's movement on the graph"
+				else if(istype(brain))
+					switch(brain.get_current_damage_threshold())
+						if(0)
+							brain_result = "normal"
+						if(1 to 2)
+							brain_result = "<span class='scan_notice'>minor brain damage</span>"
+						if(3 to 5)
+							brain_result = "<span class='scan_warning'>weak</span>"
+						if(6 to 8)
+							brain_result = "<span class='scan_danger'>extremely weak</span>"
+						if(9 to INFINITY)
+							brain_result = "<span class='scan_danger'>fading</span>"
+						else
+							brain_result = "<span class='scan_danger'>ERROR - Hardware fault</span>"
+				else
+					brain_result = "<span class='scan_danger'>ERROR - Organ not recognized</span>"
 	else
 		brain_result = "<span class='scan_danger'>ERROR - Nonstandard biology</span>"
 	dat += "Brain activity: [brain_result]."
@@ -193,8 +196,6 @@
 					dat += "<span class='scan_warning'>Unsecured fracture in subject [limb]. Splinting recommended for transport.</span>"
 			if(e.has_infected_wound())
 				dat += "<span class='scan_warning'>Infected wound detected in subject [limb]. Disinfection recommended.</span>"
-			if(e.has_growths())
-				dat += "<span class='scan_warning'>Abnormal internal growths detected in subject [limb]. Surgical removal recommended.</span>"
 
 		for(var/name in H.organs_by_name)
 			var/obj/item/organ/external/e = H.organs_by_name[name]
@@ -229,7 +230,7 @@
 		var/list/damaged = H.get_damaged_organs(1,1)
 		if(damaged.len)
 			for(var/obj/item/organ/external/org in damaged)
-				var/limb_result = "[capitalize(org.name)][BP_IS_PROSTHETIC(org) ? " (prosthetic)" : ""]:"
+				var/limb_result = "[capitalize(org.name)][BP_IS_ROBOTIC(org) ? " (Cybernetic)" : ""]:"
 				if(org.brute_dam > 0)
 					limb_result = "[limb_result] \[<font color = 'red'><b>[get_wound_severity(org.brute_ratio, (org.limb_flags & ORGAN_FLAG_HEALS_OVERKILL))] physical trauma</b></font>\]"
 				if(org.burn_dam > 0)
@@ -248,11 +249,11 @@
 	if(H.reagents.total_volume)
 		var/unknown = 0
 		var/reagentdata[0]
-		for(var/A in H.reagents.reagent_volumes)
-			var/decl/material/R = decls_repository.get_decl(A)
+		for(var/A in H.reagents.reagent_list)
+			var/datum/reagent/R = A
 			if(R.scannable)
 				print_reagent_default_message = FALSE
-				reagentdata[A] = "<span class='scan_notice'>[round(REAGENT_VOLUME(H.reagents, A), 1)]u [R.name]</span>"
+				reagentdata[R.type] = "<span class='scan_notice'>[round(H.reagents.get_reagent_amount(R.type), 1)]u [R.name]</span>"
 			else
 				unknown++
 		if(reagentdata.len)
@@ -264,30 +265,10 @@
 			print_reagent_default_message = FALSE
 			. += "<span class='scan_warning'>Warning: Unknown substance[(unknown>1)?"s":""] detected in subject's blood.</span>"
 
-	if(H.touching.total_volume)
-		var/unknown = 0
-		var/reagentdata[0]
-		for(var/A in H.touching.reagent_volumes)
-			var/decl/material/R = decls_repository.get_decl(A)
-			if(R.scannable)
-				print_reagent_default_message = FALSE
-				reagentdata[R.type] = "<span class='scan_notice'>[round(REAGENT_VOLUME(H.reagents, R.type), 1)]u [R.name]</span>"
-			else
-				unknown++
-		if(reagentdata.len)
-			print_reagent_default_message = FALSE
-			. += "<span class='scan_notice'>Beneficial reagents detected on subject's body:</span>"
-			for(var/d in reagentdata)
-				. += reagentdata[d]
-		if(unknown)
-			print_reagent_default_message = FALSE
-			. += "<span class='scan_warning'>Warning: Unknown substance[(unknown>1)?"s":""] detected on subject's body.</span>"
-
 	var/datum/reagents/ingested = H.get_ingested_reagents()
 	if(ingested && ingested.total_volume)
 		var/unknown = 0
-		for(var/rtype in ingested.reagent_volumes)
-			var/decl/material/R = decls_repository.get_decl(rtype)
+		for(var/datum/reagent/R in ingested.reagent_list)
 			if(R.scannable)
 				print_reagent_default_message = FALSE
 				. += "<span class='scan_notice'>[R.name] found in subject's stomach.</span>"
@@ -300,7 +281,7 @@
 	if(H.chem_doses.len)
 		var/list/chemtraces = list()
 		for(var/T in H.chem_doses)
-			var/decl/material/R = T
+			var/datum/reagent/R = T
 			if(initial(R.scannable))
 				chemtraces += "[initial(R.name)] ([H.chem_doses[T]])"
 		if(chemtraces.len)
@@ -336,7 +317,7 @@ proc/get_wound_severity(var/damage_ratio, var/can_heal_overkill = 0)
 
 	return degree
 
-/obj/item/scanner/health/verb/toggle_mode()
+/obj/item/device/scanner/health/verb/toggle_mode()
 	set name = "Switch Verbosity"
 	set category = "Object"
 

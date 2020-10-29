@@ -1,5 +1,5 @@
-/mob/living/carbon/human/monkey/punpun/Initialize()
-	. = ..()
+/mob/living/carbon/human/monkey/punpun/New()
+	..()
 	name = "Pun Pun"
 	real_name = name
 	var/obj/item/clothing/C
@@ -17,7 +17,7 @@
 /decl/hierarchy/outfit/blank_subject
 	name = "Test Subject"
 	uniform = /obj/item/clothing/under/color/white
-	shoes = /obj/item/clothing/shoes/color/white
+	shoes = /obj/item/clothing/shoes/white
 	head = /obj/item/clothing/head/helmet/facecover
 	mask = /obj/item/clothing/mask/muzzle
 	suit = /obj/item/clothing/suit/straight_jacket
@@ -29,8 +29,8 @@
 		C.has_sensor  = SUIT_LOCKED_SENSORS
 		C.sensor_mode = SUIT_SENSOR_OFF
 
-/mob/living/carbon/human/blank/Initialize(mapload)
-	. = ..(mapload, "Vat-Grown Human")
+/mob/living/carbon/human/blank/New(var/new_loc)
+	..(new_loc, "Vat-Grown Human")
 
 /mob/living/carbon/human/blank/Initialize()
 	. = ..()

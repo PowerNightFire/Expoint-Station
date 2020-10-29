@@ -79,14 +79,19 @@
 		ticket.close(client_repository.get_lite_client(usr.client))
 
 	//Logs all hrefs
-	if(config && config.log_hrefs && GLOB.world_href_log)
-		WRITE_FILE(GLOB.world_href_log, "<small>[time2text(world.timeofday,"hh:mm")] [src] (usr:[usr])</small> || [hsrc ? "[hsrc] " : ""][href]<br>")
+	if(config && config.log_hrefs && href_logfile)
+		to_chat(href_logfile, "<small>[time2text(world.timeofday,"hh:mm")] [src] (usr:[usr])</small> || [hsrc ? "[hsrc] " : ""][href]<br>")
 
 	switch(href_list["_src_"])
 		if("holder")	hsrc = holder
 		if("usr")		hsrc = mob
 		if("prefs")		return prefs.process_link(usr,href_list)
 		if("vars")		return view_var_Topic(href,href_list,hsrc)
+		if("chat")		return chatOutput.Topic(href, href_list)
+
+	switch(href_list["action"])
+		if("openLink")
+			send_link(src, href_list["link"])
 
 	if(codex_topic(href, href_list))
 		return
@@ -119,6 +124,9 @@
 	///////////
 /client/New(TopicData)
 	TopicData = null							//Prevent calls to client.Topic from connect
+
+	// Load goonchat
+	chatOutput = new(src)
 
 	switch (connection)
 		if ("seeker", "web") // check for invalid connection type. do nothing if valid
@@ -168,7 +176,6 @@
 	if(holder)
 		GLOB.admins += src
 		holder.owner = src
-		handle_staff_login()
 
 	//preferences datum - also holds some persistant data for the client (because we may as well keep these datums to a minimum)
 	prefs = SScharacter_setup.preferences_datums[ckey]
@@ -177,9 +184,6 @@
 	prefs.last_ip = address				//these are gonna be used for banning
 	prefs.last_id = computer_id			//these are gonna be used for banning
 	apply_fps(prefs.clientfps)
-
-	if(!isnull(config.lock_client_view_x) && !isnull(config.lock_client_view_y))
-		view = "[config.lock_client_view_x]x[config.lock_client_view_y]"
 
 	. = ..()	//calls mob.Login()
 
@@ -220,14 +224,11 @@
 	if(!winexists(src, "asset_cache_browser")) // The client is using a custom skin, tell them.
 		to_chat(src, "<span class='warning'>Unable to access asset cache browser, if you are using a custom skin file, please allow DS to download the updated version, if you are not, then make a bug report. This is not a critical issue but can cause issues with resource downloading, as it is impossible to know when extra resources arrived to you.</span>")
 
-	if(!tooltips)
-		tooltips = new /datum/tooltip(src)
+	if(get_preference_value(/datum/client_preference/goonchat) == GLOB.PREF_YES)
+		chatOutput.start()
 
 	if(holder)
 		src.control_freak = 0 //Devs need 0 for profiler access
-
-	if(!istype(mob, world.mob))
-		prefs?.apply_post_login_preferences()
 
 	//////////////
 	//DISCONNECT//
@@ -237,7 +238,6 @@
 	if(src && watched_variables_window)
 		STOP_PROCESSING(SSprocessing, watched_variables_window)
 	if(holder)
-		handle_staff_logout()
 		holder.owner = null
 		GLOB.admins -= src
 	GLOB.ckey_directory -= ckey
@@ -259,7 +259,7 @@
 
 	var/sql_ckey = sql_sanitize_text(ckey(key))
 
-	var/DBQuery/query = dbcon.NewQuery("SELECT DATEDIFF(NOW(), `firstseen`) AS `age` FROM `erro_player` WHERE `ckey` = '[sql_ckey]'")
+	var/DBQuery/query = dbcon.NewQuery("SELECT datediff(Now(),firstseen) as age FROM erro_player WHERE ckey = '[sql_ckey]'")
 	query.Execute()
 
 	if(query.NextRow())
@@ -279,7 +279,7 @@
 
 	var/sql_ckey = sql_sanitize_text(src.ckey)
 
-	var/DBQuery/query = dbcon.NewQuery("SELECT `id`, DATEDIFF(NOW(), `firstseen`) AS `age` FROM `erro_player` WHERE `ckey` = '[sql_ckey]'")
+	var/DBQuery/query = dbcon.NewQuery("SELECT id, datediff(Now(),firstseen) as age FROM erro_player WHERE ckey = '[sql_ckey]'")
 	query.Execute()
 	var/sql_id = 0
 	player_age = 0	// New players won't have an entry so knowing we have a connection we set this to zero to be updated if their is a record.
@@ -288,21 +288,21 @@
 		player_age = text2num(query.item[2])
 		break
 
-	var/DBQuery/query_ip = dbcon.NewQuery("SELECT `ckey` FROM `erro_player` WHERE `ip` = '[address]'")
+	var/DBQuery/query_ip = dbcon.NewQuery("SELECT ckey FROM erro_player WHERE ip = '[address]'")
 	query_ip.Execute()
 	related_accounts_ip = ""
 	while(query_ip.NextRow())
 		related_accounts_ip += "[query_ip.item[1]], "
 		break
 
-	var/DBQuery/query_cid = dbcon.NewQuery("SELECT `ckey` FROM `erro_player` WHERE `computerid` = '[computer_id]'")
+	var/DBQuery/query_cid = dbcon.NewQuery("SELECT ckey FROM erro_player WHERE computerid = '[computer_id]'")
 	query_cid.Execute()
 	related_accounts_cid = ""
 	while(query_cid.NextRow())
 		related_accounts_cid += "[query_cid.item[1]], "
 		break
 
-	var/DBQuery/query_staffwarn = dbcon.NewQuery("SELECT `staffwarn` FROM `erro_player` WHERE `ckey` = '[sql_ckey]' AND !ISNULL(`staffwarn`)")
+	var/DBQuery/query_staffwarn = dbcon.NewQuery("SELECT staffwarn FROM erro_player WHERE ckey = '[sql_ckey]' AND !ISNULL(staffwarn)")
 	query_staffwarn.Execute()
 	if(query_staffwarn.NextRow())
 		src.staffwarn = query_staffwarn.item[1]
@@ -328,33 +328,20 @@
 
 	if(sql_id)
 		//Player already identified previously, we need to just update the 'lastseen', 'ip' and 'computer_id' variables
-		var/DBQuery/query_update = dbcon.NewQuery("UPDATE `erro_player` SET `lastseen` = NOW(), `ip` = '[sql_ip]', `computerid` = '[sql_computerid]', `lastadminrank` = '[sql_admin_rank]' WHERE `id` = [sql_id]")
+		var/DBQuery/query_update = dbcon.NewQuery("UPDATE erro_player SET lastseen = Now(), ip = '[sql_ip]', computerid = '[sql_computerid]', lastadminrank = '[sql_admin_rank]' WHERE id = [sql_id]")
 		query_update.Execute()
 	else
 		//New player!! Need to insert all the stuff
-		var/DBQuery/query_insert = dbcon.NewQuery("INSERT INTO `erro_player` (`id`, `ckey`, `firstseen`, `lastseen`, `ip`, `computerid`, `lastadminrank`) VALUES (NULL, '[sql_ckey]', NOW(), NOW(), '[sql_ip]', '[sql_computerid]', '[sql_admin_rank]')")
+		var/DBQuery/query_insert = dbcon.NewQuery("INSERT INTO erro_player (id, ckey, firstseen, lastseen, ip, computerid, lastadminrank) VALUES (null, '[sql_ckey]', Now(), Now(), '[sql_ip]', '[sql_computerid]', '[sql_admin_rank]')")
 		query_insert.Execute()
 
 	//Logging player access
 	var/serverip = "[world.internet_address]:[world.port]"
-	var/DBQuery/query_accesslog = dbcon.NewQuery("INSERT INTO `erro_connection_log` (`id`, `datetime`, `serverip`, `ckey`, `ip`, `computerid`) VALUES (NULL, NOW(), '[serverip]', '[sql_ckey]', '[sql_ip]', '[sql_computerid]');")
+	var/DBQuery/query_accesslog = dbcon.NewQuery("INSERT INTO `erro_connection_log`(`id`,`datetime`,`serverip`,`ckey`,`ip`,`computerid`) VALUES(null,Now(),'[serverip]','[sql_ckey]','[sql_ip]','[sql_computerid]');")
 	query_accesslog.Execute()
 
 
 #undef UPLOAD_LIMIT
-
-/client/proc/handle_staff_login()
-	if(admin_datums[ckey] && SSticker)
-		message_staff("\[[holder.rank]\] [key_name(src)] logged in.")
-
-/client/proc/handle_staff_logout()
-	if(admin_datums[ckey] && GAME_STATE == RUNLEVEL_GAME) //Only report this stuff if we are currently playing.
-		message_staff("\[[holder.rank]\] [key_name(src)] logged out.")
-		if(!GLOB.admins.len) //Apparently the admin logging out is no longer an admin at this point, so we have to check this towards 0 and not towards 1. Awell.
-			send2adminirc("[key_name(src)] logged out - no more staff online.")
-			if(config.delist_when_no_admins && GLOB.visibility_pref)
-				world.update_hub_visibility()
-				send2adminirc("Toggled hub visibility. The server is now invisible ([GLOB.visibility_pref]).")
 
 //checks if a client is afk
 //3000 frames = 5 minutes
@@ -380,12 +367,23 @@
 
 //send resources to the client. It's here in its own proc so we can move it around easiliy if need be
 /client/proc/send_resources()
+
 	getFiles(
 		'html/search.js',
 		'html/panels.css',
 		'html/spacemag.css',
 		'html/images/loading.gif',
-		'html/images/talisman.png'
+		'html/images/ntlogo.png',
+		'html/images/bluentlogo.png',
+		'html/images/sollogo.png',
+		'html/images/terralogo.png',
+		'html/images/talisman.png',
+		'html/images/exologo.png',
+		'html/images/xynlogo.png',
+		'html/images/daislogo.png',
+		'html/images/eclogo.png',
+		'html/images/fleetlogo.png',
+		'html/images/sfplogo.png'
 		)
 
 	var/decl/asset_cache/asset_cache = decls_repository.get_decl(/decl/asset_cache)
@@ -419,128 +417,28 @@ client/verb/character_setup()
 	if(istype(M))
 		M.OnMouseDrag(src_object, over_object, src_location, over_location, src_control, over_control, params)
 
-/client/verb/SetWindowIconSize(var/val as num|text)
-	set hidden = 1
-	winset(src, "mapwindow.map", "icon-size=[val]")
-	if(prefs && val != prefs.icon_size)
-		prefs.icon_size = val
-		SScharacter_setup.queue_preferences_save(prefs)
-	OnResize()
+/client/verb/toggle_fullscreen()
+	set name = "Toggle Fullscreen"
+	set category = "OOC"
 
-/client
-	var/last_view_x_dim = 7
-	var/last_view_y_dim = 7
+	fullscreen = !fullscreen
 
-/client/verb/force_onresize_view_update()
-	set name = "Force Client View Update"
-	set src = usr
-	set category = "Debug"
-	OnResize()
-
-/client/verb/show_winset_debug_values()
-	set name = "Show Client View Debug Values"
-	set src = usr
-	set category = "Debug"
-
-	var/divisor = text2num(winget(src, "mapwindow.map", "icon-size")) || world.icon_size
-	var/winsize_string = winget(src, "mapwindow.map", "size")
-
-	to_chat(usr, "Current client view: [view]")
-	to_chat(usr, "Icon size: [divisor]")
-	to_chat(usr, "xDim: [round(text2num(winsize_string) / divisor)]")
-	to_chat(usr, "yDim: [round(text2num(copytext(winsize_string,findtext(winsize_string,"x")+1,0)) / divisor)]")
-
-/client/verb/OnResize()
-	set hidden = 1
-
-	var/divisor = text2num(winget(src, "mapwindow.map", "icon-size")) || world.icon_size
-	if(!isnull(config.lock_client_view_x) && !isnull(config.lock_client_view_y))
-		last_view_x_dim = config.lock_client_view_x
-		last_view_y_dim = config.lock_client_view_y
+	if (fullscreen)
+		winset(usr, "mainwindow", "titlebar=false")
+		winset(usr, "mainwindow", "can-resize=false")
+		winset(usr, "mainwindow", "is-maximized=false")
+		winset(usr, "mainwindow", "is-maximized=true")
+		winset(usr, "mainwindow", "statusbar=false")
+		winset(usr, "mainwindow", "menu=")
+//		winset(usr, "mainwindow.mainvsplit", "size=0x0")
 	else
-		var/winsize_string = winget(src, "mapwindow.map", "size")
-		last_view_x_dim = config.lock_client_view_x || Clamp(ceil(text2num(winsize_string) / divisor), 15, config.max_client_view_x || 41)
-		last_view_y_dim = config.lock_client_view_y || Clamp(ceil(text2num(copytext(winsize_string,findtext(winsize_string,"x")+1,0)) / divisor), 15, config.max_client_view_y || 41)
-		if(last_view_x_dim % 2 == 0) last_view_x_dim++
-		if(last_view_y_dim % 2 == 0) last_view_y_dim++
-	for(var/check_icon_size in global.valid_icon_sizes)
-		winset(src, "menu.icon[check_icon_size]", "is-checked=false")
-	winset(src, "menu.icon[divisor]", "is-checked=true")
+		winset(usr, "mainwindow", "is-maximized=false")
+		winset(usr, "mainwindow", "titlebar=true")
+		winset(usr, "mainwindow", "can-resize=true")
+		winset(usr, "mainwindow", "statusbar=true")
+		winset(usr, "mainwindow", "menu=menu")
 
-	view = "[last_view_x_dim]x[last_view_y_dim]"
-
-	// Reset eye/perspective
-	var/last_perspective = perspective
-	perspective = MOB_PERSPECTIVE
-	if(perspective != last_perspective)
-		perspective = last_perspective
-	var/last_eye = eye
-	eye = mob
-	if(eye != last_eye)
-		eye = last_eye
-
-	// Recenter skybox and lighting.
-	set_skybox_offsets(last_view_x_dim, last_view_y_dim)
-	if(mob)
-		if(mob.l_general)
-			mob.l_general.fit_to_client_view(last_view_x_dim, last_view_y_dim)
-		mob.reload_fullscreen()
-
-/client/proc/update_chat_position(use_alternative)
-	var/input_height = 0
-	// Hell
-	if(use_alternative == TRUE)
-		input_height = winget(src, "input", "size")
-		input_height = text2num(splittext(input_height, "x")[2])
-
-		winset(src, "input_alt", "is-visible=true;is-disabled=false;is-default=true")
-		winset(src, "hotkey_toggle_alt", "is-visible=true;is-disabled=false;is-default=true")
-		winset(src, "saybutton_alt", "is-visible=true;is-disabled=false;is-default=true")
-
-		winset(src, "input", "is-visible=false;is-disabled=true;is-default=false")
-		winset(src, "hotkey_toggle", "is-visible=false;is-disabled=true;is-default=false")
-		winset(src, "saybutton", "is-visible=false;is-disabled=true;is-default=false")
-
-		var/current_size = splittext(winget(src, "outputwindow.output", "size"), "x")
-		var/new_size = "[current_size[1]]x[text2num(current_size[2]) - input_height]"
-		winset(src, "outputwindow.output", "size=[new_size]")
-		winset(src, "outputwindow.browseroutput", "size=[new_size]")
-
-		current_size = splittext(winget(src, "mainwindow.mainvsplit", "size"), "x")
-		new_size = "[current_size[1]]x[text2num(current_size[2]) + input_height]"
-		winset(src, "mainwindow.mainvsplit", "size=[new_size]")
-	else
-		input_height = winget(src, "input_alt", "size")
-		input_height = text2num(splittext(input_height, "x")[2])
-
-		winset(src, "input_alt", "is-visible=false;is-disabled=true;is-default=false")
-		winset(src, "hotkey_toggle_alt", "is-visible=false;is-disabled=true;is-default=false")
-		winset(src, "saybutton_alt", "is-visible=false;is-disabled=true;is-default=false")
-
-		winset(src, "input", "is-visible=true;is-disabled=false;is-default=true")
-		winset(src, "hotkey_toggle", "is-visible=true;is-disabled=false;is-default=true")
-		winset(src, "saybutton", "is-visible=true;is-disabled=false;is-default=true")
-
-		var/current_size = splittext(winget(src, "outputwindow.output", "size"), "x")
-		var/new_size = "[current_size[1]]x[text2num(current_size[2]) + input_height]"
-		winset(src, "outputwindow.output", "size=[new_size]")
-		winset(src, "outputwindow.browseroutput", "size=[new_size]")
-
-		current_size = splittext(winget(src, "mainwindow.mainvsplit", "size"), "x")
-		new_size = "[current_size[1]]x[text2num(current_size[2]) - input_height]"
-		winset(src, "mainwindow.mainvsplit", "size=[new_size]")
-
-/client/proc/toggle_fullscreen(new_value)
-	if((new_value == GLOB.PREF_BASIC) || (new_value == GLOB.PREF_FULL))
-		winset(src, "mainwindow", "is-maximized=false;can-resize=false;titlebar=false")
-		if(new_value == GLOB.PREF_FULL)
-			winset(src, "mainwindow", "menu=null;statusbar=false")
-		winset(src, "mainwindow.mainvsplit", "pos=0x0")
-	else
-		winset(src, "mainwindow", "is-maximized=false;can-resize=true;titlebar=true")
-		winset(src, "mainwindow", "menu=menu;statusbar=true")
-		winset(src, "mainwindow.mainvsplit", "pos=3x0")
-	winset(src, "mainwindow", "is-maximized=true")
+	fit_viewport()
 
 /client/verb/fit_viewport()
 	set name = "Fit Viewport"

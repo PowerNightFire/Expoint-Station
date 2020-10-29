@@ -1,8 +1,9 @@
 /obj/machinery/computer/air_control
-	name = "atmospherics control console"
 	icon = 'icons/obj/computer.dmi'
 	icon_keyboard = "atmos_key"
 	icon_screen = "tank"
+
+	name = "Atmospherics Control Console"
 
 	var/frequency = 1441
 	var/datum/radio_frequency/radio_connection
@@ -31,10 +32,10 @@
 	. = ..()
 	set_frequency(frequency)
 
-/obj/machinery/computer/air_control/Destroy()
+obj/machinery/computer/air_control/Destroy()
 	if(radio_controller)
 		radio_controller.remove_object(src, frequency)
-	. = ..()
+	..()
 
 /obj/machinery/computer/air_control/interface_interact(mob/user)
 	ui_interact(user)
@@ -128,9 +129,7 @@
 /obj/machinery/computer/air_control/proc/set_frequency(new_frequency)
 	radio_controller.remove_object(src, frequency)
 	frequency = new_frequency
-	radio_connection = radio_controller.add_object(src, frequency, sensor_tag)
-	radio_connection = radio_controller.add_object(src, frequency, input_tag)
-	radio_connection = radio_controller.add_object(src, frequency, output_tag)
+	radio_connection = radio_controller.add_object(src, frequency, RADIO_ATMOSIA)
 
 /obj/machinery/computer/air_control/OnTopic(mob/user, href_list, datum/topic_state/state)
 	if(..())
@@ -157,14 +156,14 @@
 		refreshing_input = TRUE
 		input_flow_setting = input("What would you like to set the rate limit to?", "Set Volume", input_flow_setting) as num|null
 		input_flow_setting = between(0, input_flow_setting, ATMOS_DEFAULT_VOLUME_PUMP+500)
-		signal.data = list ("tag" = input_tag, "set_volume_rate" = input_flow_setting)
+		signal.data = list ("tag" = input_tag, "set_volume_rate" = "[input_flow_setting]")
 		. = 1
 
 	if(href_list["in_set_max"])
 		input_info = null
 		refreshing_input = TRUE
 		input_flow_setting = ATMOS_DEFAULT_VOLUME_PUMP+500
-		signal.data = list ("tag" = input_tag, "set_volume_rate" = input_flow_setting)
+		signal.data = list ("tag" = input_tag, "set_volume_rate" = "[input_flow_setting]")
 		. = 1
 
 	if(href_list["out_refresh_status"])
@@ -184,7 +183,7 @@
 		refreshing_output = TRUE
 		pressure_setting = input("How much pressure would you like to output?", "Set Pressure", pressure_setting) as num|null
 		pressure_setting = between(0, pressure_setting, MAX_PUMP_PRESSURE)
-		signal.data = list ("tag" = output_tag, "set_internal_pressure" = "[pressure_setting]", "status" = 1)
+		signal.data = list ("tag" = output_tag, "set_internal_pressure" = pressure_setting, "status" = 1)
 		. = 1
 	
 	if(href_list["s_out_set_pressure"])
@@ -220,7 +219,6 @@
 		t = sanitizeSafe(t, MAX_NAME_LEN)
 		if (t)
 			src.input_tag = t
-			set_frequency(frequency)
 		return TOPIC_REFRESH
 
 	if(href_list["set_output_tag"])
@@ -228,7 +226,6 @@
 		t = sanitizeSafe(t, MAX_NAME_LEN)
 		if (t)
 			src.output_tag = t
-			set_frequency(frequency)
 		return TOPIC_REFRESH
 
 	if(href_list["set_sensor_tag"])
@@ -236,7 +233,6 @@
 		t = sanitizeSafe(t, MAX_NAME_LEN)
 		if(t)
 			src.sensor_tag = t
-			set_frequency(frequency)
 		return TOPIC_REFRESH
 	
 	if(href_list["set_sensor_name"])
@@ -257,8 +253,9 @@
 	if(!radio_connection)
 		return TOPIC_HANDLED
 
+	signal.data["sigtype"] = "command"
 	signal.data["status"] = TRUE
-	radio_connection.post_signal(src, signal, signal.data["tag"])
+	radio_connection.post_signal(src, signal, radio_filter = RADIO_ATMOSIA)
 
 /obj/machinery/computer/air_control/fuel_injection
 	icon = 'icons/obj/computer.dmi'
@@ -271,10 +268,6 @@
 
 	var/cutoff_temperature = 2000
 	var/on_temperature = 1200
-
-/obj/machinery/computer/air_control/fuel_injection/set_frequency()
-	..()
-	radio_connection = radio_controller.add_object(src, frequency, device_tag)
 
 /obj/machinery/computer/air_control/fuel_injection/receive_signal(datum/signal/signal)
 	if(!signal || signal.encryption) return
@@ -299,9 +292,9 @@
 		signal.data = list(
 			"tag" = device_tag,
 			"power_toggle" = 1,
+			"sigtype" = "command"
 		)
-		radio_connection.post_signal(src, signal, device_tag)
-		return TOPIC_REFRESH
+		..()
 
 /obj/machinery/computer/air_control/fuel_injection/Process()
 	if(automation)
@@ -322,10 +315,11 @@
 
 		signal.data = list(
 			"tag" = device_tag,
-			"set_power" = injecting
+			"set_power" = injecting,
+			"sigtype" = "command"
 		)
 
-		radio_connection.post_signal(src, signal, device_tag)
+		radio_connection.post_signal(src, signal, radio_filter = RADIO_ATMOSIA)
 
 	..()
 

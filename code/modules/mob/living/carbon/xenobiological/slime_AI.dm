@@ -101,6 +101,10 @@
 			return 1
 
 	if(!invalidFeedTarget(M)) // Checks for those we want to eat
+		if(istype(M, /mob/living/carbon/human)) // Ignore slime(wo)men - player-controlled slimes still can attack them
+			var/mob/living/carbon/human/H = M
+			if(H.species.name == SPECIES_PROMETHEAN)
+				return 0
 		return 1
 
 	return 0
@@ -203,7 +207,6 @@
 		regenerate_icons()
 
 /mob/living/carbon/slime/proc/handle_speech_and_mood()
-	set waitfor = FALSE // Called from Life, and say procs might sleep.
 	UpdateFace()
 
 	//Speech understanding starts here

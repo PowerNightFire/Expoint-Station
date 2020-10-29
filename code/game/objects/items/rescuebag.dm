@@ -5,11 +5,11 @@
 	a hostile enviroment."
 	icon = 'icons/obj/closets/rescuebag.dmi'
 	icon_state = "folded"
-	origin_tech = "{'biotech':2}"
-	var/obj/item/tank/airtank
+	origin_tech = list(TECH_BIO = 2)
+	var/obj/item/weapon/tank/airtank
 
 /obj/item/bodybag/rescue/loaded
-	airtank = /obj/item/tank/emergency/oxygen/double
+	airtank = /obj/item/weapon/tank/emergency/oxygen/double
 
 /obj/item/bodybag/rescue/Initialize()
 	. = ..()
@@ -30,7 +30,7 @@
 	qdel(src)
 
 /obj/item/bodybag/rescue/attackby(obj/item/W, mob/user, var/click_params)
-	if(istype(W,/obj/item/tank))
+	if(istype(W,/obj/item/weapon/tank))
 		if(airtank)
 			to_chat(user, "\The [src] already has an air tank installed.")
 			return 1
@@ -61,7 +61,7 @@
 	icon = 'icons/obj/closets/rescuebag.dmi'
 	item_path = /obj/item/bodybag/rescue
 	storage_types = CLOSET_STORAGE_MOBS
-	var/obj/item/tank/airtank
+	var/obj/item/weapon/tank/airtank
 	var/datum/gas_mixture/atmo
 
 /obj/structure/closet/body_bag/rescue/Initialize()
@@ -74,7 +74,7 @@
 	QDEL_NULL(airtank)
 	return ..()
 
-/obj/structure/closet/body_bag/rescue/proc/set_tank(obj/item/tank/newtank)
+/obj/structure/closet/body_bag/rescue/proc/set_tank(obj/item/weapon/tank/newtank)
 	airtank = newtank
 	if(airtank)
 		airtank.forceMove(null)
@@ -87,7 +87,7 @@
 		overlays += image(icon, "tank")
 
 /obj/structure/closet/body_bag/rescue/attackby(obj/item/W, mob/user, var/click_params)
-	if(istype(W,/obj/item/tank/))
+	if(istype(W,/obj/item/weapon/tank/))
 		if(airtank)
 			to_chat(user, "\The [src] already has an air tank installed.")
 			return 1
@@ -104,13 +104,13 @@
 		..()
 
 /obj/structure/closet/body_bag/rescue/fold(var/user)
-	var/obj/item/tank/my_tank = airtank
+	var/obj/item/weapon/tank/my_tank = airtank
 	airtank = null
 	var/obj/item/bodybag/rescue/folded = ..()
 	if(istype(folded) && my_tank)
 		my_tank.air_contents.merge(atmo)
 		folded.airtank = my_tank
-		airtank.forceMove(folded)
+		my_tank.forceMove(folded)
 
 /obj/structure/closet/body_bag/rescue/Process()
 	if(!airtank)

@@ -1,7 +1,7 @@
 /obj/machinery/igniter
 	name = "igniter"
 	desc = "It's useful for igniting flammable items."
-	icon = 'icons/obj/machines/igniter.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "igniter1"
 	var/on = 0
 	anchored = 1
@@ -9,8 +9,8 @@
 	active_power_usage = 1000
 
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/radio/receiver/buildable,
-		/obj/item/stock_parts/power/apc/buildable
+		/obj/item/weapon/stock_parts/radio/receiver,
+		/obj/item/weapon/stock_parts/power/apc
 	)
 	public_variables = list(
 		/decl/public_access/public_variable/igniter_on
@@ -19,13 +19,6 @@
 		/decl/public_access/public_method/igniter_toggle
 	)
 	stock_part_presets = list(/decl/stock_part_preset/radio/receiver/igniter = 1)
-
-	frame_type = /obj/item/machine_chassis/igniter/base
-	construct_state = /decl/machine_construction/default/panel_closed/item_chassis
-	base_type = /obj/machinery/igniter/buildable
-
-/obj/machinery/igniter/buildable
-	uncreated_component_parts = null
 
 /obj/machinery/igniter/Initialize()
 	. = ..()
@@ -80,9 +73,9 @@
 // Wall mounted remote-control igniter.
 
 /obj/machinery/sparker
-	name = "mounted igniter"
+	name = "Mounted igniter"
 	desc = "A wall-mounted ignition device."
-	icon = 'icons/obj/machines/igniter_mounted.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "migniter"
 	var/disable = 0
 	var/last_spark = 0
@@ -92,20 +85,13 @@
 	active_power_usage = 1000
 
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/radio/receiver/buildable,
-		/obj/item/stock_parts/power/apc/buildable
+		/obj/item/weapon/stock_parts/radio/receiver,
+		/obj/item/weapon/stock_parts/power/apc
 	)
 	public_methods = list(
 		/decl/public_access/public_method/sparker_spark
 	)
 	stock_part_presets = list(/decl/stock_part_preset/radio/receiver/sparker = 1)
-
-	construct_state = /decl/machine_construction/wall_frame/panel_closed/simple
-	frame_type = /obj/item/frame/button/sparker
-	base_type = /obj/machinery/sparker/buildable
-
-/obj/machinery/sparker/buildable
-	uncreated_component_parts = null
 
 /obj/machinery/sparker/on_update_icon()
 	..()
@@ -118,7 +104,7 @@
 		icon_state = "migniter-p"
 //		src.sd_SetLuminosity(0)
 
-/obj/machinery/sparker/attackby(obj/item/W, mob/user)
+/obj/machinery/sparker/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	if(isScrewdriver(W))
 		add_fingerprint(user)
 		disable = !disable

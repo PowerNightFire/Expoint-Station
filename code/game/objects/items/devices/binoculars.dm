@@ -1,8 +1,8 @@
-/obj/item/binoculars
+/obj/item/device/binoculars
+
 	name = "binoculars"
 	desc = "A pair of binoculars."
 	zoomdevicename = "eyepieces"
-	icon = 'icons/obj/items/binoculars.dmi'
 	icon_state = "binoculars"
 
 	obj_flags = OBJ_FLAG_CONDUCTIBLE
@@ -13,7 +13,7 @@
 	throw_speed = 3
 
 
-/obj/item/binoculars/attack_self(mob/user)
+/obj/item/device/binoculars/attack_self(mob/user)
 	if(zoom)
 		unzoom(user)
 	else

@@ -1,7 +1,7 @@
 /obj/machinery/floorlayer
 
 	name = "automatic floor layer"
-	icon = 'icons/obj/machines/pipe_dispenser.dmi'
+	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "pipe_d"
 	density = 1
 	var/turf/old_turf
@@ -9,9 +9,9 @@
 	var/obj/item/stack/tile/T
 	var/list/mode = list("dismantle"=0,"laying"=0,"collect"=0)
 
-/obj/machinery/floorlayer/Initialize()
-	. = ..()	
+/obj/machinery/floorlayer/New()
 	T = new/obj/item/stack/tile/floor(src)
+	..()
 
 /obj/machinery/floorlayer/Move(new_turf,M_Dir)
 	..()
@@ -34,7 +34,7 @@
 	user.visible_message("<span class='notice'>[user] has [!on?"de":""]activated \the [src].</span>", "<span class='notice'>You [!on?"de":""]activate \the [src].</span>")
 	return TRUE
 
-/obj/machinery/floorlayer/attackby(var/obj/item/W, var/mob/user)
+/obj/machinery/floorlayer/attackby(var/obj/item/W as obj, var/mob/user as mob)
 
 	if(isWrench(W))
 		var/m = input("Choose work mode", "Mode") as null|anything in mode

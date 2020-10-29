@@ -1,27 +1,22 @@
 //
 //Robotic Component Analyser, basically a health analyser for robots
 //
-/obj/item/robotanalyzer
+/obj/item/device/robotanalyzer
 	name = "robot analyzer"
-	icon = 'icons/obj/items/device/robot_analyzer.dmi'
 	icon_state = "robotanalyzer"
 	item_state = "analyzer"
 	desc = "A hand-held scanner able to diagnose robotic injuries."
 	obj_flags = OBJ_FLAG_CONDUCTIBLE
-	slot_flags = SLOT_LOWER_BODY
+	slot_flags = SLOT_BELT
 	throwforce = 3
 	w_class = ITEM_SIZE_SMALL
 	throw_speed = 5
 	throw_range = 10
-	origin_tech = "{'magnets':2,'biotech':1,'engineering':2}"
-	material = /decl/material/solid/metal/steel
-	matter = list(
-		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE
-	)
+	origin_tech = list(TECH_MAGNET = 2, TECH_BIO = 1, TECH_ENGINEERING = 2)
+	matter = list(MATERIAL_STEEL = 250, MATERIAL_GLASS = 100, MATERIAL_PLASTIC = 75)
 	var/mode = 1;
 
-/obj/item/robotanalyzer/attack(mob/living/M, mob/living/user)
+/obj/item/device/robotanalyzer/attack(mob/living/M as mob, mob/living/user as mob)
 	if((MUTATION_CLUMSY in user.mutations) && prob(50))
 		to_chat(user, text("<span class='warning'>You try to analyze the floor's vitals!</span>"))
 		for(var/mob/O in viewers(M, null))
@@ -82,7 +77,7 @@
 			to_chat(user, "<span class='notice'>External prosthetics:</span>")
 			var/organ_found
 			for(var/obj/item/organ/external/E in H.organs)
-				if(!BP_IS_PROSTHETIC(E))
+				if(!BP_IS_ROBOTIC(E))
 					continue
 				organ_found = 1
 				to_chat(user, "[E.name]: <font color='red'>[E.brute_dam]</font> <font color='#ffa500'>[E.burn_dam]</font>")
@@ -92,7 +87,7 @@
 			to_chat(user, "<span class='notice'>Internal prosthetics:</span>")
 			organ_found = null
 			for(var/obj/item/organ/O in H.internal_organs)
-				if(!BP_IS_PROSTHETIC(O))
+				if(!BP_IS_ROBOTIC(O))
 					continue
 				organ_found = 1
 				to_chat(user, "[O.name]: <font color='red'>[O.damage]</font>")

@@ -1,16 +1,16 @@
 // Alien props for away missions and such.
 
 // Power cells
-/obj/item/cell/alien
+/obj/item/weapon/cell/alien
 	name = "alien device"
 	desc = "It hums with power."
 	icon = 'icons/obj/xenoarchaeology.dmi'
 	icon_state = "unknown1"
 	maxcharge = 5000
-	origin_tech = "{'powerstorage':7}"
+	origin_tech = list(TECH_POWER = 7)
 	var/global/base_icon
 
-/obj/item/cell/alien/on_update_icon()
+/obj/item/weapon/cell/alien/on_update_icon()
 	if(!base_icon)
 		base_icon = pick("instrument", "unknown1", "unknown3", "unknown4")
 	icon_state = base_icon
@@ -24,10 +24,8 @@
 	icon = 'icons/obj/xenoarchaeology.dmi'
 	icon_state = "ano10"
 	update_state = 0 //Don't pixelshift us on wall
+	cell_type = /obj/item/weapon/cell/alien
 	autoname = 0
-	uncreated_component_parts = list(
-		/obj/item/cell/alien
-	)
 	
 /obj/machinery/power/apc/alien/on_update_icon()
 	check_updates()
@@ -45,13 +43,13 @@
 	icon_state = "bulb_map"
 	base_state = "bulb"
 	color = COLOR_PURPLE
-	light_type = /obj/item/light/alien
+	light_type = /obj/item/weapon/light/alien
 
 /obj/machinery/light/alien/Initialize()
 	color = null  //It's just for mapping
 	. = ..()
 
-/obj/item/light/alien
+/obj/item/weapon/light/alien
 	name = "glowbulb"
 	icon_state = "lbulb"
 	base_state = "lbulb"
@@ -59,7 +57,7 @@
 	color = COLOR_PURPLE
 	var/global/random_light_color
 
-/obj/item/light/alien/Initialize()
+/obj/item/weapon/light/alien/Initialize()
 	. = ..()
 	if(!random_light_color)
 		random_light_color = get_random_colour(FALSE, 100, 255)
@@ -73,8 +71,8 @@
 
 /obj/machinery/door/airlock/alien/Initialize()
 	. = ..()
-	var/decl/material/A = decls_repository.get_decl(/decl/material/solid/metal/aliumium)
+	var/material/A = SSmaterials.get_material_by_name(MATERIAL_ALIENALLOY)
 	if(A)
-		door_color = A.color
+		door_color = A.icon_colour
 	stripe_color = get_random_colour(FALSE, 0, 255)
 	update_icon()

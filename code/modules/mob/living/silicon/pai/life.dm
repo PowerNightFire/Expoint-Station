@@ -14,10 +14,10 @@
 	handle_regular_hud_updates()
 
 	if(src.secHUD == 1)
-		process_sec_hud(src, 1, network = get_computer_network())
+		process_sec_hud(src, 1)
 
 	if(src.medHUD == 1)
-		process_med_hud(src, 1, network = get_computer_network())
+		process_med_hud(src, 1)
 
 	if(silence_time)
 		if(world.timeofday >= silence_time)

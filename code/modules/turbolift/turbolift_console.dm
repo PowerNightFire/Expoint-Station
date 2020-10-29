@@ -27,14 +27,16 @@
 			user.visible_message("<span class='danger'>\The [user] hammers on the lift button!</span>")
 		else
 			user.visible_message("<span class='notice'>\The [user] presses the lift button.</span>")
-		playsound(src, 'sound/machines/button3.ogg', 100, 1)
 
 
-/obj/structure/lift/Initialize(mapload, var/datum/turbolift/_lift)
-	. = ..(mapload)
+/obj/structure/lift/New(var/newloc, var/datum/turbolift/_lift)
 	lift = _lift
+	return ..(newloc)
 
 /obj/structure/lift/attack_ai(var/mob/user)
+	return attack_hand(user)
+
+/obj/structure/lift/attack_generic(var/mob/user)
 	return attack_hand(user)
 
 /obj/structure/lift/attack_hand(var/mob/user)
@@ -42,10 +44,8 @@
 
 /obj/structure/lift/interact(var/mob/user)
 	if(!lift.is_functional())
-		return FALSE
-	if(!user.check_dexterity(DEXTERITY_SIMPLE_MACHINES))
-		return FALSE
-	return TRUE
+		return 0
+	return 1
 // End base.
 
 // Button. No HTML interface, just calls the associated lift to its floor.
@@ -55,6 +55,7 @@
 	icon_state = "button"
 	var/light_up = FALSE
 	var/datum/turbolift_floor/floor
+	mouse_opacity = 2 //No more eyestrain aiming at tiny pixels
 
 /obj/structure/lift/button/Destroy()
 	if(floor && floor.ext_panel == src)
@@ -82,12 +83,9 @@
 	light_up = TRUE
 	update_icon()
 
-/obj/structure/lift/button/standalone
-	icon_state = "plinth"
-
 /obj/structure/lift/button/on_update_icon()
 	if(light_up)
-		icon_state = "[initial(icon_state)]_lit"
+		icon_state = "button_lit"
 	else
 		icon_state = initial(icon_state)
 
@@ -97,9 +95,8 @@
 /obj/structure/lift/panel
 	name = "elevator control panel"
 	icon_state = "panel"
+	mouse_opacity = 2 //No more eyestrain aiming at tiny pixels
 
-/obj/structure/lift/panel/standalone
-	icon_state = "standing_panel"
 
 /obj/structure/lift/panel/attack_ghost(var/mob/user)
 	return interact(user)
@@ -121,15 +118,14 @@
 		dat += "<a href='?src=\ref[src];move_to_floor=["\ref[floor]"]'>[label]</a>: [floor.name]</font><br>"
 
 	dat += "<hr>"
-	if(LAZYLEN(lift.doors))
-		if(lift.doors_are_open())
-			dat += "<a href='?src=\ref[src];close_doors=1'>Close Doors</a><br>"
-		else
-			dat += "<a href='?src=\ref[src];open_doors=1'>Open Doors</a><br>"
+	if(lift.doors_are_open())
+		dat += "<a href='?src=\ref[src];close_doors=1'>Close Doors</a><br>"
+	else
+		dat += "<a href='?src=\ref[src];open_doors=1'>Open Doors</a><br>"
 	dat += "<a href='?src=\ref[src];emergency_stop=1'>Emergency Stop</a>"
 	dat += "<hr></body></html>"
 
-	var/datum/browser/written/popup = new(user, "turbolift_panel", "Lift Panel", 230, 260)
+	var/datum/browser/popup = new(user, "turbolift_panel", "Lift Panel", 230, 260)
 	popup.set_content(jointext(dat, null))
 	popup.open()
 	return

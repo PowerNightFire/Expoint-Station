@@ -1,21 +1,19 @@
 /obj/item/inducer
 	name = "inducer"
 	desc = "A tool for inductively charging internal power cells."
-	icon = 'icons/obj/items/device/inducer.dmi'
+	icon = 'icons/obj/tools.dmi'
 	icon_state = "inducer-sci"
 	item_state = "inducer-sci"
 	force = 7
-	origin_tech = "{'powerstorage':6,'engineering':4}"
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
-	slot_flags = SLOT_LOWER_BODY
-
 	var/powertransfer = 500
 	var/coefficient = 0.9
 	var/opened = FALSE
 	var/failsafe = 0
-	var/obj/item/cell/cell = /obj/item/cell
+	var/obj/item/weapon/cell/cell = /obj/item/weapon/cell
 	var/recharging = FALSE
+	origin_tech = list(TECH_POWER = 6, TECH_ENGINEERING = 4)
+	matter = list(MATERIAL_STEEL = 1000, MATERIAL_GLASS = 700)
+	slot_flags = SLOT_BELT
 
 /obj/item/inducer/Initialize()
 	. = ..()
@@ -23,8 +21,8 @@
 		cell = new cell(src)
 	update_icon()
 
-/obj/item/inducer/proc/induce(obj/item/cell/target)
-	var/obj/item/cell/MyC = get_cell()
+/obj/item/inducer/proc/induce(obj/item/weapon/cell/target)
+	var/obj/item/weapon/cell/MyC = get_cell()
 	var/missing = target.maxcharge - target.charge
 	var/totransfer = min(min(MyC.charge,powertransfer), missing)
 	target.give(totransfer*coefficient)
@@ -45,7 +43,7 @@
 		return ..()
 
 /obj/item/inducer/proc/CannotUse(mob/user)
-	var/obj/item/cell/my_cell = get_cell()
+	var/obj/item/weapon/cell/my_cell = get_cell()
 	if(!istype(my_cell))
 		to_chat(user, "<span class='warning'>\The [src] doesn't have a power cell installed!</span>")
 		return TRUE
@@ -60,8 +58,8 @@
 		opened = !opened
 		to_chat(user, "<span class='notice'>You [opened ? "open" : "close"] the battery compartment.</span>")
 		update_icon()
-	if(istype(W, /obj/item/cell))
-		if (istype(W, /obj/item/cell/device))
+	if(istype(W, /obj/item/weapon/cell))
+		if (istype(W, /obj/item/weapon/cell/device))
 			to_chat(user, "<span class='warning'>\The [src] only takes full-size power cells.</span>")
 			return
 		if(opened)
@@ -86,8 +84,8 @@
 		return TRUE
 	else
 		recharging = TRUE
-	var/obj/item/cell/MyC = get_cell()
-	var/obj/item/cell/C = A.get_cell()
+	var/obj/item/weapon/cell/MyC = get_cell()
+	var/obj/item/weapon/cell/C = A.get_cell()
 	var/obj/O
 	if(istype(A, /obj))
 		O = A
@@ -102,7 +100,7 @@
 			recharging = FALSE
 			return TRUE
 		user.visible_message("\The [user] starts recharging \the [A] with \the [src].","<span class='notice'>You start recharging \the [A] with \the [src].</span>")
-		if (istype(A, /obj/item/gun/energy))
+		if (istype(A, /obj/item/weapon/gun/energy))
 			length = 30
 			if (user.get_skill_value(SKILL_WEAPONS) <= SKILL_ADEPT)
 				length += rand(10, 30)
@@ -152,7 +150,7 @@
 
 /obj/item/inducer/examine(mob/living/M)
 	. = ..()
-	var/obj/item/cell/MyC = get_cell()
+	var/obj/item/weapon/cell/MyC = get_cell()
 	if(MyC)
 		to_chat(M, "<span class='notice'>Its display shows: [MyC.percent()]%.</span>")
 	else

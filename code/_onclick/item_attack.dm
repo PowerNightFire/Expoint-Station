@@ -34,33 +34,15 @@ avoid code duplication. This includes items that may sometimes act as a standard
 	return
 
 /atom/movable/attackby(obj/item/W, mob/user)
-	return bash(W,user)
-
-/atom/movable/proc/bash(obj/item/W, mob/user)
-	if(isliving(user) && user.a_intent == I_HELP)
-		return FALSE
-	if(W.item_flags & ITEM_FLAG_NO_BLUDGEON)
-		return FALSE
-	visible_message("<span class='danger'>[src] has been hit by [user] with [W].</span>")
-	return TRUE
+	if(!(W.item_flags & ITEM_FLAG_NO_BLUDGEON))
+		visible_message("<span class='danger'>[src] has been hit by [user] with [W].</span>")
 
 /mob/living/attackby(obj/item/I, mob/user)
 	if(!ismob(user))
 		return 0
 	if(can_operate(src,user) && I.do_surgery(src,user)) //Surgery
 		return 1
-
-	if(user.a_intent == I_HELP && istype(I, /obj/item/clothing/head))
-		var/datum/extension/hattable/hattable = get_extension(src, /datum/extension/hattable)
-		if(hattable)
-			if(hattable.hat)
-				to_chat(user, SPAN_WARNING("\The [src] is already wearing \the [hattable.hat]."))
-				return TRUE
-			if(user.unEquip(I) && hattable.wear_hat(src, I))
-				user.visible_message(SPAN_NOTICE("\The [user] puts \the [I] on \the [src]."))
-				return TRUE
-
-	return I.attack(src, user, user.zone_sel ? user.zone_sel.selecting : ran_zone())
+	return I.attack(src, user, user.zone_sel.selecting)
 
 /mob/living/carbon/human/attackby(obj/item/I, mob/user)
 	if(user == src && zone_sel.selecting == BP_MOUTH && can_devour(I, silent = TRUE))
@@ -83,7 +65,7 @@ avoid code duplication. This includes items that may sometimes act as a standard
 
 //I would prefer to rename this attack_as_weapon(), but that would involve touching hundreds of files.
 /obj/item/proc/attack(mob/living/M, mob/living/user, var/target_zone)
-	if(item_flags & ITEM_FLAG_NO_BLUDGEON)
+	if(!force || (item_flags & ITEM_FLAG_NO_BLUDGEON))
 		return 0
 	if(M == user && user.a_intent != I_HURT)
 		return 0
@@ -103,7 +85,7 @@ avoid code duplication. This includes items that may sometimes act as a standard
 	var/datum/attack_result/AR = hit_zone
 	if(istype(AR))
 		if(AR.hit_zone)
-			apply_hit_effect(AR.attackee || M, user, AR.hit_zone)
+			apply_hit_effect(AR.attackee ? AR.attackee : M, user, AR.hit_zone)
 		return 1
 	if(hit_zone)
 		apply_hit_effect(M, user, hit_zone)
@@ -112,13 +94,8 @@ avoid code duplication. This includes items that may sometimes act as a standard
 
 //Called when a weapon is used to make a successful melee attack on a mob. Returns whether damage was dealt.
 /obj/item/proc/apply_hit_effect(mob/living/target, mob/living/user, var/hit_zone)
-	var/use_hitsound = hitsound
-	if(!use_hitsound)
-		if(edge || sharp)
-			use_hitsound = 'sound/weapons/bladeslice.ogg'
-		else
-			use_hitsound = "swing_hit"
-	playsound(loc, use_hitsound, 50, 1, -1)
+	if(hitsound)
+		playsound(loc, hitsound, 50, 1, -1)
 
 	var/power = force
 	if(MUTATION_HULK in user.mutations)

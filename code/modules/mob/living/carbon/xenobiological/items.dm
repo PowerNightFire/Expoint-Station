@@ -8,13 +8,13 @@
 	throwforce = 0
 	throw_speed = 3
 	throw_range = 6
-	origin_tech = "{'biotech':4}"
+	origin_tech = list(TECH_BIO = 4)
 	var/Uses = 1 // uses before it goes inert
 	var/enhanced = 0 //has it been enhanced before?
 	atom_flags = ATOM_FLAG_OPEN_CONTAINER
 
 	attackby(obj/item/O as obj, mob/user as mob)
-		if(istype(O, /obj/item/slimesteroid2))
+		if(istype(O, /obj/item/weapon/slimesteroid2))
 			if(enhanced == 1)
 				to_chat(user, "<span class='warning'> This extract has already been enhanced!</span>")
 				return ..()
@@ -26,11 +26,11 @@
 			enhanced = 1
 			qdel(O)
 
-/obj/item/slime_extract/Initialize()
-	. = ..()
+/obj/item/slime_extract/New()
 	SSstatistics.extracted_slime_cores_amount++
 	create_reagents(100)
-	reagents.add_reagent(/decl/material/liquid/slimejelly, 30)
+	reagents.add_reagent(/datum/reagent/slimejelly, 30)
+	..()
 
 /obj/item/slime_extract/grey
 	name = "grey slime extract"
@@ -102,11 +102,11 @@
 
 /obj/item/slime_extract/adamantine/Initialize()
 	. = ..()
-	reagents.add_reagent(/decl/material/liquid/crystal_agent, 10)
+	reagents.add_reagent(/datum/reagent/crystal, 10)
 
-/obj/item/slime_extract/quantum
-	name = "quantum slime extract"
-	icon_state = "quantum slime extract"
+/obj/item/slime_extract/bluespace
+	name = "bluespace slime extract"
+	icon_state = "bluespace slime extract"
 
 /obj/item/slime_extract/pyrite
 	name = "pyrite slime extract"
@@ -126,10 +126,10 @@
 
 ////Pet Slime Creation///
 
-/obj/item/slimepotion
+/obj/item/weapon/slimepotion
 	name = "docility potion"
 	desc = "A potent chemical mix that will nullify a slime's powers, causing it to become docile and tame."
-	icon = 'icons/obj/items/chem/bottle.dmi'
+	icon = 'icons/obj/chemical.dmi'
 	icon_state = "bottle19"
 
 	attack(mob/living/carbon/slime/M as mob, mob/user as mob)
@@ -160,10 +160,10 @@
 		pet.real_name = newname
 		qdel(src)
 
-/obj/item/slimepotion2
+/obj/item/weapon/slimepotion2
 	name = "advanced docility potion"
 	desc = "A potent chemical mix that will nullify a slime's powers, causing it to become docile and tame. This one is meant for adult slimes."
-	icon = 'icons/obj/items/chem/bottle.dmi'
+	icon = 'icons/obj/chemical.dmi'
 	icon_state = "bottle19"
 
 	attack(mob/living/carbon/slime/M as mob, mob/user as mob)
@@ -192,10 +192,10 @@
 		qdel(src)
 
 
-/obj/item/slimesteroid
+/obj/item/weapon/slimesteroid
 	name = "slime steroid"
 	desc = "A potent chemical mix that will cause a slime to generate more extract."
-	icon = 'icons/obj/items/chem/bottle.dmi'
+	icon = 'icons/obj/chemical.dmi'
 	icon_state = "bottle16"
 
 	attack(mob/living/carbon/slime/M as mob, mob/user as mob)
@@ -216,13 +216,13 @@
 		M.cores = 3
 		qdel(src)
 
-/obj/item/slimesteroid2
+/obj/item/weapon/slimesteroid2
 	name = "extract enhancer"
 	desc = "A potent chemical mix that will give a slime extract three uses."
-	icon = 'icons/obj/items/chem/bottle.dmi'
+	icon = 'icons/obj/chemical.dmi'
 	icon_state = "bottle17"
 
-/obj/item/slimesteroid2/afterattack(obj/target, mob/user , flag)
+/obj/item/weapon/slimesteroid2/afterattack(obj/target, mob/user , flag)
 	if(istype(target, /obj/item/slime_extract))
 		var/obj/item/slime_extract/extract = target
 		if(extract.enhanced == 1)
@@ -261,7 +261,7 @@
 	else
 		icon_state = "golem"
 
-/obj/effect/golemrune/attack_hand(mob/living/user)
+/obj/effect/golemrune/attack_hand(mob/living/user as mob)
 	var/mob/observer/ghost/ghost
 	for(var/mob/observer/ghost/O in src.loc)
 		if(!O.client)
@@ -276,13 +276,13 @@
 	visible_message(SPAN_WARNING("A craggy humanoid figure coalesces into being!"))
 
 	var/mob/living/carbon/human/G = new(src.loc)
-	G.set_species(SPECIES_GOLEM)
+	G.set_species("Golem")
 	G.key = ghost.key
 
-	var/obj/item/implant/translator/natural/I = new()
+	var/obj/item/weapon/implant/translator/natural/I = new()
 	I.implant_in_mob(G, BP_HEAD)
 	if (user.languages.len)
-		var/decl/language/lang = user.languages[1]
+		var/datum/language/lang = user.languages[1]
 		G.add_language(lang.name)
 		G.set_default_language(lang)
 		I.languages[lang.name] = 1

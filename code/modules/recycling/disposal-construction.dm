@@ -8,7 +8,7 @@
 	icon_state = "conpipe-s"
 	anchored = 0
 	density = 0
-	material = /decl/material/solid/metal/steel
+	matter = list(MATERIAL_STEEL = 1850)
 	level = 2
 	obj_flags = OBJ_FLAG_ROTATABLE
 	var/sort_type = ""
@@ -17,8 +17,8 @@
 	var/constructed_path = /obj/structure/disposalpipe
 	var/built_icon_state
 
-/obj/structure/disposalconstruct/Initialize(mapload, var/P = null)
-	. = ..(mapload)
+/obj/structure/disposalconstruct/New(loc, var/P = null)
+	. = ..()
 	if(P)
 		if(istype(P, /obj/structure/disposalpipe))//Unfortunately a necessary evil since some things are machines and other things are structures
 			var/obj/structure/disposalpipe/D = P
@@ -42,11 +42,13 @@
 			anchored = D.anchored
 			set_density(D.density)
 			turn = D.turn
-			constructed_path = D.base_type || D.type
+			constructed_path = D.type
 			set_dir(D.dir)
-	if(loc)
-		update_icon()
+	update_icon()
+
+/obj/structure/disposalconstruct/Initialize()
 	update_verbs()
+	. = ..()
 
 /obj/structure/disposalconstruct/proc/update_verbs()
 	if(anchored)
@@ -143,9 +145,9 @@
 		update()
 		update_verbs()
 
-	else if(istype(I, /obj/item/weldingtool))
+	else if(istype(I, /obj/item/weapon/weldingtool))
 		if(anchored)
-			var/obj/item/weldingtool/W = I
+			var/obj/item/weapon/weldingtool/W = I
 			if(W.remove_fuel(0,user))
 				playsound(src.loc, 'sound/items/Welder2.ogg', 100, 1)
 				to_chat(user, "Welding \the [src] in place.")
@@ -211,10 +213,6 @@
 /obj/structure/disposalconstruct/machine
 	obj_flags = 0 // No rotating
 
-/obj/structure/disposalconstruct/machine/Initialize(mapload, P)
-	. = ..()
-	set_extension(src, /datum/extension/parts_stash)
-
 /obj/structure/disposalconstruct/machine/update_verbs()
 	return // No flipping
 
@@ -224,14 +222,10 @@
 	update_icon()
 
 /obj/structure/disposalconstruct/machine/build(obj/structure/disposalpipe/CP)
-	var/obj/machinery/disposal/machine = new /obj/machinery/disposal(get_turf(src), dir)
-	var/datum/extension/parts_stash/stash = get_extension(src, /datum/extension/parts_stash)
-	if(stash)
-		stash.install_into(machine)
-	if(machine.construct_state)
-		machine.construct_state.post_construct(machine)
-	transfer_fingerprints_to(machine)
-	machine.mode = 0 // start with pump off
+	var/obj/machinery/disposal/P = new /obj/machinery/disposal(src.loc)
+	transfer_fingerprints_to(P)
+	P.set_dir(dir)
+	P.mode = 0 // start with pump off
 
 /obj/structure/disposalconstruct/machine/on_update_icon()
 	if(anchored)
@@ -245,6 +239,3 @@
 	P.set_dir(dir)
 	var/obj/structure/disposalpipe/trunk/Trunk = CP
 	Trunk.linked = P
-
-/obj/structure/disposalconstruct/machine/chute
-	obj_flags = OBJ_FLAG_ROTATABLE

@@ -10,7 +10,7 @@
 	var/next_movement_time = 0
 	var/speed = 10 //lower = better
 	var/obj/item/holding = null
-	var/obj/item/bot_controller/controller = null
+	var/obj/item/device/bot_controller/controller = null
 
 /mob/living/bot/remotebot/movement_delay()
 	var/tally = ..()
@@ -22,7 +22,7 @@
 /mob/living/bot/remotebot/examine(mob/user)
 	. = ..()
 	if(holding)
-		to_chat(user, "<span class='notice'>It is holding \the [html_icon(holding)] [holding].</span>")
+		to_chat(user, "<span class='notice'>It is holding \the [icon2html(holding, user)] [holding].</span>")
 
 /mob/living/bot/remotebot/explode()
 	on = 0
@@ -42,10 +42,10 @@
 	qdel(src)
 
 /mob/living/bot/remotebot/attackby(var/obj/item/I, var/mob/living/user)
-	if(istype(I, /obj/item/bot_controller) && !controller)
+	if(istype(I, /obj/item/device/bot_controller) && !controller)
 		user.visible_message("\The [user] waves \the [I] over \the [src].")
 		to_chat(user, "<span class='notice'>You link \the [src] to \the [I].</span>")
-		var/obj/item/bot_controller/B = I
+		var/obj/item/device/bot_controller/B = I
 		B.bot = src
 		controller = B
 	return ..()
@@ -93,19 +93,19 @@
 	else
 		hit(a)
 
-/obj/item/bot_controller
+/obj/item/device/bot_controller
 	name = "remote control"
 	desc = "Used to control something remotely. Even has a tiny screen!"
 	icon_state = "forensic1"
 	w_class = ITEM_SIZE_SMALL
-	slot_flags = SLOT_LOWER_BODY
+	slot_flags = SLOT_BELT
 	item_state = "electronic"
 	var/mob/living/bot/remotebot/bot
 
-/obj/item/bot_controller/attack_self(var/mob/user)
+/obj/item/device/bot_controller/attack_self(var/mob/user)
 	src.interact(user)
 
-/obj/item/bot_controller/interact(var/mob/user)
+/obj/item/device/bot_controller/interact(var/mob/user)
 	user.set_machine(src)
 	if(!(src in user) || !bot)
 		close_browser(user, "window=bot_controller")
@@ -119,10 +119,10 @@
 	show_browser(user, dat, "window=bot_controller")
 	onclose(user, "botcontroller")
 
-/obj/item/bot_controller/check_eye()
+/obj/item/device/bot_controller/check_eye()
 	return 0
 
-/obj/item/bot_controller/Topic(href, href_list)
+/obj/item/device/bot_controller/Topic(href, href_list)
 	..()
 	if(!bot)
 		return
@@ -140,31 +140,31 @@
 	src.interact(usr)
 
 
-/obj/item/bot_controller/dropped(var/mob/living/user)
+/obj/item/device/bot_controller/dropped(var/mob/living/user)
 	if(user.client.eye == bot)
 		user.client.eye = user
 	return ..()
 
 
-/obj/item/bot_controller/afterattack(atom/A, mob/living/user)
+/obj/item/device/bot_controller/afterattack(atom/A, mob/living/user)
 	if(bot)
 		bot.command(A)
 
-/obj/item/bot_controller/Destroy()
+/obj/item/device/bot_controller/Destroy()
 	if(bot)
 		bot.controller = null
 		bot = null
 	return ..()
 
-/obj/item/bot_kit
+/obj/item/device/bot_kit
 	name = "Remote-Bot Kit"
 	desc = "The cover says 'control your own cardboard nuclear powered robot. Comes with real plutonium!"
-	icon = 'icons/obj/items/bot_kit.dmi'
+	icon = 'icons/obj/storage.dmi'
 	icon_state = "remotebot"
 
-/obj/item/bot_kit/attack_self(var/mob/living/user)
+/obj/item/device/bot_kit/attack_self(var/mob/living/user)
 	to_chat(user, "You quickly dismantle the box and retrieve the controller and the remote bot itself.")
 	var/turf/T = get_turf(src.loc)
 	new /mob/living/bot/remotebot(T)
-	new /obj/item/bot_controller(T)
+	new /obj/item/device/bot_controller(T)
 	qdel(src)

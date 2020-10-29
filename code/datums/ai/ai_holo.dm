@@ -11,7 +11,7 @@
 
 
 /decl/ai_holo/proc/may_be_used_by_ai(var/mob/living/silicon/ai/AI)
-	return AI.is_traitor()
+	return !requires_malf || AI.is_malf_or_traitor()
 
 /decl/ai_holo/New()
 	..()
@@ -25,6 +25,9 @@
 
 /decl/ai_holo/carp
 	icon_state = "Carp"
+
+/decl/ai_holo/solgov
+	icon_state = "SolGov"
 
 /decl/ai_holo/info
 	icon_state = "Info"

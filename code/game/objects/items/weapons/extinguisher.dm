@@ -1,7 +1,7 @@
-/obj/item/extinguisher
+/obj/item/weapon/extinguisher
 	name = "fire extinguisher"
 	desc = "A traditional red fire extinguisher."
-	icon = 'icons/obj/items/fire_extinguisher.dmi'
+	icon = 'icons/obj/items.dmi'
 	icon_state = "fire_extinguisher0"
 	item_state = "fire_extinguisher"
 	hitsound = 'sound/weapons/smash.ogg'
@@ -11,7 +11,7 @@
 	throw_speed = 2
 	throw_range = 10
 	force = 10.0
-	material = /decl/material/solid/metal/steel
+	matter = list(MATERIAL_STEEL = 90)
 	attack_verb = list("slammed", "whacked", "bashed", "thunked", "battered", "bludgeoned", "thrashed")
 
 	var/spray_particles = 3
@@ -22,12 +22,12 @@
 	var/safety = 1
 	var/sprite_name = "fire_extinguisher"
 
-/obj/item/extinguisher/mini
+/obj/item/weapon/extinguisher/mini
 	name = "mini fire extinguisher"
 	desc = "A light and compact fibreglass-framed model fire extinguisher."
 	icon_state = "miniFE0"
 	item_state = "miniFE"
-	hitsound = null
+	hitsound = null	//it is much lighter, after all.
 	throwforce = 2
 	w_class = ITEM_SIZE_SMALL
 	force = 3.0
@@ -35,37 +35,33 @@
 	starting_water = 1000
 	max_water = 1000
 	sprite_name = "miniFE"
-	material = /decl/material/solid/plastic
-	matter = list(
-		/decl/material/solid/metal/steel = MATTER_AMOUNT_REINFORCEMENT,
-		/decl/material/solid/glass = MATTER_AMOUNT_TRACE
-	)
+	matter = list(MATERIAL_STEEL = 30, MATERIAL_GLASS = 30)
 
-/obj/item/extinguisher/Initialize()
+/obj/item/weapon/extinguisher/Initialize()
 	. = ..()
 	create_reagents(max_water)
 	if(starting_water > 0)
-		reagents.add_reagent(/decl/material/liquid/water, starting_water)
+		reagents.add_reagent(/datum/reagent/water, starting_water)
 
-/obj/item/extinguisher/empty
+/obj/item/weapon/extinguisher/empty
 	starting_water = 0
 
-/obj/item/extinguisher/mini/empty
+/obj/item/weapon/extinguisher/mini/empty
 	starting_water = 0
 
-/obj/item/extinguisher/examine(mob/user, distance)
+/obj/item/weapon/extinguisher/examine(mob/user, distance)
 	. = ..()
 	if(distance <= 0)
-		to_chat(user, "[html_icon(src)] [name] contains [reagents.total_volume] units of water!")
+		to_chat(user, text("[icon2html(src, viewers(get_turf(src)))] [] contains [] units of water left!", src, src.reagents.total_volume))
 
-/obj/item/extinguisher/attack_self(mob/user)
+/obj/item/weapon/extinguisher/attack_self(mob/user as mob)
 	safety = !safety
 	src.icon_state = "[sprite_name][!safety]"
 	src.desc = "The safety is [safety ? "on" : "off"]."
 	to_chat(user, "The safety is [safety ? "on" : "off"].")
 	return
 
-/obj/item/extinguisher/attack(var/mob/living/M, var/mob/user)
+/obj/item/weapon/extinguisher/attack(var/mob/living/M, var/mob/user)
 	if(user.a_intent == I_HELP)
 		if(src.safety || (world.time < src.last_use + 20)) // We still catch help intent to not randomly attack people
 			return
@@ -82,7 +78,7 @@
 		return 1 // No afterattack
 	return ..()
 
-/obj/item/extinguisher/proc/propel_object(var/obj/O, mob/user, movementdirection)
+/obj/item/weapon/extinguisher/proc/propel_object(var/obj/O, mob/user, movementdirection)
 	if(O.anchored) return
 
 	var/obj/structure/bed/chair/C
@@ -100,18 +96,18 @@
 		O.Move(get_step(user,movementdirection), movementdirection)
 		sleep(3)
 
-/obj/item/extinguisher/resolve_attackby(var/atom/target, var/mob/user, var/flag)
-	if (istype(target, /obj/structure/hygiene/sink) && REAGENTS_FREE_SPACE(target.reagents) > 0) // fill first, wash if full
+/obj/item/weapon/extinguisher/resolve_attackby(var/atom/target, var/mob/user, var/flag)
+	if (istype(target, /obj/structure/hygiene/sink) && reagents.get_free_space() > 0) // fill first, wash if full
 		return FALSE
 	return ..()
 
 
-/obj/item/extinguisher/afterattack(var/atom/target, var/mob/user, var/flag)
+/obj/item/weapon/extinguisher/afterattack(var/atom/target, var/mob/user, var/flag)
 	var/issink = istype(target, /obj/structure/hygiene/sink)
 
 	if (flag && (issink || istype(target, /obj/structure/reagent_dispensers)))
 		var/obj/dispenser = target
-		var/amount = REAGENTS_FREE_SPACE(target.reagents)
+		var/amount = reagents.get_free_space()
 		if (amount <= 0)
 			to_chat(user, SPAN_NOTICE("\The [src] is full."))
 			return
@@ -121,7 +117,7 @@
 				return
 			amount = dispenser.reagents.trans_to_obj(src, max_water)
 		else
-			reagents.add_reagent(/decl/material/liquid/water, amount)
+			reagents.add_reagent(/datum/reagent/water, amount)
 		to_chat(user, SPAN_NOTICE("You fill \the [src] with [amount] units from \the [dispenser]."))
 		playsound(src.loc, 'sound/effects/refill.ogg', 50, 1, -6)
 		if (istype(target, /obj/structure/reagent_dispensers/acid))
@@ -143,20 +139,21 @@
 
 		playsound(src.loc, 'sound/effects/extinguish.ogg', 75, 1, -3)
 
-		var/direction = get_dir(target,src)
+		var/direction = get_dir(src,target)
 
 		if(user.buckled && isobj(user.buckled))
-			addtimer(CALLBACK(src, .proc/propel_object, user.buckled, user, direction), 0)
+			addtimer(CALLBACK(src, .proc/propel_object, user.buckled, user, turn(direction,180)), 0)
 
 		addtimer(CALLBACK(src, .proc/do_spray, target), 0)
 
-		if(!user.check_space_footing())
-			step(user, direction)
+		if((istype(usr.loc, /turf/space)) || (usr.lastarea.has_gravity == 0))
+			user.inertia_dir = get_dir(target, user)
+			step(user, user.inertia_dir)
 	else
 		return ..()
 	return
 
-/obj/item/extinguisher/proc/do_spray(var/atom/Target)
+/obj/item/weapon/extinguisher/proc/do_spray(var/atom/Target)
 	var/turf/T = get_turf(Target)
 	var/per_particle = min(spray_amount, reagents.total_volume)/spray_particles
 	for(var/a = 1 to spray_particles)

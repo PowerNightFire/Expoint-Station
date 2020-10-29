@@ -24,9 +24,9 @@
 	build_icon_state = "scrubber"
 
 	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc/buildable,
-		/obj/item/stock_parts/radio/receiver/buildable,
-		/obj/item/stock_parts/radio/transmitter/on_event/buildable,
+		/obj/item/weapon/stock_parts/power/apc,
+		/obj/item/weapon/stock_parts/radio/receiver,
+		/obj/item/weapon/stock_parts/radio/transmitter/on_event,
 	)
 	public_variables = list(
 		/decl/public_access/public_variable/input_toggle,
@@ -50,11 +50,8 @@
 	)
 
 	frame_type = /obj/item/pipe
-	construct_state = /decl/machine_construction/default/panel_closed/item_chassis
-	base_type = /obj/machinery/atmospherics/unary/vent_scrubber/buildable
-
-/obj/machinery/atmospherics/unary/vent_scrubber/buildable
-	uncreated_component_parts = null
+	construct_state = /decl/machine_construction/default/item_chassis
+	base_type = /obj/machinery/atmospherics/unary/vent_scrubber
 
 /obj/machinery/atmospherics/unary/vent_scrubber/on
 	use_power = POWER_USE_IDLE
@@ -64,14 +61,6 @@
 	. = ..()
 	air_contents.volume = ATMOS_DEFAULT_VOLUME_FILTER
 	icon = null
-
-/obj/machinery/atmospherics/unary/vent_scrubber/Destroy()
-	var/area/A = get_area(src)
-	if(A)
-		GLOB.name_set_event.unregister(A, src, .proc/change_area_name)
-		A.air_scrub_info -= id_tag
-		A.air_scrub_names -= id_tag
-	. = ..()
 
 /obj/machinery/atmospherics/unary/vent_scrubber/on_update_icon(var/safety = 0)
 	if(!check_icon_cache())
@@ -111,26 +100,18 @@
 
 /obj/machinery/atmospherics/unary/vent_scrubber/Initialize()
 	if (!id_tag)
-		id_tag = "[sequential_id("obj/machinery")]"
+		id_tag = num2text(sequential_id("obj/machinery"))
 	if(!scrubbing_gas)
 		scrubbing_gas = list()
-		for(var/g in subtypesof(/decl/material/gas))
-			if(g != /decl/material/gas/oxygen && g != /decl/material/gas/nitrogen)
+		for(var/g in gas_data.gases)
+			if(g != GAS_OXYGEN && g != GAS_NITROGEN)
 				scrubbing_gas += g
 	var/area/A = get_area(src)
 	if(A && !A.air_scrub_names[id_tag])
 		var/new_name = "[A.name] Vent Scrubber #[A.air_scrub_names.len+1]"
 		A.air_scrub_names[id_tag] = new_name
 		SetName(new_name)
-		GLOB.name_set_event.register(A, src, .proc/change_area_name)
 	. = ..()
-
-/obj/machinery/atmospherics/unary/vent_scrubber/proc/change_area_name(var/area/A, var/old_area_name, var/new_area_name)
-	if(get_area(src) != A)
-		return
-	var/new_name = replacetext(A.air_scrub_names[id_tag], old_area_name, new_area_name)
-	SetName(new_name)
-	A.air_scrub_names[id_tag] = new_name
 
 /obj/machinery/atmospherics/unary/vent_scrubber/RefreshParts()
 	. = ..()
@@ -173,7 +154,7 @@
 		last_power_draw = power_draw
 		use_power_oneoff(power_draw)
 
-	if(network && (transfer_moles > 0))
+	if(network)
 		network.update = 1
 
 	return 1
@@ -204,10 +185,10 @@
 			return SPAN_WARNING("You cannot take this [src] apart, it too exerted due to internal pressure.")
 	return ..()
 
-/obj/machinery/atmospherics/unary/vent_scrubber/attackby(var/obj/item/W, var/mob/user)
-	if(istype(W, /obj/item/weldingtool))
+/obj/machinery/atmospherics/unary/vent_scrubber/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
+	if(istype(W, /obj/item/weapon/weldingtool))
 
-		var/obj/item/weldingtool/WT = W
+		var/obj/item/weapon/weldingtool/WT = W
 
 		if(!WT.isOn())
 			to_chat(user, "<span class='notice'>The welding tool needs to be on to start this task.</span>")
@@ -257,7 +238,7 @@
 
 /obj/machinery/atmospherics/unary/vent_scrubber/on/sauna/Initialize()
 	. = ..()
-	scrubbing_gas -= /decl/material/liquid/water
+	scrubbing_gas -= GAS_STEAM
 
 /decl/public_access/public_variable/scrubbing
 	expected_type = /obj/machinery/atmospherics/unary/vent_scrubber

@@ -1,14 +1,11 @@
 #define MAX_CIRCUIT_CLONE_TIME 3 MINUTES //circuit slow-clones can only take up this amount of time to complete
 
-/obj/item/integrated_circuit_printer
+/obj/item/device/integrated_circuit_printer
 	name = "integrated circuit printer"
 	desc = "A portable(ish) machine made to print tiny modular circuitry out of metal."
 	icon = 'icons/obj/assemblies/electronic_tools.dmi'
 	icon_state = "circuit_printer"
 	w_class = ITEM_SIZE_LARGE
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
-
 	var/upgraded = FALSE		// When hit with an upgrade disk, will turn true, allowing it to print the higher tier circuits.
 	var/can_clone = TRUE		// Allows the printer to clone circuits, either instantly or over time depending on upgrade. Set to FALSE to disable entirely.
 	var/fast_clone = FALSE		// If this is false, then cloning will take an amount of deciseconds equal to the metal cost divided by 100.
@@ -17,18 +14,18 @@
 	var/cloning = FALSE			// If the printer is currently creating a circuit
 	var/recycling = FALSE		// If an assembly is being emptied into this printer
 	var/list/program			// Currently loaded save, in form of list
-	var/materials = list(/decl/material/solid/metal/steel = 0)
+	var/materials = list(MATERIAL_STEEL = 0)
 	var/metal_max = 25 * SHEET_MATERIAL_AMOUNT
 
-/obj/item/integrated_circuit_printer/proc/check_interactivity(mob/user)
+/obj/item/device/integrated_circuit_printer/proc/check_interactivity(mob/user)
 	return CanUseTopic(user)
 
-/obj/item/integrated_circuit_printer/upgraded
+/obj/item/device/integrated_circuit_printer/upgraded
 	upgraded = TRUE
 	can_clone = TRUE
 	fast_clone = TRUE
 
-/obj/item/integrated_circuit_printer/debug //translation: "integrated_circuit_printer/local_server"
+/obj/item/device/integrated_circuit_printer/debug //translation: "integrated_circuit_printer/local_server"
 	name = "debug circuit printer"
 	debug = TRUE
 	upgraded = TRUE
@@ -36,24 +33,24 @@
 	fast_clone = TRUE
 	w_class = ITEM_SIZE_TINY
 
-/obj/item/integrated_circuit_printer/proc/print_program(mob/user)
+/obj/item/device/integrated_circuit_printer/proc/print_program(mob/user)
 	if(!cloning)
 		return
 
 	visible_message("<span class='notice'>[src] has finished printing its assembly!</span>")
 	playsound(src, 'sound/items/poster_being_created.ogg', 50, TRUE)
-	var/obj/item/electronic_assembly/assembly = SScircuit.load_electronic_assembly(get_turf(src), program)
+	var/obj/item/device/electronic_assembly/assembly = SScircuit.load_electronic_assembly(get_turf(src), program)
 	assembly.creator = key_name(user)
 	cloning = FALSE
 
-/obj/item/integrated_circuit_printer/proc/recycle(obj/item/O, mob/user, obj/item/electronic_assembly/assembly)
+/obj/item/device/integrated_circuit_printer/proc/recycle(obj/item/O, mob/user, obj/item/device/electronic_assembly/assembly)
 	if(!O.canremove) //in case we have an augment circuit
 		return
 	for(var/material in O.matter)
 		if(materials[material] + O.matter[material] > metal_max)
-			var/decl/material/material_datum = decls_repository.get_decl(material)
+			var/material/material_datum = SSmaterials.get_material_by_name(material)
 			if(material_datum)
-				to_chat(user, "<span class='notice'>[src] can't hold any more [material_datum.name]!</span>")
+				to_chat(user, "<span class='notice'>[src] can't hold any more [material_datum.display_name]!</span>")
 			return
 	for(var/material in O.matter)
 		materials[material] += O.matter[material]
@@ -64,15 +61,15 @@
 	qdel(O)
 	return TRUE
 
-/obj/item/integrated_circuit_printer/attackby(obj/item/O, mob/user)
+/obj/item/device/integrated_circuit_printer/attackby(obj/item/O, mob/user)
 	if(istype(O, /obj/item/stack/material))
 		var/obj/item/stack/material/M = O
 		var/amt = M.amount
-		if(amt * SHEET_MATERIAL_AMOUNT + materials[M.material.type] > metal_max)
-			amt = -round(-(metal_max - materials[M.material.type]) / SHEET_MATERIAL_AMOUNT) //round up
+		if(amt * SHEET_MATERIAL_AMOUNT + materials[M.material.name] > metal_max)
+			amt = -round(-(metal_max - materials[M.material.name]) / SHEET_MATERIAL_AMOUNT) //round up
 		if(M.use(amt))
-			materials[M.material.type] = min(metal_max, materials[M.material.type] + amt * SHEET_MATERIAL_AMOUNT)
-			to_chat(user, "<span class='warning'>You insert [M.material.solid_name] into \the [src].</span>")
+			materials[M.material.name] = min(metal_max, materials[M.material.name] + amt * SHEET_MATERIAL_AMOUNT)
+			to_chat(user, "<span class='warning'>You insert [M.material.display_name] into \the [src].</span>")
 			if(user)
 				attack_self(user) // We're really bad at refreshing the UI, so this is the best we've got.
 	if(istype(O, /obj/item/disk/integrated_circuit/upgrade/advanced))
@@ -95,8 +92,8 @@
 			attack_self(user)
 		return TRUE
 
-	if(istype(O, /obj/item/electronic_assembly))
-		var/obj/item/electronic_assembly/EA = O //microtransactions not included
+	if(istype(O, /obj/item/device/electronic_assembly))
+		var/obj/item/device/electronic_assembly/EA = O //microtransactions not included
 		if(EA.battery)
 			to_chat(user, "<span class='warning'>Remove [EA]'s power cell first!</span>")
 			return
@@ -130,10 +127,10 @@
 
 	return ..()
 
-/obj/item/integrated_circuit_printer/attack_self(mob/user)
+/obj/item/device/integrated_circuit_printer/attack_self(mob/user)
 	interact(user)
 
-/obj/item/integrated_circuit_printer/interact(mob/user)
+/obj/item/device/integrated_circuit_printer/interact(mob/user)
 	if(!(in_range(src, user) || issilicon(user)))
 		return
 
@@ -141,7 +138,7 @@
 		current_category = SScircuit.circuit_fabricator_recipe_list[1]
 
 	//Preparing the browser
-	var/datum/browser/written/popup = new(user, "printernew", "Integrated Circuit Printer", 800, 630) // Set up the popup browser window
+	var/datum/browser/popup = new(user, "printernew", "Integrated Circuit Printer", 800, 630) // Set up the popup browser window
 
 	var/list/HTML = list()
 	HTML += "<center><h2>Integrated Circuit Printer</h2></center><br>"
@@ -151,8 +148,8 @@
 		HTML += "Materials: "
 		var/list/dat = list()
 		for(var/material in materials)
-			var/decl/material/material_datum = decls_repository.get_decl(material)
-			dat += "[materials[material]]/[metal_max] [material_datum.name]"
+			var/material/material_datum = SSmaterials.get_material_by_name(material)
+			dat += "[materials[material]]/[metal_max] [material_datum.display_name]"
 		HTML += jointext(dat, "; ")
 		HTML += ".<br><br>"
 
@@ -203,7 +200,7 @@
 	popup.set_content(JOINTEXT(HTML))
 	popup.open()
 
-/obj/item/integrated_circuit_printer/Topic(href, href_list)
+/obj/item/device/integrated_circuit_printer/Topic(href, href_list)
 	if(!check_interactivity(usr))
 		return
 	if(..())
@@ -219,8 +216,8 @@
 			return TRUE
 
 		var/list/cost
-		if(ispath(build_type, /obj/item/electronic_assembly))
-			var/obj/item/electronic_assembly/E = SScircuit.cached_assemblies[build_type]
+		if(ispath(build_type, /obj/item/device/electronic_assembly))
+			var/obj/item/device/electronic_assembly/E = SScircuit.cached_assemblies[build_type]
 			cost = E.matter
 		else if(ispath(build_type, /obj/item/integrated_circuit))
 			var/obj/item/integrated_circuit/IC = SScircuit.cached_components[build_type]
@@ -234,8 +231,8 @@
 		var/obj/item/built = new build_type(get_turf(src))
 		usr.put_in_hands(built)
 
-		if(istype(built, /obj/item/electronic_assembly))
-			var/obj/item/electronic_assembly/E = built
+		if(istype(built, /obj/item/device/electronic_assembly))
+			var/obj/item/device/electronic_assembly/E = built
 			E.creator = key_name(usr)
 			E.opened = TRUE
 			E.update_icon()
@@ -322,11 +319,11 @@
 
 	interact(usr)
 
-/obj/item/integrated_circuit_printer/proc/subtract_material_costs(var/list/cost, var/mob/user)
+/obj/item/device/integrated_circuit_printer/proc/subtract_material_costs(var/list/cost, var/mob/user)
 	for(var/material in cost)
 		if(materials[material] < cost[material])
-			var/decl/material/material_datum = decls_repository.get_decl(material)
-			to_chat(user, "<span class='warning'>You need [cost[material]] [material_datum.name] to build that!</span>")
+			var/material/material_datum = SSmaterials.get_material_by_name(material)
+			to_chat(user, "<span class='warning'>You need [cost[material]] [material_datum.display_name] to build that!</span>")
 			return FALSE
 	for(var/material in cost) //Iterate twice to make sure it's going to work before deducting
 		materials[material] -= cost[material]
@@ -344,12 +341,8 @@
 /obj/item/disk/integrated_circuit/upgrade/advanced
 	name = "integrated circuit printer upgrade disk - advanced designs"
 	desc = "Install this into your integrated circuit printer to enhance it.  This one adds new, advanced designs to the printer."
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
 
 /obj/item/disk/integrated_circuit/upgrade/clone
 	name = "integrated circuit printer upgrade disk - instant cloner"
 	desc = "Install this into your integrated circuit printer to enhance it.  This one allows the printer to duplicate assemblies instantaneously."
 	icon_state = "upgrade_disk_clone"
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)

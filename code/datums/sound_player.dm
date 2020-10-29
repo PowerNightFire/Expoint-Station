@@ -23,11 +23,11 @@ GLOBAL_DATUM_INIT(sound_player, /decl/sound_player, new)
 
 
 //This can be called if either we're doing whole sound setup ourselves or it will be as part of from-file sound setup
-/decl/sound_player/proc/PlaySoundDatum(var/atom/source, var/sound_id, var/sound/sound, var/range, var/prefer_mute, var/datum/client_preference/preference, var/streaming)
+/decl/sound_player/proc/PlaySoundDatum(var/atom/source, var/sound_id, var/sound/sound, var/range, var/prefer_mute)
 	var/token_type = isnum(sound.environment) ? /datum/sound_token : /datum/sound_token/static_environment
-	return new token_type(source, sound_id, sound, range, prefer_mute, preference, streaming)
+	return new token_type(source, sound_id, sound, range, prefer_mute)
 
-/decl/sound_player/proc/PlayLoopingSound(var/atom/source, var/sound_id, var/sound, var/volume, var/range, var/falloff = 1, var/echo, var/frequency, var/prefer_mute, var/datum/client_preference/preference, var/streaming)
+/decl/sound_player/proc/PlayLoopingSound(var/atom/source, var/sound_id, var/sound, var/volume, var/range, var/falloff = 1, var/echo, var/frequency, var/prefer_mute)
 	var/sound/S = istype(sound, /sound) ? sound : new(sound)
 	S.environment = 0 // Ensures a 3D effect even if x/y offset happens to be 0 the first time it's played
 	S.volume  = volume
@@ -36,7 +36,7 @@ GLOBAL_DATUM_INIT(sound_player, /decl/sound_player, new)
 	S.frequency = frequency
 	S.repeat = TRUE
 
-	return PlaySoundDatum(source, sound_id, S, range, prefer_mute, preference, streaming)
+	return PlaySoundDatum(source, sound_id, S, range, prefer_mute)
 
 /decl/sound_player/proc/PrivStopSound(var/datum/sound_token/sound_token)
 	var/channel = sound_token.sound.channel
@@ -82,15 +82,12 @@ GLOBAL_DATUM_INIT(sound_player, /decl/sound_player, new)
 	var/sound_id       // The associated sound id, used for cleanup
 	var/status = 0     // Paused, muted, running? Global for all listeners
 	var/listener_status// Paused, muted, running? Specific for the given listener.
-	var/base_volume    // Volume of sound before environment effects
 	var/const/SOUND_STOPPED = 0x8000
 
 	var/datum/proximity_trigger/square/proxy_listener
 	var/list/can_be_heard_from
 
-	var/datum/client_preference/preference
-
-/datum/sound_token/New(var/atom/source, var/sound_id, var/sound/sound, var/range = 4, var/prefer_mute = FALSE, var/datum/client_preference/preference, var/streaming)
+/datum/sound_token/New(var/atom/source, var/sound_id, var/sound/sound, var/range = 4, var/prefer_mute = FALSE)
 	..()
 	if(!istype(source))
 		CRASH("Invalid sound source: [log_info_line(source)]")
@@ -106,11 +103,6 @@ GLOBAL_DATUM_INIT(sound_player, /decl/sound_player, new)
 	src.source      = source
 	src.sound       = sound
 	src.sound_id    = sound_id
-	src.preference  = preference
-	base_volume = sound.volume
-
-	if(streaming)
-		src.status |= SOUND_STREAM
 
 	if(sound.repeat) // Non-looping sounds may not reserve a sound channel due to the risk of not hearing when someone forgets to stop the token
 		var/channel = GLOB.sound_player.PrivGetChannel(src) //Attempt to find a channel
@@ -133,14 +125,14 @@ GLOBAL_DATUM_INIT(sound_player, /decl/sound_player, new)
 	Stop()
 	. = ..()
 
-/datum/sound_token/proc/SetVolume(var/new_volume)
+datum/sound_token/proc/SetVolume(var/new_volume)
 	new_volume = Clamp(new_volume, 0, 100)
-	if(base_volume == new_volume)
+	if(sound.volume == new_volume)
 		return
-	base_volume = new_volume
+	sound.volume = new_volume
 	PrivUpdateListeners()
 
-/datum/sound_token/proc/Mute()
+datum/sound_token/proc/Mute()
 	PrivUpdateStatus(status|SOUND_MUTE)
 
 /datum/sound_token/proc/Unmute()
@@ -197,10 +189,7 @@ GLOBAL_DATUM_INIT(sound_player, /decl/sound_player, new)
 	status = new_status
 	PrivUpdateListeners()
 
-/datum/sound_token/proc/PrivAddListener(var/atom/listener)
-	if(!check_preference(listener))
-		return
-
+datum/sound_token/proc/PrivAddListener(var/atom/listener)
 	if(isvirtualmob(listener))
 		var/mob/observer/virtual/v = listener
 		if(!(v.abilities & VIRTUAL_ABILITY_HEAR))
@@ -237,7 +226,6 @@ GLOBAL_DATUM_INIT(sound_player, /decl/sound_player, new)
 	else if(prefer_mute)
 		listener_status[listener] &= ~SOUND_MUTE
 
-	sound.volume = adjust_volume_for_hearer(base_volume, source_turf, listener)
 	sound.x = source_turf.x - listener_turf.x
 	sound.z = source_turf.y - listener_turf.y
 	sound.y = 1
@@ -251,11 +239,6 @@ GLOBAL_DATUM_INIT(sound_player, /decl/sound_player, new)
 		PrivUpdateListener(listener)
 
 /datum/sound_token/proc/PrivUpdateListener(var/listener, var/update_sound = TRUE)
-	if(!check_preference(listener))
-		PrivRemoveListener(listener)
-		return
-
-	sound.volume = adjust_volume_for_hearer(base_volume, get_turf(source), listener)
 	sound.environment = PrivGetEnvironment(listener)
 	sound.status = status|listener_status[listener]
 	if(update_sound)
@@ -273,21 +256,12 @@ GLOBAL_DATUM_INIT(sound_player, /decl/sound_player, new)
 		return FALSE
 	return TRUE
 
-// Checking if client want to hear it
-/datum/sound_token/proc/check_preference(atom/listener)
-	if(preference)
-		var/mob/M = listener
-		if(istype(M))
-			if((M.get_preference_value(preference) != GLOB.PREF_YES))
-				return FALSE
-	return TRUE
-
 /datum/sound_token/static_environment/PrivGetEnvironment()
 	return sound.environment
 
 /obj/sound_test
 	var/sound = 'sound/misc/TestLoop1.ogg'
 
-/obj/sound_test/Initialize()
-	. = ..()
+/obj/sound_test/New()
+	..()
 	GLOB.sound_player.PlayLoopingSound(src, /obj/sound_test, sound, 50, 3)
