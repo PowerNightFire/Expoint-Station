@@ -1,27 +1,35 @@
 #include "scavver_gantry_shuttles.dm"
 #include "scavver_gantry_jobs.dm"
+#include "scavver_gantry_radio.dm"
 
 /datum/map_template/ruin/away_site/scavver_gantry
-	name = "Salvage Gantry"
+	name =  "\improper Salvage Gantry"
 	id = "awaysite_gantry"
-	description = "Salvage Gantry turned Ship."
+	description = "Salvage Gantry turned Ship"
 	suffixes = list("scavver/scavver_gantry-1.dmm","scavver/scavver_gantry-2.dmm")
 	cost = 1
 	accessibility_weight = 10
 	shuttles_to_initialise = list(
 		/datum/shuttle/autodock/overmap/scavver_gantry,
 		/datum/shuttle/autodock/overmap/scavver_gantry/two,
+		/datum/shuttle/autodock/overmap/scavver_gantry/three,
 		/datum/shuttle/autodock/ferry/gantry
 	)
-	ban_ruins = list(
-		list(/datum/map_template/ruin/away_site/bearcat_wreck,
-		/datum/map_template/ruin/exoplanet/playablecolony,
-		/datum/map_template/ruin/exoplanet/playablecolony2)
-	)
 	area_usage_test_exempted_root_areas = list(/area/scavver)
+	apc_test_exempt_areas = list(
+		/area/scavver/yachtdown = NO_SCRUBBER|NO_VENT,
+		/area/scavver/yachtup = NO_SCRUBBER|NO_VENT,
+		/area/scavver/gantry/down1 = NO_SCRUBBER|NO_VENT,
+		/area/scavver/gantry/down2= NO_SCRUBBER|NO_VENT,
+		/area/scavver/gantry/up1 = NO_SCRUBBER|NO_VENT,
+		/area/scavver/gantry/up2 = NO_SCRUBBER|NO_VENT,
+		/area/scavver/gantry/lift = NO_SCRUBBER|NO_VENT|NO_APC,
+		/area/scavver/harvestpod = NO_SCRUBBER|NO_VENT
+	)
+	spawn_weight = 0.67
 
 /obj/effect/submap_landmark/joinable_submap/scavver_gantry
-	name = "Salvage Gantry"
+	name =  "Salvage Gantry"
 	archetype = /decl/submap_archetype/derelict/scavver_gantry
 
 /decl/submap_archetype/derelict/scavver_gantry
@@ -38,8 +46,7 @@
 	desc = "Sensor array detects a medium-sized vessel of irregular shape. Vessel origin is unidentifiable."
 	vessel_mass = 1200
 	fore_dir = NORTH
-	max_speed = 1/(10 SECONDS)
-	burn_delay = 10 SECONDS
+	burn_delay = 2 SECONDS
 	hide_from_reports = TRUE
 	known = 0
 	initial_generic_waypoints = list(
@@ -51,7 +58,12 @@
 	)
 	initial_restricted_waypoints = list(
 		"ITV The Reclaimer" = list("nav_hangar_gantry_one"),
-		"ITV Vulcan" = list("nav_hangar_gantry_two")
+		"ITV Vulcan" = list("nav_hangar_gantry_two"),
+		"ITV Spiritus" = list("nav_hangar_gantry_three", "nav_hangar_gantry_four", "nav_hangar_gantry_five", "nav_hangar_gantry_six"),
+		"Charon" = list("nav_gantry_charon"),
+		"Guppy" = list("nav_gantry_gup"),
+		"Aquila" = list("nav_gantry_aquila"),
+		"Desperado" = list("nav_gantry_desperado")
 	)
 
 /obj/item/mech_component/sensors/light/salvage/prebuild()
@@ -83,7 +95,7 @@
 	install_system(new /obj/item/mech_equipment/clamp(src), HARDPOINT_RIGHT_HAND)
 	install_system(new /obj/item/mech_equipment/mounted_system/taser/plasma(src), HARDPOINT_LEFT_HAND)
 
-/area/scavver/
+/area/scavver
 	icon = 'maps/away/scavver/scavver_gantry_sprites.dmi'
 
 /area/scavver/gantry/up1
@@ -115,6 +127,10 @@
 	name = "\improper Private Yacht Lower Deck"
 	icon_state = "gantry_yacht_down"
 
+/area/scavver/yachtdown/thrusters
+	name = "\improper Private Yacht Lower Deck Thrusters"
+	icon_state = "gantry_yacht_up"
+
 /area/scavver/hab
 	name = "\improper Habitation Module"
 	icon_state = "gantry_hab"
@@ -135,6 +151,12 @@
 	icon_state = "gantry_pod"
 	area_flags = AREA_FLAG_RAD_SHIELDED
 
+/area/scavver/harvestpod
+	name = "\improper ITV Spiritus"
+	icon_state = "gantry_yacht_down"
+	area_flags = AREA_FLAG_RAD_SHIELDED
+
+
 //smes
 /obj/machinery/power/smes/buildable/preset/scavver/smes
 	uncreated_component_parts = list(/obj/item/weapon/stock_parts/smes_coil = 1)
@@ -143,3 +165,31 @@
 	_input_on = TRUE
 	_output_on = TRUE
 
+/obj/machinery/suit_storage_unit/engineering/salvage/gantry
+	name = "Salvage Engineering Voidsuit Storage Unit"
+	suit= /obj/item/clothing/suit/space/void/engineering/salvage
+	helmet = /obj/item/clothing/head/helmet/space/void/engineering/salvage/engi
+	mask = /obj/item/clothing/mask/breath
+	req_access = list()
+
+/obj/machinery/suit_storage_unit/engineering/salvage/gantry/med
+	name = "Salvage Medical Voidsuit Storage Unit"
+	suit= /obj/item/clothing/suit/space/void/engineering/salvage
+	helmet = /obj/item/clothing/head/helmet/space/void/engineering/salvage/med
+	mask = /obj/item/clothing/mask/breath
+
+/obj/machinery/suit_storage_unit/engineering/salvage/gantry/pilot
+	name = "Salvage Pilot Voidsuit Storage Unit"
+	suit= /obj/item/clothing/suit/space/void/engineering/salvage
+	helmet = /obj/item/clothing/head/helmet/space/void/engineering/salvage/pilot
+	mask = /obj/item/clothing/mask/breath
+
+/obj/structure/closet/secure_closet/freezer/fridge/scavver
+	req_access = list()
+
+/obj/structure/closet/secure_closet/freezer/fridge/scavver/WillContain()
+	return list(
+		/obj/item/weapon/reagent_containers/food/drinks/milk = 6,
+		/obj/item/weapon/reagent_containers/food/drinks/soymilk = 4,
+		/obj/item/weapon/storage/fancy/egg_box = 4
+	)

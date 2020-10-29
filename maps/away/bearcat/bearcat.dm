@@ -1,6 +1,7 @@
 #include "bearcat_areas.dm"
 #include "bearcat_jobs.dm"
 #include "bearcat_access.dm"
+#include "bearcat_radio.dm"
 
 /obj/effect/submap_landmark/joinable_submap/bearcat
 	name = "FTV Bearcat"
@@ -50,6 +51,7 @@
 		/area/ship/scrap/shuttle/lift = NO_SCRUBBER|NO_VENT|NO_APC,
 		/area/ship/scrap/command/hallway = NO_SCRUBBER|NO_VENT
 	)
+	spawn_weight = 0.67
 
 /datum/shuttle/autodock/ferry/lift
 	name = "Cargo Lift"
@@ -85,9 +87,6 @@
 
 /obj/machinery/power/apc/derelict
 	cell_type = /obj/item/weapon/cell/crap/empty
-	lighting = 0
-	equipment = 0
-	environ = 0
 	locked = 0
 	coverlocked = 0
 
@@ -96,18 +95,6 @@
 
 /obj/machinery/door/airlock/autoname/engineering
 	door_color = COLOR_AMBER
-
-/turf/simulated/floor/usedup
-	initial_gas = list(GAS_CO2 = MOLES_O2STANDARD, GAS_NITROGEN = MOLES_N2STANDARD)
-
-/turf/simulated/floor/tiled/usedup
-	initial_gas = list(GAS_CO2 = MOLES_O2STANDARD, GAS_NITROGEN = MOLES_N2STANDARD)
-
-/turf/simulated/floor/tiled/dark/usedup
-	initial_gas = list(GAS_CO2 = MOLES_O2STANDARD, GAS_NITROGEN = MOLES_N2STANDARD)
-
-/turf/simulated/floor/tiled/white/usedup
-	initial_gas = list(GAS_CO2 = MOLES_O2STANDARD, GAS_NITROGEN = MOLES_N2STANDARD)
 
 /obj/effect/landmark/deadcap
 	name = "Dead Captain"
@@ -133,7 +120,7 @@
 	uniform = /obj/item/clothing/under/casual_pants/classicjeans
 	suit = /obj/item/clothing/suit/storage/hooded/wintercoat
 	shoes = /obj/item/clothing/shoes/black
-	r_pocket = /obj/item/device/radio
+	r_pocket = /obj/item/device/radio/map_preset/bearcat
 
 /decl/hierarchy/outfit/deadcap/post_equip(mob/living/carbon/human/H)
 	..()

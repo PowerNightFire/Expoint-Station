@@ -1,3 +1,5 @@
+#include "playablecolony_radio.dm"
+
 /datum/map_template/ruin/exoplanet/playablecolony
 	name = "established colony"
 	id = "playablecolony"
@@ -10,6 +12,7 @@
 	apc_test_exempt_areas = list(
 		/area/map_template/colony/mineralprocessing = NO_SCRUBBER|NO_VENT
 	)
+	spawn_weight = 0.33
 
 /decl/submap_archetype/playablecolony
 	descriptor = "established colony"
@@ -23,8 +26,9 @@
 
 /decl/hierarchy/outfit/job/colonist
 	name = OUTFIT_JOB_NAME("Colonist")
-	id_type = null
+	id_types = null
 	pda_type = null
+	l_ear = /obj/item/device/radio/headset/map_preset/playablecolony
 
 /obj/effect/submap_landmark/spawnpoint/colonist_spawn
 	name = "Colonist"

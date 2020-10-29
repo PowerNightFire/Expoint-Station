@@ -5444,6 +5444,7 @@
 "Bc" = (
 /obj/structure/table/standard,
 /obj/machinery/reagentgrinder/juicer,
+/obj/item/weapon/reagent_containers/glass/beaker/large,
 /obj/effect/floor_decal/corner/red/diagonal,
 /obj/structure/sign/monkey_painting{
 	pixel_y = 32
@@ -5475,7 +5476,7 @@
 /obj/item/device/multitool{
 	pixel_x = 5
 	},
-/obj/item/device/pipe_painter,
+/obj/item/device/paint_sprayer,
 /obj/item/clamp,
 /turf/simulated/floor/tiled/techfloor,
 /area/ship/scrap/maintenance/atmos)
