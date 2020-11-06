@@ -3,6 +3,7 @@
 	name = "turbolift map placeholder"
 	icon = 'icons/obj/turbolift_preview_3x3.dmi'
 	dir = SOUTH         // Direction of the holder determines the placement of the lift control panel and doors.
+	var/clear_objects = 1
 	var/depth = 1       // Number of floors to generate, including the initial floor.
 	var/lift_size_x = 2 // Number of turfs on each axis to generate in addition to the first
 	var/lift_size_y = 2 // ie. a 3x3 lift would have a value of 2 in each of these variables.
@@ -11,20 +12,12 @@
 	var/wall_type =  /turf/simulated/wall/elevator
 	var/floor_type = /turf/simulated/floor/tiled/dark
 	var/door_type =  /obj/machinery/door/airlock/lift
-	var/firedoor_type = /obj/machinery/door/firedoor
 
 	var/list/areas_to_use = list()
 
-/obj/turbolift_map_holder/Destroy()
-	turbolifts -= src
-	return ..()
-
-/obj/turbolift_map_holder/New()
-	turbolifts += src
+/obj/turbolift_map_holder/Initialize()
 	..()
 
-/obj/turbolift_map_holder/Initialize()
-	. = ..()
 	// Create our system controller.
 	var/datum/turbolift/lift = new()
 
@@ -126,7 +119,11 @@
 			light_y2 = uy + lift_size_y - 1
 
 	// Generate each floor and store it in the controller datum.
-	for(var/cz = uz;cz<=ez;cz++)
+	if(uz != 1)
+		for(var/i = 1, i < uz, i++)
+			lift.floors += null // This silly hack allows lifts to not start on the first zlevel
+
+	for(var/cz = uz to ez)
 
 		var/datum/turbolift_floor/cfloor = new()
 		lift.floors += cfloor
@@ -157,18 +154,14 @@
 					checking = locate(tx,ty,cz)
 
 				// Clear out contents.
-				for(var/atom/movable/thing in checking.contents)
-					if(thing.simulated)
-						qdel(thing)
+				if(clear_objects)
+					for(var/thing in checking.contents)
+						var/atom/movable/AM = thing
+						if(AM.simulated)
+							qdel(AM)
 
 				if(tx >= ux && tx <= ex && ty >= uy && ty <= ey)
 					floor_turfs += checking
-
-		var/area_path = areas_to_use[az]
-		var/area/A = locate(area_path) || new area_path()
-		for(var/T in floor_turfs)
-			ChangeArea(T, A)
-		cfloor.set_area_ref("\ref[A]")
 
 		// Place exterior doors.
 		for(var/tx = door_x1 to door_x2)
@@ -189,9 +182,7 @@
 						lift.doors += newdoor
 						newdoor.lift = cfloor
 					else
-						var/obj/machinery/door/firedoor/newfiredoor = new firedoor_type(checking)
 						cfloor.doors += newdoor
-						cfloor.doors += newfiredoor
 						newdoor.floor = cfloor
 
 		// Place exterior control panel.
@@ -201,31 +192,41 @@
 		panel_ext.set_dir(udir)
 		cfloor.ext_panel = panel_ext
 
-		// Place lights
-		var/turf/placing1 = locate(light_x1, light_y1, cz)
-		var/turf/placing2 = locate(light_x2, light_y2, cz)
-		var/obj/machinery/light/light1 = new(placing1, light)
-		var/obj/machinery/light/light2 = new(placing2, light)
-		if(udir == NORTH || udir == SOUTH)
-			light1.set_dir(WEST)
-			light2.set_dir(EAST)
-		else
-			light1.set_dir(SOUTH)
-			light2.set_dir(NORTH)
+		if (clear_objects)	// If we're clearing objects, we're going to need to place lights since they can't be mapped in.
+			// Place lights
+			var/turf/placing1 = locate(light_x1, light_y1, cz)
+			var/turf/placing2 = locate(light_x2, light_y2, cz)
+			var/obj/machinery/light/light1 = new(placing1, light)
+			var/obj/machinery/light/light2 = new(placing2, light)
+			if(udir == NORTH || udir == SOUTH)
+				light1.set_dir(WEST)
+				light2.set_dir(EAST)
+			else
+				light1.set_dir(SOUTH)
+				light2.set_dir(NORTH)
+
+			light1.no_z_overlay = 1
+			light2.no_z_overlay = 1
 
 		// Update area.
 		if(az > areas_to_use.len)
 			log_debug("Insufficient defined areas in turbolift datum, aborting.")
 			qdel(src)
 			return
+
+		var/area_path = areas_to_use[az]
+		for(var/thing in floor_turfs)
+			new area_path(thing)
+		var/area/A = locate(area_path)
+		cfloor.set_area_ref("\ref[A]")
 		az++
 
 	// Place lift panel.
 	var/turf/T = locate(int_panel_x, int_panel_y, uz)
 	lift.control_panel_interior = new(T, lift)
 	lift.control_panel_interior.set_dir(udir)
-	lift.current_floor = lift.floors[1]
+	lift.current_floor = lift.floors[uz]
 
 	lift.open_doors()
 
-	qdel(src) // We're done.
+	return INITIALIZE_HINT_QDEL

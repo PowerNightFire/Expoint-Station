@@ -1,16 +1,49 @@
-<div id='uiHeaderContent' unselectable="on">
-	<!-- Add a template with the key "headerContent" to have it rendered here -->
-</div>
+{{if data._PC}}
+	<div style="float: left">
+		<div class='item'>
+			<table><tr>
+			{{if data._PC.batteryicon && data._PC.showbatteryicon}}
+				<td><img src='{{:data._PC.batteryicon}}'>
+			{{/if}}
+			{{if data._PC.batterypercent && data._PC.showbatteryicon}}
+				<td><b>{{:data._PC.batterypercent}}</b>
+			{{/if}}
+			{{if data._PC.ntneticon}}
+				<td><img src='{{:data._PC.ntneticon}}'>
+			{{/if}}
+			{{if data._PC.apclinkicon}}
+				<td><img src='{{:data._PC.apclinkicon}}'>
+			{{/if}}
+			{{if data._PC.stationtime}}
+				<td><b>{{:data._PC.stationtime}}<b>
+			{{/if}}
+			{{for data._PC.programheaders}}
+				<td><img src='{{:value}}'>
+			{{/for}}
+			</table>
+		</div>
+	</div>
+	<div style="float: right">
+		<table><tr>
+			{{if data._PC.showexitprogram}}
+				<td>{{:helper.link('Minimize', null, {'PC_minimize' : 1})}}
+				<td>{{:helper.link('Exit', null, {'PC_exit' : 1})}}
+			{{/if}}
+		</table>
+	</div>
+	<div style="clear: both">
+{{/if}}
+
 <div id='uiTitleWrapper' unselectable="on"><div id='uiStatusIcon' class='icon24 uiStatusGood' unselectable="on"></div><div id='uiTitleText' unselectable="on">{{:config.title}}</div><div id='uiTitleFluff' unselectable="on"></div></div>
 <div id='uiMapWrapper' class="hidden" unselectable="on">
     <div id='uiMapHeader' unselectable="on">
         {{:helper.link('Hide Map', 'close', {'showMap' : 0})}}
-		<div style="float: right; width: 240px;">
-			<span style="float: left;">Z Level:&nbsp;</span>
-			{{for config.mapZLevels :zValue:zIndex}}
-				{{:helper.link(zValue, 'close', {'mapZLevel' : zValue}, null, config.mapZLevel == zValue ? 'selected' : null)}}
-			{{/for}}
-		</div>
+			<div style="float: right; width: 240px;">
+				<span style="float: left;">Z Level:&nbsp;</span>
+				{{for config.mapZLevels :zValue:zIndex}}
+						{{:helper.link(zValue, 'close', {'mapZLevel' : zValue}, null, config.mapZLevel == zValue ? 'selected' : null)}}
+				{{/for}}
+			</div>
 
         <div style="float: right; width: 240px;">
             <span style="float: left;">Zoom Level:&nbsp;</span>

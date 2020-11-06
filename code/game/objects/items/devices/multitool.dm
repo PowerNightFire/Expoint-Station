@@ -1,29 +1,43 @@
 /**
  * Multitool -- A multitool is used for hacking electronic devices.
+ * TO-DO -- Using it as a power measurement tool for cables etc. Nannek.
  *
  */
 
 /obj/item/device/multitool
 	name = "multitool"
-	desc = "This small, handheld device is made of durable, insulated plastic, and tipped with electrodes, perfect for interfacing with numerous machines."
+	desc = "Used for pulsing wires to test which to cut. Not recommended by doctors."
+	desc_info = "You can use this on airlocks or APCs to try to hack them without cutting wires."
 	icon_state = "multitool"
-	obj_flags = OBJ_FLAG_CONDUCTIBLE
+	item_state = "multitool"
+	item_icons = list(
+		slot_l_hand_str = 'icons/mob/items/lefthand_tools.dmi',
+		slot_r_hand_str = 'icons/mob/items/righthand_tools.dmi',
+		)
+	flags = CONDUCT
 	force = 5.0
-	w_class = ITEM_SIZE_SMALL
+	w_class = ITEMSIZE_SMALL
 	throwforce = 5.0
 	throw_range = 15
 	throw_speed = 3
+	drop_sound = 'sound/items/drop/multitool.ogg'
+	pickup_sound = 'sound/items/pickup/multitool.ogg'
 
-	matter = list(MATERIAL_PLASTIC = 50, MATERIAL_GLASS = 20, MATERIAL_STEEL = 5)
+	matter = list(DEFAULT_WALL_MATERIAL = 50, MATERIAL_GLASS = 20)
 
 	origin_tech = list(TECH_MAGNET = 1, TECH_ENGINEERING = 1)
 
+	var/obj/machinery/buffer // simple machine buffer for device linkage
+	var/obj/machinery/clonepod/connecting //same for cryopod linkage
 	var/buffer_name
 	var/atom/buffer_object
 
 /obj/item/device/multitool/Destroy()
 	unregister_buffer(buffer_object)
 	return ..()
+
+/obj/item/device/multitool/ismultitool()
+	return TRUE
 
 /obj/item/device/multitool/proc/get_buffer(var/typepath)
 	// Only allow clearing the buffer name when someone fetches the buffer.
@@ -46,30 +60,24 @@
 			unregister_buffer(buffer_object)
 			buffer_object = buffer
 			if(buffer_object)
-				GLOB.destroyed_event.register(buffer_object, src, /obj/item/device/multitool/proc/unregister_buffer)
+				destroyed_event.register(buffer_object, src, /obj/item/device/multitool/proc/unregister_buffer)
 
 /obj/item/device/multitool/proc/unregister_buffer(var/atom/buffer_to_unregister)
 	// Only remove the buffered object, don't reset the name
 	// This means one cannot know if the buffer has been destroyed until one attempts to use it.
 	if(buffer_to_unregister == buffer_object && buffer_object)
-		GLOB.destroyed_event.unregister(buffer_object, src)
+		destroyed_event.unregister(buffer_object, src)
 		buffer_object = null
 
-/obj/item/device/multitool/resolve_attackby(atom/A, mob/user)
+/obj/item/device/multitool/resolve_attackby(atom/A, mob/user, var/click_parameters)
 	if(!isobj(A))
-		return ..(A, user)
+		return ..(A, user, click_parameters)
 
 	var/obj/O = A
-	var/datum/extension/interactive/multitool/MT = get_extension(O, /datum/extension/interactive/multitool)
+	var/datum/component/multitool/MT = O.GetComponent(/datum/component/multitool)
 	if(!MT)
-		return ..(A, user)
+		return ..(A, user, click_parameters)
 
 	user.AddTopicPrint(src)
 	MT.interact(src, user)
 	return 1
-
-/obj/item/device/multitool/mantid
-	name = "mantid multitool"
-	desc = "An alien microcomputer of some kind."
-	icon = 'icons/obj/ascent.dmi'
-	icon_state = "multitool"

@@ -9,11 +9,11 @@
 	var/open
 	var/unlocked
 	var/shattered
-	var/obj/item/weapon/material/twohanded/fireaxe/fireaxe
+	var/obj/item/material/twohanded/fireaxe/fireaxe
 
 /obj/structure/fireaxecabinet/attack_generic(var/mob/user, var/damage, var/attack_verb, var/wallbreaker)
-	attack_animation(user)
-	playsound(user, 'sound/effects/Glasshit.ogg', 50, 1)
+	user.do_attack_animation(src)
+	playsound(user, 'sound/effects/glass_hit.ogg', 50, 1)
 	visible_message("<span class='danger'>[user] [attack_verb] \the [src]!</span>")
 	if(damage_threshold > damage)
 		to_chat(user, "<span class='danger'>Your strike is deflected by the reinforced glass!</span>")
@@ -23,17 +23,17 @@
 	shattered = 1
 	unlocked = 1
 	open = 1
-	playsound(user, 'sound/effects/Glassbr3.ogg', 100, 1)
+	playsound(user, /decl/sound_category/glass_break_sound, 100, 1)
 	update_icon()
 
-/obj/structure/fireaxecabinet/on_update_icon()
-	overlays.Cut()
+/obj/structure/fireaxecabinet/update_icon()
+	cut_overlays()
 	if(fireaxe)
-		overlays += image(icon, "fireaxe_item")
+		add_overlay("fireaxe_item")
 	if(shattered)
-		overlays += image(icon, "fireaxe_window_broken")
+		add_overlay("fireaxe_window_broken")
 	else if(!open)
-		overlays += image(icon, "fireaxe_window")
+		add_overlay("fireaxe_window")
 
 /obj/structure/fireaxecabinet/New()
 	..()
@@ -63,6 +63,7 @@
 			to_chat(user, "<span class='warning'>\The [src] is empty.</span>")
 			return
 
+		fireaxe.forceMove(get_turf(user))
 		user.put_in_hands(fireaxe)
 		fireaxe = null
 		update_icon()
@@ -71,17 +72,17 @@
 
 /obj/structure/fireaxecabinet/Destroy()
 	if(fireaxe)
-		fireaxe.dropInto(loc)
+		fireaxe.forceMove(get_turf(src))
 		fireaxe = null
 	return ..()
 
 /obj/structure/fireaxecabinet/attackby(var/obj/item/O, var/mob/user)
 
-	if(isMultitool(O))
+	if(O.ismultitool())
 		toggle_lock(user)
 		return
 
-	if(istype(O, /obj/item/weapon/material/twohanded/fireaxe))
+	if(istype(O, /obj/item/material/twohanded/fireaxe))
 		if(open)
 			if(fireaxe)
 				to_chat(user, "<span class='warning'>There is already \a [fireaxe] inside \the [src].</span>")
@@ -122,7 +123,7 @@
 		user.setClickCooldown(10)
 		to_chat(user, "<span class='notice'>You begin [unlocked ? "enabling" : "disabling"] \the [src]'s maglock.</span>")
 
-		if(!do_after(user, 20,src))
+		if(!do_after(user, 20))
 			return
 
 		if(shattered) return

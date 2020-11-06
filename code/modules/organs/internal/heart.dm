@@ -1,58 +1,49 @@
 /obj/item/organ/internal/heart
 	name = "heart"
 	icon_state = "heart-on"
-	organ_tag = "heart"
+	organ_tag = BP_HEART
 	parent_organ = BP_CHEST
 	dead_icon = "heart-off"
-	var/pulse = PULSE_NORM
-	var/heartbeat = 0
-	var/beat_sound = 'sound/effects/singlebeat.ogg'
-	var/tmp/next_blood_squirt = 0
-	damage_reduction = 0.7
-	relative_size = 5
+	robotic_name = "circulatory pump"
+	robotic_sprite = "heart-prosthetic"
+	toxin_type = CE_CARDIOTOXIC
+
 	max_damage = 45
-	var/open
+	relative_size = 5
+	damage_reduction = 0.7
+
+	var/pulse = PULSE_NORM	//current pulse level
+	var/heartbeat = 0
+	var/next_blood_squirt = 0
 	var/list/external_pump
 
-/obj/item/organ/internal/heart/open
-	open = 1
-
-/obj/item/organ/internal/heart/die()
-	if(dead_icon)
-		icon_state = dead_icon
-	..()
-
-/obj/item/organ/internal/heart/robotize()
-	. = ..()
-	icon_state = "heart-prosthetic"
-
-/obj/item/organ/internal/heart/Process()
+/obj/item/organ/internal/heart/process()
 	if(owner)
 		handle_pulse()
 		if(pulse)
-			handle_heartbeat()
 			if(pulse == PULSE_2FAST && prob(1))
 				take_internal_damage(0.5)
 			if(pulse == PULSE_THREADY && prob(5))
 				take_internal_damage(0.5)
+			handle_heartbeat()
 		handle_blood()
 	..()
 
 /obj/item/organ/internal/heart/proc/handle_pulse()
-	if(BP_IS_ROBOTIC(src))
-		pulse = PULSE_NONE	//that's it, you're dead (or your metal heart is), nothing can influence your pulse
+	if(owner.stat == DEAD || (species && species.flags & NO_BLOOD) || BP_IS_ROBOTIC(src)) //No heart, no pulse, buddy. Or if the heart is robotic. Or you're dead.
+		pulse = PULSE_NONE
 		return
 
 	// pulse mod starts out as just the chemical effect amount
 	var/pulse_mod = owner.chem_effects[CE_PULSE]
 	var/is_stable = owner.chem_effects[CE_STABLE]
-		
+
 	// If you have enough heart chemicals to be over 2, you're likely to take extra damage.
 	if(pulse_mod > 2 && !is_stable)
 		var/damage_chance = (pulse_mod - 2) ** 2
 		if(prob(damage_chance))
 			take_internal_damage(0.5)
-	
+
 	// Now pulse mod is impacted by shock stage and other things too
 	if(owner.shock_stage > 30)
 		pulse_mod++
@@ -97,60 +88,73 @@
 			pulse++
 
 /obj/item/organ/internal/heart/proc/handle_heartbeat()
-	if(pulse >= PULSE_2FAST || owner.shock_stage >= 10 || is_below_sound_pressure(get_turf(owner)))
-		//PULSE_THREADY - maximum value for pulse, currently it 5.
+	if(pulse >= PULSE_2FAST || owner.shock_stage >= 10)
+		//PULSE_THREADY - maximum value for pulse, currently it is 5.
 		//High pulse value corresponds to a fast rate of heartbeat.
 		//Divided by 2, otherwise it is too slow.
 		var/rate = (PULSE_THREADY - pulse)/2
-		if(owner.chem_effects[CE_PULSE] > 2)
-			heartbeat++
+		switch(owner.chem_effects[CE_PULSE])
+			if(2 to INFINITY)
+				heartbeat++
+			if(-INFINITY to -2)
+				heartbeat--
 
 		if(heartbeat >= rate)
 			heartbeat = 0
-			sound_to(owner, sound(beat_sound,0,0,0,50))
+			sound_to(owner, sound('sound/effects/singlebeat.ogg', 0, 0, 0, 50))
 		else
 			heartbeat++
 
 /obj/item/organ/internal/heart/proc/handle_blood()
-
 	if(!owner)
 		return
 
-	//Dead or cryosleep people do not pump the blood.
-	if(!owner || owner.InStasis() || owner.stat == DEAD || owner.bodytemperature < 170)
+	if(owner.species && owner.species.flags & NO_BLOOD)
+		return
+
+	if(!owner || owner.stat == DEAD || owner.bodytemperature < 170 || owner.InStasis())	//Dead or cryosleep people do not pump the blood.
 		return
 
 	if(pulse != PULSE_NONE || BP_IS_ROBOTIC(src))
+		var/blood_volume = round(owner.vessel.get_reagent_amount(/datum/reagent/blood))
+
+		//Blood regeneration if there is some space
+		if(blood_volume < species.blood_volume && blood_volume)
+			var/datum/reagent/blood/B = locate() in owner.vessel.reagent_list //Grab some blood
+			if(B) // Make sure there's some blood at all
+				if(weakref && B.data["donor"] != weakref) //If it's not theirs, then we look for theirs - donor is a weakref here, but it should be safe to just directly compare it.
+					for(var/datum/reagent/blood/D in owner.vessel.reagent_list)
+						if(weakref && D.data["donor"] == weakref)
+							B = D
+							break
+
+				B.volume += 0.1 // regenerate blood VERY slowly
+				if(blood_volume <= BLOOD_VOLUME_SAFE) //We loose nutrition and hydration very slowly if our blood is too low
+					owner.adjustNutritionLoss(2)
+					owner.adjustHydrationLoss(1)
+				if(CE_BLOODRESTORE in owner.chem_effects)
+					B.volume += owner.chem_effects[CE_BLOODRESTORE]
+
 		//Bleeding out
 		var/blood_max = 0
+		var/open_wound
 		var/list/do_spray = list()
 		for(var/obj/item/organ/external/temp in owner.organs)
-
-			if(BP_IS_ROBOTIC(temp))
-				continue
-
-			var/open_wound
-			if(temp.status & ORGAN_BLEEDING)
-
+			if((temp.status & ORGAN_BLEEDING) && !BP_IS_ROBOTIC(temp))
 				for(var/datum/wound/W in temp.wounds)
-
-					if(!open_wound && (W.damage_type == CUT || W.damage_type == PIERCE) && W.damage && !W.is_treated())
-						open_wound = TRUE
-
 					if(W.bleeding())
+						open_wound = TRUE
 						if(temp.applied_pressure)
 							if(ishuman(temp.applied_pressure))
 								var/mob/living/carbon/human/H = temp.applied_pressure
 								H.bloody_hands(src, 0)
-							//somehow you can apply pressure to every wound on the organ at the same time
-							//you're basically forced to do nothing at all, so let's make it pretty effective
-							var/min_eff_damage = max(0, W.damage - 10) / 6 //still want a little bit to drip out, for effect
+							var/min_eff_damage = max(0, W.damage - 10) / 6
 							blood_max += max(min_eff_damage, W.damage - 30) / 40
 						else
-							blood_max += W.damage / 40
+							blood_max += ((W.damage / 40) * species.bleed_mod)
 
 			if(temp.status & ORGAN_ARTERY_CUT)
-				var/bleed_amount = Floor((owner.vessel.total_volume / (temp.applied_pressure || !open_wound ? 400 : 250))*temp.arterial_bleed_severity)
+				var/bleed_amount = Floor(owner.vessel.total_volume / (temp.applied_pressure || !open_wound ? 450 : 250))
 				if(bleed_amount)
 					if(open_wound)
 						blood_max += bleed_amount
@@ -166,22 +170,17 @@
 			if(PULSE_2FAST, PULSE_THREADY)
 				blood_max *= 1.5
 
-		if(CE_STABLE in owner.chem_effects) // inaprovaline
+		if(CE_STABLE in owner.chem_effects)
 			blood_max *= 0.8
 
 		if(world.time >= next_blood_squirt && istype(owner.loc, /turf) && do_spray.len)
-			var/spray_organ = pick(do_spray)
-			owner.visible_message(
-				SPAN_DANGER("Blood sprays out from \the [owner]'s [spray_organ]!"),
-				FONT_HUGE(SPAN_DANGER("Blood sprays out from your [spray_organ]!"))
-			)
-			owner.Stun(1)
+			owner.visible_message("<span class='danger'>Blood squirts from \the [owner]'s [pick(do_spray)]!</span>", \
+								"<span class='danger'><font size=3>Blood sprays out of your [pick(do_spray)]!</font></span>")
 			owner.eye_blurry = 2
-
-			//AB occurs every heartbeat, this only throttles the visible effect
-			next_blood_squirt = world.time + 80
+			owner.Stun(1)
+			next_blood_squirt = world.time + 100
 			var/turf/sprayloc = get_turf(owner)
-			blood_max -= owner.drip(ceil(blood_max/3), sprayloc)
+			blood_max -= owner.drip(Ceiling(blood_max/3), sprayloc)
 			if(blood_max > 0)
 				blood_max -= owner.blood_squirt(blood_max, sprayloc)
 				if(blood_max > 0)
@@ -220,6 +219,3 @@
 			pulsesound = "extremely fast and faint"
 
 	. = "[pulsesound] pulse"
-
-/obj/item/organ/internal/heart/get_mechanical_assisted_descriptor()
-	return "pacemaker-assisted [name]"

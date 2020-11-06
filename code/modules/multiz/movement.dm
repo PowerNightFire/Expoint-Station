@@ -1,276 +1,768 @@
+/atom/movable
+	/** Used to check wether or not an atom is being handled by SSfalling. */
+	var/tmp/multiz_falling = 0
+
+/**
+ * Verb for the mob to move up a z-level if possible.
+ */
 /mob/verb/up()
 	set name = "Move Upwards"
 	set category = "IC"
 
-	move_up()
+	if(zMove(UP))
+		visible_message(SPAN_NOTICE("[src] has moved upwards."), SPAN_NOTICE("You move upwards."))
 
+/**
+ * Verb for the mob to move down a z-level if possible.
+ */
 /mob/verb/down()
 	set name = "Move Down"
 	set category = "IC"
 
-	SelfMove(DOWN)
+	if(zMove(DOWN))
+		visible_message(SPAN_NOTICE("[src] has moved downwards."), SPAN_NOTICE("You move downwards."))
 
-/mob/proc/move_up()
-	SelfMove(UP)
+/**
+ * Used to check if a mob can move up or down a Z-level and to then actually do the move.
+ *
+ * @param	direction The direction in which we're moving. Expects defines UP or DOWN.
+ *
+ * @return	TRUE if the mob has been successfully moved a Z-level.
+ *			FALSE otherwise.
+ */
+/mob/proc/zMove(direction)
+	// In the case of an active eyeobj, move that instead.
+	if (eyeobj)
+		return eyeobj.zMove(direction)
 
-/mob/living/carbon/human/move_up()
-	var/turf/old_loc = loc
-	..()
-	if(loc != old_loc)
+	// Check if we can actually travel a Z-level.
+	if (!can_ztravel(direction))
+		to_chat(src, SPAN_WARNING("You lack means of travel in that direction."))
+		return FALSE
+
+	var/turf/destination = (direction == UP) ? GetAbove(src) : GetBelow(src)
+
+	if(!destination)
+		to_chat(src, SPAN_NOTICE("There is nothing of interest in this direction."))
+		return FALSE
+
+	if(incorporeal_move == INCORPOREAL_BSTECH)
+		forceMove(destination)
+		return TRUE
+
+	var/turf/start = get_turf(src)
+	if(!start.CanZPass(src, direction))
+		to_chat(src, SPAN_WARNING("\The [start] is in the way."))
+		return FALSE
+
+	if(!destination.CanZPass(src, direction))
+		to_chat(src, SPAN_WARNING("\The [destination] is in the way!"))
+		return FALSE
+
+	var/area/area = get_area(src)
+
+	// If we want to move up,but the current area has gravity. Invoke CanAvoidGravity()
+	// to check if this move is possible.
+	if(direction == UP && area.has_gravity() && !CanAvoidGravity())
+		to_chat(src, SPAN_WARNING("Gravity stops you from moving upward."))
+		return FALSE
+
+	// Check for blocking atoms at the destination.
+	for (var/atom/A in destination)
+		if (!A.CanPass(src, start, 1.5, 0))
+			to_chat(src, SPAN_WARNING("\The [A] blocks you."))
+			return FALSE
+
+	if(buckled && istype(buckled, /obj/vehicle))
+		var/obj/vehicle/car = buckled
+		if(car.flying)
+			buckled.Move(destination)
+			return TRUE
+	// Actually move.
+	Move(destination)
+	return TRUE
+
+/mob/living/carbon/human/zMove(direction)
+	if(istype(loc, /mob/living/heavy_vehicle))
+		var/mob/living/heavy_vehicle/mech = loc
+		mech.zMove(direction)
+		return
+	. = ..()
+	if(.)
+		for(var/obj/item/grab/G in list(l_hand, r_hand))
+			if(G.state >= GRAB_NECK) //strong grip
+				if(G.affecting && !(G.affecting.buckled))
+					G.affecting.Move(get_turf(src))
+					visible_message(SPAN_WARNING("[src] pulls [G.affecting] [direction & UP ? "upwards" : "downwards"]!"))
+
+/mob/living/zMove(direction)
+	if (is_ventcrawling)
+		var/obj/machinery/atmospherics/pipe/zpipe/P = loc
+		if (istype(P) && P.can_z_crawl(src, direction))
+			return P.handle_z_crawl(src, direction)
+
+	return ..()
+
+/mob/abstract/eye/zMove(direction)
+	var/turf/destination = (direction == UP) ? GetAbove(src) : GetBelow(src)
+	if(destination)
+		setLoc(destination)
+	else
+		to_chat(owner, SPAN_NOTICE("There is nothing of interest in this direction."))
+
+/mob/abstract/observer/zMove(direction)
+	var/turf/destination = (direction == UP) ? GetAbove(src) : GetBelow(src)
+	if(destination)
+		forceMove(destination)
+	else
+		to_chat(src, SPAN_NOTICE("There is nothing of interest in this direction."))
+
+/**
+ * An initial check for Z-level travel. Called relatively early in mob/proc/zMove.
+ *
+ * Useful for overwriting and special conditions for STOPPING z-level transit.
+ *
+ * @return	TRUE if the mob can move a Z-level of its own volition.
+ *			FALSE otherwise.
+ */
+/mob/proc/can_ztravel(var/direction)
+	if(incorporeal_move == INCORPOREAL_BSTECH)
+		return TRUE
+	return FALSE
+
+/mob/abstract/observer/can_ztravel(var/direction)
+	return TRUE
+
+/mob/living/carbon/human/can_ztravel(var/direction)
+	if(incapacitated())
+		return FALSE
+
+	if(incorporeal_move == INCORPOREAL_BSTECH)
+		return TRUE
+
+	if(Allow_Spacemove())
+		return TRUE
+
+	for(var/turf/simulated/T in RANGE_TURFS(1,src))
+		if(T.density)
+			if(Check_Shoegrip(FALSE))
+				return TRUE
+
+/mob/living/carbon/human/proc/climb(var/direction, var/turf/source, var/climb_bonus)
+	var/turf/destination
+	if(direction == UP)
+		destination = GetAbove(source)
+	else
+		destination = GetBelow(source)
+
+	if(!destination)
 		return
 
-	var/turf/simulated/open/O = GetAbove(src)
-	var/atom/climb_target
-	if(istype(O))
-		for(var/turf/T in trange(1,O))
-			if(!isopenspace(T) && T.is_floor())
-				climb_target = T
+	if(stat || paralysis || stunned || weakened || lying || restrained() || buckled)
+		return
+
+	if(destination.density)
+		to_chat(src, SPAN_NOTICE("There is something obstructing your destination!"))
+		return
+
+	for(var/obj/O in destination)
+		if(O.density)
+			to_chat(src, SPAN_NOTICE("There is something obstructing your destination!"))
+			return
+
+	visible_message(SPAN_NOTICE("The [src] begins to climb [(direction == UP) ? "upwards" : "downwards"]."),
+		SPAN_NOTICE("You begin to climb [(direction == UP) ? "upwards" : "downwards"]."))
+	var/climb_chance = 50
+	var/climb_speed = 45 SECONDS
+	var/will_succeed = FALSE
+	var/turf/stack_turf = get_turf(src) //turf upon which obejcts must be stacked upon to gain vantage
+	var/speed_bonus = 0
+	if(direction == DOWN)
+		stack_turf = destination
+
+	if(species && !species.natural_climbing)
+		for(var/obj/O in stack_turf)
+			if(O.w_class >= 4.0 || O.anchored) //if an object is anchored it's stable footing
+				climb_chance = min(100, climb_chance + O.w_class) //large items increase your reach
+				speed_bonus = min(15, speed_bonus + 1)
 			else
-				for(var/obj/I in T)
-					if(I.obj_flags & OBJ_FLAG_NOFALL)
-						climb_target = I
-						break
-			if(climb_target)
-				break
+				climb_chance = max(0, climb_chance - O.w_class) //small items destabilize your footing
+				speed_bonus = max(0, speed_bonus - 1)
+		if(climb_bonus)
+			climb_chance = min(100, climb_chance + climb_bonus)
+	else
+		climb_chance = 100
 
-	if(climb_target)
-		climb_up(climb_target)
+	if(species && species.climb_coeff)
+		climb_speed = round(max(1, (species.climb_coeff * climb_speed) - speed_bonus), 1)
 
-/mob/proc/zPull(direction)
-	//checks and handles pulled items across z levels
-	if(!pulling)
-		return 0
+	if(prob(climb_chance))
+		will_succeed = TRUE
 
-	var/turf/start = pulling.loc
-	var/turf/destination = (direction == UP) ? GetAbove(pulling) : GetBelow(pulling)
+	if(do_after(src, climb_speed, extra_checks  = CALLBACK(src, .proc/climb_check, will_succeed, climb_chance, climb_speed, direction, destination)))
+		if(will_succeed)
+			visible_message(SPAN_NOTICE("\The [src] climbs [(direction == UP) ? "upwards" : "downwards"]."),
+				SPAN_NOTICE("You climb [(direction == UP) ? "upwards" : "downwards"]."))
+			forceMove(destination)
+			return
+		else
+			visible_message(SPAN_WARNING("\The [src] slips and falls as they climb [(direction == UP) ? "upwards" : "downwards"]!"),
+				SPAN_DANGER("You slip and fall as you climb [(direction == UP) ? "upwards" : "downwards"]!"))
+			if(direction == DOWN)
+				Move(destination)
+			fall_impact(1, damage_mod = min(1, max(0.2, ((100-climb_chance)/100) - 0.2)))
 
-	if(!start.CanZPass(pulling, direction))
-		to_chat(src, "<span class='warning'>\The [start] blocked your pulled object!</span>")
-		stop_pulling()
-		return 0
-
-	if(!destination.CanZPass(pulling, direction))
-		to_chat(src, "<span class='warning'>The [pulling] you were pulling bumps up against \the [destination].</span>")
-		stop_pulling()
-		return 0
-
-	for(var/atom/A in destination)
-		if(!A.CanMoveOnto(pulling, start, 1.5, direction))
-			to_chat(src, "<span class='warning'>\The [A] blocks the [pulling] you were pulling.</span>")
-			stop_pulling()
+/mob/living/carbon/human/proc/climb_check(var/success, var/climb_chance, var/speed, var/direction, var/turf/destination) //purely for immersion and variety
+	if((last_special < world.time) && !success) //if you will succeed you can't fail
+		last_special = world.time + speed/10
+		if(prob(100 - climb_chance)) //The worse you are the sooner you'll fail.
+			visible_message(SPAN_WARNING("\The [src] slips and falls as they climb [(direction == UP) ? "upwards" : "downwards"]!"),
+				SPAN_DANGER("You slip and fall as you climb [(direction == UP) ? "upwards" : "downwards"]!"))
+			if(direction == DOWN)
+				Move(destination)
+			fall_impact(1, damage_mod = min(1, max(0.2, ((100-climb_chance)/100) - 0.2)))
 			return 0
-
-	pulling.forceMove(destination)
 	return 1
 
-/atom/proc/CanMoveOnto(atom/movable/mover, turf/target, height=1.5, direction = 0)
-	//Purpose: Determines if the object can move through this
-	//Uses regular limitations plus whatever we think is an exception for the purpose of
-	//moving up and down z levles
-	return CanPass(mover, target, height, 0) || (direction == DOWN && (atom_flags & ATOM_FLAG_CLIMBABLE))
+/mob/living/silicon/robot/can_ztravel(var/direction)
+	if(incapacitated() || is_dead())
+		return FALSE
 
-/mob/proc/can_overcome_gravity()
-	return FALSE
-
-/mob/living/carbon/human/can_overcome_gravity()
-	//First do species check
-	if(species && species.can_overcome_gravity(src))
-		return 1
-	else
-		for(var/atom/a in src.loc)
-			if(a.atom_flags & ATOM_FLAG_CLIMBABLE)
-				return 1
-
-		//Last check, list of items that could plausibly be used to climb but aren't climbable themselves
-		var/list/objects_to_stand_on = list(
-				/obj/item/weapon/stool,
-				/obj/structure/bed,
-			)
-		for(var/type in objects_to_stand_on)
-			if(locate(type) in src.loc)
-				return 1
-	return 0
-
-/mob/proc/can_ztravel()
-	return 0
-
-/mob/living/carbon/human/can_ztravel()
-	if(Allow_Spacemove())
-		return 1
-
-	if(Check_Shoegrip())	//scaling hull with magboots
-		for(var/turf/simulated/T in trange(1,src))
-			if(T.density)
-				return 1
-
-/mob/living/silicon/robot/can_ztravel()
 	if(Allow_Spacemove()) //Checks for active jetpack
-		return 1
+		return TRUE
 
-	for(var/turf/simulated/T in trange(1,src)) //Robots get "magboots"
+	for(var/turf/simulated/T in RANGE_TURFS(1,src)) //Robots get "magboots"
 		if(T.density)
-			return 1
+			return TRUE
 
-//FALLING STUFF
-
-//Holds fall checks that should not be overriden by children
-/atom/movable/proc/fall(var/lastloc)
-	if(!isturf(loc))
-		return
-
-	var/turf/below = GetBelow(src)
-	if(!below)
-		return
-
-	var/turf/T = loc
-	if(!T.CanZPass(src, DOWN) || !below.CanZPass(src, DOWN))
-		return
-
-	// No gravity in space, apparently.
-	var/area/area = get_area(src)
-	if(!area.has_gravity())
-		return
-
-	if(throwing)
-		return
-
-	if(can_fall())
-		begin_falling(lastloc, below)
-
-// We timer(0) here to let the current move operation complete before we start falling. fall() is normally called from
-// Entered() which is part of Move(), by spawn()ing we let that complete.  But we want to preserve if we were in client movement
-// or normal movement so other move behavior can continue.
-/atom/movable/proc/begin_falling(var/lastloc, var/below)
-	addtimer(CALLBACK(src, /atom/movable/proc/fall_callback, below), 0)
-
-/atom/movable/proc/fall_callback(var/turf/below)
-	var/mob/M = src
-	var/is_client_moving = (ismob(M) && M.moving)
-	if(is_client_moving) M.moving = 1
-	handle_fall(below)
-	if(is_client_moving) M.moving = 0
-
-//For children to override
-/atom/movable/proc/can_fall(var/anchor_bypass = FALSE, var/turf/location_override = loc)
-	if(!simulated)
-		return FALSE
-
-	if(anchored && !anchor_bypass)
-		return FALSE
-
-	//Override will make checks from different location used for prediction
-	if(location_override)
-		for(var/obj/O in location_override)
-			if(O.obj_flags & OBJ_FLAG_NOFALL)
-				return FALSE
-
-		var/turf/below = GetBelow(location_override)
-		for(var/atom/A in below)
-			if(!A.CanPass(src, location_override))
-				return FALSE
-
-
-	return TRUE
-
-/obj/can_fall(var/anchor_bypass = FALSE, var/turf/location_override = loc)
-	return ..(anchor_fall)
-
-/obj/effect/can_fall(var/anchor_bypass = FALSE, var/turf/location_override = loc)
+/**
+ * Used to determine whether or not a given mob can override gravity when
+ * attempting to Z-move UP.
+ *
+ * Returns FALSE in standard mob cases. Exists for carbon/human and other child overrides.
+ *
+ * @return	TRUE if the mob can Z-move up despite gravity.
+ *			FALSE otherwise.
+ */
+/mob/proc/CanAvoidGravity()
+	if(status_flags & NOFALL || incorporeal_move == INCORPOREAL_BSTECH)
+		return TRUE
 	return FALSE
 
-/obj/effect/decal/cleanable/can_fall(var/anchor_bypass = FALSE, var/turf/location_override = loc)
-	return TRUE
+// Humans and borgs have jetpacks which allows them to override gravity! Or rather,
+// they can have them. So we override and check.
+/mob/living/carbon/human/CanAvoidGravity()
+	if (!restrained())
+		var/obj/item/tank/jetpack/thrust = GetJetpack(src)
 
-/obj/item/pipe/can_fall(var/anchor_bypass = FALSE, var/turf/location_override = loc)
-	var/turf/simulated/open/below = loc
-	below = below.below
+		if (thrust && !lying && thrust.allow_thrust(0.01, src))
+			return TRUE
 
-	. = ..()
+	if(buckled && istype(buckled, /obj/vehicle))
+		var/obj/vehicle/car = buckled
+		if(car.flying)
+			return TRUE
 
+	return ..()
+
+/mob/living/silicon/robot/CanAvoidGravity()
+	var/obj/item/tank/jetpack/thrust = GetJetpack(src)
+
+	if (thrust && thrust.allow_thrust(0.02, src))
+		return TRUE
+
+	return ..()
+
+/**
+ * An overridable proc used by SSfalling to determine whether or not an atom
+ * should continue falling to the next level, or stop processing and be caught
+ * in midair, effectively. One of the ways to make things never fall is to make
+ * this return FALSE.
+ *
+ * If the mob has fallen and is stopped amidst a fall by this, fall_impact is
+ * invoked with the second argument being TRUE. As opposed to the default value, FALSE.
+ *
+ * @param	below The turf that the mob is expected to end up at.
+ * @param	dest The tile we're presuming the mob to be at for this check. Default
+ * value is src.loc, (src. is important there!) but this is used for magboot lookahead
+ * checks it turf/simulated/open/Enter().
+ *
+ * @return	TRUE if the atom can continue falling in its present situation.
+ *			FALSE if it should stop falling and not invoke fall_through or fall_impact
+ * this cycle.
+ */
+/atom/movable/proc/can_fall(turf/below, turf/simulated/open/dest = src.loc)
+	if (!istype(dest) || !dest.is_hole)
+		return FALSE
+
+	// Anchored things don't fall.
 	if(anchored)
 		return FALSE
 
-	if((locate(/obj/structure/disposalpipe/up) in below) || locate(/obj/machinery/atmospherics/pipe/zpipe/up) in below)
+	// Lattices, ladders, and stairs stop things from falling.
+	if(locate(/obj/structure/lattice, dest) || locate(/obj/structure/stairs, dest))
 		return FALSE
 
-/mob/living/carbon/human/can_fall(var/anchor_bypass = FALSE, var/turf/location_override = loc)
-	if(..())
-		return species.can_fall(src)
-
-/atom/movable/proc/handle_fall(var/turf/landing)
-	forceMove(landing)
-	if(locate(/obj/structure/stairs) in landing)
-		return 1
-	else
-		handle_fall_effect(landing)
-
-/atom/movable/proc/handle_fall_effect(var/turf/landing)
-	if(istype(landing, /turf/simulated/open))
-		visible_message("\The [src] falls through \the [landing]!", "You hear a whoosh of displaced air.")
-	else
-		visible_message("\The [src] slams into \the [landing]!", "You hear something slam into the deck.")
-		if(fall_damage())
-			for(var/mob/living/M in landing.contents)
-				if(M == src)
-					continue
-				visible_message("\The [src] hits \the [M.name]!")
-				M.take_overall_damage(fall_damage())
-
-/atom/movable/proc/fall_damage()
-	return 0
-
-/obj/fall_damage()
-	if(w_class == ITEM_SIZE_TINY)
-		return 0
-	if(w_class == ITEM_SIZE_NO_CONTAINER)
-		return 100
-	return BASE_STORAGE_COST(w_class)
-
-/mob/living/carbon/human/handle_fall_effect(var/turf/landing)
-	if(species && species.handle_fall_special(src, landing))
-		return
-
-	..()
-	var/min_damage = 7
-	var/max_damage = 14
-	apply_damage(rand(min_damage, max_damage), BRUTE, BP_HEAD, armor_pen = 50)
-	apply_damage(rand(min_damage, max_damage), BRUTE, BP_CHEST, armor_pen = 50)
-	apply_damage(rand(min_damage, max_damage), BRUTE, BP_GROIN, armor_pen = 75)
-	apply_damage(rand(min_damage, max_damage), BRUTE, BP_L_LEG, armor_pen = 100)
-	apply_damage(rand(min_damage, max_damage), BRUTE, BP_R_LEG, armor_pen = 100)
-	apply_damage(rand(min_damage, max_damage), BRUTE, BP_L_FOOT, armor_pen = 100)
-	apply_damage(rand(min_damage, max_damage), BRUTE, BP_R_FOOT, armor_pen = 100)
-	apply_damage(rand(min_damage, max_damage), BRUTE, BP_L_ARM, armor_pen = 75)
-	apply_damage(rand(min_damage, max_damage), BRUTE, BP_R_ARM, armor_pen = 75)
-	weakened = max(weakened, 3)
-	if(prob(skill_fail_chance(SKILL_HAULING, 40, SKILL_EXPERT, 2)))
-		var/list/victims = list()
-		for(var/tag in list(BP_L_FOOT, BP_R_FOOT, BP_L_ARM, BP_R_ARM))
-			var/obj/item/organ/external/E = get_organ(tag)
-			if(E && !E.is_stump() && !E.dislocated && !BP_IS_ROBOTIC(E))
-				victims += E
-		if(victims.len)
-			var/obj/item/organ/external/victim = pick(victims)
-			victim.dislocate()
-			to_chat(src, "<span class='warning'>You feel a sickening pop as your [victim.joint] is wrenched out of the socket.</span>")
-	updatehealth()
-
-
-/mob/living/carbon/human/proc/climb_up(atom/A)
-	if(!isturf(loc) || !bound_overlay || bound_overlay.destruction_timer || is_physically_disabled())	// This destruction_timer check ideally wouldn't be required, but I'm not awake enough to refactor this to not need it.
+	if(ismob(src) && locate(/obj/structure/ladder, dest)) //hmmm how is this locker just floating here?
 		return FALSE
 
-	var/turf/T = get_turf(A)
-	var/turf/above = GetAbove(src)
-	if(above && T.Adjacent(bound_overlay) && above.CanZPass(src, UP)) //Certain structures will block passage from below, others not
-		var/area/location = get_area(loc)
-		if(location.has_gravity && !can_overcome_gravity())
+	// The var/climbers API is implemented here.
+	if (LAZYLEN(dest.climbers) && (src in dest.climbers))
+		return FALSE
+
+	// See if something prevents us from falling.
+	for (var/atom/A in below)
+		if(!A.CanPass(src, dest))
 			return FALSE
 
-		visible_message("<span class='notice'>[src] starts climbing onto \the [A]!</span>", "<span class='notice'>You start climbing onto \the [A]!</span>")
-		if(do_after(src, 50, A))
-			visible_message("<span class='notice'>[src] climbs onto \the [A]!</span>", "<span class='notice'>You climb onto \the [A]!</span>")
-			src.Move(T)
-		else
-			visible_message("<span class='warning'>[src] gives up on trying to climb onto \the [A]!</span>", "<span class='warning'>You give up on trying to climb onto \the [A]!</span>")
+	// True otherwise.
+	return TRUE
+
+/obj/effect/can_fall()
+	return FALSE
+
+/obj/effect/decal/cleanable/can_fall()
+	return TRUE
+
+/obj/item/pipe/can_fall(turf/below, turf/simulated/open/dest = src.loc)
+	. = ..()
+
+	if((locate(/obj/structure/disposalpipe/up) in below) || (locate(/obj/machinery/atmospherics/pipe/zpipe/up) in below))
+		return FALSE
+
+/mob/can_fall()
+	if(status_flags & NOFALL || incorporeal_move == INCORPOREAL_BSTECH)
+		return FALSE
+	return ..()
+
+/mob/living/heavy_vehicle/can_ztravel(var/direction)
+	if(legs)
+		if(legs.hover && legs.motivator.is_functional())
+			if(get_cell().charge < ((legs.power_use * CELLRATE) / 2))
+				return FALSE
+			return TRUE
+	return FALSE
+
+/mob/living/heavy_vehicle/CanAvoidGravity()
+	if(can_ztravel())
 		return TRUE
+	return FALSE
+
+/mob/living/heavy_vehicle/can_fall(turf/below, turf/simulated/open/dest = src.loc)
+	// The var/climbers API is implemented here.
+	if (LAZYLEN(dest.climbers) && (src in dest.climbers))
+		return FALSE
+
+	if (!dest.is_hole)
+		return FALSE
+
+	// See if something prevents us from falling.
+	for(var/atom/A in below)
+		if(!A.CanPass(src, dest))
+			return FALSE
+
+	// Hover thrusters
+	if(legs)
+		if(legs.hover && legs.motivator.is_functional())
+			get_cell().use((legs.power_use * CELLRATE) / 2)
+			return FALSE
+
+	// True otherwise.
+	return TRUE
+
+// Only things that stop mechas are atoms that, well, stop them.
+// Lattices and stairs get crushed in fall_through.
+
+/mob/living/carbon/human/can_fall(turf/below, turf/simulated/open/dest = src.loc)
+	// Special condition for jetpack mounted folk!
+	if(!restrained())
+		var/obj/item/tank/jetpack/thrust = GetJetpack(src)
+
+		if(thrust && thrust.stabilization_on &&\
+			!lying && thrust.allow_thrust(0.01, src))
+			return FALSE
+
+	for(var/grab in grabbed_by)
+		var/obj/item/grab/G = grab
+		if(G.state >= GRAB_AGGRESSIVE)
+			return FALSE
+	return ..()
+
+/mob/abstract/eye/can_fall()
+	return FALSE
+
+/mob/living/silicon/robot/can_fall(turf/below, turf/simulated/open/dest = src.loc)
+	var/obj/item/tank/jetpack/thrust = GetJetpack(src)
+
+	if (thrust && thrust.stabilization_on && thrust.allow_thrust(0.02, src))
+		return FALSE
+
+	return ..()
+
+/**
+ * Invoked by SSfalling when an atom is moved one open turf to another via falling.
+ *
+ * src.loc can be assumed to be of type /turf/simulated/open.
+ */
+/atom/movable/proc/fall_through()
+	visible_message("\The [src] falls from the level above through \the [loc]!",
+		"You hear a whoosh of displaced air.")
+
+/mob/fall_through()
+	visible_message("\The [src] falls from the level above through \the [loc]!",
+		"You fall through \the [loc]!", "You hear a whoosh of displaced air.")
+
+/mob/living/heavy_vehicle/fall_through()
+	var/obj/structure/lattice/L = locate() in loc
+	if (L)
+		visible_message(SPAN_DANGER("\The [src] crushes \the [L] with its weight!"))
+		qdel(L)
+
+	var/obj/structure/stairs/S = locate() in loc
+	if (S)
+		visible_message(SPAN_DANGER("\The [src] crushes \the [S] with its weight!"))
+		qdel(S)
+/**
+ * Invoked when an atom has landed on a tile through which they can no longer fall.
+ *
+ * src.loc now contains the final and updated position of the atom.
+ *
+ * @param	levels_fallen How many Z-levels the atom has fallen before landing
+ * on its current loc.
+ * @param	stopped_early TRUE if the fall was stopped by can_fall.
+ *						  FALSE if the fall was stopped by the fact that the atom
+ *						  was no longer on an open turf.
+ *
+ * @return	TRUE if the proc ran completely. FALSE otherwise. Used to determine
+ * if child procs should continue running or not, really.
+ */
+/atom/movable/proc/fall_impact(levels_fallen, stopped_early = FALSE, var/damage_mod = 1)
+	// No gravity, stop falling into spess!
+	var/area/area = get_area(src)
+	if (istype(loc, /turf/space) || (area && !area.has_gravity()))
+		return FALSE
+
+	visible_message("\The [src] falls and lands on \the [loc]!", "You hear a thud!")
+
+	return TRUE
+
+// Mobs take damage if they fall!
+/mob/living/fall_impact(levels_fallen, stopped_early = FALSE, var/damage_mod = 1)
+	// No gravity, stop falling into spess!
+	var/area/area = get_area(src)
+	if (istype(loc, /turf/space) || (area && !area.has_gravity()))
+		return FALSE
+
+	if(status_flags & GODMODE) // Godmode
+		visible_message(SPAN_NOTICE("\The [src] lands flawlessly on their legs, bending their knee to the floor. They promptly stand up."))
+		playsound(src.loc, /decl/sound_category/swing_hit_sound, 50, 1)
+		return FALSE
+
+	visible_message("\The [src] falls and lands on \the [loc]!",
+		"With a loud thud, you land on \the [loc]!", "You hear a thud!")
+
+	var/z_velocity = 5*(levels_fallen**2)
+	var/damage = ((60 + z_velocity) + rand(-20,20)) * damage_mod
+
+	apply_damage(damage, BRUTE)
+
+	// The only piece of duplicate code. I was so close. Soooo close. :ree:
+	if(!isSynthetic())
+		switch(damage)
+			if(-INFINITY to 10)
+				playsound(src.loc, "sound/weapons/bladeslice.ogg", 50, 1)
+			if(11 to 50)
+				playsound(src.loc, "sound/weapons/punch[rand(1, 4)].ogg", 75, 1)
+			if(51 to INFINITY)
+				playsound(src.loc, "sound/weapons/heavysmash.ogg", 100, 1)
+			else
+				playsound(src.loc, /decl/sound_category/swing_hit_sound, 75, 1)
+	else
+		playsound(src.loc, "sound/weapons/smash.ogg", 75, 1)
+
+	return TRUE
+
+/mob/living/carbon/human/fall_impact(levels_fallen, stopped_early = FALSE, var/damage_mod = 1)
+	// No gravity, stop falling into spess!
+	var/area/area = get_area(src)
+	if (istype(loc, /turf/space) || (area && !area.has_gravity()))
+		return FALSE
+
+	var/obj/item/rig/rig = get_rig()
+	if (istype(rig))
+		for (var/obj/item/rig_module/actuators/A in rig.installed_modules)
+			if (A.active && rig.check_power_cost(src, 10, A, 0))
+				visible_message(SPAN_NOTICE("\The [src] lands flawlessly with [src.get_pronoun("his")] [rig]."),
+					SPAN_NOTICE("You hear an electric <i>*whirr*</i> right after the slam!"))
+				return FALSE
+
+	if(status_flags & GODMODE) // Godmode
+		visible_message(SPAN_NOTICE("\The [src] lands flawlessly on their legs, bending their knee to the floor. They promptly stand up."))
+		playsound(src.loc, /decl/sound_category/swing_hit_sound, 50, 1)
+		return FALSE
+
+	var/combat_roll = 1
+	if(lying)
+		combat_roll = 0.7 //If you're sleeping, you take less damage because your body is less rigid. It's science 'n shit.
+		if(!sleeping)
+			combat_roll = 0.2 //Combat roll!
+			visible_message(SPAN_NOTICE("\The [src] tucks into a roll as they hit \the [loc]!"),
+				SPAN_NOTICE("You tuck into a roll as you hit \the [loc], minimizing damage!"))
+
+	var/aug_mod = 1
+	var/obj/item/organ/internal/augment/suspension/suspension = internal_organs_by_name[BP_AUG_SUSPENSION]
+	if(suspension && !suspension.is_broken())
+		aug_mod = suspension.suspension_mod
+		suspension.take_damage(10)
+
+	var/z_velocity = 5*(levels_fallen**2)
+	var/damage = (((40 * species.fall_mod) + z_velocity) + rand(-20,20)) * combat_roll * damage_mod * aug_mod
+	var/limb_damage = rand(0,damage/2)
+
+	if(prob(30) && combat_roll >= 1) //landed on their legs
+		var/left_damage = rand(0,damage/2)
+		var/right_damage = rand(0,damage/2)
+		var/leftf_damage = rand(0,damage/4)
+		var/rightf_damage = rand(0,damage/4)
+		var/groin_damage = rand(0,damage/4)
+
+
+		apply_damage(left_damage, BRUTE, BP_L_LEG)
+		apply_damage(right_damage, BRUTE, BP_R_LEG)
+
+		if(prob(50))
+			apply_damage(leftf_damage, BRUTE, BP_R_FOOT)
+		if(prob(50))
+			apply_damage(leftf_damage, BRUTE, BP_L_FOOT)
+		if(prob(50))
+			apply_damage(groin_damage, BRUTE, BP_GROIN)
+
+		visible_message(SPAN_WARNING("\The [src] falls and lands directly on their legs!"),
+			SPAN_DANGER("You land on your feet, and the impact brings you to your knees."))
+
+		if(prob(20))
+			var/obj/item/organ/external/l_foot = get_organ(BP_L_FOOT)
+			var/obj/item/organ/external/r_foot = get_organ(BP_R_FOOT)
+
+			if(prob(50) && l_foot)
+				fall_message("left ankle", "bends unnaturally")
+				l_foot.dislocate(TRUE)
+			else if(r_foot)
+				fall_message("right ankle", "bends unnaturally")
+				r_foot.dislocate(TRUE)
+		else if(prob(15))
+			var/obj/item/organ/external/l_leg = get_organ(BP_L_LEG)
+			var/obj/item/organ/external/r_leg = get_organ(BP_R_LEG)
+
+			if(prob(50) && l_leg)
+				fall_message("left knee", "caves in")
+				l_leg.dislocate(TRUE)
+			else if(r_leg)
+				fall_message("right knee", "caves in")
+				l_leg.dislocate(TRUE)
+
+
+		limb_damage = left_damage + right_damage + leftf_damage + rightf_damage + groin_damage
+
+	else if(prob(30) && combat_roll >= 1) //landed on their arms
+		var/left_damage = rand(0,damage/4)
+		var/right_damage = rand(0,damage/4)
+		var/lefth_damage = rand(0,damage/4)
+		var/righth_damage = rand(0,damage/4)
+
+		apply_damage(left_damage, BRUTE, BP_L_ARM)
+		apply_damage(right_damage, BRUTE, BP_R_ARM)
+
+		if(prob(50))
+			apply_damage(lefth_damage, BRUTE, BP_R_HAND)
+		if(prob(50))
+			apply_damage(righth_damage, BRUTE, BP_L_HAND)
+
+		limb_damage = left_damage + right_damage + lefth_damage + righth_damage
+
+		visible_message(SPAN_WARNING("\The [src] falls and lands arms first!"),
+			SPAN_DANGER("You brace your fall with your arms, hitting \the [loc] with a loud thud."), "You hear a thud!")
+
+		if(prob(20))
+			var/obj/item/organ/external/l_hand = get_organ(BP_L_HAND)
+			var/obj/item/organ/external/r_hand = get_organ(BP_R_HAND)
+
+			if(prob(50) && l_hand)
+				fall_message("left wrist", "bends unnaturally")
+				l_hand.dislocate(TRUE)
+			else if(r_hand)
+				fall_message("right wrist", "bends unnaturally")
+				r_hand.dislocate(TRUE)
+		else if(prob(15))
+			var/obj/item/organ/external/l_arm = get_organ(BP_L_ARM)
+			var/obj/item/organ/external/r_arm = get_organ(BP_R_ARM)
+
+			if(prob(50) && l_arm)
+				fall_message("left elbow", "caves in")
+				l_arm.dislocate(TRUE)
+			else if(r_arm)
+				fall_message("right elbow", "caves in")
+				r_arm.dislocate(TRUE)
+
+	else if(prob(30) && combat_roll >= 1)//landed on their head
+		apply_damage(limb_damage, BRUTE, BP_HEAD)
+		visible_message("<span class='warning'>\The [src] falls and lands on their face!</span>",
+			"<span class='danger'>With a loud thud, you land on your head. Hard.</span>", "You hear a thud!")
+
+		var/obj/item/organ/external/head = get_organ(BP_HEAD)
+		if(prob(20) && head)
+			fall_message("jaw", "cracks loose")
+			head.dislocate(TRUE)
+
+	else
+		limb_damage = 0
+		if(combat_roll >= 0.5)
+			visible_message("\The [src] falls and lands on \the [loc]!",
+				"With a loud thud, you land on \the [loc]!", "You hear a thud!")
+
+	if(!limb_damage)
+		apply_damage(damage, BRUTE, BP_CHEST)
+
+	Weaken(rand(damage/4, damage/2))
+
+	updatehealth()
+
+// Humans can be synthetic. Never forgetti.
+	if(!isSynthetic())
+		switch(damage)
+			if(-INFINITY to 10)
+				playsound(src.loc, "sound/weapons/bladeslice.ogg", 50, 1)
+			if(11 to 50)
+				playsound(src.loc, /decl/sound_category/punch_sound, 75, 1)
+			if(51 to INFINITY)
+				playsound(src.loc, "sound/weapons/heavysmash.ogg", 100, 1)
+			else
+				playsound(src.loc, /decl/sound_category/swing_hit_sound, 75, 1)
+	else
+		playsound(src.loc, "sound/weapons/smash.ogg", 75, 1)
+
+	// Stats.
+	SSfeedback.IncrementSimpleStat("openturf_human_falls")
+	addtimer(CALLBACK(src, .proc/post_fall_death_check), 2 MINUTES, TIMER_UNIQUE | TIMER_OVERRIDE)
+
+	return TRUE
+
+/mob/living/carbon/human/proc/fall_message(var/location, var/descriptor)
+	visible_message(SPAN_WARNING("There's a sickening popping noise as [src]'s [location] [descriptor]!"),
+		SPAN_DANGER("Grueling pain shoots through your mind as your [location] [descriptor]!"))
+
+/mob/living/carbon/human/proc/post_fall_death_check()
+	if (stat == DEAD)
+		SSfeedback.IncrementSimpleStat("openturf_human_deaths")
+
+/obj/vehicle/fall_impact(levels_fallen, stopped_early = FALSE, var/damage_mod = 1)
+	. = ..()
+	if (!.)
+		return
+
+	var/z_velocity = 5*(levels_fallen**2)
+	var/damage = ((60 + z_velocity) + rand(-20,20)) * damage_mod
+	if(istype(loc, /turf/unsimulated/floor/asteroid))
+		damage /= 2
+
+	health -= (damage * brute_dam_coeff)
+
+	playsound(loc, "sound/effects/clang.ogg", 75, 1)
+
+/**
+ * Used to handle damage dealing for objects post fall. Why is it separated from
+ * fall_impact? Because putting this into fall_impact would make the procs a huge
+ * mess of snowflake istype(src, x) checks. And I'm trying to avoid this by making
+ * the system quite atomic.
+ *
+ * @param	levels_fallen How many Z-levels the atom has fallen before landing
+ * on its current loc.
+ * @param	stopped_early TRUE if the fall was stopped by can_fall.
+ *						  FALSE if the fall was stopped by the fact that the atom
+ *						  was no longer on an open turf.
+ *
+ * @return	The /mob/living that was hit. null if no mob was hit.
+ */
+/atom/movable/proc/fall_collateral(levels_fallen, stopped_early = FALSE)
+	// No gravity, stop falling into spess!
+	var/area/area = get_area(src)
+	if (istype(loc, /turf/space) || (area && !area.has_gravity()))
+		return null
+
+	var/list/fall_specs = fall_get_specs(levels_fallen)
+	var/weight = fall_specs[1]
+	var/fall_force = fall_specs[2]
+
+	if(weight >= 3 && fall_force <= 5) //Necessary because some big large obj's do not have a defined throw_force (mechs, lockers, pianos, etc)
+		fall_force = throw_range
+
+	var/speed = ((levels_fallen-1) + throw_speed) / THROWFORCE_SPEED_DIVISOR
+	var/mass = weight + density + opacity //1
+	var/momentum = speed * mass //8
+	if(weight <= 10) //Keeps damages sane.
+		momentum = momentum / THROWNOBJ_KNOCKBACK_DIVISOR
+	var/damage = round(fall_force * momentum) //64
+
+	var/miss_chance = max(10 * (levels_fallen), 0)
+
+	if (prob(miss_chance))
+		return null
+
+	if (damage < 1)
+		return null
+
+	var/mob/living/L = null
+
+	// Can't use  locate due to the if check.
+	for (var/mob/living/ll in loc)
+		// in contents check exists for vehicles, mechas, etcetera.
+		if (ll != src && !(ll in contents))
+			L = ll
+			break
+
+	if (!L)
+		return null
+
+	if (ishuman(L))
+		var/mob/living/carbon/human/H = L
+		var/cranial_damage = rand(0,damage/2)
+		H.apply_damage(cranial_damage, BRUTE, BP_HEAD)
+		H.apply_damage((damage - cranial_damage), BRUTE, BP_CHEST)
+
+		if (damage >= THROWNOBJ_KNOCKBACK_DIVISOR)
+			H.Weaken(rand(damage / 4, damage / 2))
+	else
+		L.apply_damage(damage, BRUTE)
+
+	L.visible_message(SPAN_DANGER("\The [L] had \the [src] fall onto [src.get_pronoun("him")]!"),
+		SPAN_DANGER("You had \the [src] fall onto you and strike you!"))
+
+	admin_attack_log((ismob(src) ? src : null), L, "fell onto", "was fallen on by", "fell ontop of")
+
+	playsound(L.loc, "sound/waepons/genhit[rand(1, 3)].ogg", 75, 1)
+
+	return L
+
+/mob/fall_collateral(levels_fallen, stopped_early = FALSE)
+	. = ..()
+
+	if (.)
+		to_chat(src, SPAN_DANGER("You fell ontop of \the [.]!"))
+
+/**
+ * Helper proc for customizing which attributes should be used in fall damage
+ * calculations. Allows for greater control over the damage. (Drop pods, anyone?)
+ *
+ * @param	levels_fallen How many Z-levels the atom has fallen before landing
+ * on its current loc.
+ *
+ * @return	A two entity list: list(weight, fall_force)
+ */
+/atom/movable/proc/fall_get_specs(levels_fallen)
+	return list(1, throw_range)
+
+/obj/fall_get_specs(levels_fallen)
+	return list(w_class, throwforce)
+
+/mob/fall_get_specs(levels_fallen)
+	return list(mob_size, throw_range)

@@ -8,6 +8,8 @@
 	turns_per_move = 5
 	maxHealth = 15
 	health = 15
+	meat_type = /obj/item/reagent_containers/food/snacks/tomatomeat
+	organ_names = list("head")
 	response_help  = "prods"
 	response_disarm = "pushes aside"
 	response_harm   = "smacks"
@@ -15,11 +17,4 @@
 	melee_damage_upper = 15
 	melee_damage_lower = 10
 	attacktext = "mauled"
-	pass_flags = PASS_FLAG_TABLE
-	density = 0
-
-	meat_type = /obj/item/weapon/reagent_containers/food/snacks/tomatomeat
-	bone_material = null
-	bone_amount =   0
-	skin_material = null 
-	skin_amount =   null
+	mob_size = 2

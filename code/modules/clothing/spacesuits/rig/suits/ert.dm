@@ -1,144 +1,136 @@
-/obj/item/weapon/rig/ert
-	name = "emergency response command hardsuit control module"
-	desc = "A hardsuit used by many corporate and governmental emergency response forces. Has blue highlights. Armoured and space ready."
-	suit_type = "emergency response command"
-	icon_state = "ert_commander_rig"
-
-	chest_type = /obj/item/clothing/suit/space/rig/ert
-	helm_type = /obj/item/clothing/head/helmet/space/rig/ert
-	boot_type = /obj/item/clothing/shoes/magboots/rig/ert
-	glove_type = /obj/item/clothing/gloves/rig/ert
-
-	req_access = list(access_cent_specops)
-
-	armor = list(
-		melee = ARMOR_MELEE_MAJOR, 
-		bullet = ARMOR_BALLISTIC_RESISTANT, 
-		laser = ARMOR_LASER_MAJOR,
-		energy = ARMOR_ENERGY_MINOR, 
-		bomb = ARMOR_BOMB_PADDED, 
-		bio = ARMOR_BIO_SHIELDED, 
-		rad = ARMOR_RAD_SHIELDED
-		)
-	allowed = list(/obj/item/device/flashlight, /obj/item/weapon/tank,/obj/item/ammo_magazine,/obj/item/ammo_casing,/obj/item/weapon/handcuffs, /obj/item/device/t_scanner, /obj/item/weapon/rcd, /obj/item/weapon/crowbar, \
-	/obj/item/weapon/screwdriver, /obj/item/weapon/weldingtool, /obj/item/weapon/wirecutters, /obj/item/weapon/wrench, /obj/item/device/multitool, \
-	/obj/item/device/radio, /obj/item/device/scanner/gas,/obj/item/weapon/storage/briefcase/inflatable, /obj/item/weapon/melee/baton, /obj/item/weapon/gun, \
-	/obj/item/weapon/storage/firstaid, /obj/item/weapon/reagent_containers/hypospray, /obj/item/roller)
-
-	initial_modules = list(
-		/obj/item/rig_module/ai_container,
-		/obj/item/rig_module/maneuvering_jets,
-		/obj/item/rig_module/datajack,
-		/obj/item/rig_module/cooling_unit
-		)
-
 /obj/item/clothing/head/helmet/space/rig/ert
 	light_overlay = "helmet_light_dual"
 	camera = /obj/machinery/camera/network/ert
-	species_restricted = list(SPECIES_HUMAN,SPECIES_SKRELL,SPECIES_UNATHI,SPECIES_IPC)
 
-/obj/item/clothing/suit/space/rig/ert
-	species_restricted = list(SPECIES_HUMAN,SPECIES_SKRELL,SPECIES_UNATHI,SPECIES_IPC)
-
-/obj/item/clothing/shoes/magboots/rig/ert
-	species_restricted = list(SPECIES_HUMAN,SPECIES_SKRELL,SPECIES_UNATHI,SPECIES_IPC)
-
-/obj/item/clothing/gloves/rig/ert
-	item_flags = ITEM_FLAG_THICKMATERIAL | ITEM_FLAG_NOCUFFS
-	species_restricted = list(SPECIES_HUMAN,SPECIES_SKRELL,SPECIES_UNATHI,SPECIES_IPC)
-
-
-/obj/item/weapon/rig/ert/engineer
-	name = "emergency response engineering hardsuit control module"
-	desc = "A hardsuit used by many corporate and governmental emergency response forces. Has orange highlights. Armoured and space ready."
-	suit_type = "emergency response engineer"
-	icon_state = "ert_engineer_rig"
-
-	glove_type = /obj/item/clothing/gloves/rig/ert/engineer
-
+/obj/item/rig/ert
+	name = "ERT-C hardsuit control module"
+	desc = "A suit worn by the commander of an Emergency Response Team. Has blue highlights."
+	suit_type = "ERT commander"
+	icon_state = "ert_commander_rig"
+	emp_protection = 35
+	helm_type = /obj/item/clothing/head/helmet/space/rig/ert
+	req_access = list(access_cent_specops)
+	armor = list(melee = 60, bullet = 50, laser = 30, energy = 15, bomb = 30, bio = 100, rad = 100)
+	siemens_coefficient = 0.1
+	allowed = list(
+	/obj/item/device/flashlight, /obj/item/tank, /obj/item/device/t_scanner, /obj/item/rfd/construction, /obj/item/crowbar, \
+	/obj/item/screwdriver, /obj/item/weldingtool, /obj/item/wirecutters, /obj/item/wrench, /obj/item/device/multitool, \
+	/obj/item/device/radio, /obj/item/device/analyzer,/obj/item/storage/briefcase/inflatable, /obj/item/melee/baton, /obj/item/gun, \
+	/obj/item/storage/firstaid, /obj/item/reagent_containers/hypospray, /obj/item/roller,/obj/item/material/twohanded/fireaxe)
 	initial_modules = list(
 		/obj/item/rig_module/ai_container,
+		/obj/item/rig_module/vision/nvg,
+		/obj/item/rig_module/maneuvering_jets,
+		/obj/item/rig_module/datajack,
+		/obj/item/rig_module/actuators/combat
+		)
+
+	allowed_module_types = MODULE_GENERAL | MODULE_LIGHT_COMBAT | MODULE_HEAVY_COMBAT | MODULE_SPECIAL | MODULE_MEDICAL | MODULE_UTILITY | MODULE_VAURCA
+
+/obj/item/rig/ert/engineer
+	name = "ERT-E suit control module"
+	desc = "A suit worn by the engineering division of an Emergency Response Team. Has orange highlights. Less armored than the security variant, but offers full radiation protection."
+	suit_type = "ERT engineer"
+	icon_state = "ert_engineer_rig"
+	emp_protection = 30
+	armor = list(melee = 55, bullet = 45, laser = 30, energy = 15, bomb = 30, bio = 100, rad = 100)
+	glove_type = /obj/item/clothing/gloves/rig/eva
+	initial_modules = list(
+		/obj/item/rig_module/ai_container,
+		/obj/item/rig_module/vision/meson,
 		/obj/item/rig_module/maneuvering_jets,
 		/obj/item/rig_module/mounted/plasmacutter,
-		/obj/item/rig_module/device/rcd,
-		/obj/item/rig_module/cooling_unit
+		/obj/item/rig_module/device/rfd_c,
+		/obj/item/rig_module/actuators
 		)
+	allowed_module_types = MODULE_GENERAL | MODULE_LIGHT_COMBAT | MODULE_HEAVY_COMBAT | MODULE_SPECIAL | MODULE_UTILITY
 
-/obj/item/clothing/gloves/rig/ert/engineer
-	siemens_coefficient = 0
-
-/obj/item/weapon/rig/ert/janitor
-	name = "emergency response sanitation hardsuit control module"
-	desc = "A hardsuit used by many corporate and governmental emergency response forces. Has purple highlights. Armoured and space ready."
-	suit_type = "emergency response sanitation"
-	icon_state = "ert_janitor_rig"
-
-	initial_modules = list(
-		/obj/item/rig_module/ai_container,
-		/obj/item/rig_module/maneuvering_jets,
-		/obj/item/rig_module/fabricator/wf_sign,
-		/obj/item/rig_module/grenade_launcher/cleaner,
-		/obj/item/rig_module/device/decompiler,
-		/obj/item/rig_module/cooling_unit
-		)
-
-/obj/item/weapon/rig/ert/medical
-	name = "emergency response medical hardsuit control module"
-	desc = "A hardsuit used by many corporate and governmental emergency response forces. Has white highlights. Armoured and space ready."
-	suit_type = "emergency response medic"
+/obj/item/rig/ert/medical
+	name = "ERT-M suit control module"
+	desc = "A suit worn by the medical division of an Emergency Response Team. Has white highlights. Less armored than the security variant, but offers full radiation protection."
+	suit_type = "ERT medic"
 	icon_state = "ert_medical_rig"
-
+	emp_protection = 30
+	armor = list(melee = 55, bullet = 45, laser = 30, energy = 15, bomb = 30, bio = 100, rad = 100)
 	initial_modules = list(
 		/obj/item/rig_module/ai_container,
+		/obj/item/rig_module/vision/medhud,
 		/obj/item/rig_module/maneuvering_jets,
 		/obj/item/rig_module/device/healthscanner,
 		/obj/item/rig_module/chem_dispenser/injector,
-		/obj/item/rig_module/cooling_unit
+		/obj/item/rig_module/actuators
 		)
 
-/obj/item/weapon/rig/ert/security
-	name = "emergency response security hardsuit control module"
-	desc = "A hardsuit used by many corporate and governmental emergency response forces. Has red highlights. Armoured and space ready."
-	suit_type = "emergency response security"
-	icon_state = "ert_security_rig"
+	allowed_module_types = MODULE_GENERAL | MODULE_LIGHT_COMBAT | MODULE_HEAVY_COMBAT | MODULE_SPECIAL | MODULE_MEDICAL
 
+/obj/item/rig/ert/security
+	name = "ERT-S suit control module"
+	desc = "A suit worn by the security division of an Emergency Response Team. Has red highlights. Trades full radiation protection for a slightly better armor."
+	suit_type = "ERT security"
+	icon_state = "ert_security_rig"
+	emp_protection = 30
+	armor = list(melee = 65, bullet = 55, laser = 40, energy = 15, bomb = 30, bio = 100, rad = 80)
 	initial_modules = list(
 		/obj/item/rig_module/ai_container,
+		/obj/item/rig_module/vision/sechud,
 		/obj/item/rig_module/maneuvering_jets,
 		/obj/item/rig_module/grenade_launcher,
 		/obj/item/rig_module/mounted/egun,
-		/obj/item/rig_module/cooling_unit
+		/obj/item/rig_module/actuators
 		)
+	allowed_module_types = MODULE_GENERAL | MODULE_LIGHT_COMBAT | MODULE_HEAVY_COMBAT | MODULE_SPECIAL
 
-/obj/item/weapon/rig/ert/assetprotection
-	name = "heavy emergency response suit control module"
-	desc = "A heavy, modified version of a common emergency response hardsuit. Has blood red highlights.  Armoured and space ready."
-	suit_type = "heavy emergency response"
+/obj/item/rig/ert/janitor
+	name = "ERT-J suit control module"
+	desc = "A suit worn by the janitoral division of an Emergency Response Team. Has purple highlights. Less armored than security the variant, but offers full radiation protection."
+	suit_type = "ERT janitor"
+	icon_state = "ert_janitor_rig"
+	initial_modules = list(
+		/obj/item/rig_module/ai_container,
+		/obj/item/rig_module/maneuvering_jets,
+		/obj/item/rig_module/fabricator/sign,
+		/obj/item/rig_module/grenade_launcher/cleaner,
+		/obj/item/rig_module/device/decompiler,
+		/obj/item/rig_module/actuators
+		)
+	armor = list(melee = 55, bullet = 45, laser = 30, energy = 15, bomb = 30, bio = 100, rad = 100)
+	allowed_module_types = MODULE_GENERAL | MODULE_LIGHT_COMBAT | MODULE_HEAVY_COMBAT | MODULE_SPECIAL
+
+/obj/item/rig/ert/assetprotection
+	name = "heavy asset protection suit control module"
+	desc = "A heavy suit worn by the highest level of Asset Protection, don't mess with the person wearing this. Armored and space ready."
+	suit_type = "heavy asset protection"
 	icon_state = "asset_protection_rig"
-	armor = list(
-		melee = ARMOR_MELEE_VERY_HIGH, 
-		bullet = ARMOR_BALLISTIC_RESISTANT, 
-		laser = ARMOR_LASER_MAJOR,
-		energy = ARMOR_ENERGY_MINOR, 
-		bomb = ARMOR_BOMB_PADDED, 
-		bio = ARMOR_BIO_SHIELDED, 
-		rad = ARMOR_RAD_SHIELDED
-		)
+	armor = list(melee = 80, bullet = 75, laser = 60, energy = 40, bomb = 80, bio = 100, rad =100)
+	slowdown = 0
+	emp_protection = 50
 
-	glove_type = /obj/item/clothing/gloves/rig/ert/assetprotection
+	species_restricted = list(BODYTYPE_HUMAN)
 
 	initial_modules = list(
 		/obj/item/rig_module/ai_container,
 		/obj/item/rig_module/maneuvering_jets,
 		/obj/item/rig_module/grenade_launcher,
 		/obj/item/rig_module/vision/multi,
-		/obj/item/rig_module/mounted/egun,
+		/obj/item/rig_module/mounted/pulse,
 		/obj/item/rig_module/chem_dispenser/combat,
-		/obj/item/rig_module/mounted/plasmacutter,
-		/obj/item/rig_module/device/rcd,
+		/obj/item/rig_module/chem_dispenser/injector,
+		/obj/item/rig_module/device/drill,
+		/obj/item/rig_module/device/rfd_c,
 		/obj/item/rig_module/datajack,
-		/obj/item/rig_module/cooling_unit
+		/obj/item/rig_module/actuators/combat
 		)
 
-/obj/item/clothing/gloves/rig/ert/assetprotection
-	siemens_coefficient = 0
+	allowed_module_types = MODULE_GENERAL | MODULE_LIGHT_COMBAT | MODULE_HEAVY_COMBAT | MODULE_SPECIAL | MODULE_MEDICAL | MODULE_UTILITY | MODULE_VAURCA // all modules
+
+/obj/item/rig/ert/assetprotection/empty
+	initial_modules = list()
+
+/obj/item/rig/ert/assetprotection/einstein
+	name = "apotheosis suit control module"
+	desc = "A heavy suit with Einstein Engines branding coating it, not to mention the obvious colors."
+	suit_type = "apotheosis"
+	icon_state = "apotheosis"
+
+	req_access = list()
+	req_one_access = list()

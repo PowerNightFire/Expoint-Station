@@ -1,14 +1,16 @@
-/proc/wormhole_event(var/list/zlevels = GLOB.using_map.station_levels)
+/proc/wormhole_event()
 	spawn()
 		var/list/pick_turfs = list()
-		for(var/z in zlevels)
-			var/list/turfs = block(locate(1, 1, z), locate(world.maxx, world.maxy, z))
-			for(var/turf/simulated/floor/T in turfs)
+		for(var/turf/simulated/floor/T in turfs)
+			if(isStationLevel(T.z))
 				pick_turfs += T
 
 		if(pick_turfs.len)
 			//All ready. Announce that bad juju is afoot.
-			GLOB.using_map.space_time_anomaly_detected_annoncement()
+			command_announcement.Announce("Space-time anomalies detected on the station. There is no additional data.", "Anomaly Alert", new_sound = 'sound/AI/spanomalies.ogg')
+
+			//prob(20) can be approximated to 1 wormhole every 5 turfs!
+			//admittedly less random but totally worth it >_<
 			var/event_duration = 3000	//~5 minutes in ticks
 			var/number_of_selections = (pick_turfs.len/5)+1	//+1 to avoid division by zero!
 			var/sleep_duration = round( event_duration / number_of_selections )
@@ -16,16 +18,13 @@
 
 			var/increment =	max(1,round(number_of_selections/50))
 
-
 			var/i = 1
 			while( 1 )
 
 				//we've run into overtime. End the event
 				if( end_time < world.time )
-
 					return
 				if( !pick_turfs.len )
-
 					return
 
 				//loop it round
@@ -55,6 +54,6 @@
 	P.icon = 'icons/obj/objects.dmi'
 	P.failchance = 0
 	P.icon_state = "anom"
-	P.SetName("wormhole")
+	P.name = "wormhole"
 	spawn(rand(300,600))
 		qdel(P)

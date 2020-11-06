@@ -2,33 +2,34 @@
 	return
 
 /mob/living/carbon/brain/handle_mutations_and_radiation()
-	if (radiation)
-		if (radiation > 100)
-			radiation = 100
+	if (total_radiation)
+		if (total_radiation > RADS_MAX)
+			total_radiation = RADS_MAX
 			if(!container)//If it's not in an MMI
-				to_chat(src, "<span class='notice'>You feel weak.</span>")
+				to_chat(src, SPAN_WARNING("You feel weak."))
 			else//Fluff-wise, since the brain can't detect anything itself, the MMI handles thing like that
-				to_chat(src, "<span class='warning'>STATUS: CRITICAL AMOUNTS OF RADIATION DETECTED.</span>")
-		switch(radiation)
-			if(1 to 49)
-				radiation--
+				to_chat(src, SPAN_WARNING("STATUS: CRITICAL AMOUNTS OF RADIATION DETECTED."))
+
+		switch(total_radiation)
+			if(RADS_LOW to RADS_MED-1)
+				apply_radiation(-1)
 				if(prob(25))
 					adjustToxLoss(1)
 					updatehealth()
 
-			if(50 to 74)
-				radiation -= 2
+			if(RADS_MED to RADS_HIGH-1)
+				apply_radiation(-2)
 				adjustToxLoss(1)
 				if(prob(5))
-					radiation -= 5
+					apply_radiation(-5)
 					if(!container)
-						to_chat(src, "<span class='warning'>You feel weak.</span>")
+						to_chat(src, SPAN_WARNING("You feel weak."))
 					else
-						to_chat(src, "<span class='warning'>STATUS: DANGEROUS LEVELS OF RADIATION DETECTED.</span>")
+						to_chat(src, SPAN_DANGER("STATUS: DANGEROUS LEVELS OF RADIATION DETECTED."))
 				updatehealth()
 
-			if(75 to 100)
-				radiation -= 3
+			if(RADS_HIGH to RADS_MAX)
+				apply_radiation(-3)
 				adjustToxLoss(3)
 				updatehealth()
 
@@ -54,7 +55,8 @@
 	return //TODO: DEFERRED
 
 /mob/living/carbon/brain/proc/handle_temperature_damage(body_part, exposed_temperature, exposed_intensity)
-	if(status_flags & GODMODE) return
+	if(status_flags & GODMODE)
+		return
 
 	if(exposed_temperature > bodytemperature)
 		var/discomfort = min( abs(exposed_temperature - bodytemperature)*(exposed_intensity)/2000000, 1.0)
@@ -70,13 +72,18 @@
 
 /mob/living/carbon/brain/handle_chemicals_in_body()
 	chem_effects.Cut()
+	analgesic = 0
 
 	if(touching) touching.metabolize()
 	var/datum/reagents/metabolism/ingested = get_ingested_reagents()
 	if(istype(ingested)) ingested.metabolize()
 	if(bloodstr) bloodstr.metabolize()
+	if(breathing) breathing.metabolize()
 
-	handle_confused()
+	if(CE_PAINKILLER in chem_effects)
+		analgesic = chem_effects[CE_PAINKILLER]
+
+	confused = max(0, confused - 1)
 	// decrement dizziness counter, clamped to 0
 	if(resting)
 		dizziness = max(0, dizziness - 5)
@@ -153,10 +160,24 @@
 					to_chat(src, "<span class='warning'>All systems restored.</span>")
 					emp_damage -= 1
 
+		//Other
+		handle_statuses()
 	return 1
 
 /mob/living/carbon/brain/handle_regular_hud_updates()
-	update_sight()
+	if (stat == 2 || (XRAY in src.mutations))
+		sight |= SEE_TURFS
+		sight |= SEE_MOBS
+		sight |= SEE_OBJS
+		see_in_dark = 8
+		see_invisible = SEE_INVISIBLE_LEVEL_TWO
+	else if (stat != 2)
+		sight &= ~SEE_TURFS
+		sight &= ~SEE_MOBS
+		sight &= ~SEE_OBJS
+		see_in_dark = 2
+		see_invisible = SEE_INVISIBLE_LIVING
+
 	if (healths)
 		if (stat != 2)
 			switch(health)
@@ -177,6 +198,21 @@
 		else
 			healths.icon_state = "health7"
 
+		if (stat == 2 || (XRAY in src.mutations))
+			sight |= SEE_TURFS
+			sight |= SEE_MOBS
+			sight |= SEE_OBJS
+			see_in_dark = 8
+			see_invisible = SEE_INVISIBLE_LEVEL_TWO
+		else if (stat != 2)
+			sight &= ~SEE_TURFS
+			sight &= ~SEE_MOBS
+			sight &= ~SEE_OBJS
+			see_in_dark = 2
+			see_invisible = SEE_INVISIBLE_LIVING
+	if (client)
+		client.screen.Remove(global_hud.blurry,global_hud.druggy,global_hud.vimpaired)
+
 	if(stat != DEAD)
 		if(blinded)
 			overlay_fullscreen("blind", /obj/screen/fullscreen/blind)
@@ -184,12 +220,15 @@
 			clear_fullscreen("blind")
 			set_fullscreen(disabilities & NEARSIGHTED, "impaired", /obj/screen/fullscreen/impaired, 1)
 			set_fullscreen(eye_blurry, "blurry", /obj/screen/fullscreen/blurry)
-			set_fullscreen(druggy, "high", /obj/screen/fullscreen/high)
-		if (machine)
-			if (!( machine.check_eye(src) ))
+			if(druggy > 5)
+				add_client_color(/datum/client_color/oversaturated)
+			else
+				remove_client_color(/datum/client_color/oversaturated)
+		if(machine)
+			if(machine.check_eye(src) < 1)
 				reset_view(null)
 		else
-			if(client && !client.adminobs)
+			if(!client?.adminobs)
 				reset_view(null)
 
 	return 1

@@ -1,21 +1,20 @@
 /obj/machinery/computer/ship/sensors
 	name = "sensors console"
-	icon_keyboard = "teleport_key"
-	icon_screen = "teleport"
+	icon_screen = "sensors"
 	light_color = "#77fff8"
 	extra_view = 4
-	silicon_restriction = STATUS_UPDATE
 	var/obj/machinery/shipsensors/sensors
 
 /obj/machinery/computer/ship/sensors/attempt_hook_up(obj/effect/overmap/visitable/ship/sector)
-	if(!(. = ..()))
+	. = ..()
+	if(!.)
 		return
 	find_sensors()
 
 /obj/machinery/computer/ship/sensors/proc/find_sensors()
 	if(!linked)
 		return
-	for(var/obj/machinery/shipsensors/S in SSmachines.machinery)
+	for(var/obj/machinery/shipsensors/S in SSmachinery.all_machines)
 		if(linked.check_ownership(S))
 			sensors = S
 			break
@@ -28,8 +27,6 @@
 	var/data[0]
 
 	data["viewing"] = viewing_overmap(user)
-	var/mob/living/silicon/silicon = user
-	data["viewing_silicon"] = ismachinerestricted(silicon)
 	if(sensors)
 		data["on"] = sensors.use_power
 		data["range"] = sensors.range
@@ -62,23 +59,20 @@
 		data["range"] = "N/A"
 		data["on"] = 0
 
-	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnanoui.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "shipsensors.tmpl", "[linked.name] Sensors Control", 420, 530, src)
 		ui.set_initial_data(data)
 		ui.open()
 		ui.set_auto_update(1)
 
-/obj/machinery/computer/ship/sensors/OnTopic(var/mob/user, var/list/href_list, state)
-	if(..())
-		return TOPIC_HANDLED
-
+/obj/machinery/computer/ship/sensors/Topic(href, href_list)
 	if (!linked)
 		return TOPIC_NOACTION
 
 	if (href_list["viewing"])
-		if(user)
-			viewing_overmap(user) ? unlook(user) : look(user)
+		if(usr && !isAI(usr))
+			viewing_overmap(usr) ? unlook(usr) : look(usr)
 		return TOPIC_REFRESH
 
 	if (href_list["link"])
@@ -88,7 +82,7 @@
 	if(sensors)
 		if (href_list["range"])
 			var/nrange = input("Set new sensors range", "Sensor range", sensors.range) as num|null
-			if(!CanInteract(user,state))
+			if(!CanInteract(usr, physical_state))
 				return TOPIC_NOACTION
 			if (nrange)
 				sensors.set_range(Clamp(nrange, 1, world.view))
@@ -101,10 +95,10 @@
 		var/obj/effect/overmap/O = locate(href_list["scan"])
 		if(istype(O) && !QDELETED(O) && (O in view(7,linked)))
 			playsound(loc, "sound/machines/dotprinter.ogg", 30, 1)
-			new/obj/item/weapon/paper/(get_turf(src), O.get_scan_data(user), "paper (Sensor Scan - [O])")
+			new/obj/item/paper/(get_turf(src), O.get_scan_data(usr), "paper (Sensor Scan - [O])")
 		return TOPIC_HANDLED
 
-/obj/machinery/computer/ship/sensors/Process()
+/obj/machinery/computer/ship/sensors/process()
 	..()
 	if(!linked)
 		return
@@ -128,18 +122,18 @@
 	var/range = 1
 	idle_power_usage = 5000
 
-/obj/machinery/shipsensors/attackby(obj/item/weapon/W, mob/user)
+/obj/machinery/shipsensors/attackby(obj/item/W, mob/user)
 	var/damage = max_health - health
-	if(damage && isWelder(W))
+	if(damage && iswelder(W))
 
-		var/obj/item/weapon/weldingtool/WT = W
+		var/obj/item/weldingtool/WT = W
 
 		if(!WT.isOn())
 			return
 
 		if(WT.remove_fuel(0,user))
 			to_chat(user, "<span class='notice'>You start repairing the damage to [src].</span>")
-			playsound(src, 'sound/items/Welder.ogg', 100, 1)
+			playsound(src, 'sound/items/welder.ogg', 100, 1)
 			if(do_after(user, max(5, damage / 5), src) && WT && WT.isOn())
 				to_chat(user, "<span class='notice'>You finish repairing the damage to [src].</span>")
 				take_damage(-damage)
@@ -157,7 +151,7 @@
 			return 0
 	return 1
 
-/obj/machinery/shipsensors/on_update_icon()
+/obj/machinery/shipsensors/update_icon()
 	if(use_power)
 		icon_state = "sensors"
 	else
@@ -182,19 +176,17 @@
 	if(!use_power && (health == 0 || !in_vacuum()))
 		return // No turning on if broken or misplaced.
 	if(!use_power) //need some juice to kickstart
-		use_power_oneoff(idle_power_usage*5)
+		use_power(idle_power_usage*5)
 	update_use_power(!use_power)
 	queue_icon_update()
 
-/obj/machinery/shipsensors/Process()
+/obj/machinery/shipsensors/process()
 	if(use_power) //can't run in non-vacuum
 		if(!in_vacuum())
 			toggle()
 		if(heat > critical_heat)
 			src.visible_message("<span class='danger'>\The [src] violently spews out sparks!</span>")
-			var/datum/effect/effect/system/spark_spread/s = new /datum/effect/effect/system/spark_spread
-			s.set_up(3, 1, src)
-			s.start()
+			spark(src, 3, alldirs)
 
 			take_damage(rand(10,50))
 			toggle()
@@ -210,7 +202,7 @@
 
 /obj/machinery/shipsensors/proc/set_range(nrange)
 	range = nrange
-	change_power_consumption(1500 * (range**2), POWER_USE_IDLE) //Exponential increase, also affects speed of overheating
+	active_power_usage = (1500 * (range**2)) //Exponential increase, also affects speed of overheating
 
 /obj/machinery/shipsensors/emp_act(severity)
 	if(!use_power)

@@ -3,12 +3,8 @@
 //////////////////////////////////////////////////////////////
 
 //global datum that will preload variables on atoms instanciation
-GLOBAL_VAR_INIT(use_preloader, FALSE)
-GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
-
-/datum/map_load_metadata
-	var/bounds
-	var/list/atoms_to_initialise
+var/global/use_preloader = FALSE
+var/global/dmm_suite/preloader/_preloader = new
 
 /dmm_suite
 		// /"([a-zA-Z]+)" = \(((?:.|\n)*?)\)\n(?!\t)|\((\d+),(\d+),(\d+)\) = \{"([a-zA-Z\n]*)"\}/g
@@ -33,24 +29,21 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
  * 2) Read the map line by line, parsing the result (using parse_grid)
  *
  */
-/dmm_suite/load_map(var/dmm_file, var/x_offset, var/y_offset, var/z_offset, var/cropMap, var/measureOnly, var/no_changeturf, var/clear_contents, var/lower_crop_x, var/lower_crop_y, var/upper_crop_x, var/upper_crop_y, var/initialized_areas_by_type)
+/dmm_suite/load_map(dmm_file as file, x_offset as num, y_offset as num, z_offset as num, cropMap as num, measureOnly as num, no_changeturf as num, lower_crop_x as num,  lower_crop_y as num, upper_crop_x as num, upper_crop_y as num)
 	//How I wish for RAII
 	Master.StartLoadingMap()
 	space_key = null
 	#ifdef TESTING
 	turfsSkipped = 0
 	#endif
-	initialized_areas_by_type = initialized_areas_by_type || list()
-	if(!(world.area in initialized_areas_by_type))
-		initialized_areas_by_type[world.area] = locate(world.area)
-	. = load_map_impl(dmm_file, x_offset, y_offset, z_offset, cropMap, measureOnly, no_changeturf, clear_contents, lower_crop_x, upper_crop_x, lower_crop_y, upper_crop_y, initialized_areas_by_type)
+	. = load_map_impl(dmm_file, x_offset, y_offset, z_offset, cropMap, measureOnly, no_changeturf, lower_crop_x, upper_crop_x, lower_crop_y, upper_crop_y)
 	#ifdef TESTING
 	if(turfsSkipped)
 		testing("Skipped loading [turfsSkipped] default turfs")
 	#endif
 	Master.StopLoadingMap()
 
-/dmm_suite/proc/load_map_impl(dmm_file, x_offset, y_offset, z_offset, cropMap, measureOnly, no_changeturf, clear_contents, x_lower = -INFINITY, x_upper = INFINITY, y_lower = -INFINITY, y_upper = INFINITY, initialized_areas_by_type)
+/dmm_suite/proc/load_map_impl(dmm_file, x_offset, y_offset, z_offset, cropMap, measureOnly, no_changeturf, x_lower = -INFINITY, x_upper = INFINITY, y_lower = -INFINITY, y_upper = INFINITY)
 	var/tfile = dmm_file//the map file we're creating
 	if(isfile(tfile))
 		tfile = file2text(tfile)
@@ -67,9 +60,6 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 	var/key_len = 0
 
 	var/stored_index = 1
-
-	var/list/atoms_to_initialise = list()
-	var/list/atoms_to_delete = list()
 
 	while(dmmRegex.Find(tfile, stored_index))
 		stored_index = dmmRegex.next
@@ -103,14 +93,8 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 			var/ycrd = text2num(dmmRegex.group[4]) + y_offset - 1
 			var/zcrd = text2num(dmmRegex.group[5]) + z_offset - 1
 
-			var/is_connected_to_lower_levels = AreConnectedZLevels(zcrd, z_offset)
-			var/is_on_an_existing_zlevel = zcrd <= world.maxz
-
-			if (is_on_an_existing_zlevel && !is_connected_to_lower_levels)
-				continue
-
 			var/zexpansion = zcrd > world.maxz
-			if(zexpansion && !measureOnly) // don't actually expand the world if we're only measuring bounds
+			if(zexpansion)
 				if(cropMap)
 					continue
 				else
@@ -172,10 +156,7 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 								if(!no_afterchange || (model_key != space_key))
 									if(!grid_models[model_key])
 										throw EXCEPTION("Undefined model key in DMM.")
-									var/datum/grid_load_metadata/M = parse_grid(grid_models[model_key], model_key, xcrd, ycrd, zcrd, no_changeturf || zexpansion, clear_contents, initialized_areas_by_type)
-									if (M)
-										atoms_to_initialise += M.atoms_to_initialise
-										atoms_to_delete += M.atoms_to_delete
+									parse_grid(grid_models[model_key], model_key, xcrd, ycrd, zcrd, no_changeturf || zexpansion)
 								#ifdef TESTING
 								else
 									++turfsSkipped
@@ -184,8 +165,6 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 							maxx = max(maxx, xcrd)
 							++xcrd
 					--ycrd
-				if (zexpansion)
-					create_lighting_overlays_zlevel(zcrd)
 
 			bounds[MAP_MAXX] = Clamp(max(bounds[MAP_MAXX], cropMap ? min(maxx, world.maxx) : maxx), x_lower, x_upper)
 
@@ -195,13 +174,12 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 		return null
 	else
 		if(!measureOnly)
-			if(clear_contents)
-				for(var/atom/to_delete in atoms_to_delete)
-					qdel(to_delete)
-		var/datum/map_load_metadata/M = new
-		M.bounds = bounds
-		M.atoms_to_initialise = atoms_to_initialise
-		return M
+			if(!no_changeturf)
+				for(var/t in block(locate(bounds[MAP_MINX], bounds[MAP_MINY], bounds[MAP_MINZ]), locate(bounds[MAP_MAXX], bounds[MAP_MAXY], bounds[MAP_MAXZ])))
+					var/turf/T = t
+					//we do this after we load everything in. if we don't; we'll have weird atmos bugs regarding atmos adjacent turfs
+					T.post_change(TRUE)
+		return bounds
 
 /**
  * Fill a given tile with its area/turf/objects/mobs
@@ -220,21 +198,7 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
  * 4) Instanciates the atom with its variables
  *
  */
-
-/datum/grid_load_metadata
-	var/list/atoms_to_initialise
-	var/list/atoms_to_delete
-
-/dmm_suite/proc/types_to_delete()
-	return list(
-		/mob/living,
-		/obj/effect,
-		/obj/item,
-		/obj/machinery,
-		/obj/structure,
-	)
-
-/dmm_suite/proc/parse_grid(model as text, model_key as text, xcrd as num,ycrd as num,zcrd as num, no_changeturf as num, clear_contents as num, initialized_areas_by_type)
+/dmm_suite/proc/parse_grid(model as text, model_key as text, xcrd as num,ycrd as num,zcrd as num, no_changeturf as num)
 	/*Method parse_grid()
 	- Accepts a text string containing a comma separated list of type paths of the
 		same construction as those contained in a .dmm file, and instantiates them.
@@ -266,17 +230,14 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 
 			var/full_def = trim_text(copytext(model, old_position, dpos)) //full definition, e.g : /obj/foo/bar{variables=derp}
 			var/variables_start = findtext(full_def, "{")
-			var/atom_def = text2path(trim_text(copytext(full_def, 1, variables_start))) //path definition, e.g /obj/foo/bar
+
+			var/path_str = trim_text(copytext(full_def, 1, variables_start))
+			var/atom_def = text2path(path_str) //path definition, e.g /obj/foo/bar
 			old_position = dpos + 1
 
 			if(!atom_def) // Skip the item if the path does not exist.  Fix your crap, mappers!
-	#ifdef UNIT_TEST
-				log_error("Couldn't find atom path specified in map: [full_def]")
-	#endif
-				if (dpos == 0)
-					break
-				else
-					continue
+				crash_with("Invalid type in map. [path_str]")
+				continue
 
 			members += atom_def
 
@@ -323,28 +284,23 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 	//The next part of the code assumes there's ALWAYS an /area AND a /turf on a given tile
 	var/turf/crds = locate(xcrd,ycrd,zcrd)
 
-	var/is_not_noop = FALSE
-	var/atoms_to_delete = list()
-
 	//first instance the /area and remove it from the members list
 	index = members.len
 	if(members[index] != /area/template_noop)
-		is_not_noop = TRUE
+		var/atype = members[index]
+		var/atom/instance = areas_by_type[atype]
 		var/list/attr = members_attributes[index]
 		if (LAZYLEN(attr))
-			GLOB._preloader.setup(attr)//preloader for assigning  set variables on atom creation
-		var/atype = members[index]
-		var/atom/instance = initialized_areas_by_type[atype]
+			_preloader.setup(attr)//preloader for assigning  set variables on atom creation
 		if(!instance)
 			instance = new atype(null)
-			initialized_areas_by_type[atype] = instance
 		if(crds)
-			instance.contents.Add(crds)
+			instance.contents += crds
 
-		if(GLOB.use_preloader && instance)
-			GLOB._preloader.load(instance)
+		if(use_preloader && instance)
+			_preloader.load(instance)
 
-	//then instance the /turf and, if multiple tiles are presents, simulates the DMM underlays piling effect
+	//then instance the /turf
 
 	var/first_turf_index = 1
 	while(!ispath(members[first_turf_index], /turf)) //find first /turf object in members
@@ -352,42 +308,22 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 
 	//turn off base new Initialization until the whole thing is loaded
 	SSatoms.map_loader_begin()
-	//since we've switched off autoinitialisation, record atoms to initialise later
-	var/list/atoms_to_initialise = list()
-
 	//instanciate the first /turf
 	var/turf/T
 	if(members[first_turf_index] != /turf/template_noop)
-		is_not_noop = TRUE
 		T = instance_atom(members[first_turf_index],members_attributes[first_turf_index],crds,no_changeturf)
-		atoms_to_initialise += T
 
 	if(T)
-		//if others /turf are presents, simulates the underlays piling effect
 		index = first_turf_index + 1
 		while(index <= members.len - 1) // Last item is an /area
-			var/underlay = T.appearance
-			T = instance_atom(members[index],members_attributes[index],crds,no_changeturf)//instance new turf
-			T.underlays += underlay
+			crash_with("Tried to load additional turf at [model_key].")
 			index++
-			atoms_to_initialise += T
-
-	if (clear_contents && is_not_noop)
-		for (var/type_to_delete in types_to_delete())
-			for (var/atom/pre_existing in crds)
-				if (istype(pre_existing, type_to_delete))
-					atoms_to_delete |= pre_existing
 
 	//finally instance all remainings objects/mobs
 	for(index in 1 to first_turf_index-1)
-		atoms_to_initialise += instance_atom(members[index],members_attributes[index],crds,no_changeturf)
-	//Restore initialization to the previous valsue
+		instance_atom(members[index],members_attributes[index],crds,no_changeturf)
+	//Restore initialization to the previous value
 	SSatoms.map_loader_stop()
-
-	var/datum/grid_load_metadata/M = new
-	M.atoms_to_initialise = atoms_to_initialise
-	M.atoms_to_delete = atoms_to_delete
-	return M
 
 ////////////////
 //Helpers procs
@@ -396,7 +332,7 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 //Instance an atom at (x,y,z) and gives it the variables in attributes
 /dmm_suite/proc/instance_atom(path,list/attributes, turf/crds, no_changeturf)
 	if (LAZYLEN(attributes))
-		GLOB._preloader.setup(attributes, path)
+		_preloader.setup(attributes, path)
 
 	if(crds)
 		if(!no_changeturf && ispath(path, /turf))
@@ -404,18 +340,18 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 		else
 			. = create_atom(path, crds)//first preloader pass
 
-	if(GLOB.use_preloader && .)//second preloader pass, for those atoms that don't ..() in New()
-		GLOB._preloader.load(.)
+	if(use_preloader && .)//second preloader pass, for those atoms that don't ..() in New()
+		_preloader.load(.)
 
-	//custom CHECK_TICK here because we don't want things created while we're sleeping to delay initialization.
+	//custom CHECK_TICK here because we don't want things created while we're sleeping to not initialize
 	if(TICK_CHECK)
 		SSatoms.map_loader_stop()
 		stoplag()
 		SSatoms.map_loader_begin()
 
 /dmm_suite/proc/create_atom(path, crds)
-	// Doing this async is impossible, as we must return the ref.
-	return new path (crds)
+	set waitfor = FALSE
+	. = new path (crds)
 
 //text trimming (both directions) helper proc
 //optionally removes quotes before and after the text (for variable name)
@@ -440,13 +376,15 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 
 	return next_delimiter
 
-/dmm_suite/proc/readlistitem(text as text)
+/dmm_suite/proc/readlistitem(text as text, is_key = FALSE)
 	//Check for string
 	if(findtext(text,"\"",1,2))
 		. = copytext(text,2,findtext(text,"\"",3,0))
 
 	//Check for number
-	else if(isnum(text2num(text)) && text == "[text2num(text)]") //text2num will parse truthy false positives; this demands that the only numbers parsed as such are properly formatted ones.
+	// Keys cannot safely be numbers. This implementation will return null if
+	// an assoc key is a number.
+	else if(!is_key && isnum(text2num(text)))
 		. = text2num(text)
 
 	//Check for null
@@ -454,7 +392,7 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 		. = null
 
 	//Check for list
-	else if(copytext(text,1,5) == "list")
+	else if(copytext(text,1,6) == "list(")
 		. = readlist(copytext(text,6,length(text)))
 
 	//Check for file
@@ -465,6 +403,12 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 	else if(ispath(text2path(text)))
 		. = text2path(text)
 
+	// Associative keys are fed in without quotation marks.
+	// So if none of the other cases apply, return simply the string that was given.
+	// This case is also triggered for item values. So I guess we're also looking for text.
+	else if(is_key || istext(text))
+		. = text
+
 //build a list from variables in text form (e.g {var1="derp"; var2; var3=7} => list(var1="derp", var2, var3=7))
 //return the filled list
 /dmm_suite/proc/readlist(text as text, delimiter=",")
@@ -472,6 +416,7 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 
 	var/position
 	var/old_position = 1
+	var/list_index = 1
 
 	do
 		//find next delimiter that is not within  "..."
@@ -480,29 +425,17 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 		//check if this is a simple variable (as in list(var1, var2)) or an associative one (as in list(var1="foo",var2=7))
 		var/equal_position = findtext(text,"=",old_position, position)
 
-		var/trim_left = trim_text(copytext(text,old_position,(equal_position ? equal_position : position)), 0)
+		var/trim_left = trim_text(copytext(text,old_position,(equal_position ? equal_position : position)),1)//the name of the variable, must trim quotes to build a BYOND compliant associatives list
 		old_position = position + 1
 
-		if(!length(trim_left))
-			if(position == 0)
-				break // That terminal commas are ignored is real dm behavior.
-			to_return.len++
-			continue
-
-		var/left = readlistitem(trim_left)
-		if(equal_position)
-			if(!left && trim_left != "null")
-				left = trim_left // This is dm behavior: unindentifiable keys in associative lists are parsed as literal strings.
-			if(left == 1.#INF || left == -1.#INF)
-				left = trim_left // This is not valid as a list index; we could let it runtime, but if associative it should be parsed as "inf" or "-inf" instead.
-		to_return += left
-
-		if(equal_position)//associative var, so do the association
-			if(isnum(left))
-				crash_with("Numerical key in associative list.")
-				break // This is invalid; apparently dm will runtime in this situation.
+		if(equal_position) //associative var, so do the association
 			var/trim_right = trim_text(copytext(text,equal_position+1,position))//the content of the variable
-			to_return[left] = readlistitem(trim_right)
+			trim_left = readlistitem(trim_left, TRUE) // Assoc vars can be anything that isn't a num!
+			to_return[trim_left] = readlistitem(trim_right)
+			list_index++
+		else if (length(trim_left))	//simple var
+			to_return.len++
+			to_return[list_index++] = readlistitem(trim_left)
 
 	while(position != 0)
 
@@ -523,7 +456,7 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 
 /dmm_suite/preloader/proc/setup(list/the_attributes, path)
 	if(LAZYLEN(the_attributes))
-		GLOB.use_preloader = TRUE
+		use_preloader = TRUE
 		attributes = the_attributes
 		target_path = path
 
@@ -532,23 +465,12 @@ GLOBAL_DATUM_INIT(_preloader, /dmm_suite/preloader, new)
 		var/value = attributes[attribute]
 		if(islist(value))
 			value = deepCopyList(value)
-		try
-			what.vars[attribute] = value
-		catch (var/ex)
-			var/found = FALSE
-			for (var/V in what.vars)
-				if (deep_string_equals(V, attribute))
-					what.vars[V] = value
-					log_debug("Successfully performed manual var detection for var [V] \ref[V] on provided attribute [attribute] \ref[attribute] for atom [what]")
-					found = TRUE
-					break
-			if (!found)
-				throw ex
-	GLOB.use_preloader = FALSE
+		what.vars[attribute] = value
+	use_preloader = FALSE
 
 /area/template_noop
 	name = "Area Passthrough"
-	icon_state = "unknown"
+	icon_state = "space"
 
 /turf/template_noop
 	name = "Turf Passthrough"

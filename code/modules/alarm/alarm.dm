@@ -22,7 +22,6 @@
 	var/area/last_area				//The last acquired area, used should origin be lost (for example a destroyed borg containing an alarming camera).
 	var/area/last_name				//The last acquired name, used should origin be lost
 	var/area/last_camera_area		//The last area in which cameras where fetched, used to see if the camera list should be updated.
-	var/last_z_level				//The last acquired z-level, used should origin be lost
 	var/end_time					//Used to set when this alarm should clear, in case the origin is lost.
 
 /datum/alarm/New(var/atom/origin, var/atom/source, var/duration, var/severity)
@@ -31,7 +30,7 @@
 	cameras()	// Sets up both cameras and last alarm area.
 	set_source_data(source, duration, severity)
 
-/datum/alarm/proc/process()
+/datum/alarm/process()
 	// Has origin gone missing?
 	if(!origin && !end_time)
 		end_time = world.time + ALARM_RESET_DELAY
@@ -60,11 +59,6 @@
 	var/datum/alarm_source/AS = sources_assoc[source]
 	sources -= AS
 	sources_assoc -= source
-
-/datum/alarm/proc/alarm_z()
-	if(origin)
-		last_z_level = origin.get_alarm_z(origin)
-	return last_z_level
 
 /datum/alarm/proc/alarm_area()
 	if(!origin)
@@ -106,12 +100,6 @@
 /******************
 * Assisting procs *
 ******************/
-/atom/proc/get_alarm_z()
-	return get_z(src)
-
-area/get_alarm_z()
-	return contents.len ? get_z(contents[1]) : 0
-
 /atom/proc/get_alarm_area()
 	return get_area(src)
 

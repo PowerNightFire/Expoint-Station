@@ -50,11 +50,6 @@
 	if(LAZYLEN(turfs))
 		return pick(turfs)
 
-/proc/pick_area_turf(var/areatype, var/list/predicates)
-	var/list/turfs = get_area_turfs(areatype, predicates)
-	if(turfs && turfs.len)
-		return pick(turfs)
-
 /proc/pick_area(var/list/predicates)
 	var/list/areas = get_filtered_areas(predicates)
 	if(LAZYLEN(areas))
@@ -74,6 +69,11 @@
 	area_predicates[/proc/area_belongs_to_zlevels] = z_levels
 	return pick_area_and_turf(area_predicates, turf_predicates)
 
+/proc/pick_area_turf(var/areatype, var/list/predicates)
+	var/list/turfs = get_area_turfs(areatype, predicates)
+	if(turfs && turfs.len)
+		return pick(turfs)
+
 /*
 	Predicate Helpers
 */
@@ -81,7 +81,9 @@
 	. = (A.z in z_levels)
 
 /proc/is_station_area(var/area/A)
-	. = isStationLevel(A.z)
+	if(A.station_area)
+		return TRUE
+	return FALSE
 
 /proc/is_contact_area(var/area/A)
 	. = isContactLevel(A.z)
@@ -106,27 +108,3 @@
 
 /proc/is_not_maint_area(var/area/A)
 	. = !is_maint_area(A)
-
-/proc/is_coherent_area(var/area/A)
-	return !is_type_in_list(A, GLOB.using_map.area_coherency_test_exempt_areas)
-
-GLOBAL_LIST_INIT(is_station_but_not_space_or_shuttle_area, list(/proc/is_station_area, /proc/is_not_space_area, /proc/is_not_shuttle_area))
-
-GLOBAL_LIST_INIT(is_contact_but_not_space_or_shuttle_area, list(/proc/is_contact_area, /proc/is_not_space_area, /proc/is_not_shuttle_area))
-
-GLOBAL_LIST_INIT(is_player_but_not_space_or_shuttle_area, list(/proc/is_player_area, /proc/is_not_space_area, /proc/is_not_shuttle_area))
-
-GLOBAL_LIST_INIT(is_station_area, list(/proc/is_station_area))
-
-GLOBAL_LIST_INIT(is_station_and_maint_area, list(/proc/is_station_area, /proc/is_maint_area))
-
-GLOBAL_LIST_INIT(is_station_but_not_maint_area, list(/proc/is_station_area, /proc/is_not_maint_area))
-
-/*
-	Misc Helpers
-*/
-#define teleportlocs area_repository.get_areas_by_name_and_coords(GLOB.is_player_but_not_space_or_shuttle_area)
-#define stationlocs area_repository.get_areas_by_name(GLOB.is_player_but_not_space_or_shuttle_area)
-#define wizteleportlocs area_repository.get_areas_by_name(GLOB.is_station_area)
-#define maintlocs area_repository.get_areas_by_name(GLOB.is_station_and_maint_area)
-#define wizportallocs area_repository.get_areas_by_name(GLOB.is_station_but_not_space_or_shuttle_area)

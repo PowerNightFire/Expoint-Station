@@ -9,12 +9,13 @@
 
 
 /obj/machinery/gateway/Initialize()
-	update_icon()
-	if(dir == SOUTH)
-		set_density(0)
 	. = ..()
+	update_icon()
+	if(dir == 2)
+		density = 0
 
-/obj/machinery/gateway/on_update_icon()
+
+/obj/machinery/gateway/update_icon()
 	if(active)
 		icon_state = "on"
 		return
@@ -26,6 +27,7 @@
 /obj/machinery/gateway/centerstation
 	density = 1
 	icon_state = "offcenter"
+	use_power = 1
 
 	//warping vars
 	var/list/linked = list()
@@ -34,11 +36,13 @@
 	var/obj/machinery/gateway/centeraway/awaygate = null
 
 /obj/machinery/gateway/centerstation/Initialize()
-	update_icon()
-	awaygate = locate(/obj/machinery/gateway/centeraway)
 	. = ..()
+	update_icon()
+	wait = world.time + config.gateway_delay	//+ thirty minutes default
+	awaygate = locate(/obj/machinery/gateway/centeraway)
 
-/obj/machinery/gateway/centerstation/on_update_icon()
+
+/obj/machinery/gateway/centerstation/update_icon()
 	if(active)
 		icon_state = "oncenter"
 		return
@@ -46,20 +50,20 @@
 
 
 
-obj/machinery/gateway/centerstation/Process()
+obj/machinery/gateway/centerstation/process()
 	if(stat & (NOPOWER))
 		if(active) toggleoff()
 		return
 
 	if(active)
-		use_power_oneoff(5000)
+		use_power(5000)
 
 
 /obj/machinery/gateway/centerstation/proc/detect()
 	linked = list()	//clear the list
 	var/turf/T = loc
 
-	for(var/i in GLOB.alldirs)
+	for(var/i in alldirs)
 		T = get_step(loc, i)
 		var/obj/machinery/gateway/G = locate(/obj/machinery/gateway) in T
 		if(G)
@@ -112,24 +116,26 @@ obj/machinery/gateway/centerstation/Process()
 
 
 //okay, here's the good teleporting stuff
-/obj/machinery/gateway/centerstation/Bumped(atom/movable/M as mob|obj)
-	if(!ready)		return
-	if(!active)		return
-	if(!awaygate)	return
+/obj/machinery/gateway/centerstation/CollidedWith(atom/movable/M as mob|obj)
+	if(!ready || !active || !awaygate)
+		return
+
 	if(awaygate.calibrated)
 		M.forceMove(get_step(awaygate.loc, SOUTH))
 		M.set_dir(SOUTH)
 		return
 	else
-		var/obj/effect/landmark/dest = pick(GLOB.awaydestinations)
+		var/obj/effect/landmark/dest = pick(awaydestinations)
 		if(dest)
 			M.forceMove(dest.loc)
 			M.set_dir(SOUTH)
-			use_power_oneoff(5000)
+			use_power(5000)
+		return
+
 
 /obj/machinery/gateway/centerstation/attackby(obj/item/device/W as obj, mob/user as mob)
-	if(isMultitool(W))
-		to_chat(user, "The gate is already calibrated, there is no work for you to do here.")
+	if(W.ismultitool())
+		to_chat(user, "\black The gate is already calibrated, there is no work for you to do here.")
 		return
 
 /////////////////////////////////////Away////////////////////////
@@ -138,7 +144,7 @@ obj/machinery/gateway/centerstation/Process()
 /obj/machinery/gateway/centeraway
 	density = 1
 	icon_state = "offcenter"
-	use_power = POWER_USE_OFF
+	use_power = 0
 	var/calibrated = 1
 	var/list/linked = list()	//a list of the connected gateway chunks
 	var/ready = 0
@@ -146,11 +152,12 @@ obj/machinery/gateway/centerstation/Process()
 
 
 /obj/machinery/gateway/centeraway/Initialize()
+	. = ..()
 	update_icon()
 	stationgate = locate(/obj/machinery/gateway/centerstation)
-	. = ..()
 
-/obj/machinery/gateway/centeraway/on_update_icon()
+
+/obj/machinery/gateway/centeraway/update_icon()
 	if(active)
 		icon_state = "oncenter"
 		return
@@ -161,7 +168,7 @@ obj/machinery/gateway/centerstation/Process()
 	linked = list()	//clear the list
 	var/turf/T = loc
 
-	for(var/i in GLOB.alldirs)
+	for(var/i in alldirs)
 		T = get_step(loc, i)
 		var/obj/machinery/gateway/G = locate(/obj/machinery/gateway) in T
 		if(G)
@@ -208,23 +215,26 @@ obj/machinery/gateway/centerstation/Process()
 		return
 	toggleoff()
 
-/obj/machinery/gateway/centeraway/Bumped(atom/movable/M as mob|obj)
-	if(!ready)	return
-	if(!active)	return
+
+/obj/machinery/gateway/centeraway/CollidedWith(atom/movable/M as mob|obj)
+	if(!ready || !active)
+		return
+
 	if(istype(M, /mob/living/carbon))
-		for(var/obj/item/weapon/implant/exile/E in M)//Checking that there is an exile implant in the contents
+		for(var/obj/item/implant/exile/E in M)//Checking that there is an exile implant in the contents
 			if(E.imp_in == M)//Checking that it's actually implanted vs just in their pocket
-				to_chat(M, "The remote gate has detected your exile implant and is blocking your entry.")
+				to_chat(M, "\black The station gate has detected your exile implant and is blocking your entry.")
 				return
 	M.forceMove(get_step(stationgate.loc, SOUTH))
 	M.set_dir(SOUTH)
 
+
 /obj/machinery/gateway/centeraway/attackby(obj/item/device/W as obj, mob/user as mob)
-	if(isMultitool(W))
+	if(W.ismultitool())
 		if(calibrated)
-			to_chat(user, "The gate is already calibrated, there is no work for you to do here.")
+			to_chat(user, "\black The gate is already calibrated, there is no work for you to do here.")
 			return
 		else
-			to_chat(user, "<span class='notice'><b>Recalibration successful!</b></span>: This gate's systems have been fine tuned.  Travel to this gate will now be on target.")
+			to_chat(user, "<span class='notice'><b>Recalibration successful!</b>: \black This gate's systems have been fine tuned.  Travel to this gate will now be on target.</span>")
 			calibrated = 1
 			return

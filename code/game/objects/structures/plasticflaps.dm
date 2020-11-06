@@ -5,21 +5,18 @@
 	icon_state = "plasticflaps"
 	density = 0
 	anchored = 1
-	layer = ABOVE_HUMAN_LAYER
+	layer = 4
 	explosion_resistance = 5
-
-	obj_flags = OBJ_FLAG_ANCHORABLE
-
+	build_amt = 4
+	var/manipulating = FALSE //Prevents queueing up a ton of deconstructs
 	var/list/mobs_can_pass = list(
-		/mob/living/bot,
 		/mob/living/carbon/slime,
-		/mob/living/simple_animal/mouse,
+		/mob/living/simple_animal/rat,
 		/mob/living/silicon/robot/drone
 		)
-	var/airtight = 0
 
 /obj/structure/plasticflaps/CanPass(atom/A, turf/T)
-	if(istype(A) && A.checkpass(PASS_FLAG_GLASS))
+	if(istype(A) && A.checkpass(PASSGLASS))
 		return prob(60)
 
 	var/obj/structure/bed/B = A
@@ -40,18 +37,6 @@
 
 	return ..()
 
-/obj/structure/plasticflaps/attackby(obj/item/W, mob/user)
-	if(isCrowbar(W) && !anchored)
-		user.visible_message("<span class='notice'>\The [user] begins deconstructing \the [src].</span>", "<span class='notice'>You start deconstructing \the [src].</span>")
-		if(user.do_skilled(3 SECONDS, SKILL_CONSTRUCTION, src))
-			user.visible_message("<span class='warning'>\The [user] deconstructs \the [src].</span>", "<span class='warning'>You deconstruct \the [src].</span>")
-			qdel(src)
-	if(isScrewdriver(W) && anchored)
-		airtight = !airtight
-		airtight ? become_airtight() : clear_airtight()
-		user.visible_message("<span class='warning'>\The [user] adjusts \the [src], [airtight ? "preventing" : "allowing"] air flow.</span>")
-	else ..()
-
 /obj/structure/plasticflaps/ex_act(severity)
 	switch(severity)
 		if (1)
@@ -63,21 +48,56 @@
 			if (prob(5))
 				qdel(src)
 
-/obj/structure/plasticflaps/Destroy() //lazy hack to set the turf to allow air to pass if it's a simulated floor
-	clear_airtight()
-	. = ..()
+/obj/structure/plasticflaps/attackby(obj/item/W, mob/user)
+	if(manipulating)	return
+	manipulating = TRUE
+	if(W.iswirecutter() || W.sharp && !W.noslice)
+		visible_message(SPAN_NOTICE("[user] begins cutting down \the [src]."),
+					SPAN_NOTICE("You begin cutting down \the [src]."))
+		if(!do_after(user, 30/W.toolspeed))
+			manipulating = FALSE
+			return
+		playsound(src.loc, 'sound/items/wirecutter.ogg', 50, 1)
+		visible_message(SPAN_NOTICE("[user] cuts down \the [src]."),
+		SPAN_NOTICE("You cut down \the [src]."))
+		dismantle()
 
-/obj/structure/plasticflaps/proc/become_airtight()
+/obj/structure/plasticflaps/mining //A specific type for mining that doesn't allow airflow because of them damn crates
+	name = "airtight plastic flaps"
+	desc = "Heavy duty, airtight, plastic flaps."
+
+	New() //set the turf below the flaps to block air
+		var/turf/T = get_turf(loc)
+		if(T)
+			T.blocks_air = 1
+		..()
+
+	Destroy() //lazy hack to set the turf to allow air to pass if it's a simulated floor
+		var/turf/T = get_turf(loc)
+		if(T)
+			if(istype(T, /turf/simulated/floor))
+				T.blocks_air = 0
+		return ..()
+
+
+//Airtight plastic flaps made for the kitchen freezer, blocks atmos but not movement
+/obj/structure/plasticflaps/airtight
+	name = "airtight plastic flaps"
+	desc = "Heavy duty, airtight, plastic flaps."
+	layer = 3
+
+/obj/structure/plasticflaps/airtight/New() //set the turf below the flaps to block air
 	var/turf/T = get_turf(loc)
 	if(T)
 		T.blocks_air = 1
+	..()
 
-/obj/structure/plasticflaps/proc/clear_airtight()
+/obj/structure/plasticflaps/airtight/Destroy() //lazy hack to set the turf to allow air to pass if it's a simulated floor
 	var/turf/T = get_turf(loc)
 	if(T)
 		if(istype(T, /turf/simulated/floor))
 			T.blocks_air = 0
+	return ..()
 
-
-/obj/structure/plasticflaps/airtight // airtight defaults to on 
-	airtight = 1
+/obj/structure/plasticflaps/airtight/CanPass(atom/A, turf/T)
+	return 1//Blocks nothing except air

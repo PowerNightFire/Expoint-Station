@@ -2,9 +2,9 @@
 * Category Collection *
 **********************/
 /datum/category_collection
-	var/category_group_type                          // Type of categories to initialize
-	var/list/datum/category_group/categories         // List of initialized categories
-	var/list/datum/category_group/categories_by_name // Associative list of initialized categories, keyed by name
+	var/category_group_type						// The type of categories to initialize
+	var/list/datum/category_group/categories	// The list of initialized categories
+	var/list/datum/category_group/categories_by_name //Associative list of initialised categories, by name
 
 /datum/category_collection/New()
 	..()
@@ -29,10 +29,10 @@
 ******************/
 /datum/category_group
 	var/name = ""
-	var/category_item_type                      // Type of items to initialize
-	var/list/datum/category_item/items          // List of initialized items
-	var/list/datum/category_item/items_by_name  // Associative list of initialized items, by name
-	var/datum/category_collection/collection    // The collection this group belongs to
+	var/category_item_type						// The type of items to initialize
+	var/list/datum/category_item/items			// The list of initialized items
+	var/list/datum/category_item/items_by_name  // Associative list of initialised items, by name
+	var/datum/category_collection/collection	// The collection this group belongs to
 
 /datum/category_group/New(var/datum/category_collection/cc)
 	..()
@@ -47,7 +47,6 @@
 			items += item
 			items_by_name[item.name] = item
 
-	// For whatever reason dd_insertObjectList(items, item) doesn't insert in the correct order
 	// If you change this, confirm that character setup doesn't become completely unordered.
 	items = dd_sortedObjectList(items)
 
@@ -58,9 +57,8 @@
 	collection = null
 	return ..()
 
-datum/category_group/dd_SortValue()
+/datum/category_group/dd_SortValue()
 	return name
-
 
 /*****************
 * Category Items *
@@ -77,5 +75,5 @@ datum/category_group/dd_SortValue()
 	category = null
 	return ..()
 
-datum/category_item/dd_SortValue()
+/datum/category_item/dd_SortValue()
 	return name

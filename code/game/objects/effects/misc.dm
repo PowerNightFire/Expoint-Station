@@ -7,127 +7,73 @@
 	density = 1
 	anchored = 0
 
-/obj/effect/stop
-	var/victim = null
-	icon_state = "empty"
-	name = "Geas"
-	desc = "You can't resist."
+/atom/movable/afterimage
+	name = "after-image"
+	desc = "There used to be something here."
+	simulated = FALSE
+	mouse_opacity = FALSE
+	anchored = TRUE
 
-//Paints the wall it spawns on, then dies
-/obj/effect/paint
-	name = "coat of paint"
-	icon = 'icons/effects/effects.dmi'
-	icon_state = "wall_paint_effect"
-	layer = TURF_DETAIL_LAYER
-	blend_mode = BLEND_MULTIPLY
+/atom/movable/afterimage/New(turf/loc, atom/target)
+	..(loc)
+	appearance = target
+	// Reset some vars.
+	mouse_opacity = 0
+	alpha /= 4
+	dir = target.dir
+	if (!color)
+		color = list(
+			0.5, 0.5, 0.5,
+			0.5, 0.5, 0.5,
+			0.5, 0.5, 0.5
+		)
 
-/obj/effect/paint/Initialize()
+	animate(src, alpha = 0, time = 2 SECONDS - 10, easing = EASE_IN|QUAD_EASING)
+	QDEL_IN(src, 2 SECONDS)
+
+/atom/movable/afterimage/Destroy()
+	appearance = null
+	return ..()
+
+/proc/shadow(atom/movable/target)
+	new /atom/movable/afterimage(get_turf(target), target)
+
+/obj/effect/constructing_effect
+	icon = 'icons/effects/effects_rfd.dmi'
+	icon_state = ""
+	layer = ABOVE_ALL_MOB_LAYER
+	anchored = TRUE
+	var/delay = 0
+	var/status = 0
+
+/obj/effect/constructing_effect/Initialize(mapload, build_delay, mode)
 	. = ..()
-	return INITIALIZE_HINT_LATELOAD
+	delay = build_delay // so the variables transfer over between procs.
+	status = mode
+	if(status == 3)
+		addtimer(CALLBACK(src, /atom/.proc/update_icon), 11)
+		delay -= 11
+		icon_state = "rfd_end_reverse"
+	else
+		update_icon()
 
-/obj/effect/paint/LateInitialize()
-	var/turf/simulated/wall/W = get_turf(src)
-	if(istype(W))
-		W.paint_color = color
-		W.update_icon()
-	var/obj/structure/wall_frame/WF = locate() in loc
-	if(WF)
-		WF.paint_color = color
-		WF.update_icon()
+/obj/effect/constructing_effect/update_icon()
+	icon_state = "rfd"
+	if(delay < 10)
+		icon_state += "_shortest"
+	else if(delay < 20)
+		icon_state += "_shorter"
+	else if(delay < 37)
+		icon_state += "_short"
+	if(status == 3)
+		icon_state += "_reverse"
+
+/obj/effect/constructing_effect/proc/end_animation()
+	if(status == 3)
+		end()
+	else
+		icon_state = "rfd_end"
+		addtimer(CALLBACK(src, .proc/end), 15)
+
+/obj/effect/constructing_effect/proc/end()
 	qdel(src)
-
-/obj/effect/paint/pink
-	color = COLOR_PINK
-
-/obj/effect/paint/sun
-	color = COLOR_SUN
-
-/obj/effect/paint/red
-	color = COLOR_RED
-
-/obj/effect/paint/silver
-	color = COLOR_SILVER
-
-/obj/effect/paint/black
-	color = COLOR_DARK_GRAY
-
-/obj/effect/paint/green
-	color = COLOR_GREEN_GRAY
-
-/obj/effect/paint/blue
-	color = COLOR_NAVY_BLUE
-
-obj/effect/paint/ocean
-	color =	COLOR_OCEAN
-
-obj/effect/paint/palegreengray
-	color =	COLOR_PALE_GREEN_GRAY
-
-/obj/effect/paint/brown
-	color = COLOR_DARK_BROWN
-
-//Stripes the wall it spawns on, then dies
-/obj/effect/paint_stripe
-	name = "stripe of paint"
-	icon = 'icons/effects/effects.dmi'
-	icon_state = "white"
-	layer = TURF_DETAIL_LAYER
-	blend_mode = BLEND_MULTIPLY
-
-/obj/effect/paint_stripe/Initialize()
-	. = ..()
-	return INITIALIZE_HINT_LATELOAD
-
-/obj/effect/paint_stripe/LateInitialize()
-	var/turf/simulated/wall/W = get_turf(src)
-	if(istype(W))
-		W.stripe_color = color
-		W.update_icon()
-	var/obj/structure/wall_frame/WF = locate() in loc
-	if(WF)
-		WF.stripe_color = color
-		WF.update_icon()
-	qdel(src)
-
-/obj/effect/paint_stripe/green
-	color = COLOR_GREEN_GRAY
-
-/obj/effect/paint_stripe/red
-	color = COLOR_RED_GRAY
-
-/obj/effect/paint_stripe/paleblue
-	color = COLOR_PALE_BLUE_GRAY
-
-/obj/effect/paint_stripe/yellow
-	color = COLOR_BROWN
-
-/obj/effect/paint_stripe/blue
-	color = COLOR_BLUE_GRAY
-
-/obj/effect/paint_stripe/brown
-	color = COLOR_DARK_BROWN
-
-/obj/effect/paint_stripe/mauve
-	color = COLOR_PALE_PURPLE_GRAY
-
-/obj/effect/paint_stripe/white
-	color = COLOR_SILVER
-
-/obj/effect/paint_stripe/gunmetal
-	color = COLOR_GUNMETAL
-
-/obj/effect/gas_setup	//cryogenic
-	icon = 'icons/mob/screen1.dmi'
-	icon_state = "x3"
-	var/tempurature = 70
-	var/pressure = 20* ONE_ATMOSPHERE
-
-/obj/effect/gas_setup/Initialize()
-	SHOULD_CALL_PARENT(FALSE)
-	atom_flags |= ATOM_FLAG_INITIALIZED
-	var/obj/machinery/atmospherics/pipe/P = locate() in loc
-	if(P && !P.air_temporary)
-		P.air_temporary = new(P.volume, tempurature)
-		var/datum/gas_mixture/G = P.air_temporary
-		G.adjust_gas(GAS_OXYGEN,((pressure*P.volume)/(R_IDEAL_GAS_EQUATION*temperature)))
-	return INITIALIZE_HINT_QDEL

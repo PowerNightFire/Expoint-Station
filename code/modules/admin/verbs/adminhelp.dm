@@ -10,7 +10,7 @@ var/list/adminhelp_ignored_words = list("unknown","the","a","an","of","monkey","
 	//explode the input msg into a list
 	var/list/msglist = splittext(msg, " ")
 
-	for(var/mob/M in SSmobs.mob_list)
+	for(var/mob/M in mob_list)
 		var/list/indexing = list(M.real_name, M.name)
 		if(M.mind)	indexing += M.mind.name
 
@@ -58,7 +58,7 @@ var/list/adminhelp_ignored_words = list("unknown","the","a","an","of","monkey","
 								msg += " <A HREF='?_src_=holder;adminchecklaws=\ref[mob]'>(CL)</A>"
 							msg += "</b> "
 							continue
-		msg += "[original_word] "
+			msg += "[original_word] "
 
 	return msg
 
@@ -66,13 +66,14 @@ var/list/adminhelp_ignored_words = list("unknown","the","a","an","of","monkey","
 	set category = "Admin"
 	set name = "Adminhelp"
 
-	//handle muting and automuting
-	if(prefs.muted & MUTE_ADMINHELP)
-		to_chat(src, "<font color='red'>Error: Admin-PM: You cannot send adminhelps (Muted).</font>")
+	if(say_disabled)	//This is here to try to identify lag problems
+		to_chat(usr, "<span class='warning'>Speech is currently admin-disabled.</span>")
 		return
 
-	adminhelped = 1 //Determines if they get the message to reply by clicking the name.
+	adminhelped = ADMINHELPED
 
+	if(src.handle_spam_prevention(msg,MUTE_ADMINHELP))
+		return
 
 	//clean the input msg
 	if(!msg)
@@ -82,7 +83,6 @@ var/list/adminhelp_ignored_words = list("unknown","the","a","an","of","monkey","
 		return
 	var/original_msg = msg
 
-
 	if(!mob) //this doesn't happen
 		return
 
@@ -90,15 +90,14 @@ var/list/adminhelp_ignored_words = list("unknown","the","a","an","of","monkey","
 	msg = generate_ahelp_key_words(mob, msg)
 
 	// handle ticket
-	var/datum/client_lite/client_lite = client_repository.get_lite_client(src)
-	var/datum/ticket/ticket = get_open_ticket_by_client(client_lite)
+	var/datum/ticket/ticket = get_open_ticket_by_ckey(ckey)
 	if(!ticket)
-		ticket = new /datum/ticket(client_lite)
+		ticket = new /datum/ticket(ckey)
 	else if(ticket.status == TICKET_ASSIGNED)
 		// manually check that the target client exists here as to not spam the usr for each logged out admin on the ticket
 		var/admin_found = 0
-		for(var/datum/client_lite/admin in ticket.assigned_admins)
-			var/client/admin_client = client_by_ckey(admin.ckey)
+		for(var/admin in ticket.assigned_admins)
+			var/client/admin_client = client_by_ckey(admin)
 			if(admin_client)
 				admin_found = 1
 				src.cmd_admin_pm(admin_client, original_msg, ticket)
@@ -107,33 +106,35 @@ var/list/adminhelp_ignored_words = list("unknown","the","a","an","of","monkey","
 			to_chat(src, "<span class='warning'>Error: Private-Message: Client not found. They may have lost connection, so please be patient!</span>")
 		return
 
-	ticket.msgs += new /datum/ticket_msg(src.ckey, null, original_msg)
-	update_ticket_panels()
+	ticket.append_message(src.ckey, null, original_msg)
 
-
-	//Options bar:  mob, details ( admin = 2, dev = 3, character name (0 = just ckey, 1 = ckey and character name), link? (0 no don't make it a link, 1 do so),
+	//Options bar:  mob, details ( admin = 2, undibbsed admin = 3, mentor = 4, character name (0 = just ckey, 1 = ckey and character name), link? (0 no don't make it a link, 1 do so),
 	//		highlight special roles (0 = everyone has same looking name, 1 = antags / special roles get a golden name)
 
-	msg = "<span class='notice'><b><font color=red>HELP: </font>[get_options_bar(mob, 2, 1, 1, 1, ticket)] (<a href='?_src_=holder;take_ticket=\ref[ticket]'>[(ticket.status == TICKET_OPEN) ? "TAKE" : "JOIN"]</a>) (<a href='?src=\ref[usr];close_ticket=\ref[ticket]'>CLOSE</a>):</b> [msg]</span>"
+	msg = "<span class='notice'><b>[create_text_tag("HELP")][get_options_bar(mob, 2, 1, 1, 1, ticket)] (<a href='?_src_=holder;take_ticket=\ref[ticket]'>[(ticket.status == TICKET_OPEN) ? "TAKE" : "JOIN"]</a>) (<a href='?src=\ref[usr];close_ticket=\ref[ticket]'>CLOSE</a>):</b> [msg]</span>"
 
+	var/admin_number_present = 0
 	var/admin_number_afk = 0
 
-	for(var/client/X in GLOB.admins)
-		if((R_ADMIN|R_MOD) & X.holder.rights)
-			if(X.is_afk())
+	for(var/s in staff)
+		var/client/C = s
+		if((R_ADMIN|R_MOD) & C.holder.rights)
+			admin_number_present++
+			if(C.is_afk())
 				admin_number_afk++
-			if(X.get_preference_value(/datum/client_preference/staff/play_adminhelp_ping) == GLOB.PREF_HEAR)
-				sound_to(X, 'sound/effects/adminhelp.ogg')
-			to_chat(X, msg)
+			if(C.prefs.toggles & SOUND_ADMINHELP)
+				sound_to(C, 'sound/effects/adminhelp.ogg')
+
+			to_chat(C, msg)
+
 	//show it to the person adminhelping too
-	to_chat(src, "<font color='blue'>PM to-<b>Staff</b> (<a href='?src=\ref[usr];close_ticket=\ref[ticket]'>CLOSE</a>): [original_msg]</font>")
-	var/admin_number_present = GLOB.admins.len - admin_number_afk
-	log_admin("HELP: [key_name(src)]: [original_msg] - heard by [admin_number_present] non-AFK admins.")
-	if(admin_number_present <= 0)
-		adminmsg2adminirc(src, null, "[html_decode(original_msg)] - !![admin_number_afk ? "All admins AFK ([admin_number_afk])" : "No admins online"]!!")
-	else
-		adminmsg2adminirc(src, null, "[html_decode(original_msg)]")
+	to_chat(src, "<span class='notice'>PM to-<b>Staff </b>: [original_msg]</span>")
 
-	SSstatistics.add_field_details("admin_verb","AH") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
+	var/admin_number_active = admin_number_present - admin_number_afk
+	log_admin("HELP: [key_name(src)]: [original_msg] - heard by [admin_number_present] non-AFK admins.",admin_key=key_name(src))
+	if(admin_number_active <= 0)
+		post_webhook_event(WEBHOOK_ADMIN_PM_IMPORTANT, list("title"="Help is requested", "message"="Request for Help from **[key_name(src)]**: ```[html_decode(original_msg)]```\n[admin_number_afk ? "All admins AFK ([admin_number_afk])" : "No admins online"]!!"))
+		discord_bot.send_to_admins("@here Request for Help from [key_name(src)]: [html_decode(original_msg)] - !![admin_number_afk ? "All admins AFK ([admin_number_afk])" : "No admins online"]!!")
+		adminhelped = ADMINHELPED_DISCORD
+	feedback_add_details("admin_verb","AH") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 	return
-

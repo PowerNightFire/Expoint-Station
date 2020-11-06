@@ -5,7 +5,7 @@ Structure: ///////////////////          //////////////////////////
 		   // Mob or object // -------> // Reagents var (datum) // 	    Is a reference to the datum that holds the reagents.
 		   ///////////////////          //////////////////////////
 		   			|				    			 |
-	The object that holds everything.   			 V
+    The object that holds everything.   			 V
 		   							      reagent_list var (list)   	A List of datums, each datum is a reagent.
 
 		   							      |          |          |
@@ -48,14 +48,17 @@ About the Holder:
 		get_master_reagent_name()
 			Ditto, but returns the name.
 
-		get_master_reagent_id()
-			Ditto, but returns ID.
+		get_master_reagent_type()
+			Ditto, but returns type.
 
 		update_total()
 			Updates total volume, called automatically.
 
+		handle_reactions()
+			Checks reagents and triggers any reactions that happen. Usually called automatically.
+
 		add_reagent(var/id, var/amount, var/data = null, var/safety = 0)
-			Adds [amount] units of [id] reagent. [data] will be passed to reagent's mix_data() or initialize_data(). If [safety] is 0, HANDLE_REACTIONS() will be called. Returns 1 if successful, 0 otherwise.
+			Adds [amount] units of [id] reagent. [data] will be passed to reagent's mix_data() or initialize_data(). If [safety] is 0, handle_reactions() will be called. Returns 1 if successful, 0 otherwise.
 
 		remove_reagent(var/id, var/amount, var/safety = 0)
 			Ditto, but removes reagent. Returns 1 if successful, 0 otherwise.
@@ -108,7 +111,7 @@ About the Holder:
 
 			Calls touch() before checking the type of [target], calling splash_mob(target, amount), trans_to_turf(target, amount, multiplier, copy), or trans_to_obj(target, amount, multiplier, copy).
 
-		trans_id_to(var/atom/target, var/id, var/amount = 1)
+		trans_type_to(var/atom/target, var/id, var/amount = 1)
 			Transfers [amount] of [id] to [target]. Returns amount transferred.
 
 		splash_mob(var/mob/target, var/amount = 1, var/clothes = 1)
@@ -150,7 +153,7 @@ About Reagents:
 			Could be GAS, LIQUID, or SOLID. Affects nothing. Reserved for future use.
 
 		list/data
-			Use varies by reagent. Custom variable. For example, blood stores blood group.
+			Use varies by reagent. Custom variable. For example, blood stores blood group and viruses.
 
 		volume
 			Current volume.
@@ -164,6 +167,9 @@ About Reagents:
 		touch_met
 			Ditto when touching.
 
+		breathe_met
+			Ditton when breathing.
+
 		dose
 			How much of the reagent has been processed, limited by [max_dose]. Used for reagents with varying effects (e.g. ethanol or rezadone) and overdosing.
 
@@ -171,10 +177,17 @@ About Reagents:
 			Maximum amount of reagent that has ever been in a mob. Exists so dose won't grow infinitely when small amounts of reagent are added over time.
 
 		overdose
-			If [dose] is bigger than [overdose], overdose() proc is called every tick.
+		od_minimum_dose
+			If [volume] is bigger than [overdose]
+			AND
+			If [dose] is bigger than [od_minimum_dose]
+			THEN the overdose() proc is called every tick.
 
 		scannable
 			If set to 1, will show up on health analyzers by name.
+
+		affects_dead
+			If set to 1, will affect dead players. Used by Adminordrazine.
 
 		glass_icon_state
 			Used by drinks. icon_state of the glass when this reagent is the master reagent.
@@ -193,6 +206,12 @@ About Reagents:
 
 		color_weight
 			How much reagent affects color of holder. Used by paint.
+
+		metabolism_min
+			Minimum amount of this reagent in the stomach/blood/lungs for this metabolism to actually run.
+
+		conflicting_reagents
+			List of reagents that conflict with the medication. Runs the affect_conflicting proc for each medication if present.
 
 	Procs:
 
@@ -220,8 +239,11 @@ About Reagents:
 		affect_touch(var/mob/living/carbon/M, var/alien, var/removed)
 			Ditto, touching.
 
+		affect_breathe(var/mob/living/carbon/M, var/alien, var/removed)
+			Ditto, breathing. Defaults to affect_blood with 75% dose.
+
 		overdose(var/mob/living/carbon/M, var/alien)
-			Called when dose is above overdose. Defaults to M.adjustToxLoss(REM).
+			Called when volume is above overdose and dose is greater than a minimum dose. Defaults to M.adjustToxLoss(REM).
 
 		initialize_data(var/newdata)
 			Called when reagent is created. Defaults to setting [data] to [newdata].
@@ -231,6 +253,9 @@ About Reagents:
 
 		get_data()
 			Returns data. Can be overriden.
+
+		affect_conflicting(var/mob/living/carbon/M, var/alien, var/removed, var/datum/reagent/conflicting_reagent)
+			Called when a reagent conflicts with another reagent in the system.
 
 About Recipes:
 
@@ -289,7 +314,7 @@ About the Tools:
 			'pouring' our reagents into something else.
 
 		atom/proc/is_open_container()
-			Checks atom/var/obj_flags & OBJ_FLAG_OPEN_CONTAINER.
+			Checks atom/var/flags & OPENCONTAINER.
 			If this returns 1 , you can use syringes, beakers etc
 			to manipulate the contents of this object.
 			If it's 0, you'll need to write your own custom reagent

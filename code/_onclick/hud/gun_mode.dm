@@ -1,6 +1,6 @@
 /obj/screen/gun
 	name = "gun"
-	icon = 'icons/mob/screen1.dmi'
+	icon = 'icons/mob/screen/generic.dmi'
 	master = null
 	dir = 2
 
@@ -11,7 +11,7 @@
 
 /obj/screen/gun/move
 	name = "Allow Movement"
-	icon_state = "no_walk1"
+	icon_state = "no_walk0"
 	screen_loc = ui_gun2
 
 /obj/screen/gun/move/Click(location, control, params)
@@ -25,7 +25,7 @@
 
 /obj/screen/gun/item
 	name = "Allow Item Use"
-	icon_state = "no_item1"
+	icon_state = "no_item0"
 	screen_loc = ui_gun1
 
 /obj/screen/gun/item/Click(location, control, params)
@@ -52,8 +52,8 @@
 	return 0
 
 /obj/screen/gun/radio
-	name = "Disallow Radio Use"
-	icon_state = "no_radio1"
+	name = "Allow Radio Use"
+	icon_state = "no_radio0"
 	screen_loc = ui_gun4
 
 /obj/screen/gun/radio/Click(location, control, params)

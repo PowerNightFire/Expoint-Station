@@ -1,3 +1,5 @@
+var/global/const/base_law_type = /datum/ai_laws/nanotrasen
+
 /datum/ai_law
 	var/law = ""
 	var/index = 0
@@ -19,7 +21,6 @@
 	var/name = "Unknown Laws"
 	var/law_header = "Prime Directives"
 	var/selectable = 0
-	var/shackles = 0
 	var/datum/ai_law/zero/zeroth_law = null
 	var/datum/ai_law/zero/zeroth_law_borg = null
 	var/list/datum/ai_law/inherent_laws = list()
@@ -225,10 +226,15 @@
 	for(var/datum/ai_law/law in sorted_laws)
 		if(law == zeroth_law_borg)
 			continue
+		var/mob/M = who
 		if(law == zeroth_law)
 			to_chat(who, "<span class='danger'>[law.get_index()]. [law.law]</span>")
+			if(ismob(who) && M.vr_mob)
+				to_chat(M.vr_mob, "<span class='danger'>[law.get_index()]. [law.law]</span>")
 		else
 			to_chat(who, "[law.get_index()]. [law.law]")
+			if(ismob(who) && M.vr_mob)
+				to_chat(M.vr_mob, "<span class='danger'>[law.get_index()]. [law.law]</span>")
 
 /********************
 *	Stating Laws	*

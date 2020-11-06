@@ -5,8 +5,7 @@
 	set name = "Toggle Gun Mode"
 	set desc = "Begin or stop aiming."
 	set category = "IC"
-
-	if(isliving(src)) //Needs to be a mob verb to prevent error messages when using hotkeys
+	if(isliving(src))
 		var/mob/living/M = src
 		if(!M.aiming)
 			M.aiming = new(src)
@@ -22,12 +21,12 @@
 		return
 	aiming.cancel_aiming(no_message)
 
-/mob/living/death(gibbed, deathmessage="seizes up and falls limp...", show_dead_message)
-	. = ..(gibbed, deathmessage, show_dead_message)
+/mob/living/death(gibbed,deathmessage="seizes up and falls limp...")
+	. = ..()
 	if(.)
 		stop_aiming(no_message=1)
 
-/mob/living/UpdateLyingBuckledAndVerbStatus()
+/mob/living/update_canmove()
 	..()
 	if(lying)
 		stop_aiming(no_message=1)
@@ -41,5 +40,9 @@
 		qdel(aiming)
 		aiming = null
 	aimed.Cut()
+	if(vr_mob)
+		vr_mob = null
+	if(old_mob)
+		old_mob = null
 	return ..()
 

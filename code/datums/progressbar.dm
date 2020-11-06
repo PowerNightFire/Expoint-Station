@@ -1,85 +1,80 @@
+#define PROGRESSBAR_HEIGHT 6
+#define PROGRESSBAR_ANIMATION_TIME 5
 
 /datum/progressbar
-	var/max_progress
+	var/goal = 1
+	var/last_progress = 0
+	var/image/bar
+	var/shown = 0
+	var/mob/user
+	var/client/client
+	var/listindex
+
+/datum/progressbar/New(mob/User, goal_number, atom/target)
+	. = ..()
+	if (!istype(target))
+		EXCEPTION("Invalid target given")
+	if (goal_number)
+		goal = goal_number
+	bar = image('icons/effects/progressbar.dmi', target, "prog_bar_0", 21)
+	bar.appearance_flags = RESET_COLOR|RESET_TRANSFORM|NO_CLIENT_COLOR|RESET_ALPHA
+	user = User
+	if(user)
+		client = user.client
+
+	LAZYINITLIST(user.progressbars)
+	LAZYINITLIST(user.progressbars[bar.loc])
+	var/list/bars = user.progressbars[bar.loc]
+	bars += src
+	listindex = bars.len
+	bar.pixel_y = 0
+	bar.alpha = 0
+	animate(bar, pixel_y = 32 + (PROGRESSBAR_HEIGHT * (listindex - 1)), alpha = 255, time = PROGRESSBAR_ANIMATION_TIME, easing = SINE_EASING)
 
 /datum/progressbar/proc/update(progress)
-
-
-/datum/progressbar/private
-	var/mob/actor
-	var/image/bar
-	var/client/client
-	var/visible
-	var/shown
-
-/datum/progressbar/private/Destroy()
-	if (client && bar)
-		client.images -= bar
-	qdel(bar)
-	. = ..()
-
-/datum/progressbar/private/New(mob/actor, max_progress, atom/actee)
-	actee = actee || actor
-	if (!istype(actee))
-		EXCEPTION("Invalid progressbar/private instance")
-	src.actor = actor
-	src.max_progress = max_progress
-	client = actor.client
-	visible = actor.get_preference_value(/datum/client_preference/show_progress_bar) == GLOB.PREF_SHOW
-	if (!visible)
-		return
-	bar = image('icons/effects/progessbar.dmi', actee, "prog_bar_0", HUD_ABOVE_ITEM_LAYER)
-	bar.appearance_flags = APPEARANCE_UI_IGNORE_ALPHA
-	bar.pixel_y = WORLD_ICON_SIZE
-	bar.plane = HUD_PLANE
-
-/datum/progressbar/private/update(progress)
-	if (!visible || !actor || !actor.client)
+	if (!user || !user.client)
 		shown = FALSE
 		return
-	if (actor.client != client)
+	if (user.client != client)
 		if (client)
 			client.images -= bar
-			shown = FALSE
-		client = actor.client
-	progress = Clamp(progress, 0, max_progress)
-	bar.icon_state = "prog_bar_[round(progress * 100 / max_progress, 5)]"
+		if (user.client)
+			user.client.images += bar
+
+	progress = Clamp(progress, 0, goal)
+	bar.icon_state = "prog_bar_[round(((progress / goal) * 100), 5)]"
 	if (!shown)
-		client.images += bar
+		user.client.images += bar
 		shown = TRUE
 
+/datum/progressbar/proc/shiftDown()
+	--listindex
+	bar.pixel_y = 32 + (PROGRESSBAR_HEIGHT * (listindex - 1))
+	var/dist_to_travel = 32 + (PROGRESSBAR_HEIGHT * (listindex - 1)) - PROGRESSBAR_HEIGHT
+	animate(bar, pixel_y = dist_to_travel, time = PROGRESSBAR_ANIMATION_TIME, easing = SINE_EASING)
 
-/datum/progressbar/public
-	var/atom/movable/actor
-	var/atom/movable/actee
-	var/atom/movable/bar
+/datum/progressbar/Destroy()
+	if(last_progress != goal)
+		bar.icon_state = "[bar.icon_state]_fail"
+	for(var/I in user.progressbars[bar.loc])
+		var/datum/progressbar/P = I
+		if(P != src && P.listindex > listindex)
+			P.shiftDown()
 
-/datum/progressbar/public/Destroy()
-	if (actor && bar)
-		actor.vis_contents -= bar
-	qdel(bar)
+	var/list/bars = user.progressbars[bar.loc]
+	bars -= src
+	if(!bars.len)
+		LAZYREMOVE(user.progressbars, bar.loc)
+
+	animate(bar, alpha = 0, time = PROGRESSBAR_ANIMATION_TIME)
+	addtimer(CALLBACK(src, .proc/remove_from_client), PROGRESSBAR_ANIMATION_TIME, TIMER_CLIENT_TIME)
+	QDEL_IN(bar, PROGRESSBAR_ANIMATION_TIME * 2) //for garbage collection safety
 	. = ..()
 
-/datum/progressbar/public/New(atom/movable/actor, max_progress, atom/movable/actee)
-	actee = actee || actor
-	if (!istype(actee))
-		EXCEPTION("Invalid progressbar/public instance")
-	src.actor = actor
-	src.max_progress = max_progress
-	src.actee = actee
-	bar = new()
-	bar.mouse_opacity = 0
-	bar.icon = 'icons/effects/progessbar.dmi'
-	bar.icon_state = "prog_bar_0"
-	bar.pixel_x = (actee.x - actor.x) * WORLD_ICON_SIZE
-	bar.pixel_y = (actee.y - actor.y) * WORLD_ICON_SIZE + WORLD_ICON_SIZE
-	bar.layer = ABOVE_HUMAN_LAYER
-	actor.vis_contents += bar
+/datum/progressbar/proc/remove_from_client()
+	if(client)
+		client.images -= bar
+		client = null
 
-/datum/progressbar/public/update(progress)
-	if (!actor || !actee)
-		return
-	progress = Clamp(progress, 0, max_progress)
-	bar.icon_state = "prog_bar_[round(progress * 100 / max_progress, 5)]"
-	bar.pixel_x = (actee.x - actor.x) * WORLD_ICON_SIZE
-	bar.pixel_y = (actee.y - actor.y) * WORLD_ICON_SIZE + WORLD_ICON_SIZE
+#undef PROGRESSBAR_ANIMATION_TIME
+#undef PROGRESSBAR_HEIGHT

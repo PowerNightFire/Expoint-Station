@@ -4,11 +4,31 @@
 
 	var/releaseWhen = 60
 	var/list/area/areas = list()		//List of areas to affect. Filled by start()
+	ic_name = "an imprisonment system virus"
+	no_fake = 1
 
 	var/eventDept = "Security"			//Department name in announcement
 	var/list/areaName = list("Brig")	//Names of areas mentioned in AI and Engineering announcements
 	var/list/areaType = list(/area/security/prison, /area/security/brig)	//Area types to include.
 	var/list/areaNotType = list()		//Area types to specifically exclude.
+
+/datum/event/prison_break/xenobiology
+	eventDept = "Science"
+	areaName = list("Xenobiology")
+	areaType = list(/area/rnd/xenobiology)
+	areaNotType = list(/area/rnd/xenobiology/xenoflora, /area/rnd/xenobiology/xenoflora_storage)
+
+/datum/event/prison_break/station
+	eventDept = "Station"
+	areaName = list("Brig","Xenobiology")
+	areaType = list(/area/security/prison, /area/security/brig, /area/rnd/xenobiology)
+	areaNotType = list(/area/rnd/xenobiology/xenoflora, /area/rnd/xenobiology/xenoflora_storage)
+
+/datum/event/prison_break/bridge
+	eventDept = "Bridge"
+	areaName = list("Bridge")
+	areaType = list(/area/bridge, /area/teleporter, /area/crew_quarters/heads/cryo, /area/maintenance/maintcentral)
+	areaNotType = list(/area/bridge/aibunker, /area/bridge/levela, /area/bridge/selfdestruct)
 
 /datum/event/prison_break/setup()
 	announceWhen = rand(75, 105)
@@ -19,37 +39,33 @@
 
 /datum/event/prison_break/announce()
 	if(areas && areas.len > 0)
-		command_announcement.Announce("[pick("Gr3yT1d3 virus","Malignant trojan",)] detected in [location_name()] [(eventDept == "Security")? "imprisonment":"containment"] subroutines. Secure any compromised areas immediately. [location_name()] AI involvement is recommended.", "[location_name()] Anti-Virus Alert", zlevels = affecting_z)
+		command_announcement.Announce("[pick("Gr3y.T1d3 virus","Malignant trojan")] detected in [station_name()] [(eventDept == "Security")? "imprisonment":"containment"] subroutines. Secure any compromised areas immediately. Station AI involvement is recommended.", "[eventDept] Alert")
 
 
 /datum/event/prison_break/start()
-	for(var/area/A in world)
+	for(var/area/A in the_station_areas)
 		if(is_type_in_list(A,areaType) && !is_type_in_list(A,areaNotType))
 			areas += A
 
 	if(areas && areas.len > 0)
-		var/my_department = "[location_name()] Firewall Subroutines"
-		var/rc_message = "An unknown malicious program has been detected in the [english_list(areaName)] lighting and airlock control systems at [stationtime2text()]. Systems will be fully compromised within approximately three minutes. Direct intervention is required immediately.<br>"
-		var/obj/machinery/message_server/MS = get_message_server()
-		if(MS)
+		var/my_department = "[station_name()] firewall subroutines"
+		var/rc_message = "An unknown malicious program has been detected in the [english_list(areaName)] lighting and airlock control systems at [worldtime2text()]. Systems will be fully compromised within approximately three minutes. Direct intervention is required immediately.<br>"
+		for(var/obj/machinery/message_server/MS in SSmachinery.processing_machines)
 			MS.send_rc_message("Engineering", my_department, rc_message, "", "", 2)
-		for(var/mob/living/silicon/ai/A in GLOB.player_list)
+		for(var/mob/living/silicon/ai/A in player_list)
 			to_chat(A, "<span class='danger'>Malicious program detected in the [english_list(areaName)] lighting and airlock control systems by [my_department].</span>")
 
 	else
-		to_world_log("ERROR: Could not initate grey-tide. Unable to find suitable containment area.")
-		kill()
+		world.log <<  "ERROR: Could not initate grey-tide. Unable to find suitable containment area."
+		kill(TRUE)
 
 
 /datum/event/prison_break/tick()
 	if(activeFor == releaseWhen)
 		if(areas && areas.len > 0)
-			var/obj/machinery/power/apc/theAPC = null
 			for(var/area/A in areas)
-				theAPC = A.get_apc()
-				if(theAPC && theAPC.operating)	//If the apc's off, it's a little hard to overload the lights.
-					for(var/obj/machinery/light/L in A)
-						L.flicker(10)
+				for(var/obj/machinery/light/L in A)
+					L.flicker(10)
 
 
 /datum/event/prison_break/end()

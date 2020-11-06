@@ -1,19 +1,20 @@
 /mob/living/simple_animal/slime
 	name = "pet slime"
 	desc = "A lovable, domesticated slime."
-	icon = 'icons/mob/simple_animal/slimes.dmi'
+	icon = 'icons/mob/npc/slimes.dmi'
 	icon_state = "grey baby slime"
 	icon_living = "grey baby slime"
 	icon_dead = "grey baby slime dead"
 	speak_emote = list("chirps")
 	health = 100
 	maxHealth = 100
-	response_help  = "pets"
+	response_help   = "pets"
 	response_disarm = "shoos"
 	response_harm   = "stomps on"
 	emote_see = list("jiggles", "bounces in place")
 	var/colour = "grey"
-	pass_flags = PASS_FLAG_TABLE
+	mob_size = 3
+	composition_reagent = /datum/reagent/slimejelly
 
 /mob/living/simple_animal/slime/can_force_feed(var/feeder, var/food, var/feedback)
 	if(feedback)
@@ -23,7 +24,7 @@
 /mob/living/simple_animal/adultslime
 	name = "pet slime"
 	desc = "A lovable, domesticated slime."
-	icon = 'icons/mob/simple_animal/slimes.dmi'
+	icon = 'icons/mob/npc/slimes.dmi'
 	health = 200
 	maxHealth = 200
 	icon_state = "grey adult slime"
@@ -34,13 +35,15 @@
 	response_harm   = "stomps on"
 	emote_see = list("jiggles", "bounces in place")
 	var/colour = "grey"
+	mob_size = 6
+	composition_reagent = /datum/reagent/slimejelly
 
-/mob/living/simple_animal/adultslime/New()
-	..()
-	overlays += "aslime-:33"
+/mob/living/simple_animal/adultslime/Initialize()
+	. = ..()
+	add_overlay("aslime-:33")
 
 
-/mob/living/simple_animal/slime/adult/death()
+/mob/living/simple_animal/adultslime/death()
 	var/mob/living/simple_animal/slime/S1 = new /mob/living/simple_animal/slime (src.loc)
 	S1.icon_state = "[src.colour] baby slime"
 	S1.icon_living = "[src.colour] baby slime"

@@ -1,37 +1,22 @@
-/obj/item/swabber
+#define EVIDENCE_TYPE_BLOOD "Blood"
+#define EVIDENCE_TYPE_GSR "Gunshot Residue"
+#define EVIDENCE_TYPE_SALIVA "Saliva"
+#define EVIDENCE_TYPE_ADDITIONAL "Additional"
+
+/obj/item/forensics/swab
 	name = "swab kit"
-	desc = "A kit full of sterilized cotton swabs and vials used to take forensic samples."
-	icon = 'icons/obj/forensics.dmi'
-	icon_state = "swab"
-
-/obj/item/swabber/attack()
-	return 0
-
-// This is pretty nasty but is a damn sight easier than trying to make swabs a stack item.
-/obj/item/swabber/afterattack(var/atom/A, var/mob/user, var/proximity, var/params)
-	if(proximity)
-		var/obj/item/weapon/forensics/swab/swab = new(user)
-		var/resolved = swab.resolve_attackby(A, user, params)
-		if(!resolved && A && !QDELETED(A))
-			swab.afterattack(A, user, TRUE, params)
-		if(swab.is_used())
-			swab.dropInto(user.loc)
-		else
-			qdel(swab)
-
-/obj/item/weapon/forensics/swab
-	name = "swab"
 	desc = "A sterilized cotton swab and vial used to take forensic samples."
 	icon_state = "swab"
-	var/list/gunshot_residue_sample
+	var/gsr = 0
 	var/list/dna
-	var/list/trace_dna
 	var/used
+	drop_sound = 'sound/items/drop/glass.ogg'
+	pickup_sound = 'sound/items/pickup/glass.ogg'
 
-/obj/item/weapon/forensics/swab/proc/is_used()
+/obj/item/forensics/swab/proc/is_used()
 	return used
 
-/obj/item/weapon/forensics/swab/attack(var/mob/living/M, var/mob/user)
+/obj/item/forensics/swab/attack(var/mob/living/M, var/mob/user, var/target_zone)
 
 	if(!ishuman(M))
 		return ..()
@@ -50,11 +35,11 @@
 		to_chat(user, "<span class='warning'>They don't seem to have DNA!</span>")
 		return
 
-	if(user != H && (H.a_intent != I_HELP && !H.lying && !H.incapacitated(INCAPACITATION_DEFAULT)))
+	if(user != H && H.a_intent != "help" && !H.lying)
 		user.visible_message("<span class='danger'>\The [user] tries to take a swab sample from \the [H], but they move away.</span>")
 		return
 
-	if(user.zone_sel.selecting == BP_MOUTH)
+	if(target_zone == BP_MOUTH)
 		if(!H.organs_by_name[BP_HEAD])
 			to_chat(user, "<span class='warning'>They don't have a head.</span>")
 			return
@@ -65,30 +50,32 @@
 		dna = list(H.dna.unique_enzymes)
 		sample_type = "DNA"
 
+	else if(target_zone == BP_R_HAND || target_zone == BP_L_HAND)
+		var/has_hand
+		var/obj/item/organ/external/O = H.organs_by_name[BP_R_HAND]
+		if(istype(O) && !O.is_stump())
+			has_hand = 1
+		else
+			O = H.organs_by_name[BP_L_HAND]
+			if(istype(O) && !O.is_stump())
+				has_hand = 1
+		if(!has_hand)
+			to_chat(user, "<span class='warning'>They don't have any hands.</span>")
+			return
+		user.visible_message("[user] swabs [H]'s palm for a sample.")
+		sample_type = "GSR"
+		gsr = H.gunshot_residue
 	else
-		var/zone = user.zone_sel.selecting
-		if(!H.has_organ(zone))
-			to_chat(user, "<span class='warning'>They don't have that part!</span>")
-			return
-		var/obj/item/organ/external/O = H.get_organ(zone)
-		if(!O.gunshot_residue)
-			return
-		var/obj/C = H.get_covering_equipped_item_by_zone(zone)
-		if(C)
-			afterattack(C, user, 1) //Lazy but this would work
-			return
-		user.visible_message("[user] swabs [H]'s [O.name] for a sample.")
-		sample_type = "gunshot_residue"
-		gunshot_residue_sample = O.gunshot_residue.Copy()
+		return
 
 	if(sample_type)
 		set_used(sample_type, H)
 		return
 	return 1
 
-/obj/item/weapon/forensics/swab/afterattack(var/atom/A, var/mob/user, var/proximity)
+/obj/item/forensics/swab/afterattack(var/atom/A, var/mob/user, var/proximity)
 
-	if(!proximity || istype(A, /obj/machinery/dnaforensics))
+	if(!proximity || istype(A, /obj/item/forensics/slide) || istype(A, /obj/machinery/dnaforensics))
 		return
 
 	if(is_used())
@@ -99,11 +86,14 @@
 
 	var/list/choices = list()
 	if(A.blood_DNA)
-		choices |= "Blood"
-	if(istype(A, /obj/item/))
-		choices |= "DNA traces"
+		choices |= EVIDENCE_TYPE_BLOOD
 	if(istype(A, /obj/item/clothing))
-		choices |= "Gunshot Residue"
+		choices |= EVIDENCE_TYPE_GSR
+	if(LAZYLEN(A.other_DNA) && A.other_DNA_type == "saliva")
+		choices |= EVIDENCE_TYPE_SALIVA
+	var/list/list/additional_evidence = A.get_additional_forensics_swab_info()
+	if(additional_evidence && additional_evidence["type"] != "")
+		choices |= EVIDENCE_TYPE_ADDITIONAL + " - " + additional_evidence["type"]
 
 	var/choice
 	if(!choices.len)
@@ -118,35 +108,42 @@
 		return
 
 	var/sample_type
-	if(choice == "Blood")
-		if(!A.blood_DNA || !A.blood_DNA.len)
-			to_chat(user, "<span class='warning'>There is no blood on \the [A].</span>")
-			return
-		dna = A.blood_DNA.Copy()
-		sample_type = "blood"
+	var/sample_message
+	switch (choice)
+		if (EVIDENCE_TYPE_BLOOD)
+			if(!A.blood_DNA || !A.blood_DNA.len) return
+			dna = A.blood_DNA.Copy()
+			sample_type = "blood"
 
-	else if(choice == "Gunshot Residue")
-		var/obj/item/clothing/B = A
-		if(!istype(B) || !B.gunshot_residue)
-			to_chat(user, "<span class='warning'>There is no residue on \the [A].</span>")
-			return
-		gunshot_residue_sample = B.gunshot_residue.Copy()
-		sample_type = "residue"
+		if (EVIDENCE_TYPE_GSR)
+			var/obj/item/clothing/B = A
+			if(!istype(B) || !B.gunshot_residue)
+				to_chat(user, "<span class='warning'>There is no residue on \the [A].</span>")
+				return
+			gsr = B.gunshot_residue
+			sample_type = "residue"
 
-	else if(choice == "DNA traces")
-		var/obj/item/I = A
-		if(!istype(I) || !I.trace_DNA)
-			to_chat(user, "<span class='warning'>There is no non-blood DNA on \the [A].</span>")
-			return
-		trace_dna = I.trace_DNA.Copy()
-		sample_type = "trace DNA"
+		if (EVIDENCE_TYPE_SALIVA)
+			if (!LAZYLEN(A.other_DNA)) return
+			dna = A.other_DNA.Copy()
+			sample_type = "saliva"
+
+		else //additional evidence
+			if(additional_evidence["dna"].len)
+				dna = additional_evidence["dna"].Copy()
+			if(additional_evidence["gsr"])
+				gsr = additional_evidence["gsr"]
+			sample_type = additional_evidence["sample_type"]
+			if(!sample_type)
+				crash_with("[user] swabbed \the [A.name] for additional evidence but there was no sample_type defined!")
+			sample_message = additional_evidence["sample_message"]
 
 	if(sample_type)
-		user.visible_message("\The [user] swabs \the [A] for a sample.", "You swab \the [A] for a sample.")
+		user.visible_message("\The [user] swabs \the [A] for a sample.", sample_message || "You swab \the [A] for a sample.")
 		set_used(sample_type, A)
 
-/obj/item/weapon/forensics/swab/proc/set_used(var/sample_str, var/atom/source)
-	SetName("[initial(name)] ([sample_str] - [source])")
+/obj/item/forensics/swab/proc/set_used(var/sample_str, var/atom/source)
+	name = "[initial(name)] ([sample_str] - [source])"
 	desc = "[initial(desc)] The label on the vial reads 'Sample of [sample_str] from [source].'."
 	icon_state = "swab_used"
 	used = 1

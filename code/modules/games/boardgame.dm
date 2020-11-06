@@ -1,6 +1,6 @@
-/obj/item/weapon/board
+/obj/item/board
 	name = "board"
-	desc = "A standard 16\" checkerboard. Well used." //Goddamn imperial system.
+	desc = "A standard 16\" checkerboard. Well used."
 	icon = 'icons/obj/pieces.dmi'
 	icon_state = "board"
 
@@ -9,25 +9,50 @@
 	var/board = list()
 	var/selected = -1
 
-/obj/item/weapon/board/ShiftClick(mob/user)
-	if(CanPhysicallyInteract(user))
+/obj/item/board/MouseDrop(mob/user as mob)
+	if((user == usr && (!use_check(user))) && (user.contents.Find(src) || in_range(src, user)))
+		if(ishuman(usr))
+			forceMove(get_turf(usr))
+			usr.put_in_hands(src)
+
+/obj/item/board/examine(mob/user, var/distance = -1)
+	if(in_range(user,src))
 		user.set_machine(src)
 		interact(user)
-	else
-		..()
+		return
+	..()
 
-/obj/item/weapon/board/attack_hand(mob/living/carbon/human/M as mob)
+/obj/item/board/attack_hand(mob/living/carbon/human/M as mob)
+	if(!isturf(loc)) //so if you want to play the game, you need to put it down somewhere
+		..()
 	if(M.machine == src)
-		return ..()
+		..()
 	else
-		M.examinate(src)
+		src.examine(M)
 
-obj/item/weapon/board/attackby(obj/item/I as obj, mob/user as mob)
-	if(!addPiece(I,user))
+/obj/item/board/attack_self(mob/user)
+	var/choice = alert("Do you want to throw everything off the [src]?", null, "No", "Yes")
+	if(choice == "Yes")
+		for(var/obj/item/checker/c in src.contents)
+			c.forceMove(get_turf(src.loc))
+		num = 0
+		board_icons = list()
+		board = list()
+		selected = -1
+		src.updateDialog()
+		interact(user)
+	..()
+
+/obj/item/board/attackby(obj/item/I as obj, mob/user as mob)
+	if(istype(I, /obj/item/storage/box))
+		var/obj/item/storage/box/h = I
+		for(var/obj/item/checker/c in h.contents)
+			addPiece(c,user)
+	else if(!addPiece(I,user))
 		..()
 
-/obj/item/weapon/board/proc/addPiece(obj/item/I as obj, mob/user as mob, var/tile = 0)
-	if(I.w_class != ITEM_SIZE_TINY) //only small stuff
+/obj/item/board/proc/addPiece(obj/item/I as obj, mob/user as mob, var/tile = 0)
+	if(I.w_class != 1) //only small stuff
 		user.show_message("<span class='warning'>\The [I] is too big to be used as a board piece.</span>")
 		return 0
 	if(num == 64)
@@ -38,8 +63,8 @@ obj/item/weapon/board/attackby(obj/item/I as obj, mob/user as mob)
 		return 0
 	if(!user.Adjacent(src))
 		return 0
-	if(!user.unEquip(I, src))
-		return 0
+
+	user.drop_from_inventory(I,src)
 	num++
 
 
@@ -60,9 +85,9 @@ obj/item/weapon/board/attackby(obj/item/I as obj, mob/user as mob)
 	return 1
 
 
-/obj/item/weapon/board/interact(mob/user as mob)
+/obj/item/board/interact(mob/user as mob)
 	if(user.is_physically_disabled() || (!isAI(user) && !user.Adjacent(src))) //can't see if you arent conscious. If you are not an AI you can't see it unless you are next to it, either.
-		close_browser(user, "window=boardgame")
+		user << browse(null, "window=boardgame")
 		user.unset_machine()
 		return
 
@@ -98,13 +123,13 @@ obj/item/weapon/board/attackby(obj/item/I as obj, mob/user as mob)
 
 	if(selected >= 0 && !isobserver(user))
 		dat += "<br><A href='?src=\ref[src];remove=0'>Remove Selected Piece</A>"
-	show_browser(user, jointext(dat, null),"window=boardgame;size=430x500") // 50px * 8 squares + 30 margin
+	user << browse(jointext(dat, null),"window=boardgame;size=430x500") // 50px * 8 squares + 30 margin)
 	onclose(usr, "boardgame")
 
-/obj/item/weapon/board/Topic(href, href_list)
+/obj/item/board/Topic(href, href_list)
 	if(!usr.Adjacent(src))
 		usr.unset_machine()
-		close_browser(usr, "window=boardgame")
+		usr << browse(null, "window=boardgame")
 		return
 
 	if(!usr.incapacitated()) //you can't move pieces if you can't move
@@ -161,67 +186,152 @@ obj/item/weapon/board/attackby(obj/item/I as obj, mob/user as mob)
 			board_icons -= null
 	src.updateDialog()
 
-//Checkers
-
-/obj/item/weapon/reagent_containers/food/snacks/checker
+//checkes
+/obj/item/checker
 	name = "checker"
 	desc = "It is plastic and shiny."
 	icon = 'icons/obj/pieces.dmi'
 	icon_state = "checker_black"
-	w_class = ITEM_SIZE_TINY
-	center_of_mass = "x=16;y=16"
-	nutriment_desc = list("a choking hazard" = 4)
-	nutriment_amt = 1
+	w_class = ITEMSIZE_TINY
 	var/piece_color ="black"
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/New()
-	..()
+/obj/item/checker/Initialize()
+	. = ..()
 	icon_state = "[name]_[piece_color]"
 	name = "[piece_color] [name]"
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/red
+/obj/item/checker/red
 	piece_color ="red"
+
+/obj/item/storage/box/checkers
+	name = "checkers box"
+	desc = "This box holds a nifty portion of checkers."
+	icon_state = "checkers"
+	max_storage_space = 24
+	w_class = ITEMSIZE_TINY
+	can_hold = list(/obj/item/checker)
+
+/obj/item/storage/box/checkers/fill()
+	for(var/i = 0; i < 12; i++)
+		new /obj/item/checker(src)
+		new /obj/item/checker/red(src)
+
+//chess
 
 //Chess
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/pawn
+/obj/item/checker/pawn
 	name = "pawn"
-	desc = "How many pawns will die in your war?"
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/pawn/red
+/obj/item/checker/pawn/red
 	piece_color ="red"
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/knight
+/obj/item/checker/knight
 	name = "knight"
-	desc = "The piece chess deserves, and needs to actually play."
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/knight/red
+/obj/item/checker/knight/red
 	piece_color ="red"
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/bishop
+/obj/item/checker/bishop
 	name = "bishop"
-	desc = "What corruption occured, urging holy men to fight?"
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/bishop/red
+/obj/item/checker/bishop/red
 	piece_color ="red"
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/rook
+/obj/item/checker/rook
 	name = "rook"
-	desc = "Representing ancient moving towers. So powerful and fast they were banned from wars, forever."
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/rook/red
+/obj/item/checker/rook/red
 	piece_color ="red"
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/queen
+/obj/item/checker/queen
 	name = "queen"
-	desc = "A queen of battle and pain. She dances across the battlefield."
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/queen/red
+/obj/item/checker/queen/red
 	piece_color ="red"
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/king
+/obj/item/checker/king
 	name = "king"
-	desc = "Why does a chess game end when the king dies?"
 
-/obj/item/weapon/reagent_containers/food/snacks/checker/king/red
+/obj/item/checker/king/red
 	piece_color ="red"
+
+/obj/item/checker/attackby(obj/item/I as obj, mob/user as mob)
+	if(istype(I, /obj/item/storage/box/chess))
+		var/obj/item/storage/box/chess/b = I
+		var/turf/T = get_turf(src)
+		if(T)
+			for(var/obj/item/checker/c in T.contents)
+				if(istype(I, /obj/item/storage/box/chess/red))
+					if(c.piece_color == "red")
+						c.forceMove(b)
+					else
+						continue
+				else if(c.piece_color != "red")
+					c.forceMove(b)
+			to_chat(user, "<span class='notice'>You put all checker pieces into [b].</span>")
+	else
+		..()
+
+/obj/item/storage/box/chess
+	name = "black chess box"
+	desc = "This box holds all the pieces needed for the black side of the chess board."
+	icon_state = "chess_b"
+	max_storage_space = 24
+	w_class = ITEMSIZE_SMALL
+	can_hold = list(/obj/item/checker)
+
+/obj/item/storage/box/chess/fill()
+	for(var/i = 0; i < 8; i++)
+		new /obj/item/checker/pawn(src)
+	new /obj/item/checker/knight (src)
+	new /obj/item/checker/knight (src)
+	new /obj/item/checker/bishop (src)
+	new /obj/item/checker/bishop (src)
+	new /obj/item/checker/rook (src)
+	new /obj/item/checker/rook (src)
+	new /obj/item/checker/queen (src)
+	new /obj/item/checker/king (src)
+
+/obj/item/storage/box/chess/red
+	name = "red chess box"
+	desc = "This box holds all the pieces needed for the red side of the chess board."
+	icon_state = "chess_r"
+
+/obj/item/storage/box/chess/red/fill()
+	for(var/i = 0; i < 8; i++)
+		new /obj/item/checker/pawn/red(src)
+	new /obj/item/checker/knight/red (src)
+	new /obj/item/checker/knight/red (src)
+	new /obj/item/checker/bishop/red (src)
+	new /obj/item/checker/bishop/red (src)
+	new /obj/item/checker/rook/red (src)
+	new /obj/item/checker/rook/red (src)
+	new /obj/item/checker/queen/red (src)
+	new /obj/item/checker/king/red (src)
+
+//game kits
+/obj/item/storage/box/checkers_kit
+	name = "checkers game kit"
+	desc = "This box holds all the parts needed for a game of checkers."
+	icon_state = "largebox"
+	max_storage_space = 8
+	can_hold = list(/obj/item/board,
+					/obj/item/storage/box/checkers)
+
+/obj/item/storage/box/checkers_kit/fill()
+	new /obj/item/board (src)
+	new /obj/item/storage/box/checkers (src)
+
+/obj/item/storage/box/chess_kit
+	name = "chess game kit"
+	desc = "This box holds all the parts needed for a game of chess."
+	icon_state = "largebox"
+	max_storage_space = 8
+	can_hold = list(/obj/item/board,
+					/obj/item/storage/box/chess)
+
+/obj/item/storage/box/chess_kit/fill()
+	new /obj/item/board (src)
+	new /obj/item/storage/box/chess (src)
+	new /obj/item/storage/box/chess/red (src)

@@ -1,15 +1,15 @@
-/decl/psionic_faculty/psychokinesis
+/datum/psionic_faculty/psychokinesis
 	id = PSI_PSYCHOKINESIS
 	name = "Psychokinesis"
 	associated_intent = I_GRAB
-	armour_types = list("melee", "bullet")
+	armor_types = list("melee", "bullet")
 
-/decl/psionic_power/psychokinesis
+/datum/psionic_power/psychokinesis
 	faculty = PSI_PSYCHOKINESIS
 	use_manifest = TRUE
 	use_sound = null
 
-/decl/psionic_power/psychokinesis/psiblade
+/datum/psionic_power/psychokinesis/psiblade
 	name =            "Psiblade"
 	cost =            10
 	cooldown =        30
@@ -17,7 +17,7 @@
 	use_description = "Click on or otherwise activate an empty hand while on harm intent to manifest a psychokinetic cutting blade. The power the blade will vary based on your mastery of the faculty."
 	admin_log = FALSE
 
-/decl/psionic_power/psychokinesis/psiblade/invoke(var/mob/living/user, var/mob/living/target)
+/datum/psionic_power/psychokinesis/psiblade/invoke(var/mob/living/user, var/mob/living/target)
 	if((target && user != target) || user.a_intent != I_HURT)
 		return FALSE
 	. = ..()
@@ -32,22 +32,22 @@
 			else
 				return new /obj/item/psychic_power/psiblade(user, user)
 
-/decl/psionic_power/psychokinesis/tinker
+/datum/psionic_power/psychokinesis/tinker
 	name =            "Tinker"
 	cost =            5
 	cooldown =        10
 	min_rank =        PSI_RANK_MASTER
-	use_description = "Click on or otherwise activate an empty hand while on help intent to manifest a psychokinetic tool. Use it in-hand to switch between tool types."
+	use_description = "Click on or otherwise activate an empty hand while on grab intent to manifest a psychokinetic tool. Use it in-hand to switch between tool types."
 	admin_log = FALSE
 
-/decl/psionic_power/psychokinesis/tinker/invoke(var/mob/living/user, var/mob/living/target)
-	if((target && user != target) || user.a_intent != I_HELP)
+/datum/psionic_power/psychokinesis/tinker/invoke(var/mob/living/user, var/mob/living/target)
+	if((target && user != target) || user.a_intent != I_GRAB)
 		return FALSE
 	. = ..()
 	if(.)
 		return new /obj/item/psychic_power/tinker(user)
 
-/decl/psionic_power/psychokinesis/telekinesis
+/datum/psionic_power/psychokinesis/telekinesis
 	name =            "Telekinesis"
 	cost =            5
 	cooldown =        10
@@ -61,7 +61,7 @@
 		/obj/machinery/door
 	)
 
-/decl/psionic_power/psychokinesis/telekinesis/invoke(var/mob/living/user, var/mob/living/target)
+/datum/psionic_power/psychokinesis/telekinesis/invoke(var/mob/living/user, var/mob/living/target)
 	if(user.a_intent != I_GRAB)
 		return FALSE
 	. = ..()
@@ -69,17 +69,17 @@
 
 		var/distance = get_dist(user, target)
 		if(distance > user.psi.get_rank(PSI_PSYCHOKINESIS))
-			to_chat(user, "<span class='warning'>Your telekinetic power won't reach that far.</span>")
+			to_chat(user, SPAN_WARNING("Your telekinetic power won't reach that far."))
 			return FALSE
 
 		if(istype(target, /mob) || istype(target, /obj))
 			var/obj/item/psychic_power/telekinesis/tk = new(user)
 			if(tk.set_focus(target))
 				tk.sparkle()
-				user.visible_message("<span class='notice'>\The [user] reaches out.</span>")
+				user.visible_message(SPAN_NOTICE("\The [user] reaches out."))
 				return tk
 		else if(istype(target, /obj/structure))
-			user.visible_message("<span class='notice'>\The [user] makes a strange gesture.</span>")
+			user.visible_message(SPAN_NOTICE("\The [user] makes a strange gesture."))
 			var/obj/O = target
 			O.attack_hand(user)
 			return TRUE

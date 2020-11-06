@@ -1,7 +1,7 @@
 /obj/effect/bhole
 	name = "black hole"
 	icon = 'icons/obj/objects.dmi'
-	desc = "FUCK FUCK FUCK AAAHHH!"
+	desc = "FUCK FUCK FUCK AAAHHH"
 	icon_state = "bhole3"
 	opacity = 1
 	unacidable = 1
@@ -24,7 +24,8 @@
 			qdel(M)
 		for(var/obj/O in orange(1,src))
 			qdel(O)
-		var/base_turf = get_base_turf_by_area(src)
+		var/turf/T = loc
+		var/base_turf = T.baseturf
 		for(var/turf/simulated/ST in orange(1,src))
 			if(ST.type == base_turf)
 				continue
@@ -55,7 +56,7 @@
 		//MOVEMENT
 		if( prob(50) )
 			src.anchored = 0
-			step(src,pick(GLOB.alldirs))
+			step(src,pick(alldirs))
 			src.anchored = 1
 
 /obj/effect/bhole/proc/grav(var/r, var/ex_act_force, var/pull_chance, var/turf_removal_chance)

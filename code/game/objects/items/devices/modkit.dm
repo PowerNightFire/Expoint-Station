@@ -3,11 +3,11 @@
 #define MODKIT_FULL 3
 
 /obj/item/device/modkit
-	name = "hardsuit modification kit"
-	desc = "A kit containing all the needed tools and parts to modify a hardsuit for another user."
+	name = "voidsuit modification kit"
+	desc = "A kit containing all the needed tools and parts to modify a voidsuit for another user."
 	icon_state = "modkit"
 	var/parts = MODKIT_FULL
-	var/target_species = SPECIES_HUMAN
+	var/target_species = BODYTYPE_HUMAN
 
 	var/list/permitted_types = list(
 		/obj/item/clothing/head/helmet/space/void,
@@ -23,6 +23,7 @@
 
 	if(!parts)
 		to_chat(user, "<span class='warning'>This kit has no parts for this modification left.</span>")
+		user.drop_from_inventory(src,O)
 		qdel(src)
 		return
 
@@ -32,7 +33,7 @@
 			allowed = 1
 
 	var/obj/item/clothing/I = O
-	if (!istype(I) || !allowed)
+	if (!istype(I) || !allowed || !I.refittable)
 		to_chat(user, "<span class='notice'>[src] is unable to modify that.</span>")
 		return
 
@@ -46,7 +47,7 @@
 		to_chat(user, "<span class='warning'>[O] must be safely placed on the ground for modification.</span>")
 		return
 
-	playsound(user.loc, 'sound/items/Screwdriver.ogg', 100, 1)
+	playsound(user.loc, 'sound/items/screwdriver.ogg', 100, 1)
 
 	user.visible_message("<span class='notice'>\The [user] opens \the [src] and modifies \the [O].</span>","<span class='notice'>You open \the [src] and modify \the [O].</span>")
 
@@ -58,8 +59,14 @@
 		parts &= ~MODKIT_SUIT
 
 	if(!parts)
+		user.drop_from_inventory(src,O)
 		qdel(src)
 
 /obj/item/device/modkit/examine(mob/user)
-	. = ..(user)
+	..(user)
 	to_chat(user, "It looks as though it modifies hardsuits to fit [target_species] users.")
+
+/obj/item/device/modkit/tajaran
+	name = "tajaran hardsuit modification kit"
+	desc = "A kit containing all the needed tools and parts to modify a voidsuit for another user. This one looks like it's meant for Tajarans."
+	target_species = BODYTYPE_TAJARA

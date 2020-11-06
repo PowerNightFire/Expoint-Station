@@ -1,7 +1,7 @@
 /datum/gas_mixture
 	//Associative list of gas moles.
 	//Gases with 0 moles are not tracked and are pruned by update_values()
-	var/list/gas = list()
+	var/list/gas
 	//Temperature in Kelvin of this gas mix.
 	var/temperature = 0
 
@@ -13,14 +13,13 @@
 	var/group_multiplier = 1
 
 	//List of active tile overlays for this gas_mixture.  Updated by check_tile_graphic()
-	var/list/graphic = list()
-	//Cache of gas overlay objects
-	var/list/tile_overlay_cache
+	var/list/graphic
 
 /datum/gas_mixture/New(_volume = CELL_VOLUME, _temperature = 0, _group_multiplier = 1)
 	volume = _volume
 	temperature = _temperature
 	group_multiplier = _group_multiplier
+	gas = list()
 
 /datum/gas_mixture/proc/get_gas(gasid)
 	if(!gas.len)
@@ -194,8 +193,7 @@
 	//group_multiplier gets divided out in volume/gas[gasid] - also, V/(m*T) = R/(partial pressure)
 	var/molar_mass = gas_data.molar_mass[gasid]
 	var/specific_heat = gas_data.specific_heat[gasid]
-	var/safe_temp = max(temperature, TCMB) // We're about to divide by this.
-	return R_IDEAL_GAS_EQUATION * ( log( (IDEAL_GAS_ENTROPY_CONSTANT*volume/(gas[gasid] * safe_temp)) * (molar_mass*specific_heat*safe_temp)**(2/3) + 1 ) +  15 )
+	return R_IDEAL_GAS_EQUATION * ( log( (IDEAL_GAS_ENTROPY_CONSTANT*volume/(gas[gasid] * temperature)) * (molar_mass*specific_heat*temperature)**(2/3) + 1 ) +  15 )
 
 	//alternative, simpler equation
 	//var/partial_pressure = gas[gasid] * R_IDEAL_GAS_EQUATION * temperature / volume
@@ -268,15 +266,15 @@
 
 //Removes moles from the gas mixture, limited by a given flag.  Returns a gax_mixture containing the removed air.
 /datum/gas_mixture/proc/remove_by_flag(flag, amount)
-	var/datum/gas_mixture/removed = new
-
 	if(!flag || amount <= 0)
-		return removed
+		return
 
 	var/sum = 0
 	for(var/g in gas)
 		if(gas_data.flags[g] & flag)
 			sum += gas[g]
+
+	var/datum/gas_mixture/removed = new
 
 	for(var/g in gas)
 		if(gas_data.flags[g] & flag)
@@ -297,14 +295,16 @@
 			. += gas[g]
 
 //Copies gas and temperature from another gas_mixture.
-/datum/gas_mixture/proc/copy_from(const/datum/gas_mixture/sample)
+// If fast is TRUE, use a less accurate method that doesn't involve list iteraton.
+/datum/gas_mixture/proc/copy_from(const/datum/gas_mixture/sample, fast = FALSE)
 	gas = sample.gas.Copy()
 	temperature = sample.temperature
-
-	update_values()
+	if (fast)
+		total_moles = sample.total_moles
+	else
+		update_values()
 
 	return 1
-
 
 //Checks if we are within acceptable range of another gas_mixture to suspend processing or merge.
 /datum/gas_mixture/proc/compare(const/datum/gas_mixture/sample, var/vacuum_exception = 0)
@@ -343,38 +343,36 @@
 
 	return 1
 
+
+/datum/gas_mixture/proc/react()
+	zburn(null, force_burn=0, no_check=0) //could probably just call zburn() here with no args but I like being explicit.
+
+
 //Rechecks the gas_mixture and adjusts the graphic list if needed.
 //Two lists can be passed by reference if you need know specifically which graphics were added and removed.
 /datum/gas_mixture/proc/check_tile_graphic(list/graphic_add = null, list/graphic_remove = null)
-	for(var/obj/effect/gas_overlay/O in graphic)
-		if(gas[O.gas_id] <= gas_data.overlay_limit[O.gas_id])
-			LAZYADD(graphic_remove, O)
 	for(var/g in gas_data.overlay_limit)
-		//Overlay isn't applied for this gas, check if it's valid and needs to be added.
-		if(gas[g] > gas_data.overlay_limit[g])
-			var/tile_overlay = get_tile_overlay(g)
-			if(!(tile_overlay in graphic))
-				LAZYADD(graphic_add, tile_overlay)
+		if (graphic && graphic[gas_data.tile_overlay[g]])
+			//Overlay is already applied for this gas, check if it's still valid.
+			if(gas[g] <= gas_data.overlay_limit[g])
+				LAZYADD(graphic_remove, gas_data.tile_overlay[g])
+		else
+			//Overlay isn't applied for this gas, check if it's valid and needs to be added.
+			if(gas[g] > gas_data.overlay_limit[g])
+				LAZYADD(graphic_add, gas_data.tile_overlay[g])
+
 	. = 0
 	//Apply changes
-	if(graphic_add && graphic_add.len)
-		graphic |= graphic_add
+	if(LAZYLEN(graphic_add))
+		LAZYINITLIST(graphic)
+		for (var/entry in graphic_add)
+			graphic[entry] = TRUE	// This is an assoc list to make checking it a bit faster.
 		. = 1
-	if(graphic_remove && graphic_remove.len)
+	if(LAZYLEN(graphic_remove))
 		graphic -= graphic_remove
 		. = 1
-	if(graphic.len)
-		var/pressure_mod = Clamp(return_pressure() / ONE_ATMOSPHERE, 0, 2)
-		for(var/obj/effect/gas_overlay/O in graphic)
-			var/concentration_mod = Clamp(gas[O.gas_id] / total_moles, 0.1, 1)
-			var/new_alpha = min(230, round(pressure_mod * concentration_mod * 180, 5))
-			if(new_alpha != O.alpha)
-				O.update_alpha_animation(new_alpha)
 
-/datum/gas_mixture/proc/get_tile_overlay(gas_id)
-	if(!LAZYACCESS(tile_overlay_cache, gas_id))
-		LAZYSET(tile_overlay_cache, gas_id, new/obj/effect/gas_overlay(null, gas_id))
-	return tile_overlay_cache[gas_id]
+	UNSETEMPTY(graphic)
 
 //Simpler version of merge(), adjusts gas amounts directly and doesn't account for temperature or group_multiplier.
 /datum/gas_mixture/proc/add(datum/gas_mixture/right_side)
@@ -439,10 +437,10 @@
 	if(full_heat_capacity + s_full_heat_capacity)
 		temp_avg = (temperature * full_heat_capacity + other.temperature * s_full_heat_capacity) / (full_heat_capacity + s_full_heat_capacity)
 
-	//WOOT WOOT TOUCH THIS AND YOU ARE A RETARD.
-	if(sharing_lookup_table.len >= connecting_tiles) //6 or more interconnecting tiles will max at 42% of air moved per tick.
+	if(connecting_tiles && (sharing_lookup_table.len >= connecting_tiles)) //6 or more interconnecting tiles will max at 42% of air moved per tick.
 		ratio = sharing_lookup_table[connecting_tiles]
-	//WOOT WOOT TOUCH THIS AND YOU ARE A RETARD
+	else if(!connecting_tiles)
+		ratio = 1
 
 	for(var/g in avg_gas)
 		gas[g] = max(0, (gas[g] - avg_gas[g]) * (1 - ratio) + avg_gas[g])

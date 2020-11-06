@@ -1,6 +1,8 @@
 //===================================================================================
 //Overmap object representing zlevel(s)
 //===================================================================================
+var/global/area/overmap/map_overmap // Global object used to locate the overmap area.
+
 /obj/effect/overmap/visitable
 	name = "map object"
 	scannable = TRUE
@@ -12,15 +14,12 @@
 
 	var/list/generic_waypoints = list()    //waypoints that any shuttle can use
 	var/list/restricted_waypoints = list() //waypoints for specific shuttles
-	var/docking_codes
 
 	var/start_x			//Coordinates for self placing
 	var/start_y			//will use random values if unset
 
 	var/base = 0		//starting sector, counts as station_levels
 	var/in_space = 1	//can be accessed via lucky EVA
-
-	var/hide_from_reports = FALSE
 
 	var/has_distress_beacon
 
@@ -32,15 +31,13 @@
 	find_z_levels()     // This populates map_z and assigns z levels to the ship.
 	register_z_levels() // This makes external calls to update global z level information.
 
-	if(!GLOB.using_map.overmap_z)
+	if(!current_map.overmap_z)
 		build_overmap()
+		
+	start_x = start_x || rand(OVERMAP_EDGE, current_map.overmap_size - OVERMAP_EDGE)
+	start_y = start_y || rand(OVERMAP_EDGE, current_map.overmap_size - OVERMAP_EDGE)
 
-	start_x = start_x || rand(OVERMAP_EDGE, GLOB.using_map.overmap_size - OVERMAP_EDGE)
-	start_y = start_y || rand(OVERMAP_EDGE, GLOB.using_map.overmap_size - OVERMAP_EDGE)
-
-	forceMove(locate(start_x, start_y, GLOB.using_map.overmap_z))
-
-	docking_codes = "[ascii2text(rand(65,90))][ascii2text(rand(65,90))][ascii2text(rand(65,90))][ascii2text(rand(65,90))]"
+	forceMove(locate(start_x, start_y, current_map.overmap_z))
 
 	testing("Located sector \"[name]\" at [start_x],[start_y], containing Z [english_list(map_z)]")
 
@@ -60,13 +57,13 @@
 	for(var/zlevel in map_z)
 		map_sectors["[zlevel]"] = src
 
-	GLOB.using_map.player_levels |= map_z
+	current_map.player_levels |= map_z
 	if(!in_space)
-		GLOB.using_map.sealed_levels |= map_z
+		current_map.sealed_levels |= map_z
 	if(base)
-		GLOB.using_map.station_levels |= map_z
-		GLOB.using_map.contact_levels |= map_z
-		GLOB.using_map.map_levels |= map_z
+		current_map.station_levels |= map_z
+		current_map.contact_levels |= map_z
+		current_map.map_levels |= map_z
 
 //Helper for init.
 /obj/effect/overmap/visitable/proc/check_ownership(obj/object)
@@ -107,44 +104,30 @@
 	icon_state = "sector"
 	anchored = 1
 
-
-/obj/effect/overmap/visitable/sector/Initialize()
-	. = ..()
-
-	if(known)
-		update_known_connections(TRUE)
-
-
-/obj/effect/overmap/visitable/sector/update_known_connections(notify = FALSE)
-	. = ..()
-
-	for(var/obj/machinery/computer/ship/helm/H in SSmachines.machinery)
-		H.add_known_sector(src, notify)
-
-
 // Because of the way these are spawned, they will potentially have their invisibility adjusted by the turfs they are mapped on
 // prior to being moved to the overmap. This blocks that. Use set_invisibility to adjust invisibility as needed instead.
 /obj/effect/overmap/visitable/sector/hide()
 
 /proc/build_overmap()
-	if(!GLOB.using_map.use_overmap)
+	if(!current_map.use_overmap)
 		return 1
 
 	testing("Building overmap...")
 	world.maxz++
-	GLOB.using_map.overmap_z = world.maxz
-
-	testing("Putting overmap on [GLOB.using_map.overmap_z]")
+	current_map.overmap_z = world.maxz
+	
+	testing("Putting overmap on [current_map.overmap_z]")
 	var/area/overmap/A = new
-	for (var/square in block(locate(1,1,GLOB.using_map.overmap_z), locate(GLOB.using_map.overmap_size,GLOB.using_map.overmap_size,GLOB.using_map.overmap_z)))
+	global.map_overmap = A
+	for (var/square in block(locate(1,1,current_map.overmap_z), locate(current_map.overmap_size,current_map.overmap_size,current_map.overmap_z)))
 		var/turf/T = square
-		if(T.x == GLOB.using_map.overmap_size || T.y == GLOB.using_map.overmap_size)
+		if(T.x == current_map.overmap_size || T.y == current_map.overmap_size)
 			T = T.ChangeTurf(/turf/unsimulated/map/edge)
 		else
 			T = T.ChangeTurf(/turf/unsimulated/map)
 		ChangeArea(T, A)
 
-	GLOB.using_map.sealed_levels |= GLOB.using_map.overmap_z
+	current_map.sealed_levels |= current_map.overmap_z
 
 	testing("Overmap build complete.")
 	return 1

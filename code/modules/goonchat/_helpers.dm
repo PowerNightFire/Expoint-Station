@@ -1,4 +1,4 @@
-GLOBAL_DATUM_INIT(is_http_protocol, /regex, regex("^https?://"))
+var/regex/is_http_protocol = regex("^https?://")
 
 
 //Converts an icon to base64. Operates by putting the icon in the iconCache savefile,
@@ -7,12 +7,12 @@ GLOBAL_DATUM_INIT(is_http_protocol, /regex, regex("^https?://"))
 /proc/icon2base64(icon/icon, iconKey = "misc")
 	if (!isicon(icon))
 		return FALSE
-	to_save(GLOB.iconCache[iconKey], icon)
-	var/iconData = GLOB.iconCache.ExportText(iconKey)
+	to_save(iconCache[iconKey], icon)
+	var/iconData = iconCache.ExportText(iconKey)
 	var/list/partial = splittext(iconData, "{")
 	return replacetext(copytext(partial[2], 3, -5), "\n", "")
 
-/proc/icon2html(thing, target, icon_state, dir, frame = 1, moving = FALSE, realsize = FALSE, class = null)
+/proc/icon2html(thing, target, icon_state, dir = SOUTH, frame = 1, moving = FALSE, realsize = FALSE, class = null)
 	if (!thing)
 		return
 
@@ -21,7 +21,7 @@ GLOBAL_DATUM_INIT(is_http_protocol, /regex, regex("^https?://"))
 	if (!target)
 		return
 	if (target == world)
-		target = GLOB.clients
+		target = clients
 
 	var/list/targets
 	if (!islist(target))
@@ -38,11 +38,18 @@ GLOBAL_DATUM_INIT(is_http_protocol, /regex, regex("^https?://"))
 				send_asset(thing2, key, FALSE)
 			return "<img class='icon icon-misc [class]' src=\"[url_encode(name)]\">"
 		var/atom/A = thing
-		if (isnull(dir))
-			dir = A.dir
+
+		I = A.icon
 		if (isnull(icon_state))
 			icon_state = A.icon_state
-		I = A.icon
+			if (!(icon_state in icon_states(I, 1)))
+				icon_state = initial(A.icon_state)
+				if (isnull(dir))
+					dir = initial(A.dir)
+		
+		if (isnull(dir))
+			dir = A.dir
+		
 		if (ishuman(thing)) // Shitty workaround for a BYOND issue.
 			var/icon/temp = I
 			I = icon()

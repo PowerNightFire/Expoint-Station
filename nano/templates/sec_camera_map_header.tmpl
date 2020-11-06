@@ -12,16 +12,12 @@
 	{{/if}}
 </div>
 
-<div class='item'>
-	<div class='itemLabel'>
-		Z-Level:
-	</div>
-	<div class='itemContentWide'>
-	{{for config.mapZLevels :zValue:zIndex}}
-		{{:helper.link(zValue, 'close', {'mapZLevel' : zValue}, null, config.mapZLevel == zValue ? 'selected' : null)}}
-	{{/for}}
-	</div>
-</div>
+<div style="float: right; width: 240px;">
+ 	<span style="float: left;">Z Level:&nbsp;</span>
+ 	{{for config.mapZLevels :zValue:zIndex}}
+ 		{{:helper.link(zValue, 'close', {'mapZLevel' : zValue}, null, config.mapZLevel == zValue ? 'selected' : null)}}
+ 	{{/for}}
+ </div>
 
 <div class='item'>
 	<div class='itemLabel'>

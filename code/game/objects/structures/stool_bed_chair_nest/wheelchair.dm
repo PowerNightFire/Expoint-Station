@@ -1,27 +1,27 @@
 /obj/structure/bed/chair/wheelchair
 	name = "wheelchair"
-	desc = "Now we're getting somewhere."
+	desc = "You sit in this. Either by will or force."
 	icon_state = "wheelchair"
 	anchored = 0
-	movement_handlers = list(/datum/movement_handler/deny_multiz, /datum/movement_handler/delay = list(2), /datum/movement_handler/move_relay_self)
+	buckle_movable = 1
+
 	var/driving = 0
 	var/mob/living/pulling = null
 	var/bloodiness
 
-/obj/structure/bed/chair/wheelchair/on_update_icon()
-	return
+	slowdown = 0
+
+/obj/structure/bed/chair/wheelchair/update_icon()
+	cut_overlays()
+	add_overlay(image(icon = 'icons/obj/furniture.dmi', icon_state = "w_overlay", layer = FLY_LAYER))
 
 /obj/structure/bed/chair/wheelchair/set_dir()
-	..()
-	overlays.Cut()
-	var/image/O = image(icon = 'icons/obj/furniture.dmi', icon_state = "w_overlay", dir = src.dir)
-	O.layer = ABOVE_HUMAN_LAYER
-	overlays += O
+	. = ..()
 	if(buckled_mob)
 		buckled_mob.set_dir(dir)
 
-/obj/structure/bed/chair/wheelchair/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	if(isWrench(W) || istype(W,/obj/item/stack) || isWirecutter(W))
+/obj/structure/bed/chair/wheelchair/attackby(obj/item/W as obj, mob/user as mob)
+	if(W.iswrench() || istype(W,/obj/item/stack) || W.iswirecutter())
 		return
 	..()
 
@@ -88,14 +88,18 @@
 
 /obj/structure/bed/chair/wheelchair/Move()
 	. = ..()
+	playsound(src, 'sound/effects/roll.ogg', 75, 1)
 	if(buckled_mob)
 		var/mob/living/occupant = buckled_mob
 		if(!driving)
+			occupant.buckled = null
+			occupant.Move(src.loc)
+			occupant.buckled = src
 			if (occupant && (src.loc != occupant.loc))
 				if (propelled)
 					for (var/mob/O in src.loc)
 						if (O != occupant)
-							Bump(O)
+							Collide(O)
 				else
 					unbuckle_mob()
 			if (pulling && (get_dist(src, pulling) > 1))
@@ -130,12 +134,12 @@
 			to_chat(usr, "You let go of \the [name]'s handles.")
 			pulling.pulledby = null
 			pulling = null
-		return TRUE
-	return FALSE
+		return
 
-/obj/structure/bed/chair/wheelchair/Bump(atom/A)
-	..()
-	if(!buckled_mob)	return
+/obj/structure/bed/chair/wheelchair/Collide(atom/A)
+	. = ..()
+	if(!buckled_mob)
+		return
 
 	if(propelled || (pulling && (pulling.a_intent == I_HURT)))
 		var/mob/living/occupant = unbuckle_mob()
@@ -143,27 +147,30 @@
 		if (pulling && (pulling.a_intent == I_HURT))
 			occupant.throw_at(A, 3, 3, pulling)
 		else if (propelled)
-			occupant.throw_at(A, 3, 3)
+			occupant.throw_at(A, 3, propelled)
 
 		var/def_zone = ran_zone()
-		var/blocked = 100 * occupant.get_blocked_ratio(def_zone, BRUTE, damage = 10)
-		occupant.throw_at(A, 3, 3)
+		var/blocked = occupant.run_armor_check(def_zone, "melee")
+		occupant.throw_at(A, 3, propelled)
 		occupant.apply_effect(6, STUN, blocked)
 		occupant.apply_effect(6, WEAKEN, blocked)
 		occupant.apply_effect(6, STUTTER, blocked)
-		occupant.apply_damage(10, BRUTE, def_zone)
-		playsound(src.loc, 'sound/weapons/punch1.ogg', 50, 1, -1)
+		occupant.apply_damage(10, BRUTE, def_zone, blocked)
+		playsound(src.loc, "punch", 50, 1, -1)
 		if(istype(A, /mob/living))
 			var/mob/living/victim = A
 			def_zone = ran_zone()
-			blocked = 100 * victim.get_blocked_ratio(def_zone, BRUTE, damage = 10)
+			blocked = victim.run_armor_check(def_zone, "melee")
 			victim.apply_effect(6, STUN, blocked)
 			victim.apply_effect(6, WEAKEN, blocked)
 			victim.apply_effect(6, STUTTER, blocked)
-			victim.apply_damage(10, BRUTE, def_zone)
+			victim.apply_damage(10, BRUTE, def_zone, blocked)
 		if(pulling)
 			occupant.visible_message("<span class='danger'>[pulling] has thrusted \the [name] into \the [A], throwing \the [occupant] out of it!</span>")
-			admin_attack_log(pulling, occupant, "Crashed their victim into \an [A].", "Was crashed into \an [A].", "smashed into \the [A] using")
+
+			pulling.attack_log += "\[[time_stamp()]\]<span class='warning'> Crashed [occupant.name]'s ([occupant.ckey]) [name] into \a [A]</span>"
+			occupant.attack_log += "\[[time_stamp()]\]<font color='orange'> Thrusted into \a [A] by [pulling.name] ([pulling.ckey]) with \the [name]</font>"
+			msg_admin_attack("[pulling.name] ([pulling.ckey]) has thrusted [occupant.name]'s ([occupant.ckey]) [name] into \a [A] (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[pulling.x];Y=[pulling.y];Z=[pulling.z]'>JMP</a>)",ckey=key_name(pulling),ckey_target=key_name(occupant))
 		else
 			occupant.visible_message("<span class='danger'>[occupant] crashed into \the [A]!</span>")
 
@@ -187,7 +194,34 @@
 		usr.pulledby = null
 	..()
 
-/proc/equip_wheelchair(mob/living/carbon/human/H) //Proc for spawning in a wheelchair if a new character has no legs. Used in new_player.dm
-	var/obj/structure/bed/chair/wheelchair/W = new(get_turf(H))
-	if(isturf(H.loc))
-		W.buckle_mob(H)
+/obj/item/wheelchair
+	name = "wheelchair"
+	desc = "A folded wheelchair that can be carried around."
+	icon = 'icons/obj/furniture.dmi'
+	icon_state = "wheelchair_folded"
+	item_state = "wheelchair"
+	w_class = ITEMSIZE_HUGE // Can't be put in backpacks. Oh well.
+
+/obj/item/wheelchair/attack_self(mob/user)
+	var/obj/structure/bed/chair/wheelchair/R = new /obj/structure/bed/chair/wheelchair(user.loc)
+	R.add_fingerprint(user)
+	R.name = src.name
+	R.desc = src.desc
+	R.color = src.color
+	qdel(src)
+
+/obj/structure/bed/chair/wheelchair/MouseDrop(over_object, src_location, over_location)
+	..()
+	if((over_object == usr && (in_range(src, usr) || usr.contents.Find(src))))
+		if(!ishuman(usr))
+			return FALSE
+		if(buckled_mob)
+			return FALSE
+	visible_message(SPAN_NOTICE("[usr] collapses [src]."))
+	var/obj/item/wheelchair/R = new(get_turf(src))
+	R.name = src.name
+	R.desc = src.desc
+	R.color = src.color
+	usr.put_in_hands(R)
+	qdel(src)
+

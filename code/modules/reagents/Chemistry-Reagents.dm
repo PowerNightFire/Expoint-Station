@@ -10,71 +10,52 @@
 	var/metabolism = REM // This would be 0.2 normally
 	var/ingest_met = 0
 	var/touch_met = 0
-	var/overdose = 0
+	var/breathe_met = 0
+	var/ingest_mul = 0.5
+	var/touch_mul = 0
+	var/breathe_mul = 0.75
+	var/dose = 0
+	var/max_dose = 0
+	var/overdose = 0 // Volume of a chemical required in the blood to meet overdose criteria.
+	var/od_minimum_dose = 5 // Metabolised dose of a chemical required to meet overdose criteria. 
 	var/scannable = 0 // Shows up on health analyzers.
+	var/affects_dead = 0
+	var/glass_icon_state = null
+	var/glass_name = null
+	var/glass_desc = null
+	var/glass_center_of_mass = null
+	var/condiment_icon_state = null
+	var/condiment_name = null
+	var/condiment_desc = null
+	var/condiment_center_of_mass = null
 	var/color = "#000000"
 	var/color_weight = 1
-	var/color_foods = FALSE // If TRUE, this reagent affects the color of food items it's added to
+	var/unaffected_species = IS_DIONA | IS_MACHINE	// Species that aren't affected by this reagent. Does not prevent affect_touch.
+	var/metabolism_min = 0.01 //How much for the medicine to be present in the system to actually have an effect.
+	var/conflicting_reagent //Reagents that conflict with this medicine, and cause adverse effects when in the blood.
 
-	// If TRUE, this reagent transfers changes to its 'color' var when moving to other containers
-	// Of note: Mixing two reagents of the same type with this var that have different colors
-	// will cause them both to take on the color of the form being added into the holder.
-	// i.e. if you add red to blue, all of the reagent turns red and vice-versa.
-	var/color_transfer = FALSE
+	var/default_temperature = T0C + 20 //This is it's default spawning temperature, if none is provided.
+	var/thermal_energy = 0 //Internal value, should never change.
+	var/specific_heat = -1 //The higher, the more difficult it is to change its temperature. 0 or lower values indicate that the specific heat has yet to be assigned.
+	var/fallback_specific_heat = -1 //Setting this value above 0 will set the specific heat to this value only if the system could not find an appropriate specific heat to assign using the recipe system.
+	//Never ever ever ever change this value for datum/reagent. This should only be used for massive, yet specific things like drinks or food where it is infeasible to assign a specific heat value.
 
-	var/alpha = 255
-	var/flags = 0
-	var/hidden_from_codex
+	var/germ_adjust = 0 // for makeshift bandages/disinfectant
+	var/carbonated = FALSE // if it's carbonated or not
 
-	var/glass_icon = DRINK_ICON_DEFAULT
-	var/glass_name = "something"
-	var/glass_desc = "It's a glass of... what, exactly?"
-	var/list/glass_special = null // null equivalent to list()
-
-	// GAS DATA, generic values copied from base XGM datum type.
-	var/gas_specific_heat = 20
-	var/gas_molar_mass =    0.032
-	var/gas_overlay_limit = 0.7
-	var/gas_flags =         0
-	var/gas_burn_product
-	var/gas_overlay = "generic"
-	// END GAS DATA
-
-	// Matter state data.
-	var/chilling_point
-	var/chilling_message = "crackles and freezes!"
-	var/chilling_sound = 'sound/effects/bubbles.ogg'
-	var/list/chilling_products
-
-	var/list/heating_products
-	var/heating_point
-	var/heating_message = "begins to boil!"
-	var/heating_sound = 'sound/effects/bubbles.ogg'
-
-	var/temperature_multiplier = 1
-	var/value = 1
-
-	var/scent //refer to _scent.dm
-	var/scent_intensity = /decl/scent_intensity/normal
-	var/scent_descriptor = SCENT_DESC_SMELL
-	var/scent_range = 1
-
-/datum/reagent/New(var/datum/reagents/holder)
-	if(!istype(holder))
-		CRASH("Invalid reagents holder: [log_info_line(holder)]")
-	src.holder = holder
-	..()
+/datum/reagent/proc/initialize_data(var/newdata) // Called when the reagent is created.
+	if(!isnull(newdata))
+		data = newdata
+	metabolism = round(metabolism,0.001)
 
 /datum/reagent/proc/remove_self(var/amount) // Shortcut
-	if(QDELETED(src)) // In case we remove multiple times without being careful.
+	if (!holder)
 		return
+
 	holder.remove_reagent(type, amount)
 
-/datum/reagent/proc/on_leaving_metabolism(var/mob/parent, var/metabolism_class)
-	return
-
 // This doesn't apply to skin contact - this is for, e.g. extinguishers and sprays. The difference is that reagent is not directly on the mob's skin - it might just be on their clothing.
-/datum/reagent/proc/touch_mob(var/mob/M, var/amount)
+/datum/reagent/proc/touch_mob(var/mob/living/M, var/amount)
 	return
 
 /datum/reagent/proc/touch_obj(var/obj/O, var/amount) // Acid melting, cleaner cleaning, etc
@@ -84,79 +65,97 @@
 	return
 
 /datum/reagent/proc/on_mob_life(var/mob/living/carbon/M, var/alien, var/location) // Currently, on_mob_life is called on carbons. Any interaction with non-carbon mobs (lube) will need to be done in touch_mob.
-	if(QDELETED(src))
-		return // Something else removed us.
 	if(!istype(M))
 		return
-	if(!(flags & AFFECTS_DEAD) && M.stat == DEAD && (world.time - M.timeofdeath > 150))
+	if(!affects_dead && M.stat == DEAD)
 		return
-	if(overdose && (location != CHEM_TOUCH))
-		var/overdose_threshold = overdose * (flags & IGNORE_MOB_SIZE? 1 : MOB_MEDIUM/M.mob_size)
-		if(volume > overdose_threshold)
-			overdose(M, alien)
+	if(alien & unaffected_species && location != CHEM_TOUCH)
+		return
 
-	//determine the metabolism rate
 	var/removed = metabolism
 	if(ingest_met && (location == CHEM_INGEST))
 		removed = ingest_met
 	if(touch_met && (location == CHEM_TOUCH))
 		removed = touch_met
-	removed = M.get_adjusted_metabolism(removed)
+	if(breathe_met && (location == CHEM_BREATHE))
+		removed = breathe_met
 
-	//adjust effective amounts - removed, dose, and max_dose - for mob size
-	var/effective = removed
-	if(!(flags & IGNORE_MOB_SIZE) && location != CHEM_TOUCH)
-		effective *= (MOB_MEDIUM/M.mob_size)
+	removed = M.get_metabolism(removed)
+	max_dose = max(volume, max_dose)
 
-	M.chem_doses[type] = M.chem_doses[type] + effective
-	if(effective >= (metabolism * 0.1) || effective >= 0.1) // If there's too little chemical, don't affect the mob, just remove it
+	if(overdose && (volume > overdose) && (dose > od_minimum_dose) && (location != CHEM_TOUCH)) //OD based on volume in blood, but waits for a small amount of the drug to metabolise before kicking in.
+		overdose(M, alien, removed, dose/overdose) //Actual overdose threshold now = overdose + od_minimum_dose. ie. Synaptizine; 5u OD threshold + 1 unit min. metab'd dose = 6u actual OD threshold.
+
+	if(dose == 0)
+		initial_effect(M,alien)
+
+	dose = min(dose + removed, max_dose)
+
+	var/bodytempchange = Clamp((get_temperature() - M.bodytemperature) * removed * REAGENTS_BODYTEMP,-REAGENTS_BODYTEMP_MAX * removed, REAGENTS_BODYTEMP_MAX * removed)
+	if(abs(bodytempchange) >= REAGENTS_BODYTEMP_MIN)
+		M.bodytemperature += round(bodytempchange,REAGENTS_BODYTEMP_MIN)
+
+	for(var/datum/reagent/R in M.bloodstr.reagent_list)
+		if(istype(R, conflicting_reagent))
+			affect_conflicting(M,alien,removed,R)
+	if(removed >= metabolism_min)
 		switch(location)
 			if(CHEM_BLOOD)
-				affect_blood(M, alien, effective)
+				affect_blood(M, alien, removed)
 			if(CHEM_INGEST)
-				affect_ingest(M, alien, effective)
+				affect_ingest(M, alien, removed)
 			if(CHEM_TOUCH)
-				affect_touch(M, alien, effective)
+				affect_touch(M, alien, removed)
+			if(CHEM_BREATHE)
+				affect_breathe(M, alien, removed)
 
-	if(volume)
-		remove_self(removed)
+	remove_self(removed)
+
+// Called when a beaker is thrown or something is hit with it, AND the beaker doesn't break.
+/datum/reagent/proc/apply_force(var/force)
+	return force
+
+//Initial effect is called once when the reagent first starts affecting a mob.
+/datum/reagent/proc/initial_effect(var/mob/living/carbon/M, var/alien)
+	return
+
+//Final effect is called once when the reagent finishes affecting a mob.
+/datum/reagent/proc/final_effect(var/mob/living/carbon/M)
+	return
 
 /datum/reagent/proc/affect_blood(var/mob/living/carbon/M, var/alien, var/removed)
 	return
 
+/datum/reagent/proc/affect_conflicting(var/mob/living/carbon/M, var/alien, var/removed, var/datum/reagent/conflicting_reagent)
+	M.adjustToxLoss(removed)
+
 /datum/reagent/proc/affect_ingest(var/mob/living/carbon/M, var/alien, var/removed)
-	affect_blood(M, alien, removed * 0.5)
-	return
+	if(ingest_mul)
+		affect_blood(M, alien, removed * ingest_mul)
 
 /datum/reagent/proc/affect_touch(var/mob/living/carbon/M, var/alien, var/removed)
-	return
+	if(touch_mul)
+		affect_blood(M, alien, removed * touch_mul)
 
-/datum/reagent/proc/overdose(var/mob/living/carbon/M, var/alien) // Overdose effect. Doesn't happen instantly.
-	M.add_chemical_effect(CE_TOXIN, 1)
+/datum/reagent/proc/affect_breathe(var/mob/living/carbon/M, var/alien, var/removed)
+	if(breathe_mul)
+		affect_blood(M, alien, removed * breathe_mul)
+
+/datum/reagent/proc/overdose(var/mob/living/carbon/M, var/alien, var/removed = 0, var/scale = 1) // Overdose effect. Doesn't happen instantly.
 	M.adjustToxLoss(REM)
-	return
-
-/datum/reagent/proc/initialize_data(var/newdata) // Called when the reagent is created.
-	if(!isnull(newdata))
-		data = newdata
-	return
 
 /datum/reagent/proc/mix_data(var/newdata, var/newamount) // You have a reagent with data, and new reagent with its own data get added, how do you deal with that?
 	return
 
 /datum/reagent/proc/get_data() // Just in case you have a reagent that handles data differently.
-	if(data && istype(data, /list))
+	if(islist(data))
 		return data.Copy()
 	else if(data)
 		return data
-	return null
 
 /datum/reagent/Destroy() // This should only be called by the holder, so it's already handled clearing its references
-	holder = null
 	. = ..()
-
-/datum/reagent/proc/ex_act(obj/item/weapon/reagent_containers/holder, severity)
-	return
+	holder = null
 
 /* DEPRECATED - TODO: REMOVE EVERYWHERE */
 
@@ -169,4 +168,6 @@
 /datum/reagent/proc/reaction_mob(var/mob/target)
 	touch_mob(target)
 
-/datum/reagent/proc/custom_temperature_effects(var/temperature)
+
+
+

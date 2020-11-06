@@ -4,7 +4,6 @@
 	icon = 'icons/obj/turbolift.dmi'
 	anchored = 1
 	density = 0
-	layer = ABOVE_OBJ_LAYER
 
 	var/datum/turbolift/lift
 
@@ -26,12 +25,12 @@
 		if(user.a_intent == I_HURT)
 			user.visible_message("<span class='danger'>\The [user] hammers on the lift button!</span>")
 		else
-			user.visible_message("<span class='notice'>\The [user] presses the lift button.</span>")
+			user.visible_message("<b>\The [user]</b> presses the lift button.")
 
 
-/obj/structure/lift/New(var/newloc, var/datum/turbolift/_lift)
+/obj/structure/lift/Initialize(mapload, datum/turbolift/_lift)
 	lift = _lift
-	return ..(newloc)
+	return ..(mapload)
 
 /obj/structure/lift/attack_ai(var/mob/user)
 	return attack_hand(user)
@@ -55,7 +54,6 @@
 	icon_state = "button"
 	var/light_up = FALSE
 	var/datum/turbolift_floor/floor
-	mouse_opacity = 2 //No more eyestrain aiming at tiny pixels
 
 /obj/structure/lift/button/Destroy()
 	if(floor && floor.ext_panel == src)
@@ -74,8 +72,7 @@
 	pressed(user)
 	if(floor == lift.current_floor)
 		lift.open_doors()
-		spawn(3)
-			reset()
+		addtimer(CALLBACK(src, .proc/reset), 3)
 		return
 	lift.queue_move_to(floor)
 
@@ -83,7 +80,7 @@
 	light_up = TRUE
 	update_icon()
 
-/obj/structure/lift/button/on_update_icon()
+/obj/structure/lift/button/update_icon()
 	if(light_up)
 		icon_state = "button_lit"
 	else
@@ -95,7 +92,6 @@
 /obj/structure/lift/panel
 	name = "elevator control panel"
 	icon_state = "panel"
-	mouse_opacity = 2 //No more eyestrain aiming at tiny pixels
 
 
 /obj/structure/lift/panel/attack_ghost(var/mob/user)
@@ -104,6 +100,8 @@
 /obj/structure/lift/panel/interact(var/mob/user)
 	if(!..())
 		return
+	if(istype(user, /mob/living/heavy_vehicle)) // terrible, i know, but it shat out runtimes otherwise
+		user = usr
 
 	var/dat = list()
 	dat += "<html><body><hr><b>Lift panel</b><hr>"
@@ -113,9 +111,10 @@
 	//lower levels at the bottom, we need to go through the list in reverse
 	for(var/i in lift.floors.len to 1 step -1)
 		var/datum/turbolift_floor/floor = lift.floors[i]
-		var/label = floor.label? floor.label : "Level #[i]"
-		dat += "<font color = '[(floor in lift.queued_floors) ? COLOR_YELLOW : COLOR_WHITE]'>"
-		dat += "<a href='?src=\ref[src];move_to_floor=["\ref[floor]"]'>[label]</a>: [floor.name]</font><br>"
+		if(floor)
+			var/label = floor.label? floor.label : "Level #[i]"
+			dat += "<font color = '[(floor in lift.queued_floors) ? COLOR_YELLOW : COLOR_WHITE]'>"
+			dat += "<a href='?src=\ref[src];move_to_floor=["\ref[floor]"]'>[label]</a>: [floor.name]</font><br>"
 
 	dat += "<hr>"
 	if(lift.doors_are_open())
@@ -130,21 +129,28 @@
 	popup.open()
 	return
 
-/obj/structure/lift/panel/OnTopic(user, href_list)
+/obj/structure/lift/panel/Topic(href, href_list)
+	. = ..()
+	if(.)
+		return
+
+	var/panel_interact
 	if(href_list["move_to_floor"])
 		lift.queue_move_to(locate(href_list["move_to_floor"]))
-		. = TOPIC_REFRESH
+		panel_interact = 1
 	if(href_list["open_doors"])
+		panel_interact = 1
 		lift.open_doors()
-		. = TOPIC_REFRESH
 	if(href_list["close_doors"])
+		panel_interact = 1
 		lift.close_doors()
-		. = TOPIC_REFRESH
 	if(href_list["emergency_stop"])
+		panel_interact = 1
 		lift.emergency_stop()
-		. = TOPIC_REFRESH
 
-	if(. == TOPIC_REFRESH)
-		pressed(user)
+	if(panel_interact)
+		pressed(usr)
+
+	return 0
 
 // End panel.

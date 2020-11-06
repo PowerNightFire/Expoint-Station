@@ -18,16 +18,16 @@ var/global/list/map_sectors = list()
 	opacity = 1
 	density = 1
 
-/turf/unsimulated/map/New()
-	..()
+/turf/unsimulated/map/Initialize(mapload)
+	. = ..()
 	name = "[x]-[y]"
 	var/list/numbers = list()
 
-	if(x == 1 || x == GLOB.using_map.overmap_size)
+	if(x == 1 || x == current_map.overmap_size)
 		numbers += list("[round(y/10)]","[round(y%10)]")
-		if(y == 1 || y == GLOB.using_map.overmap_size)
+		if(y == 1 || y == current_map.overmap_size)
 			numbers += "-"
-	if(y == 1 || y == GLOB.using_map.overmap_size)
+	if(y == 1 || y == current_map.overmap_size)
 		numbers += list("[round(x/10)]","[round(x%10)]")
 
 	for(var/i = 1 to numbers.len)
@@ -37,12 +37,12 @@ var/global/list/map_sectors = list()
 		if(y == 1)
 			I.pixel_y = 3
 			I.pixel_x = 5*i + 4
-		if(y == GLOB.using_map.overmap_size)
+		if(y == current_map.overmap_size)
 			I.pixel_y = world.icon_size - 9
 			I.pixel_x = 5*i + 4
 		if(x == 1)
 			I.pixel_x = 5*i - 2
-		if(x == GLOB.using_map.overmap_size)
+		if(x == current_map.overmap_size)
 			I.pixel_x = 5*i + 2
 		overlays += I
 

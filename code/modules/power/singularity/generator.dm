@@ -6,19 +6,20 @@
 	icon_state = "TheSingGen"
 	anchored = 0
 	density = 1
-	use_power = POWER_USE_OFF
+	use_power = 0
 	var/energy = 0
+	var/creation_type = /obj/singularity
 
-/obj/machinery/the_singularitygen/Process()
+/obj/machinery/the_singularitygen/machinery_process()
 	var/turf/T = get_turf(src)
 	if(src.energy >= 200)
-		new /obj/singularity/(T, 50)
+		new creation_type(T, 50)
 		if(src) qdel(src)
 
 /obj/machinery/the_singularitygen/attackby(obj/item/W, mob/user)
-	if(istype(W, /obj/item/weapon/wrench))
+	if(W.iswrench())
 		anchored = !anchored
-		playsound(src.loc, 'sound/items/Ratchet.ogg', 75, 1)
+		playsound(src.loc, W.usesound, 75, 1)
 		if(anchored)
 			user.visible_message("[user.name] secures [src.name] to the floor.", \
 				"You secure the [src.name] to the floor.", \

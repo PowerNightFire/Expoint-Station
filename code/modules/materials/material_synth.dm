@@ -4,8 +4,10 @@
 	uses_charge = 1
 	charge_costs = list(1000)
 	gender = NEUTER
-	matter = null // Don't shove it in the autholathe.
 
+	// Don't shove it in the autholathe
+	recyclable = FALSE
+	matter = null
 
 /obj/item/stack/material/cyborg/New()
 	if(..())
@@ -14,40 +16,30 @@
 		matter = null
 
 /obj/item/stack/material/cyborg/plastic
-	icon_state = "sheet"
+	icon_state = "sheet-plastic"
 	default_type = MATERIAL_PLASTIC
-	stacktype = /obj/item/stack/material/plastic
 
 /obj/item/stack/material/cyborg/steel
-	icon_state = "sheet"
+	icon_state = "sheet-metal"
 	default_type = MATERIAL_STEEL
-	stacktype = /obj/item/stack/material/steel
 
 /obj/item/stack/material/cyborg/plasteel
-	icon_state = "sheet-reinf"
+	icon_state = "sheet-plasteel"
 	default_type = MATERIAL_PLASTEEL
-	stacktype = /obj/item/stack/material/plasteel
 
 /obj/item/stack/material/cyborg/wood
 	icon_state = "sheet-wood"
 	default_type = MATERIAL_WOOD
-	stacktype = /obj/item/stack/material/wood
 
 /obj/item/stack/material/cyborg/glass
-	icon_state = "sheet"
+	desc_info = "Use in your hand to build a window.  Can be upgraded to reinforced glass by adding metal rods, which are made from metal sheets.<br>\
+	As a synthetic, you can acquire more sheets of glass by recharging."
+	icon_state = "sheet-glass"
 	default_type = MATERIAL_GLASS
-	material_flags = USE_MATERIAL_COLOR|USE_MATERIAL_SINGULAR_NAME|USE_MATERIAL_PLURAL_NAME
-	stacktype = /obj/item/stack/material/glass
 
 /obj/item/stack/material/cyborg/glass/reinforced
-	icon_state = "sheet-reinf"
-	default_type = MATERIAL_GLASS
-	default_reinf_type = MATERIAL_STEEL
+	desc_info = "Use in your hand to build a window. Reinforced glass is much stronger against damage.<br>\
+	As a synthetic, you can gain more reinforced glass by recharging."
+	icon_state = "sheet-rglass"
+	default_type = MATERIAL_GLASS_REINFORCED
 	charge_costs = list(500, 1000)
-	stacktype = /obj/item/stack/material/glass/reinforced
-
-/obj/item/stack/material/cyborg/aluminium
-	icon_state = "sheet"
-	default_type = MATERIAL_ALUMINIUM
-	material_flags = USE_MATERIAL_COLOR|USE_MATERIAL_SINGULAR_NAME|USE_MATERIAL_PLURAL_NAME
-	stacktype = /obj/item/stack/material/aliumium

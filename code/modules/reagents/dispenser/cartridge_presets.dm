@@ -1,4 +1,4 @@
-/obj/item/weapon/reagent_containers/chem_disp_cartridge
+/obj/item/reagent_containers/chem_disp_cartridge
 	small
 		volume = CARTRIDGE_VOLUME_SMALL
 
@@ -6,105 +6,110 @@
 		volume = CARTRIDGE_VOLUME_MEDIUM
 
 	// Multiple
-	water		spawn_reagent = /datum/reagent/water
 	sugar		spawn_reagent = /datum/reagent/sugar
+	water		spawn_reagent = /datum/reagent/water
 
 	// Chemistry
-	hydrazine	spawn_reagent = /datum/reagent/hydrazine
-	lithium		spawn_reagent = /datum/reagent/lithium
-	carbon		spawn_reagent = /datum/reagent/carbon
-	ammonia		spawn_reagent = /datum/reagent/ammonia
 	acetone		spawn_reagent = /datum/reagent/acetone
-	sodium		spawn_reagent = /datum/reagent/sodium
-	aluminium	spawn_reagent = /datum/reagent/aluminium
-	silicon		spawn_reagent = /datum/reagent/silicon
-	phosphorus	spawn_reagent = /datum/reagent/phosphorus
-	sulfur		spawn_reagent = /datum/reagent/sulfur
-	hclacid		spawn_reagent = /datum/reagent/acid/hydrochloric
-	potassium	spawn_reagent = /datum/reagent/potassium
-	iron		spawn_reagent = /datum/reagent/iron
+	aluminum	spawn_reagent = /datum/reagent/aluminum
+	ammonia		spawn_reagent = /datum/reagent/ammonia
+	butanol		spawn_reagent = /datum/reagent/alcohol/butanol
+	carbon		spawn_reagent = /datum/reagent/carbon
 	copper		spawn_reagent = /datum/reagent/copper
+	ethanol		spawn_reagent = /datum/reagent/alcohol/ethanol
+	hclacid		spawn_reagent = /datum/reagent/acid/hydrochloric
+	hydrazine	spawn_reagent = /datum/reagent/hydrazine
+	iron		spawn_reagent = /datum/reagent/iron
+	lithium		spawn_reagent = /datum/reagent/lithium
 	mercury		spawn_reagent = /datum/reagent/mercury
+	phosphorus	spawn_reagent = /datum/reagent/phosphorus
+	potassium	spawn_reagent = /datum/reagent/potassium
 	radium		spawn_reagent = /datum/reagent/radium
-	ethanol		spawn_reagent = /datum/reagent/ethanol
 	sacid		spawn_reagent = /datum/reagent/acid
+	silicon		spawn_reagent = /datum/reagent/silicon
+	sodium		spawn_reagent = /datum/reagent/sodium
+	sulfur		spawn_reagent = /datum/reagent/sulfur
 	tungsten	spawn_reagent = /datum/reagent/tungsten
 
 	// Bar, alcoholic
-	beer		spawn_reagent = /datum/reagent/ethanol/beer
-	kahlua		spawn_reagent = /datum/reagent/ethanol/coffee/kahlua
-	whiskey		spawn_reagent = /datum/reagent/ethanol/whiskey
-	wine		spawn_reagent = /datum/reagent/ethanol/wine
-	vodka		spawn_reagent = /datum/reagent/ethanol/vodka
-	gin			spawn_reagent = /datum/reagent/ethanol/gin
-	rum			spawn_reagent = /datum/reagent/ethanol/rum
-	tequila		spawn_reagent = /datum/reagent/ethanol/tequilla
-	vermouth	spawn_reagent = /datum/reagent/ethanol/vermouth
-	cognac		spawn_reagent = /datum/reagent/ethanol/cognac
-	ale			spawn_reagent = /datum/reagent/ethanol/ale
-	mead		spawn_reagent = /datum/reagent/ethanol/mead
-	creme_de_menthe spawn_reagent = /datum/reagent/ethanol/creme_de_menthe
-	creme_de_cacao spawn_reagent = /datum/reagent/ethanol/creme_de_cacao
-	triple_sec  spawn_reagent = /datum/reagent/ethanol/triple_sec
+	ale			spawn_reagent = /datum/reagent/alcohol/ethanol/ale
+	beer		spawn_reagent = /datum/reagent/alcohol/ethanol/beer
+	champagne	spawn_reagent = /datum/reagent/alcohol/ethanol/champagne
+	cognac		spawn_reagent = /datum/reagent/alcohol/ethanol/cognac
+	gin			spawn_reagent = /datum/reagent/alcohol/ethanol/gin
+	kahlua		spawn_reagent = /datum/reagent/alcohol/ethanol/coffee/kahlua
+	mead		spawn_reagent = /datum/reagent/alcohol/ethanol/mead
+	rum			spawn_reagent = /datum/reagent/alcohol/ethanol/rum
+	tequila		spawn_reagent = /datum/reagent/alcohol/ethanol/tequila
+	vermouth	spawn_reagent = /datum/reagent/alcohol/ethanol/vermouth
+	vodka		spawn_reagent = /datum/reagent/alcohol/ethanol/vodka
+	whiskey		spawn_reagent = /datum/reagent/alcohol/ethanol/whiskey
+	wine		spawn_reagent = /datum/reagent/alcohol/ethanol/wine
 
 	// Bar, soft
-	ice			spawn_reagent = /datum/reagent/drink/ice
-	tea			spawn_reagent = /datum/reagent/drink/tea
-	green_tea	spawn_reagent = /datum/reagent/drink/tea/green
-	chai_tea	spawn_reagent = /datum/reagent/drink/tea/chai
-	red_tea		spawn_reagent = /datum/reagent/drink/tea/red
+	apple   	spawn_reagent = /datum/reagent/drink/applejuice
+	banana  	spawn_reagent = /datum/reagent/drink/banana
+	brownstar	spawn_reagent = /datum/reagent/drink/brownstar
+	clean_kois	spawn_reagent = /datum/reagent/kois/clean
 	cola		spawn_reagent = /datum/reagent/drink/space_cola
-	smw			spawn_reagent = /datum/reagent/drink/spacemountainwind
 	dr_gibb		spawn_reagent = /datum/reagent/drink/dr_gibb
-	spaceup		spawn_reagent = /datum/reagent/drink/space_up
-	tonic		spawn_reagent = /datum/reagent/drink/tonic
-	sodawater	spawn_reagent = /datum/reagent/drink/sodawater
+	ice			spawn_reagent = /datum/reagent/drink/ice
+	icetea		spawn_reagent = /datum/reagent/drink/icetea
 	lemon_lime	spawn_reagent = /datum/reagent/drink/lemon_lime
-	orange		spawn_reagent = /datum/reagent/drink/juice/orange
-	lime		spawn_reagent = /datum/reagent/drink/juice/lime
-	watermelon	spawn_reagent = /datum/reagent/drink/juice/watermelon
+	lime		spawn_reagent = /datum/reagent/drink/limejuice
+	orange		spawn_reagent = /datum/reagent/drink/orangejuice
+	root_beer	spawn_reagent = /datum/reagent/drink/root_beer
+	smw			spawn_reagent = /datum/reagent/drink/spacemountainwind
+	sodawater	spawn_reagent = /datum/reagent/drink/sodawater
+	spaceup		spawn_reagent = /datum/reagent/drink/spaceup
+	tea			spawn_reagent = /datum/reagent/drink/tea
+	tonic		spawn_reagent = /datum/reagent/drink/tonic
+	watermelon	spawn_reagent = /datum/reagent/drink/watermelonjuice
 
-	// Bar, syrups
-	syrup_chocolate	spawn_reagent = /datum/reagent/drink/syrup_chocolate
-	syrup_caramel	spawn_reagent = /datum/reagent/drink/syrup_caramel
-	syrup_vanilla	spawn_reagent = /datum/reagent/drink/syrup_vanilla
-	syrup_pumpkin	spawn_reagent = /datum/reagent/drink/syrup_pumpkin
-
-	// Bar, coffee
+	// Bar, coffee and tea
+	chaitea		spawn_reagent = /datum/reagent/drink/tea/chaitea
+	ciderhot	spawn_reagent = /datum/reagent/drink/ciderhot
 	coffee		spawn_reagent = /datum/reagent/drink/coffee
-	cafe_latte	spawn_reagent = /datum/reagent/drink/coffee/cafe_latte
-	soy_latte	spawn_reagent = /datum/reagent/drink/coffee/soy_latte
+	cream		spawn_reagent = /datum/reagent/drink/milk/cream
+	espresso	spawn_reagent = /datum/reagent/drink/coffee/espresso
+	fatshouter_milk	spawn_reagent = /datum/reagent/drink/milk/adhomai
+	greentea	spawn_reagent = /datum/reagent/drink/tea/greentea
 	hot_coco	spawn_reagent = /datum/reagent/drink/hot_coco
 	milk		spawn_reagent = /datum/reagent/drink/milk
-	cream		spawn_reagent = /datum/reagent/drink/milk/cream
+	soymilk		spawn_reagent = /datum/reagent/drink/milk/soymilk
 
 	// ERT
-	inaprov		spawn_reagent = /datum/reagent/inaprovaline
-	ryetalyn	spawn_reagent = /datum/reagent/ryetalyn
-	paracetamol	spawn_reagent = /datum/reagent/paracetamol
-	tramadol	spawn_reagent = /datum/reagent/tramadol
-	oxycodone	spawn_reagent = /datum/reagent/tramadol/oxycodone
-	sterilizine	spawn_reagent = /datum/reagent/sterilizine
-	leporazine	spawn_reagent = /datum/reagent/leporazine
-	kelotane	spawn_reagent = /datum/reagent/kelotane
+	alkysine	spawn_reagent = /datum/reagent/alkysine
+	arithrazine	spawn_reagent = /datum/reagent/arithrazine
+	cetahydramine	spawn_reagent = /datum/reagent/cetahydramine
+	bicaridine	spawn_reagent = /datum/reagent/bicaridine
+	chloral		spawn_reagent = /datum/reagent/polysomnine
+	clonexadone	spawn_reagent = /datum/reagent/clonexadone
+	coughsyrup	spawn_reagent = /datum/reagent/coughsyrup
+	cryoxadone	spawn_reagent = /datum/reagent/cryoxadone
 	dermaline	spawn_reagent = /datum/reagent/dermaline
 	dexalin		spawn_reagent = /datum/reagent/dexalin
 	dexalin/small	volume = CARTRIDGE_VOLUME_SMALL // For the medicine cartridge crate, so it's not too easy to get large amounts of dexalin
-	dexalin_p	spawn_reagent = /datum/reagent/dexalinp
-	tricord		spawn_reagent = /datum/reagent/tricordrazine
+	dexalin_p	spawn_reagent = /datum/reagent/dexalin/plus
 	dylovene	spawn_reagent = /datum/reagent/dylovene
-	synaptizine	spawn_reagent = /datum/reagent/synaptizine
-	hyronalin	spawn_reagent = /datum/reagent/hyronalin
-	arithrazine	spawn_reagent = /datum/reagent/arithrazine
-	alkysine	spawn_reagent = /datum/reagent/alkysine
-	imidazoline	spawn_reagent = /datum/reagent/imidazoline
-	peridaxon	spawn_reagent = /datum/reagent/peridaxon
-	bicaridine	spawn_reagent = /datum/reagent/bicaridine
-	hyperzine	spawn_reagent = /datum/reagent/hyperzine
-	rezadone	spawn_reagent = /datum/reagent/rezadone
-	spaceacillin	spawn_reagent = /datum/reagent/spaceacillin
 	ethylredox	spawn_reagent = /datum/reagent/ethylredoxrazine
+	hyperzine	spawn_reagent = /datum/reagent/hyperzine
+	hyronalin	spawn_reagent = /datum/reagent/hyronalin
+	oculine	spawn_reagent = /datum/reagent/oculine
+	kelotane	spawn_reagent = /datum/reagent/kelotane
+	butazoline spawn_reagent = /datum/reagent/butazoline
+	saline spawn_reagent = /datum/reagent/saline
+	leporazine	spawn_reagent = /datum/reagent/leporazine
+	inaprov		spawn_reagent = /datum/reagent/inaprovaline
+	oxycomorphine	spawn_reagent = /datum/reagent/oxycomorphine
+	perconol	spawn_reagent = /datum/reagent/perconol
+	peridaxon	spawn_reagent = /datum/reagent/peridaxon
+	pneumalin	spawn_reagent = /datum/reagent/pneumalin
+	rezadone	spawn_reagent = /datum/reagent/rezadone
+	ryetalyn	spawn_reagent = /datum/reagent/ryetalyn
 	sleeptox	spawn_reagent = /datum/reagent/soporific
-	chloral		spawn_reagent = /datum/reagent/chloralhydrate
-	cryoxadone	spawn_reagent = /datum/reagent/cryoxadone
-	clonexadone	spawn_reagent = /datum/reagent/clonexadone
+	sterilizine	spawn_reagent = /datum/reagent/sterilizine
+	synaptizine	spawn_reagent = /datum/reagent/synaptizine
+	thetamycin	spawn_reagent = /datum/reagent/thetamycin
+	mortaphenyl	spawn_reagent = /datum/reagent/mortaphenyl
+	tricord		spawn_reagent = /datum/reagent/tricordrazine

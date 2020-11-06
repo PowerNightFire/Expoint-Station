@@ -1,54 +1,42 @@
-// New shields
-/obj/item/weapon/stock_parts/circuitboard/shield_generator
-	name = T_BOARD("advanced shield generator")
+#ifndef T_BOARD
+#error T_BOARD macro is not defined but we need it! 
+#endif
+
+/obj/item/circuitboard/shield_gen_ex
+	name = T_BOARD("hull shield generator")
 	board_type = "machine"
-	build_path = /obj/machinery/power/shield_generator
+	build_path = /obj/machinery/shield_gen/external
+	origin_tech = list(TECH_BLUESPACE = 4, TECH_PHORON = 3)
+	req_components = list(
+							"/obj/item/stock_parts/manipulator/pico" = 2,
+							"/obj/item/stock_parts/subspace/transmitter" = 1,
+							"/obj/item/stock_parts/subspace/crystal" = 1,
+							"/obj/item/stock_parts/subspace/amplifier" = 1,
+							"/obj/item/stock_parts/console_screen" = 1,
+							"/obj/item/stack/cable_coil" = 5)
+
+/obj/item/circuitboard/shield_gen
+	name = T_BOARD("bubble shield generator")
+	board_type = "machine"
+	build_path = /obj/machinery/shield_gen
+	origin_tech = list(TECH_BLUESPACE = 4, TECH_PHORON = 3)
+	req_components = list(
+							"/obj/item/stock_parts/manipulator/pico" = 2,
+							"/obj/item/stock_parts/subspace/transmitter" = 1,
+							"/obj/item/stock_parts/subspace/crystal" = 1,
+							"/obj/item/stock_parts/subspace/amplifier" = 1,
+							"/obj/item/stock_parts/console_screen" = 1,
+							"/obj/item/stack/cable_coil" = 5)
+
+/obj/item/circuitboard/shield_cap
+	name = T_BOARD("shield capacitor")
+	board_type = "machine"
+	build_path = /obj/machinery/shield_capacitor
 	origin_tech = list(TECH_MAGNET = 3, TECH_POWER = 4)
 	req_components = list(
-							/obj/item/weapon/stock_parts/capacitor = 1,
-							/obj/item/weapon/stock_parts/micro_laser = 1,
-							/obj/item/weapon/stock_parts/smes_coil = 1)
-	additional_spawn_components = list(
-		/obj/item/weapon/stock_parts/console_screen = 1,
-		/obj/item/weapon/stock_parts/keyboard = 1,
-		/obj/item/weapon/stock_parts/power/apc/buildable = 1
-	)
-
-/obj/item/weapon/stock_parts/circuitboard/shield_diffuser
-	name = T_BOARD("shield diffuser")
-	board_type = "machine"
-	build_path = /obj/machinery/shield_diffuser
-	origin_tech = list(TECH_MAGNET = 4, TECH_POWER = 2)
-	req_components = list(
-							/obj/item/weapon/stock_parts/capacitor = 1,
-							/obj/item/weapon/stock_parts/micro_laser = 1)
-	additional_spawn_components = list(
-		/obj/item/weapon/stock_parts/console_screen = 1,
-		/obj/item/weapon/stock_parts/keyboard = 1,
-		/obj/item/weapon/stock_parts/power/apc/buildable = 1
-	)
-
-/obj/item/weapon/stock_parts/circuitboard/pointdefense
-	name = T_BOARD("point defense battery")
-	board_type = "machine"
-	desc = "Control systems for a Kuiper pattern point defense battery. Aim away from vessel."
-	build_path = /obj/machinery/pointdefense
-	origin_tech = list(TECH_ENGINEERING = 3, TECH_COMBAT = 2)
-	req_components = list(
-		/obj/item/mech_equipment/mounted_system/taser/laser = 1,
-		/obj/item/weapon/stock_parts/manipulator = 2,
-		/obj/item/weapon/stock_parts/capacitor = 2,
-		
-	)
-	additional_spawn_components = list(
-		/obj/item/weapon/stock_parts/power/terminal/buildable = 1,
-		/obj/item/weapon/stock_parts/power/battery/buildable/responsive = 1,
-		/obj/item/weapon/cell/high = 1
-	)
-
-/obj/item/weapon/stock_parts/circuitboard/pointdefense_control
-	name = T_BOARD("fire assist mainframe")
-	board_type = "machine"
-	desc = "A control computer to synchronize point defense batteries."
-	build_path = /obj/machinery/pointdefense_control
-	origin_tech = list(TECH_ENGINEERING = 3, TECH_COMBAT = 2)
+							"/obj/item/stock_parts/manipulator/pico" = 2,
+							"/obj/item/stock_parts/subspace/filter" = 1,
+							"/obj/item/stock_parts/subspace/treatment" = 1,
+							"/obj/item/stock_parts/subspace/analyzer" = 1,
+							"/obj/item/stock_parts/console_screen" = 1,
+							"/obj/item/stack/cable_coil" = 5)

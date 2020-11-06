@@ -19,7 +19,6 @@
 	var/vessel_size = SHIP_SIZE_LARGE	//arbitrary number, affects how likely are we to evade meteors
 	var/max_speed = 1/(1 SECOND)        //"speed of light" for the ship, in turfs/tick.
 	var/min_speed = 1/(2 MINUTES)       // Below this, we round speed to 0 to avoid math errors.
-	var/max_autopilot = 1 / (20 SECONDS) // The maximum speed any attached helm can try to autopilot at.
 
 	var/list/speed = list(0,0)          //speed in x,y direction
 	var/last_burn = 0                   //worldtime when ship last acceleated
@@ -31,24 +30,21 @@
 	var/engines_state = 0 //global on/off toggle for all engines
 	var/thrust_limit = 1  //global thrust limit for all engines, 0..1
 	var/halted = 0        //admin halt or other stop.
-	var/skill_needed = SKILL_ADEPT  //piloting skill needed to steer it without going in random dir
-	var/operator_skill
 
 /obj/effect/overmap/visitable/ship/Initialize()
 	. = ..()
 	min_speed = round(min_speed, SHIP_MOVE_RESOLUTION)
 	max_speed = round(max_speed, SHIP_MOVE_RESOLUTION)
 	SSshuttle.ships += src
-	START_PROCESSING(SSobj, src)
+	START_PROCESSING(SSprocessing, src)
 
 /obj/effect/overmap/visitable/ship/Destroy()
-	STOP_PROCESSING(SSobj, src)
+	STOP_PROCESSING(SSprocessing, src)
 	SSshuttle.ships -= src
 	. = ..()
 
 /obj/effect/overmap/visitable/ship/relaymove(mob/user, direction, accel_limit)
 	accelerate(direction, accel_limit)
-	operator_skill = user.get_skill_value(SKILL_PILOT)
 
 /obj/effect/overmap/visitable/ship/proc/is_still()
 	return !MOVING(speed[1]) && !MOVING(speed[2])
@@ -56,7 +52,7 @@
 /obj/effect/overmap/visitable/ship/get_scan_data(mob/user)
 	. = ..()
 	if(!is_still())
-		. += "<br>Heading: [get_heading_angle()], speed [get_speed() * 1000]"
+		. += "<br>Heading: [dir2angle(get_heading())], speed [get_speed() * 1000]"
 
 //Projected acceleration based on information from engines
 /obj/effect/overmap/visitable/ship/proc/get_acceleration()
@@ -88,12 +84,6 @@
 			res |= SOUTH
 	return res
 
-/obj/effect/overmap/visitable/ship/proc/get_heading_angle()
-	var/res = 0
-	if (MOVING(speed[1]) || MOVING(speed[2]))
-		res = (round(Atan2(speed[1], -speed[2])) + 450)%360
-	return res
-
 /obj/effect/overmap/visitable/ship/proc/adjust_speed(n_x, n_y)
 	CHANGE_SPEED_BY(speed[1], n_x)
 	CHANGE_SPEED_BY(speed[2], n_y)
@@ -117,30 +107,28 @@
 	var/burns_per_grid = 1/ (burn_delay * get_speed())
 	return round(num_burns/burns_per_grid)
 
-/obj/effect/overmap/visitable/ship/proc/decelerate(accel_limit)
-	if ((!speed[1] && !speed[2]) || !can_burn())
-		return
-	last_burn = world.time
-	var/delta = accel_limit ? min(get_burn_acceleration(), accel_limit) : get_burn_acceleration()
-	var/mag = sqrt(speed[1] ** 2 + speed[2] ** 2)
-	if (delta >= mag)
-		adjust_speed(-speed[1], -speed[2])
-	else
-		adjust_speed(-(speed[1] * delta) / mag, -(speed[2] * delta) / mag)
+/obj/effect/overmap/visitable/ship/proc/decelerate()
+	if(((speed[1]) || (speed[2])) && can_burn())
+		if (speed[1])
+			adjust_speed(-SIGN(speed[1]) * min(get_burn_acceleration(),abs(speed[1])), 0)
+		if (speed[2])
+			adjust_speed(0, -SIGN(speed[2]) * min(get_burn_acceleration(),abs(speed[2])))
+		last_burn = world.time
 
 /obj/effect/overmap/visitable/ship/proc/accelerate(direction, accel_limit)
-	if (!direction || !can_burn())
-		return
-	last_burn = world.time
-	var/delta = accel_limit ? min(get_burn_acceleration(), accel_limit) : get_burn_acceleration()
-	var/dx = (direction & EAST) ? 1 : ((direction & WEST) ? -1 : 0)
-	var/dy = (direction & NORTH) ? 1 : ((direction & SOUTH) ? -1 : 0)
-	if (dx && dy)
-		dx *= 0.5
-		dy *= 0.5
-	adjust_speed(delta * dx, delta * dy)
+	if(can_burn())
+		last_burn = world.time
+		var/acceleration = min(get_burn_acceleration(), accel_limit)
+		if(direction & EAST)
+			adjust_speed(acceleration, 0)
+		if(direction & WEST)
+			adjust_speed(-acceleration, 0)
+		if(direction & NORTH)
+			adjust_speed(0, acceleration)
+		if(direction & SOUTH)
+			adjust_speed(0, -acceleration)
 
-/obj/effect/overmap/visitable/ship/Process()
+/obj/effect/overmap/visitable/ship/process()
 	if(!halted && !is_still())
 		var/list/deltas = list(0,0)
 		for(var/i=1, i<=2, i++)
@@ -153,7 +141,7 @@
 			handle_wraparound()
 		update_icon()
 
-/obj/effect/overmap/visitable/ship/on_update_icon()
+/obj/effect/overmap/visitable/ship/update_icon()
 	if(!is_still())
 		icon_state = moving_state
 		dir = get_heading()
@@ -189,7 +177,7 @@
 	var/nx = x
 	var/ny = y
 	var/low_edge = 1
-	var/high_edge = GLOB.using_map.overmap_size - 1
+	var/high_edge = current_map.overmap_size - 1
 
 	if((dir & WEST) && x == low_edge)
 		nx = high_edge
@@ -219,12 +207,9 @@
 		handle_wraparound()
 	..()
 
-/obj/effect/overmap/visitable/ship/proc/get_helm_skill()//delete this mover operator skill to overmap obj
-	return operator_skill
-
 /obj/effect/overmap/visitable/ship/populate_sector_objects()
 	..()
-	for(var/obj/machinery/computer/ship/S in SSmachines.machinery)
+	for(var/obj/machinery/computer/ship/S in SSmachinery.all_machines)
 		S.attempt_hook_up(src)
 	for(var/datum/ship_engine/E in ship_engines)
 		if(check_ownership(E.holder))

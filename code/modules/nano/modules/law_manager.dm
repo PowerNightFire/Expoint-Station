@@ -21,7 +21,7 @@
 		player_laws = new()
 
 		init_subtypes(/datum/ai_laws, admin_laws)
-		admin_laws = dd_sortedObjectList(admin_laws)
+		sortTim(admin_laws, /proc/cmp_name_asc)
 
 		for(var/datum/ai_laws/laws in admin_laws)
 			if(laws.selectable)
@@ -37,7 +37,7 @@
 
 	if(href_list["law_channel"])
 		if(href_list["law_channel"] in owner.law_channels())
-			owner.lawchannel = href_list["law_channel"]
+			owner.law_channel = href_list["law_channel"]
 		return 1
 
 	if(href_list["state_law"])
@@ -147,7 +147,7 @@
 
 	return 0
 
-/datum/nano_module/law_manager/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = GLOB.default_state)
+/datum/nano_module/law_manager/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = default_state)
 	var/data[0]
 	owner.lawsync()
 
@@ -172,11 +172,11 @@
 	var/channels[0]
 	for (var/ch_name in owner.law_channels())
 		channels[++channels.len] = list("channel" = ch_name)
-	data["channel"] = owner.lawchannel
+	data["channel"] = owner.law_channel
 	data["channels"] = channels
 	data["law_sets"] = package_multiple_laws(data["isAdmin"] ? admin_laws : player_laws)
 
-	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnanoui.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "law_manager.tmpl", sanitize("[src] - [owner]"), 800, is_malf(user) ? 600 : 400, state = state)
 		ui.set_initial_data(data)
@@ -209,7 +209,7 @@
 	return 0
 
 /mob/living/silicon/robot/is_slaved()
-	return lawupdate && connected_ai ? sanitize(connected_ai.name) : null
+	return law_update && connected_ai ? sanitize(connected_ai.name) : null
 
 /datum/nano_module/law_manager/proc/sync_laws(var/mob/living/silicon/ai/AI)
 	if(!AI)

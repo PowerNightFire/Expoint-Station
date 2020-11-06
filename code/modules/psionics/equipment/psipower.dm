@@ -1,9 +1,11 @@
 /obj/item/psychic_power
 	name = "psychic power"
 	icon = 'icons/obj/psychic_powers.dmi'
-	atom_flags = 0
-	simulated = 1
-	anchored = 1
+	flags = 0
+	anchored = TRUE
+	throwforce = 0 //Just to be on the safe side
+	throw_range = 0
+	throw_speed = 0
 	var/maintain_cost = 3
 	var/mob/living/owner
 
@@ -23,32 +25,23 @@
 	. = ..()
 
 /obj/item/psychic_power/get_storage_cost()
-	return ITEM_SIZE_NO_CONTAINER
+	return 5
 
 /obj/item/psychic_power/attack_self(var/mob/user)
 	sound_to(owner, 'sound/effects/psi/power_fail.ogg')
 	user.drop_from_inventory(src)
 
-/obj/item/psychic_power/attack(var/mob/living/M, var/mob/living/user, var/target_zone)
-	if(M.do_psionics_check(max(force, maintain_cost), user))
-		to_chat(user, "<span class='danger'>\The [src] flickers violently out of phase!</span>")
-		return 1
-	. = ..()
-
-/obj/item/psychic_power/afterattack(var/atom/target, var/mob/living/user, var/proximity)
-	if(target.do_psionics_check(max(force, maintain_cost), user))
-		to_chat(user, "<span class='danger'>\The [src] flickers violently out of phase!</span>")
-		return
-	. = ..(target, user, proximity)
-
 /obj/item/psychic_power/dropped()
 	..()
+	QDEL_IN(src, 1)
+
+/obj/item/psychic_power/on_give()
 	qdel(src)
 
-/obj/item/psychic_power/Process()
+/obj/item/psychic_power/process()
 	if(istype(owner))
 		owner.psi.spend_power(maintain_cost)
-	if(!owner || owner.do_psionics_check(maintain_cost, owner) || loc != owner || (owner.l_hand != src && owner.r_hand != src))
+	if(!owner || loc != owner || (owner.l_hand != src && owner.r_hand != src))
 		if(istype(loc,/mob/living))
 			var/mob/living/carbon/human/host = loc
 			if(istype(host))

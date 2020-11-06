@@ -1,9 +1,9 @@
 /obj/machinery/computer/area_atmos
 	name = "Area Air Control"
 	desc = "A computer used to control the stationary scrubbers and pumps in the area."
-	icon_keyboard = "atmos_key"
 	icon_screen = "area_atmos"
 	light_color = "#e6ffff"
+	circuit = /obj/item/circuitboard/area_atmos
 
 	var/list/connectedscrubbers = new()
 	var/status = ""
@@ -13,11 +13,10 @@
 	//Simple variable to prevent me from doing attack_hand in both this and the child computer
 	var/zone = "This computer is working on a wireless range, the range is currently limited to 25 meters."
 
-	New()
-		..()
-		//So the scrubbers have time to spawn
-		spawn(10)
-			scanscrubbers()
+	Initialize()
+		. = ..()
+
+		scanscrubbers()
 
 	attack_ai(var/mob/user as mob)
 		return src.attack_hand(user)
@@ -25,41 +24,42 @@
 	attack_hand(var/mob/user as mob)
 		if(..(user))
 			return
+		src.add_fingerprint(usr)
 		var/dat = {"
 		<html>
 			<head>
 				<style type="text/css">
 					a.green:link
 					{
-						color:#00cc00;
+						color:#00CC00;
 					}
 					a.green:visited
 					{
-						color:#00cc00;
+						color:#00CC00;
 					}
 					a.green:hover
 					{
-						color:#00cc00;
+						color:#00CC00;
 					}
 					a.green:active
 					{
-						color:#00cc00;
+						color:#00CC00;
 					}
 					a.red:link
 					{
-						color:#ff0000;
+						color:#FF0000;
 					}
 					a.red:visited
 					{
-						color:#ff0000;
+						color:#FF0000;
 					}
 					a.red:hover
 					{
-						color:#ff0000;
+						color:#FF0000;
 					}
 					a.red:active
 					{
-						color:#ff0000;
+						color:#FF0000;
 					}
 				</style>
 			</head>
@@ -88,13 +88,14 @@
 				<i>[zone]</i>
 			</body>
 		</html>"}
-		show_browser(user, "[dat]", "window=miningshuttle;size=400x400")
+		user << browse("[dat]", "window=miningshuttle;size=400x400")
 		status = ""
 
 	Topic(href, href_list)
 		if(..())
 			return
 		usr.set_machine(src)
+		src.add_fingerprint(usr)
 
 
 		if(href_list["scan"])
@@ -109,7 +110,7 @@
 					src.updateUsrDialog()
 				return
 
-			scrubber.update_use_power(text2num(href_list["toggle"]) ? POWER_USE_ACTIVE : POWER_USE_IDLE)
+			scrubber.on = text2num(href_list["toggle"])
 			scrubber.update_icon()
 
 	proc/validscrubber( var/obj/machinery/portable_atmospherics/powered/scrubber/huge/scrubber as obj )

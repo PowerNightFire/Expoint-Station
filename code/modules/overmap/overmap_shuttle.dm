@@ -8,8 +8,6 @@
 	var/list/obj/structure/fuel_port/fuel_ports //the fuel ports of the shuttle (but usually just one)
 
 	category = /datum/shuttle/autodock/overmap
-	var/skill_needed = SKILL_BASIC
-	var/operator_skill = SKILL_MIN
 
 /datum/shuttle/autodock/overmap/New(var/_name, var/obj/effect/shuttle_landmark/start_waypoint)
 	..(_name, start_waypoint)
@@ -26,10 +24,10 @@
 	if(!src.try_consume_fuel()) //insufficient fuel
 		for(var/area/A in shuttle_area)
 			for(var/mob/living/M in A)
-				M.show_message("<spawn class='warning'>You hear the shuttle engines sputter... perhaps it doesn't have enough fuel?", AUDIBLE_MESSAGE,
-				"<spawn class='warning'>The shuttle shakes but fails to take off.", VISIBLE_MESSAGE)
+				M.show_message(SPAN_WARNING("You hear the shuttle engines sputter... perhaps it doesn't have enough fuel?"), 2,
+							   SPAN_WARNING("The shuttle shakes but fails to take off."), 1)
 				return 0 //failure!
-	return 1 //success, continue with launch
+	return 1 //sucess, continue with launch
 
 /datum/shuttle/autodock/overmap/proc/can_go()
 	if(!next_location)
@@ -46,15 +44,7 @@
 
 /datum/shuttle/autodock/overmap/get_travel_time()
 	var/distance_mod = get_dist(waypoint_sector(current_location),waypoint_sector(next_location))
-	var/skill_mod = 0.2*(skill_needed - operator_skill)
-	return move_time * (1 + distance_mod + skill_mod)
-
-/datum/shuttle/autodock/overmap/process_launch()
-	if(prob(10*max(0, skill_needed - operator_skill)))
-		var/places = get_possible_destinations()
-		var/place = pick(places)
-		set_destination(places[place])
-	..()
+	return move_time * (1 + distance_mod)
 
 /datum/shuttle/autodock/overmap/proc/set_destination(var/obj/effect/shuttle_landmark/A)
 	if(A != current_location)
@@ -79,26 +69,26 @@
 		return "None"
 	return "[waypoint_sector(next_location)] - [next_location]"
 
-/datum/shuttle/autodock/overmap/proc/try_consume_fuel() //returns 1 if successful, returns 0 if error (like insufficient fuel)
+/datum/shuttle/autodock/overmap/proc/try_consume_fuel() //returns 1 if sucessful, returns 0 if error (like insufficient fuel)
 	if(!fuel_consumption)
 		return 1 //shuttles with zero fuel consumption are magic and can always launch
 	if(!fuel_ports.len)
 		return 0 //Nowhere to get fuel from
-	var/list/obj/item/weapon/tank/fuel_tanks = list()
+	var/list/obj/item/tank/fuel_tanks = list()
 	for(var/obj/structure/FP in fuel_ports) //loop through fuel ports and assemble list of all fuel tanks
-		var/obj/item/weapon/tank/FT = locate() in FP
+		var/obj/item/tank/FT = locate() in FP
 		if(FT)
 			fuel_tanks += FT
 	if(!fuel_tanks.len)
 		return 0 //can't launch if you have no fuel TANKS in the ports
 	var/total_flammable_gas_moles = 0
-	for(var/obj/item/weapon/tank/FT in fuel_tanks)
+	for(var/obj/item/tank/FT in fuel_tanks)
 		total_flammable_gas_moles += FT.air_contents.get_by_flag(XGM_GAS_FUEL)
 	if(total_flammable_gas_moles < fuel_consumption) //not enough fuel
 		return 0
 	// We are going to succeed if we got to here, so start consuming that fuel
 	var/fuel_to_consume = fuel_consumption
-	for(var/obj/item/weapon/tank/FT in fuel_tanks) //loop through tanks, consume their fuel one by one
+	for(var/obj/item/tank/FT in fuel_tanks) //loop through tanks, consume their fuel one by one
 		var/fuel_available = FT.air_contents.get_by_flag(XGM_GAS_FUEL)
 		if(!fuel_available) // Didn't even have fuel.
 			continue
@@ -124,17 +114,18 @@
 
 /obj/structure/fuel_port/Initialize()
 	. = ..()
-	new /obj/item/weapon/tank/hydrogen(src)
+	new /obj/item/tank/phoron(src)
 
-/obj/structure/fuel_port/attack_hand(mob/user as mob)
+/obj/structure/fuel_port/attack_hand(mob/user)
 	if(!opened)
-		to_chat(user, "<spawn class='notice'>The door is secured tightly. You'll need a crowbar to open it.")
+		to_chat(user, SPAN_WARNING("\The [src] is secured tightly. You'll need to pry it open with a crowbar."))
 		return
 	else if(contents.len > 0)
 		user.put_in_hands(contents[1])
 	update_icon()
 
-/obj/structure/fuel_port/on_update_icon()
+/obj/structure/fuel_port/update_icon()
+	. = ..()
 	if(opened)
 		if(contents.len > 0)
 			icon_state = icon_full
@@ -143,19 +134,19 @@
 	else
 		icon_state = icon_closed
 
-/obj/structure/fuel_port/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	if(isCrowbar(W))
+/obj/structure/fuel_port/attackby(obj/item/W, mob/user)
+	if(iscrowbar(W))
 		if(opened)
-			to_chat(user, "<spawn class='notice'>You tightly shut \the [src] door.")
-			playsound(src.loc, 'sound/effects/locker_close.ogg', 25, 0, -3)
+			to_chat(user, SPAN_NOTICE("You close \the [src]."))
+			playsound(src.loc, 'sound/effects/closet_close.ogg', 25, 0, -3)
 			opened = 0
 		else
-			to_chat(user, "<spawn class='notice'>You open up \the [src] door.")
-			playsound(src.loc, 'sound/effects/locker_open.ogg', 15, 1, -3)
+			to_chat(user, SPAN_NOTICE("You pry \the [src] open."))
+			playsound(src.loc, 'sound/effects/closet_open.ogg', 15, 1, -3)
 			opened = 1
-	else if(istype(W,/obj/item/weapon/tank))
+	else if(istype(W,/obj/item/tank))
 		if(!opened)
-			to_chat(user, "<spawn class='warning'>\The [src] door is still closed!")
+			to_chat(user, SPAN_NOTICE("\The [src] isn't open!"))
 			return
 		if(contents.len == 0)
 			user.unEquip(W, src)
@@ -164,3 +155,5 @@
 // Walls hide stuff inside them, but we want to be visible.
 /obj/structure/fuel_port/hide()
 	return
+
+#undef waypoint_sector

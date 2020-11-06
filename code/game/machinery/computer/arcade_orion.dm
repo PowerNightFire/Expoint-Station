@@ -31,10 +31,10 @@
 	name = "orion trail"
 	desc = "Imported straight from Outpost-T71!"
 	icon_state = "arcade"
-	random = FALSE
+	circuit = /obj/item/circuitboard/arcade/orion_trail
 	var/list/supplies = list("1" = 0, "2" = 0, "3" = 0, "4" = 0, "5" = 0, "6" = 0) //engine,hull,electronics,food,fuel
 	var/list/supply_cost = list("1" = 1000, "2" = 950, "3" = 1100, "4" = 75, "5" = 100)
-	var/list/supply_name = list("1" = "engine parts", "2" = "hull parts", "3" = "electronic parts", "4" = "food", "5" = "fuel", "6" = "thalers")
+	var/list/supply_name = list("1" = "engine parts", "2" = "hull parts", "3" = "electronic parts", "4" = "food", "5" = "fuel", "6" = "credits")
 	var/list/settlers = list()
 	var/num_traitors = 0
 	var/list/events = list(ORION_TRAIL_RAIDERS		= 3,
@@ -67,24 +67,28 @@
 	var/distance = 0
 	var/port = 0
 	var/view = 0
+	var/cooldown = 0
+	prize = /obj/random/arcade/orion
 
 /obj/machinery/computer/arcade/orion_trail/proc/newgame(var/emag = 0)
-	SetName("orion trail[emag ? ": Realism Edition" : ""]")
+	name = "orion trail[emag ? ": Realism Edition" : ""]"
 	supplies = list("1" = 1, "2" = 1, "3" = 1, "4" = 60, "5" = 20, "6" = 5000)
 	emagged = emag
 	distance = 0
 	settlers = list("[usr]")
 	for(var/i=0; i<3; i++)
 		if(prob(50))
-			settlers += pick(GLOB.first_names_male)
+			settlers += pick(first_names_male)
 		else
-			settlers += pick(GLOB.first_names_female)
+			settlers += pick(first_names_female)
 	num_traitors = 0
 	event = ORION_TRAIL_START
 	port = 0
 	view = ORION_VIEW_MAIN
 
-/obj/machinery/computer/arcade/orion_trail/interact(mob/user)
+/obj/machinery/computer/arcade/orion_trail/attack_hand(mob/user)
+	if(..())
+		return
 	var/dat = ""
 	if(event == null)
 		newgame()
@@ -92,14 +96,18 @@
 	switch(view)
 		if(ORION_VIEW_MAIN)
 			if(event == ORION_TRAIL_START) //new game? New game.
+				if(world.time >= cooldown)
+					playsound(loc, 'sound/arcade/Ori_begin.ogg', 1, 1, extrarange = -3, falloff = 10, required_asfx_toggles = ASFX_ARCADE)
+					cooldown = world.time + 300
 				dat = "<center><h1>Orion Trail[emagged ? ": Realism Edition" : ""]</h1><br>Learn how our ancestors got to Orion, and have fun in the process!</center><br><P ALIGN=Right><a href='?src=\ref[src];continue=1'>Start New Game</a></P>"
-				show_browser(user, dat, "window=arcade")
+				user << browse(dat, "window=arcade")
 				return
 			else
 				event_title = event
 				event_actions = "<a href='?src=\ref[src];continue=1'>Continue your journey</a><br>"
 			switch(event)
 				if(ORION_TRAIL_GAMEOVER)
+					playsound(loc, 'sound/arcade/Ori_fail.ogg', 2, 1, extrarange = -3, falloff = 10, required_asfx_toggles = ASFX_ARCADE)
 					event_info = ""
 					event_actions = "<a href='?src=\ref[src];continue=1'>Start New Game</a><br>"
 				if(ORION_TRAIL_SPACEPORT)
@@ -121,6 +129,7 @@
 				if(ORION_TRAIL_ILLNESS)
 					event_desc = "A disease has spread amoungst your crew!"
 				if(ORION_TRAIL_FLUX)
+					playsound(loc, 'sound/arcade/explo.ogg', 3, 1, extrarange = -3, falloff = 10, required_asfx_toggles = ASFX_ARCADE)
 					event_desc = "You've entered a turbulent region. Slowing down would be better for your ship but would cost more fuel."
 					event_actions  = "<a href='?src=\ref[src];continue=1;risky=25'>Continue as normal</a><BR>"
 					event_actions += "<a href='?src=\ref[src];continue=1;slow=1;'>Take it slow</a><BR>"
@@ -131,12 +140,14 @@
 					if(supplies["3"] != 0)
 						event_actions += "<a href='?src=\ref[src];continue=1;fix=3'>Fix using a part.</a><BR>"
 				if(ORION_TRAIL_COLLISION)
+					playsound(loc, 'sound/arcade/explo.ogg', 3, 1, extrarange = -3, falloff = 10, required_asfx_toggles = ASFX_ARCADE)
 					event_info = ""
 					event_desc = "Something has hit your ship and breached the hull! You can choose to fix it with a part or risk something going awry."
 					event_actions  = "<a href='?src=\ref[src];continue=1;risky=25'>Continue as normal</a><BR>"
 					if(supplies["2"] != 0)
 						event_actions += "<a href='?src=\ref[src];continue=1;fix=2'>Fix using a part.</a><BR>"
 				if(ORION_TRAIL_BREAKDOWN)
+					playsound(loc, 'sound/arcade/explo.ogg', 3, 1, extrarange = -3, falloff = 10, required_asfx_toggles = ASFX_ARCADE)
 					event_info = ""
 					event_desc = "The ship's engines broke down! You can choose to fix it with a part or risk something going awry."
 					event_actions  = "<a href='?src=\ref[src];continue=1;risky=25'>Continue as normal</a><BR>"
@@ -156,7 +167,7 @@
 			dat = "<center><h1>[event_title]</h1>[event_desc]<br><br>Distance to next port: [distance]<br><b>[event_info]</b><br></center><br>[event_actions]"
 		if(ORION_VIEW_SUPPLIES)
 			dat  = "<center><h1>Supplies</h1>View your supplies or buy more when at a spaceport.</center><BR>"
-			dat += "<center>You have [supplies["6"]] [GLOB.using_map.local_currency_name].</center>"
+			dat += "<center>You have [supplies["6"]] credits.</center>"
 			for(var/i=1; i<6; i++)
 				var/amm = (i>3?10:1)
 				dat += "[supplies["[i]"]] [supply_name["[i]"]][event==ORION_TRAIL_SPACEPORT ? ", <a href='?src=\ref[src];buy=[i]'>buy [amm] for [supply_cost["[i]"]]T</a>" : ""]<BR>"
@@ -171,9 +182,9 @@
 	dat += "[view==ORION_VIEW_MAIN ? "" : "<a href='?src=\ref[src];continue=1'>"]Main[view==ORION_VIEW_MAIN ? "" : "</a>"]<BR>"
 	dat += "[view==ORION_VIEW_SUPPLIES ? "" : "<a href='?src=\ref[src];supplies=1'>"]Supplies[view==ORION_VIEW_SUPPLIES ? "" : "</a>"]<BR>"
 	dat += "[view==ORION_VIEW_CREW ? "" : "<a href='?src=\ref[src];crew=1'>"]Crew[view==ORION_VIEW_CREW ? "" : "</a>"]</P>"
-	show_browser(user, dat, "window=arcade")
+	user << browse(dat, "window=arcade")
 
-/obj/machinery/computer/arcade/orion_trail/OnTopic(user, href_list)
+/obj/machinery/computer/arcade/orion_trail/Topic(href,href_list)
 	if(href_list["continue"])
 		if(view == ORION_VIEW_MAIN)
 			var/next_event = null
@@ -181,13 +192,14 @@
 				event = ORION_TRAIL_SPACEPORT
 			if(event == ORION_TRAIL_GAMEOVER)
 				event = null
-				return TOPIC_REFRESH
+				src.updateUsrDialog()
+				return
 			if(!settlers.len)
 				event_desc = "You and your crew were killed on the way to Orion, your ship left abandoned for scavengers to find."
 				next_event = ORION_TRAIL_GAMEOVER
 			if(port == 9)
 				win()
-				return TOPIC_REFRESH
+				return
 			var/travel = min(rand(1000,10000),distance)
 			if(href_list["fix"])
 				var/item = href_list["fix"]
@@ -228,37 +240,35 @@
 				generate_event(next_event)
 		else
 			view = ORION_VIEW_MAIN
-		return TOPIC_REFRESH
 
-	else if(href_list["supplies"])
+	if(href_list["supplies"])
 		view = ORION_VIEW_SUPPLIES
-		return TOPIC_REFRESH
 
-	else if(href_list["crew"])
+	if(href_list["crew"])
 		view = ORION_VIEW_CREW
-		return TOPIC_REFRESH
 
-	else if(href_list["buy"])
+	if(href_list["buy"])
 		var/item = href_list["buy"]
+		playsound(loc, 'sound/arcade/get_fuel.ogg', 10, 1, extrarange = -3, falloff = 10, required_asfx_toggles = ASFX_ARCADE)
 		if(supply_cost["[item]"] <= supplies["6"])
 			supplies["[item]"] += (text2num(item) > 3 ? 10 : 1)
 			supplies["6"] -= supply_cost["[item]"]
-		return TOPIC_REFRESH
 
-	else if(href_list["sell"])
+	if(href_list["sell"])
 		var/item = href_list["sell"]
+		playsound(loc, 'sound/arcade/lose_fuel.ogg', 10, 1, extrarange = -3, falloff = 10, required_asfx_toggles = ASFX_ARCADE)
 		if(supplies["[item]"] >= (text2num(item) > 3 ? 10 : 1))
 			supplies["6"] += supply_cost["[item]"]
 			supplies["[item]"] -= (text2num(item) > 3 ? 10 : 1)
-		return TOPIC_REFRESH
 
-	else if(href_list["kill"])
+	if(href_list["kill"])
 		var/item = text2num(href_list["kill"])
+		playsound(loc, 'sound/arcade/kill_crew.ogg', 10, 1, extrarange = -3, falloff = 10, required_asfx_toggles = ASFX_ARCADE)
 		remove_settler(item)
-		return TOPIC_REFRESH
 
-	else if(href_list["attack"])
+	if(href_list["attack"])
 		supply_cost = list()
+		playsound(loc, 'sound/arcade/raid.ogg', 10, 1, extrarange = -3, falloff = 10, required_asfx_toggles = ASFX_ARCADE)
 		if(prob(17*settlers.len))
 			event_desc = "An empty husk of a station now, all its resources stripped for use in your travels."
 			event_info = "You've successfully raided the spaceport!<br>"
@@ -273,7 +283,7 @@
 				if(prob(10))
 					remove_settler(null, "died while you were escaping!")
 		event = ORION_TRAIL_SPACEPORT_RAIDED
-		return TOPIC_REFRESH
+	src.updateUsrDialog()
 
 /obj/machinery/computer/arcade/orion_trail/proc/change_resource(var/specific = null, var/add = 1)
 	if(!specific)
@@ -403,10 +413,10 @@
 				var/mob/living/carbon/M = usr
 				if(prob(50))
 					to_chat(usr, "<span class='warning'>You hear battle shouts. The tramping of boots on cold metal. Screams of agony. The rush of venting air. Are you going insane?</span>")
-					M.hallucination(50, 50)
+					M.hallucination += 50
 				else
 					to_chat(usr, "<span class='danger'>Something strikes you from behind! It hurts like hell and feel like a blunt weapon, but nothing is there...</span>")
-					M.take_organ_damage(10, 0)
+					M.take_organ_damage(10)
 			else
 				to_chat(usr, "<span class='warning'>The sounds of battle fill your ears...</span>")
 		if(ORION_TRAIL_ILLNESS)
@@ -417,7 +427,7 @@
 			else
 				to_chat(usr, "<span class='warning'>You feel ill.</span>")
 		if(ORION_TRAIL_CARP)
-			to_chat(usr, "<span class='danger'> Something bit you!</span>")
+			to_chat(usr, "<span class='danger'>Something bit you!</span>")
 			var/mob/living/M = usr
 			M.adjustBruteLoss(10)
 		if(ORION_TRAIL_FLUX)
@@ -425,7 +435,7 @@
 				var/mob/living/carbon/M = usr
 				M.Weaken(3)
 				src.visible_message("A sudden gust of powerful wind slams \the [M] into the floor!", "You hear a large fwooshing sound, followed by a bang.")
-				M.take_organ_damage(10, 0)
+				M.take_organ_damage(10)
 			else
 				to_chat(usr, "<span class='warning'>A violent gale blows past you, and you barely manage to stay standing!</span>")
 		if(ORION_TRAIL_MALFUNCTION)
@@ -445,7 +455,7 @@
 			to_chat(usr, "<span class='danger'><font size=3>You're never going to make it to Orion...</font></span>")
 			var/mob/living/M = usr
 			M.visible_message("\The [M] starts rapidly deteriorating.")
-			close_browser(M, "window=arcade")
+			show_browser(M, null, "window=arcade")
 			for(var/i=0;i<10;i++)
 				sleep(10)
 				M.Stun(5)
@@ -462,42 +472,45 @@
 
 /obj/machinery/computer/arcade/orion_trail/proc/win()
 	src.visible_message("\The [src] plays a triumpant tune, stating 'CONGRATULATIONS, YOU HAVE MADE IT TO ORION.'")
+	playsound(loc, 'sound/arcade/Ori_win.ogg', 10, 1, extrarange = -3, falloff = 10, required_asfx_toggles = ASFX_ARCADE)
 	if(emagged)
-		new /obj/item/weapon/orion_ship(src.loc)
-		log_and_message_admins("made it to Orion on an emagged machine and got an explosive toy ship.")
+		new /obj/item/orion_ship(src.loc)
+		message_admins("[key_name_admin(usr)] made it to Orion on an emagged machine and got an explosive toy ship.")
+		log_game("[key_name(usr)] made it to Orion on an emagged machine and got an explosive toy ship.",ckey=key_name(usr))
 	else
 		prizevend()
 	event = null
 	src.updateUsrDialog()
 
-/obj/item/weapon/orion_ship
+/obj/item/orion_ship
 	name = "model settler ship"
 	desc = "A model spaceship, it looks like those used back in the day when travelling to Orion! It even has a miniature FX-293 reactor, which was renowned for its instability and tendency to explode..."
 	icon = 'icons/obj/toy.dmi'
 	icon_state = "ship"
-	w_class = ITEM_SIZE_SMALL
+	w_class = ITEMSIZE_SMALL
 	var/active = 0 //if the ship is on
-/obj/item/weapon/orion_ship/examine(mob/user)
-	. = ..()
+/obj/item/orion_ship/examine(mob/user)
+	..()
 	if(!(in_range(user, src)))
 		return
 	if(!active)
 		to_chat(user, "<span class='notice'>There's a little switch on the bottom. It's flipped down.</span>")
 	else
 		to_chat(user, "<span class='notice'>There's a little switch on the bottom. It's flipped up.</span>")
-/obj/item/weapon/orion_ship/attack_self(mob/user)
+/obj/item/orion_ship/attack_self(mob/user)
 	if(active)
 		return
-	log_and_message_admins("primed an explosive Orion ship for detonation.", user)
+	message_admins("[key_name_admin(usr)] primed an explosive Orion ship for detonation.")
+	log_game("[key_name(usr)] primed an explosive Orion ship for detonation.",ckey=key_name(usr))
 	to_chat(user, "<span class='warning'>You flip the switch on the underside of [src].</span>")
 	active = 1
 	src.visible_message("<span class='notice'>[src] softly beeps and whirs to life!</span>")
-	src.audible_message("<b>\The [src]</b> says, 'This is ship ID #[rand(1,1000)] to Orion Port Authority. We're coming in for landing, over.'")
+	src.audible_message("<b>[src]</b> says, 'This is ship ID #[rand(1,1000)] to Orion Port Authority. We're coming in for landing, over.'")
 	sleep(20)
 	src.visible_message("<span class='warning'>[src] begins to vibrate...</span>")
-	src.audible_message("<b>\The [src]</b> says, 'Uh, Port? Having some issues with our reactor, could you check it out? Over.'")
+	src.audible_message("<b>[src]</b> says, 'Uh, Port? Having some issues with our reactor, could you check it out? Over.'")
 	sleep(30)
-	src.audible_message("<b>\The [src]</b> says, 'Oh, God! Code Eight! CODE EIGHT! IT'S GONNA BL-'")
+	src.audible_message("<b>[src]</b> says, 'Oh, God! Code Eight! CODE EIGHT! IT'S GONNA BL-'")
 	sleep(3.6)
 	src.visible_message("<span class='danger'>[src] explodes!</span>")
 	explosion(src.loc, 1,2,4)

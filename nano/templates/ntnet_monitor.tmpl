@@ -1,15 +1,3 @@
-{{if data.skill_fail}}
-	{{for data.skill_fail}}
-	<div class="item">
-		<div class="itemLabelWide">
-    		{{:value.key}}
-		</div>
-		<div class="itemContentNarrow">
-			{{:value.value}}
-		</div>
-	</div>
-	{{/for}}
-{{else}}
 <h1>WIRELESS CONNECTIVITY</h1>
 	<div class="item">
 		<div class="itemLabelWide">
@@ -30,13 +18,12 @@
 			</div>
 			<div class="itemContentNarrow">
                 		{{:helper.link('TOGGLE', null, {'toggleWireless' : 1})}}
-			</div>
-			</div>
+			</div><br><br>
 			<i>Caution - Disabling wireless transmitters when using wireless device may prevent you from re-enabling them again!</i>
 		{{else}}
-			</div>
 			<br><p>Wireless coverage unavailable, no relays are connected.</p>
-		{{/if}}	
+		{{/if}}
+        </div>	
 
 <h1>FIREWALL CONFIGURATION</h1>
 <table>
@@ -64,14 +51,14 @@
 
 <h1>SECURITY SYSTEMS</h1>
 	{{if data.idsalarm}}
-    <div class="statusDisplay" style="overflow: auto;">
+        <div class="statusDisplay" style="overflow: auto;">
 		<div class="item">
 			<div class="itemContent" style="width: 100%;">
 				<h1>NETWORK INCURSION DETECTED</h1>
 				<i>An abnormal activity has been detected in the network. Please verify system logs for more information</i>
 			</div>
 		</div>
-    </div>		
+        </div>		
 	{{/if}}
 	<div class="item">
 		<div class="itemLabelWide">
@@ -80,7 +67,7 @@
 		<div class="itemContentNarrow">
                 	<b>{{:data.idsstatus ? 'ENABLED' : 'DISABLED'}}</b>
 		</div>
-    </div>
+        </div>
 	<div class="item">
 		<div class="itemLabelWide">
                 	Maximal Log Count: 
@@ -88,15 +75,7 @@
 		<div class="itemContentNarrow">
                 	<b>{{:data.ntnetmaxlogs}}</b>
 		</div>
-    </div>
-    <div class="item">
-		<div class="itemLabelWide">
-                	Blacklisted NIDs: 
-		</div>
-		<div class="itemContentNarrow">
-					{{:data.banned_nids}}
-		</div>
-    </div>
+        </div>
 	<div class="item">
 		<div class="itemLabelWide">
                 	Controls: 
@@ -107,13 +86,11 @@
 			<tr><td>{{:helper.link('TOGGLE IDS', null, {'toggleIDS' : 1})}}
 			<tr><td>{{:helper.link('SET LOG LIMIT', null, {'updatemaxlogs' : 1})}}
 			<tr><td>{{:helper.link('PURGE LOGS', null, {'purgelogs' : 1})}}
-			<tr><td>{{:helper.link('ADD BLACKLIST ENTRY', null, {'ban_nid' : 1})}}
-			<tr><td>{{:helper.link('REMOVE BLACKLIST ENTRY', null, {'unban_nid' : 1})}}
 			</table>
 		</div>
-    </div>
+        </div>
 	<b>System Logs</b>
-    <div class="statusDisplay" style="overflow: auto;">
+        <div class="statusDisplay" style="overflow: auto;">
 		<div class="item">
 			<div class="itemContent" style="width: 100%;">
 				{{for data.ntnetlogs}}
@@ -121,9 +98,4 @@
 				{{/for}}
 			</div>
 		</div>
-	</div>
-{{/if}}
-{{if data.terminal}}
-<h1>MANUAL SYSTEM ACCESS</h1>
-{{:helper.link('ACTIVATE TERMINAL', null, {'PC_terminal' : 1})}}
-{{/if}}
+        </div>

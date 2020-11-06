@@ -3,7 +3,7 @@
 	name = "cerebro-energetic enhancer"
 	desc = "A matte-black, eyeless cerebro-energetic enhancement helmet. It uses highly sophisticated, and illegal, techniques to drill into your brain and install psi-infected AIs into the fluid cavities between your lobes."
 	action_button_name = "Install Boosters"
-	icon_state = "cerebro"
+	icon_state = "amp"
 
 	item_state_slots = list(
 		slot_l_hand_str = "helmet",
@@ -20,7 +20,6 @@
 /obj/item/clothing/head/helmet/space/psi_amp/lesser
 	name = "psionic amplifier"
 	desc = "A crown-of-thorns cerebro-energetic enhancer that interfaces directly with the brain, isolating and strengthening psionic signals. It kind of looks like a tiara having sex with an industrial robot."
-	icon_state = "amp"
 	flags_inv = 0
 	body_parts_covered = 0
 
@@ -53,7 +52,7 @@
 
 	var/removed
 	var/slots_left = max_boosted_faculties - LAZYLEN(boosted_faculties)
-	var/decl/psionic_faculty/faculty = SSpsi.get_faculty(choice)
+	var/datum/psionic_faculty/faculty = SSpsi.get_faculty(choice)
 	if(faculty.id in boosted_faculties)
 		LAZYREMOVE(boosted_faculties, faculty.id)
 		removed = TRUE
@@ -70,7 +69,7 @@
 /obj/item/clothing/head/helmet/space/psi_amp/proc/deintegrate()
 
 	set name = "Remove Psi-Amp"
-	set desc = "Enhance your brainpower."
+	set desc = "Removes your psi-amp."
 	set category = "Abilities"
 	set src in usr
 
@@ -91,7 +90,7 @@
 
 	sleep(80)
 
-	if(H.psi) 
+	if(H.psi)
 		H.psi.reset()
 
 	to_chat(H, SPAN_NOTICE("\The [src] chimes quietly as it finishes removing the slave-minds from your brain."))

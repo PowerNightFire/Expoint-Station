@@ -1,61 +1,71 @@
-//This file was auto-corrected by findeclaration.exe on 25.5.2012 20:42:32
-
-/obj/item/weapon/implantpad
-	name = "implant pad"
-	desc = "Used to reprogramm implants."
+/obj/item/implantpad
+	name = "implantpad"
+	desc = "A device used to modify implants."
 	icon = 'icons/obj/items.dmi'
 	icon_state = "implantpad-0"
 	item_state = "electronic"
-	w_class = ITEM_SIZE_SMALL
-	var/obj/item/weapon/implant/imp
+	throw_speed = 1
+	throw_range = 5
+	w_class = ITEMSIZE_SMALL
+	var/obj/item/implantcase/case = null
+	var/broadcasting = null
+	var/listening = TRUE
 
-/obj/item/weapon/implantpad/on_update_icon()
-	if (imp)
-		icon_state = "implantpad-1"
-	else
-		icon_state = "implantpad-0"
+/obj/item/implantpad/update_icon()
+	icon_state = "implantpad-[case ? "1" : "0"]"
 
-/obj/item/weapon/implantpad/attack_hand(mob/user)
-	if ((imp && (user.l_hand == src || user.r_hand == src)))
-		user.put_in_active_hand(imp)
-		imp.add_fingerprint(user)
-		add_fingerprint(user)
+/obj/item/implantpad/attack_hand(mob/user)
+	if(src.case && (user.l_hand == src || user.r_hand == src))
+		user.put_in_active_hand(case)
 
-		imp = null
+		src.case.add_fingerprint(user)
+		src.case = null
+
+		src.add_fingerprint(user)
 		update_icon()
-	else
-		return ..()
+		return
+	return ..()
 
-/obj/item/weapon/implantpad/attackby(obj/item/I, mob/user)
+/obj/item/implantpad/attackby(obj/item/C, mob/user)
+	if(istype(C, /obj/item/implantcase))
+		if(!case)
+			user.drop_from_inventory(C,src)
+			src.case = C
+			update_icon()
+		else
+			to_chat(user, SPAN_WARNING("\The [src] already has an implant case inside it!"))
+		return
 	..()
-	if(istype(I, /obj/item/weapon/implantcase))
-		var/obj/item/weapon/implantcase/C = I
-		if(!imp && C.imp)
-			C.imp.forceMove(src)
-			imp = C.imp
-			C.imp = null
-		else if (imp && !C.imp)
-			imp.forceMove(C)
-			C.imp = imp
-			imp = null
-		C.update_icon()
-	else if(istype(I, /obj/item/weapon/implanter))
-		var/obj/item/weapon/implanter/C = I
-		if(!imp && C.imp)
-			C.imp.forceMove(src)
-			imp = C.imp
-			C.imp = null
-		else if (imp && !C.imp)
-			imp.forceMove(C)
-			C.imp = imp
-			imp = null
-		C.update_icon()
-	else if(istype(I, /obj/item/weapon/implant) && user.unEquip(I, src))
-		imp = I
-	update_icon()
 
-/obj/item/weapon/implantpad/attack_self(mob/user)
-	if (imp)
-		imp.interact(user)
+/obj/item/implantpad/attack_self(mob/user)
+	user.set_machine(src)
+	var/dat = "<B>Implant Mini-Computer:</B><HR>"
+	if (src.case)
+		if(src.case.imp)
+			if(istype(src.case.imp, /obj/item/implant))
+				dat += src.case.imp.get_data()
+		else
+			dat += "The implant casing is empty."
 	else
-		to_chat(user,"<span class='warning'>There's no implant loaded in \the [src].</span>")
+		dat += "Please insert an implant casing!"
+
+	var/datum/browser/implantpad_win = new(user, "implantpad", capitalize_first_letters(name))
+	implantpad_win.set_content(dat)
+	implantpad_win.open()
+
+/obj/item/implantpad/Topic(href, href_list)
+	..()
+	if (usr.stat)
+		return
+	if ((usr.contents.Find(src)) || ((in_range(src, usr) && istype(src.loc, /turf))))
+		usr.set_machine(src)
+
+		if (istype(src.loc, /mob))
+			attack_self(src.loc)
+		else
+			for(var/mob/M in viewers(1, src))
+				if (M.client)
+					src.attack_self(M)
+		src.add_fingerprint(usr)
+	else
+		usr << browse(null, "window=implantpad")

@@ -2,12 +2,12 @@
 
 /obj/item/device/t_scanner
 	name = "\improper T-ray scanner"
-	desc = "A terahertz-ray emitter and scanner, capable of penetrating conventional hull materials."
+	desc = "A terahertz-ray emitter and scanner used to detect underfloor objects such as cables and pipes."
 	icon_state = "t-ray0"
 	slot_flags = SLOT_BELT
-	w_class = ITEM_SIZE_SMALL
+	w_class = ITEMSIZE_SMALL
 	item_state = "electronic"
-	matter = list(MATERIAL_ALUMINIUM = 150)
+	matter = list(DEFAULT_WALL_MATERIAL = 150)
 	origin_tech = list(TECH_MAGNET = 1, TECH_ENGINEERING = 1)
 	action_button_name = "Toggle T-Ray scanner"
 
@@ -24,11 +24,11 @@
 	if(on)
 		set_active(FALSE)
 
-/obj/item/device/t_scanner/on_update_icon()
+/obj/item/device/t_scanner/update_icon()
 	icon_state = "t-ray[on]"
 
 /obj/item/device/t_scanner/emp_act()
-	audible_message("<span class = 'notice'> \The [src] buzzes oddly.</span>")
+	audible_message(src, SPAN_NOTICE("\The [src] buzzes oddly."))
 	set_active(FALSE)
 
 /obj/item/device/t_scanner/attack_self(mob/user)
@@ -38,19 +38,19 @@
 /obj/item/device/t_scanner/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
 	var/obj/structure/disposalpipe/D = target
 	if(D && istype(D))
-		to_chat(user, "<span class='info'>Pipe segment integrity: [(D.health / 10) * 100]%</span>")
+		to_chat(user, SPAN_INFO("Pipe segment integrity: [(D.health / 10) * 100]%"))
 
 /obj/item/device/t_scanner/proc/set_active(var/active)
 	on = active
 	if(on)
-		START_PROCESSING(SSfastprocess, src)
+		START_PROCESSING(SSprocessing, src)
 	else
-		STOP_PROCESSING(SSfastprocess, src)
+		STOP_PROCESSING(SSprocessing, src)
 		set_user_client(null)
 	update_icon()
 
 //If reset is set, then assume the client has none of our overlays, otherwise we only send new overlays.
-/obj/item/device/t_scanner/Process()
+/obj/item/device/t_scanner/process()
 	if(!on) return
 
 	//handle clients changing
@@ -80,16 +80,13 @@
 		active_scanned -= O
 
 //creates a new overlay for a scanned object
-/obj/item/device/t_scanner/proc/get_overlay(var/atom/movable/scanned)
+/obj/item/device/t_scanner/proc/get_overlay(obj/scanned)
 	//Use a cache so we don't create a whole bunch of new images just because someone's walking back and forth in a room.
 	//Also means that images are reused if multiple people are using t-rays to look at the same objects.
 	if(scanned in overlay_cache)
 		. = overlay_cache[scanned]
 	else
-		var/image/I = image(loc = scanned, icon = scanned.icon, icon_state = scanned.icon_state)
-		I.plane = HUD_PLANE
-		I.layer = UNDER_HUD_LAYER
-		I.appearance_flags = RESET_ALPHA
+		var/image/I = image(loc = scanned, icon = scanned.icon, icon_state = scanned.icon_state, layer = HUD_LAYER)
 
 		//Pipes are special
 		if(istype(scanned, /obj/machinery/atmospherics/pipe))
@@ -127,11 +124,7 @@
 
 	for(var/turf/T in range(scan_range, center))
 		for(var/mob/M in T.contents)
-			if(ishuman(M))
-				var/mob/living/carbon/human/H = M
-				if(H.is_cloaked())
-					. += M
-			else if(M.alpha < 255)
+			if(M.alpha < 255)
 				. += M
 			else if(round_is_spooky() && isobserver(M))
 				. += M

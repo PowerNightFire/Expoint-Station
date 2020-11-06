@@ -62,8 +62,6 @@
 		/decl/emote/audible/scretch,
 		/decl/emote/audible/choke,
 		/decl/emote/audible/gnarl,
-		/decl/emote/audible/bug_hiss,
-		/decl/emote/audible/bug_chitter,
 		/decl/emote/audible/chirp
 		)
 
@@ -101,6 +99,7 @@
 		/decl/emote/audible/whimper,
 		/decl/emote/audible/yawn,
 		/decl/emote/audible/clap,
+		/decl/emote/audible/golfclap,
 		/decl/emote/audible/chuckle,
 		/decl/emote/audible/cough,
 		/decl/emote/audible/cry,
@@ -112,6 +111,7 @@
 		/decl/emote/audible/moan,
 		/decl/emote/audible/grunt,
 		/decl/emote/audible/slap,
+		/decl/emote/audible/snap,
 		/decl/emote/human,
 		/decl/emote/human/deathgasp,
 		/decl/emote/audible/giggle,
@@ -163,7 +163,8 @@
 		/decl/emote/visible/rshoulder,
 		/decl/emote/visible/squint,
 		/decl/emote/visible/tfist,
-		/decl/emote/visible/tilt
+		/decl/emote/visible/tilt,
+		/decl/emote/visible/flail
 	)
 
 /mob/living/silicon/robot
@@ -186,16 +187,7 @@
 		/decl/emote/audible/synth/buzz,
 		/decl/emote/audible/synth/confirm,
 		/decl/emote/audible/synth/deny,
-		/decl/emote/audible/synth/security,
-		/decl/emote/audible/synth/security/halt
 		)
-
-/mob/living/silicon/robot/flying/ascent
-	default_emotes = list(
-		/decl/emote/audible/ascent_purr,
-		/decl/emote/audible/ascent_hiss,
-		/decl/emote/audible/ascent_snarl
-	)
 
 /mob/living/carbon/slime
 	default_emotes = list(

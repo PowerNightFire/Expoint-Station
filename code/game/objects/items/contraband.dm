@@ -1,39 +1,39 @@
 //Let's get some REAL contraband stuff in here. Because come on, getting brigged for LIPSTICK is no fun.
 
 //Illicit drugs~
-/obj/item/weapon/storage/pill_bottle/happy
+/obj/item/storage/pill_bottle/happy
 	name = "bottle of Happy pills"
 	desc = "Highly illegal drug. When you want to see the rainbow."
-	wrapper_color = COLOR_PINK
-	startswith = list(/obj/item/weapon/reagent_containers/pill/happy = 10)
+	starts_with = list(/obj/item/reagent_containers/pill/happy = 7)
 
-/obj/item/weapon/storage/pill_bottle/zoom
+/obj/item/storage/pill_bottle/zoom
 	name = "bottle of Zoom pills"
 	desc = "Highly illegal drug. Trade brain for speed."
-	wrapper_color = COLOR_BLUE
-	startswith = list(/obj/item/weapon/reagent_containers/pill/zoom = 10)
+	starts_with = list(/obj/item/reagent_containers/pill/zoom = 7)
 
-/obj/item/weapon/storage/pill_bottle/three_eye
-	name = "bottle of Three Eye pills"
-	desc = "Highly illegal drug. Stimulates rarely used portions of the brain."
-	wrapper_color = COLOR_BLUE
-	startswith = list(/obj/item/weapon/reagent_containers/pill/three_eye = 10)
+/obj/item/storage/pill_bottle/tranquility
+	name = "bottle of Tranquility pills"
+	desc = "Highly illegal drug. Bang - and your stress is gone."
+	starts_with = list(/obj/item/reagent_containers/pill/tranquility = 7)
 
-/obj/item/weapon/reagent_containers/glass/beaker/vial/random
-	atom_flags = 0
-	var/list/random_reagent_list = list(list(/datum/reagent/water = 15) = 1, list(/datum/reagent/space_cleaner = 15) = 1)
+/obj/item/reagent_containers/glass/beaker/vial/random
+	flags = 0
+	var/list/random_reagent_list = list(list(/datum/reagent/water = 15) = 1, list(/datum/reagent/spacecleaner = 15) = 1)
 
-/obj/item/weapon/reagent_containers/glass/beaker/vial/random/toxin
+/obj/item/reagent_containers/glass/beaker/vial/random/toxin
 	random_reagent_list = list(
-		list(/datum/reagent/mindbreaker = 10, /datum/reagent/space_drugs = 20) = 3,
-		list(/datum/reagent/toxin/carpotoxin = 15)                             = 2,
-		list(/datum/reagent/impedrezene = 15)                                  = 2,
-		list(/datum/reagent/toxin/zombiepowder = 10)                           = 1)
+		list(/datum/reagent/mindbreaker = 10, /datum/reagent/space_drugs = 20)	= 3,
+		list(/datum/reagent/mercury = 15)										= 3,
+		list(/datum/reagent/toxin/carpotoxin = 15)								= 2,
+		list(/datum/reagent/impedrezene = 15)									= 2,
+		list(/datum/reagent/toxin/dextrotoxin = 10)								= 1,
+		list(/datum/reagent/mental/neurapan = 15)								= 2,
+		list(/datum/reagent/toxin/spectrocybin = 15)							= 1)
 
-/obj/item/weapon/reagent_containers/glass/beaker/vial/random/New()
-	..()
+/obj/item/reagent_containers/glass/beaker/vial/random/Initialize()
+	. = ..()
 	if(is_open_container())
-		atom_flags ^= ATOM_FLAG_OPEN_CONTAINER
+		flags ^= OPENCONTAINER
 
 	var/list/picked_reagents = pickweight(random_reagent_list)
 	for(var/reagent in picked_reagents)
@@ -44,4 +44,16 @@
 		names += R.name
 
 	desc = "Contains [english_list(names)]."
+	update_icon()
+
+
+/obj/item/reagent_containers/glass/beaker/vial/venenum
+	flags = 0
+
+/obj/item/reagent_containers/glass/beaker/vial/venenum/Initialize()
+	. = ..()
+	if(is_open_container())
+		flags ^= OPENCONTAINER
+	reagents.add_reagent(/datum/reagent/venenum,volume)
+	desc = "Contains venenum."
 	update_icon()

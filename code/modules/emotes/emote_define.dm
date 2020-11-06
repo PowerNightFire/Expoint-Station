@@ -17,9 +17,8 @@
 	var/message_type = VISIBLE_MESSAGE // Audible/visual flag
 	var/targetted_emote                // Whether or not this emote needs a target.
 	var/check_restraints               // Can this emote be used while restrained?
-	var/check_range                    // falsy, or a range outside which the emote will not work
-	var/conscious = TRUE               // Do we need to be awake to emote this?
-	var/emote_range                    // falsy, or a range outside which the emote is not shown
+	var/conscious = 1				   // Do we need to be awake to emote this?
+	var/emote_range = 0                // If >0, restricts emote visibility to viewers within range.
 
 /decl/emote/proc/get_emote_message_1p(var/atom/user, var/atom/target, var/extra_params)
 	if(target)
@@ -32,7 +31,6 @@
 	return emote_message_3p
 
 /decl/emote/proc/do_emote(var/atom/user, var/extra_params)
-
 	if(ismob(user) && check_restraints)
 		var/mob/M = user
 		if(M.restrained())
@@ -47,28 +45,14 @@
 				target = thing
 				break
 
-	if (targetted_emote && !target)
-		to_chat(user, SPAN_WARNING("You can't do that to thin air."))
-		return
-
-	if (target && target != user && check_range)
-		if (get_dist(user, target) > check_range)
-			to_chat(user, SPAN_WARNING("\The [target] is too far away."))
-			return
-
-	var/datum/gender/user_gender = gender_datums[user.get_visible_gender()]
-	var/datum/gender/target_gender
-	if(target)
-		target_gender = gender_datums[target.get_visible_gender()]
-
 	var/use_3p
 	var/use_1p
 	if(emote_message_1p)
 		if(target && emote_message_1p_target)
 			use_1p = get_emote_message_1p(user, target, extra_params)
-			use_1p = replacetext(use_1p, "TARGET_THEM", target_gender.him)
-			use_1p = replacetext(use_1p, "TARGET_THEIR", target_gender.his)
-			use_1p = replacetext(use_1p, "TARGET_SELF", target_gender.self)
+			use_1p = replacetext(use_1p, "TARGET_THEM", target.get_pronoun("him"))
+			use_1p = replacetext(use_1p, "TARGET_THEIR", target.get_pronoun("his"))
+			use_1p = replacetext(use_1p, "TARGET_SELF", target.get_pronoun("himself"))
 			use_1p = replacetext(use_1p, "TARGET", "<b>\the [target]</b>")
 		else
 			use_1p = get_emote_message_1p(user, null, extra_params)
@@ -77,15 +61,15 @@
 	if(emote_message_3p)
 		if(target && emote_message_3p_target)
 			use_3p = get_emote_message_3p(user, target, extra_params)
-			use_3p = replacetext(use_3p, "TARGET_THEM", target_gender.him)
-			use_3p = replacetext(use_3p, "TARGET_THEIR", target_gender.his)
-			use_3p = replacetext(use_3p, "TARGET_SELF", target_gender.self)
+			use_3p = replacetext(use_3p, "TARGET_THEM", target.get_pronoun("him"))
+			use_3p = replacetext(use_3p, "TARGET_THEIR", target.get_pronoun("his"))
+			use_3p = replacetext(use_3p, "TARGET_SELF", target.get_pronoun("himself"))
 			use_3p = replacetext(use_3p, "TARGET", "<b>\the [target]</b>")
 		else
 			use_3p = get_emote_message_3p(user, null, extra_params)
-		use_3p = replacetext(use_3p, "USER_THEM", user_gender.him)
-		use_3p = replacetext(use_3p, "USER_THEIR", user_gender.his)
-		use_3p = replacetext(use_3p, "USER_SELF", user_gender.self)
+		use_3p = replacetext(use_3p, "USER_THEM", user.get_pronoun("him"))
+		use_3p = replacetext(use_3p, "USER_THEIR", user.get_pronoun("his"))
+		use_3p = replacetext(use_3p, "USER_SELF", user.get_pronoun("himself"))
 		use_3p = replacetext(use_3p, "USER", "<b>\the [user]</b>")
 		use_3p = capitalize(use_3p)
 
@@ -93,12 +77,15 @@
 	if (!use_range)
 		use_range = world.view
 
+	if(!target_check(user, target))
+		return
+
 	if(ismob(user))
 		var/mob/M = user
 		if(message_type == AUDIBLE_MESSAGE)
-			M.audible_message(message = use_3p, self_message = use_1p, deaf_message = emote_message_impaired, hearing_distance = use_range, checkghosts = /datum/client_preference/ghost_sight)
+			M.audible_message(message = use_3p, self_message = use_1p, deaf_message = emote_message_impaired, hearing_distance = use_range)
 		else
-			M.visible_message(message = use_3p, self_message = use_1p, blind_message = emote_message_impaired, range = use_range, checkghosts = /datum/client_preference/ghost_sight)
+			M.visible_message(message = use_3p, self_message = use_1p, blind_message = emote_message_impaired, range = use_range)
 
 	do_extra(user, target)
 
@@ -106,6 +93,9 @@
 	return
 
 /decl/emote/proc/check_user(var/atom/user)
+	return TRUE
+
+/decl/emote/proc/target_check(var/atom/user, var/atom/target)
 	return TRUE
 
 /decl/emote/proc/can_target()

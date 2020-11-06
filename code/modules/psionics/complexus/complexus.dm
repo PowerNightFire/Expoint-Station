@@ -2,7 +2,7 @@
 
 	var/announced = FALSE             // Whether or not we have been announced to our holder yet.
 	var/suppressed = TRUE             // Whether or not we are suppressing our psi powers.
-	var/use_psi_armour = TRUE         // Whether or not we should automatically deflect/block incoming damage.
+	var/use_psi_armor = TRUE         // Whether or not we should automatically deflect/block incoming damage.
 	var/rebuild_power_cache = TRUE    // Whether or not we need to rebuild our cache of psi powers.
 
 	var/rating = 0                    // Overall psi rating.
@@ -11,13 +11,13 @@
 	var/next_power_use = 0            // world.time minimum before next power use.
 	var/stamina = 50                  // Current psi pool.
 	var/max_stamina = 50              // Max psi pool.
-	var/armor_cost = 0                // Amount of power to substract this tick from psi armor blocking damage
 
 	var/list/latencies                // List of all currently latent faculties.
 	var/list/ranks                    // Assoc list of psi faculties to current rank.
 	var/list/base_ranks               // Assoc list of psi faculties to base rank, in case reset is needed
 	var/list/manifested_items         // List of atoms manifested/maintained by psychic power.
 	var/next_latency_trigger = 0      // world.time minimum before a trigger can be attempted again.
+	var/last_armor_check              // world.time of last armor check.
 	var/last_aura_size
 	var/last_aura_alpha
 	var/last_aura_color
@@ -71,7 +71,6 @@
 /datum/psi_complexus/New(var/mob/_owner)
 	owner = _owner
 	START_PROCESSING(SSpsi, src)
-	set_extension(src, /datum/extension/armor/psionic)
 
 /datum/psi_complexus/Destroy()
 	destroy_aura_image(_aura_image)
@@ -79,7 +78,7 @@
 	if(owner)
 		cancel()
 		if(owner.client)
-			owner.client.screen -= list(ui, ui?.components)
+			owner.client.screen -= ui
 			for(var/thing in SSpsi.all_aura_images)
 				owner.client.images -= thing
 		QDEL_NULL(ui)

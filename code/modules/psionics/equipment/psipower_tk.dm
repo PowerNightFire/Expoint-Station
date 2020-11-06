@@ -8,14 +8,13 @@
 	focus = null
 	. = ..()
 
-/obj/item/psychic_power/telekinesis/Process()
+/obj/item/psychic_power/telekinesis/process()
 	if(!focus || !istype(focus.loc, /turf) || get_dist(get_turf(focus), get_turf(owner)) > owner.psi.get_rank(PSI_PSYCHOKINESIS))
 		owner.drop_from_inventory(src)
 		return
 	. = ..()
 
 /obj/item/psychic_power/telekinesis/proc/set_focus(var/atom/movable/_focus)
-
 	if(!_focus.simulated || !istype(_focus.loc, /turf))
 		return FALSE
 
@@ -51,21 +50,11 @@
 	return focus.do_simple_ranged_interaction(user)
 
 /obj/item/psychic_power/telekinesis/afterattack(var/atom/target, var/mob/living/user, var/proximity)
-
 	if(!target || !user || (isobj(target) && !isturf(target.loc)) || !user.psi || !user.psi.can_use() || !user.psi.spend_power(5))
 		return
 
 	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 	user.psi.set_cooldown(5)
-
-	var/user_psi_leech = user.do_psionics_check(5, user)
-	if(user_psi_leech)
-		to_chat(user, SPAN_WARNING("You reach for \the [target] but your telekinetic power is leeched away by \the [user_psi_leech]..."))
-		return
-
-	if(target.do_psionics_check(5, user))
-		to_chat(user, SPAN_WARNING("Your telekinetic power skates over \the [target] but cannot get a grip..."))
-		return
 
 	var/distance = get_dist(get_turf(user), get_turf(focus ? focus : target))
 	if(distance > user.psi.get_rank(PSI_PSYCHOKINESIS))
@@ -97,7 +86,7 @@
 		O.anchored = 1
 		O.density = 0
 		O.layer = FLY_LAYER
-		O.set_dir(pick(GLOB.cardinal))
+		O.set_dir(pick(cardinal))
 		O.icon = 'icons/effects/effects.dmi'
 		O.icon_state = "nothing"
 		flick("empdisable",O)

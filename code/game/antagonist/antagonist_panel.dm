@@ -27,19 +27,19 @@
 		var/mob/M = player.current
 		dat += "<tr>"
 		if(M)
-			dat += "<td><a href='?_src_=holder;adminplayeropts=\ref[M]'>[M.real_name]/([player.key])</a>"
+			dat += "<td><a href='?_src_=holder;adminplayeropts=\ref[M]'>[M.real_name]</a>"
 			if(!M.client)      dat += " <i>(logged out)</i>"
 			if(M.stat == DEAD) dat += " <b><font color=red>(DEAD)</font></b>"
 			dat += "</td>"
 			dat += "<td>\[<A href='?src=\ref[caller];priv_msg=\ref[M]'>PM</A>\]\[<A href='?src=\ref[caller];traitor=\ref[M]'>TP</A>\]</td>"
 		else
-			dat += "<td><i>Mob not found/([player.key])!</i></td>"
+			dat += "<td><i>Mob not found!</i></td>"
 		dat += "</tr>"
 	dat += "</table>"
 
 	if(flags & ANTAG_HAS_NUKE)
 		dat += "<br><table><tr><td><B>Nuclear disk(s)</B></td></tr>"
-		for(var/obj/item/weapon/disk/nuclear/N in world)
+		for(var/obj/item/disk/nuclear/N in nuke_disks)
 			dat += "<tr><td>[N.name], "
 			var/atom/disk_loc = N.loc
 			while(!istype(disk_loc, /turf))

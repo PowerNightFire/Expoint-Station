@@ -6,15 +6,14 @@
 	anchored = 1
 	density = 1
 	opacity = 1
-	layer = ABOVE_DOOR_LAYER
+	layer = TURF_LAYER + 0.1
 	var/deploying
 	var/deployed
 
-/obj/structure/droppod_door/New(var/newloc, var/autoopen)
-	..(newloc)
+/obj/structure/droppod_door/Initialize(mapload, var/autoopen)
+	. = ..(mapload)
 	if(autoopen)
-		spawn(10 SECONDS)
-			deploy()
+		addtimer(CALLBACK(src, .proc/deploy), 100)
 
 /obj/structure/droppod_door/attack_ai(var/mob/user)
 	if(!user.Adjacent(src))
@@ -22,11 +21,10 @@
 	attack_hand(user)
 
 /obj/structure/droppod_door/attack_generic(var/mob/user)
-	if(istype(user))
-		attack_hand(user)
+	attack_hand(user)
 
 /obj/structure/droppod_door/attack_hand(var/mob/user)
-	if(deploying) return
+	if(deploying || deployed) return
 	to_chat(user, "<span class='danger'>You prime the explosive bolts. Better get clear!</span>")
 	sleep(30)
 	deploy()
@@ -48,10 +46,10 @@
 	// Overwrite turfs.
 	var/turf/origin = get_turf(src)
 	origin.ChangeTurf(/turf/simulated/floor/reinforced)
-	origin.set_light(0) // Forcing updates
+	origin.reconsider_lights() // Forcing updates
 	var/turf/T = get_step(origin, src.dir)
 	T.ChangeTurf(/turf/simulated/floor/reinforced)
-	T.set_light(0) // Forcing updates
+	T.reconsider_lights() // Forcing updates
 
 	// Destroy turf contents.
 	for(var/obj/O in origin)
@@ -70,12 +68,12 @@
 		M.throw_at(get_edge_target_turf(origin,src.dir),rand(0,3),50)
 
 	// Create a decorative ramp bottom and flatten out our current ramp.
-	set_density(0)
-	set_opacity(0)
+	density = 0
+	opacity = 0
 	icon_state = "ramptop"
 	var/obj/structure/droppod_door/door_bottom = new(T)
 	door_bottom.deployed = 1
-	door_bottom.set_density(0)
-	door_bottom.set_opacity(0)
-	door_bottom.set_dir(src.dir)
+	door_bottom.density = 0
+	door_bottom.opacity = 0
+	door_bottom.dir = src.dir
 	door_bottom.icon_state = "rampbottom"

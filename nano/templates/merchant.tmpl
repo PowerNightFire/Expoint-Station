@@ -6,7 +6,7 @@
 	</table>
 	</center>
 {{else}}
-	<center><h3>Balance: {{:data.bank}} {{:config.currency}}</h3><br>
+	<center><h3>Balance: {{:data.bank}} Credits</h3><br>
 	{{if data.mode}}
 		<div>
 			<div style="float: left">{{:helper.link('<=', null, {'PRG_scroll' : 'left'})}}</div>
@@ -29,7 +29,8 @@
 				{{for data.trades}}
 					<tr><td>{{:value}}</td>
 					<td>{{:helper.link('Trade', null, {'PRG_offer_item' : index})}}</td>
-					<td>{{:helper.link('Offer Money', null, {'PRG_offer_money_for_item' : index})}}</td>
+					<td>{{:helper.link('Money', null, {'PRG_offer_money_for_item' : index})}}</td>
+					<td>{{:helper.link('Bulk', null, {'PRG_bulk_money_for_item' : index})}}</td>
 					<td>{{:helper.link('Ask Cost', null, {'PRG_how_much_do_you_want' : index})}}</td>
 				{{/for}}
 				</table>

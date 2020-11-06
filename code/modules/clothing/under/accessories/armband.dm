@@ -2,11 +2,13 @@
 	name = "red armband"
 	desc = "A fancy red armband!"
 	icon_state = "red"
-	slot = ACCESSORY_SLOT_ARMBAND
-	species_restricted = null
-	on_rolled = list("down" = "none")
-	sprite_sheets = list(SPECIES_NABBER = 'icons/mob/species/nabber/onmob_accessories_gas.dmi')
-	body_location = ARMS
+	slot = "armband"
+	flippable = 1
+
+/obj/item/clothing/accessory/armband/sec
+	name = "security armband"
+	desc = "An armband, worn by the crew to display which department they're assigned to. This one is navy blue."
+	icon_state = "sec"
 
 /obj/item/clothing/accessory/armband/cargo
 	name = "cargo armband"
@@ -17,6 +19,11 @@
 	name = "engineering armband"
 	desc = "An armband, worn by the crew to display which department they're assigned to. This one is orange with a reflective strip!"
 	icon_state = "engie"
+
+/obj/item/clothing/accessory/armband/science
+	name = "science armband"
+	desc = "An armband, worn by the crew to display which department they're assigned to. This one is purple."
+	icon_state = "sci"
 
 /obj/item/clothing/accessory/armband/hydro
 	name = "hydroponics armband"
@@ -33,17 +40,35 @@
 	desc = "An armband, worn by the crew to display which department they're assigned to. This one is white and green."
 	icon_state = "medgreen"
 
-/obj/item/clothing/accessory/armband/medblue
-	name = "medical corps armband"
-	desc = "An armband, worn by the crew to display which department they're assigned to. This one is white and blue."
-	icon_state = "medblueband"
+/obj/item/clothing/accessory/armband/iac
+	name = "interstellar aid corps armband"
+	desc = "An armband denoting its wearer as a medical worker of the Interstellar Aid Corps. This one is white and blue."
+	icon_state = "iac"
 
-/obj/item/clothing/accessory/armband/whitered
-	name = "\improper corporate armband"
-	desc = "An armband, worn by the crew to display which department they're assigned to. This one is green and white."
-	icon_state = "corpsec_armband"
+/obj/item/clothing/accessory/armband/offworlder
+	name = "science exo-stellar ribbon"
+	desc = "Durable cloth meant to be worn over or attached to the chest pieces of the ESS modules. This one is purple."
+	icon_state = "ribbon_sci"
+	slot = "over"
+	flippable = 0
 
-/obj/item/clothing/accessory/armband/bluegold
-	name = "peacekeeper armband"
-	desc = "An armband, worn by the crew to display which department they're assigned to. This one is blue and gold."
-	icon_state = "solblue"
+/obj/item/clothing/accessory/armband/offworlder/engineering
+	name = "engineering exo-stellar ribbon"
+	desc = "Durable cloth meant to be worn over or attached to the chest pieces of the ESS modules. This one is orange with a reflective strip."
+	icon_state = "ribbon_engi"
+
+/obj/item/clothing/accessory/armband/offworlder/medical
+	name = "medical exo-stellar ribbon"
+	desc = "Durable cloth meant to be worn over or attached to the chest pieces of the ESS modules. This one is white and green."
+	icon_state = "ribbon_med"
+
+/obj/item/clothing/accessory/armband/idris
+	name = "\improper Idris Incorporated armband"
+	desc = "A armband, worn by contractors to denote which company they're from. This one shows the Idris Incorporated logo  displayed on a cyan background."
+	icon_state = "idris_armband"
+	overlay_state = "idris_armband"
+
+/obj/item/clothing/accessory/armband/colourable
+	name = "armband"
+	desc = "An armband in 16,777,216 designer colors."
+	icon_state = "armband_colour"

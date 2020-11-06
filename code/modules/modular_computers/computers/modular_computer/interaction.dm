@@ -1,93 +1,174 @@
-/obj/item/modular_computer/proc/update_verbs()
-	if(portable_drive)
-		verbs |= /obj/item/modular_computer/proc/eject_usb
-	else
-		verbs -= /obj/item/modular_computer/proc/eject_usb
-
-	if(stores_pen && istype(stored_pen))
-		verbs |= /obj/item/modular_computer/proc/remove_pen_verb
-	else
-		verbs -= /obj/item/modular_computer/proc/remove_pen_verb
-
-	if(card_slot)
-		verbs |= /obj/item/weapon/stock_parts/computer/card_slot/proc/verb_eject_id
-	else
-		verbs -= /obj/item/weapon/stock_parts/computer/card_slot/proc/verb_eject_id
-
-// Forcibly shut down the device. To be used when something bugs out and the UI is nonfunctional.
-/obj/item/modular_computer/verb/emergency_shutdown()
-	set name = "Forced Shutdown"
+/obj/item/modular_computer/proc/eject_id()
+	set name = "Eject ID"
 	set category = "Object"
 	set src in view(1)
 
-	if(usr.incapacitated() || !istype(usr, /mob/living))
-		to_chat(usr, "<span class='warning'>You can't do that.</span>")
+	if(use_check_and_message(usr))
 		return
 
-	if(!Adjacent(usr))
-		to_chat(usr, "<span class='warning'>You can't reach it.</span>")
+	if(!card_slot)
+		to_chat(usr, SPAN_WARNING("\The [src] does not have an ID card slot."))
 		return
 
-	if(enabled)
-		bsod = 1
-		update_icon()
-		to_chat(usr, "You press a hard-reset button on \the [src]. It displays a brief debug screen before shutting down.")
-		shutdown_computer(FALSE)
-		spawn(2 SECONDS)
-			bsod = 0
-			update_icon()
+	if(!card_slot.stored_card)
+		to_chat(usr, SPAN_WARNING("There is no card in \the [src]."))
+		return
+
+	if(active_program)
+		active_program.event_idremoved(FALSE)
+
+	for(var/datum/computer_file/program/P in idle_threads)
+		P.event_idremoved(TRUE)
+
+	card_slot.eject_id(usr)
+
+	update_uis()
+	to_chat(usr, SPAN_NOTICE("You remove the card from \the [src]."))
 
 
-// Eject ID card from computer, if it has ID slot with card inside.
 /obj/item/modular_computer/proc/eject_usb()
 	set name = "Eject Portable Storage"
 	set category = "Object"
 	set src in view(1)
 
-	if(!CanPhysicallyInteract(usr))
+	if(use_check_and_message(usr))
 		return
 
-	if(!Adjacent(usr))
-		to_chat(usr, "<span class='warning'>You can't reach it.</span>")
+	if(!portable_drive)
+		to_chat(usr, SPAN_WARNING("There is no portable drive connected to \the [src]."))
 		return
 
-	proc_eject_usb(usr)
-	update_verbs()
+	uninstall_component(usr, portable_drive, put_in_hands = TRUE)
+	verbs -= /obj/item/modular_computer/proc/eject_usb
+	update_uis()
 
-/obj/item/modular_computer/proc/remove_pen_verb()
-	set name = "Remove Pen"
+/obj/item/modular_computer/proc/eject_item()
+	set name = "Eject Stored Item"
 	set category = "Object"
 	set src in view(1)
 
-	remove_pen(usr)
-
-/obj/item/modular_computer/proc/remove_pen(mob/user)
-
-	if(user.incapacitated() || !istype(user, /mob/living))
-		to_chat(user, "<span class='warning'>You can't do that.</span>")
+	if(use_check_and_message(usr))
 		return
 
-	if(!Adjacent(user))
-		to_chat(user, "<span class='warning'>You can't reach it.</span>")
+	if(!card_slot)
+		to_chat(usr, SPAN_WARNING("\The [src] does not have an ID card slot."))
 		return
 
-	if(istype(stored_pen))
-		to_chat(user, "<span class='notice'>You remove [stored_pen] from [src].</span>")
-		user.put_in_hands(stored_pen) // Silicons will drop it anyway.
-		stored_pen = null
-		update_verbs()
-
-/obj/item/modular_computer/proc/proc_eject_usb(mob/user)
-	if(!user)
-		user = usr
-
-	if(!portable_drive)
-		to_chat(user, "There is no portable device connected to \the [src].")
+	if(!card_slot.stored_item)
+		to_chat(usr, SPAN_WARNING("There is no item stored in \the [src]."))
 		return
 
-	uninstall_component(user, portable_drive)
+	var/I = card_slot.stored_item.name
 
-/obj/item/modular_computer/attack_ghost(var/mob/observer/ghost/user)
+	if(ishuman(usr))
+		usr.put_in_hands(card_slot.stored_item)
+	else
+		card_slot.stored_item.forceMove(get_turf(src))
+
+	card_slot.stored_item = null
+	update_uis()
+	verbs -= /obj/item/modular_computer/proc/eject_item
+	to_chat(usr, SPAN_NOTICE("You remove \the [I] from \the [src]."))
+
+/obj/item/modular_computer/proc/eject_battery(mob/usr = usr)
+	set name = "Eject Battery"
+	set category = "Object"
+	set src in view(1)
+
+	if(use_check_and_message(usr))
+		return
+
+	if(!battery_module)
+		to_chat(usr, SPAN_WARNING("\The [src] doesn't have a battery installed."))
+		return
+
+	if(!battery_module.hotswappable)
+		to_chat(usr, SPAN_WARNING("\The [src]'s battery isn't removable without tools!"))
+		return
+
+	uninstall_component(usr, battery_module, put_in_hands = TRUE)
+	verbs -= /obj/item/modular_computer/proc/eject_battery
+	update_uis()
+
+/obj/item/modular_computer/proc/eject_ai()
+	set name = "Eject AI Storage"
+	set category = "Object"
+	set src in view(1)
+
+	if(use_check_and_message(usr))
+		return
+
+	if(!ai_slot)
+		to_chat(usr, SPAN_WARNING("\The [src] doesn't have an intellicard slot."))
+		return
+
+	if(!ai_slot.stored_card)
+		to_chat(usr, SPAN_WARNING("There is no intellicard connected to \the [src]."))
+		return
+
+	if(ishuman(usr))
+		usr.put_in_hands(ai_slot.stored_card)
+	else
+		ai_slot.stored_card.forceMove(get_turf(src))
+	ai_slot.stored_card = null
+	ai_slot.update_power_usage()
+	verbs -= /obj/item/modular_computer/proc/eject_ai
+	update_uis()
+
+/obj/item/modular_computer/proc/eject_personal_ai()
+	set name = "Eject Personal AI"
+	set category = "Object"
+	set src in view(1)
+
+	if(use_check_and_message(usr))
+		return
+
+	if(!personal_ai)
+		to_chat(usr, SPAN_WARNING("There is no personal AI connected to \the [src]."))
+		return
+
+	uninstall_component(usr, personal_ai, put_in_hands = TRUE)
+	verbs -= /obj/item/modular_computer/proc/eject_personal_ai
+	update_uis()
+
+/obj/item/modular_computer/AltClick(var/mob/user)
+	if(use_check_and_message(user, 32))
+		return
+
+	if(!card_slot)
+		to_chat(user, SPAN_WARNING("\The [src] does not have an ID card slot."))
+		return
+
+	if(card_slot.stored_card)
+		eject_id()
+	else if(card_slot.stored_item)
+		eject_item()
+	else
+		to_chat(user, SPAN_WARNING("\The [src] does not have a card or item stored in the card slot."))
+
+/obj/item/modular_computer/attack(mob/living/M, mob/living/user)
+	if(scan_mode == SCANNER_MEDICAL)
+		health_scan_mob(M, user, TRUE)
+
+/obj/item/modular_computer/afterattack(atom/A, mob/user, proximity_flag, click_parameters)
+	. = ..()
+	if(!proximity_flag)
+		return
+	if(scan_mode == SCANNER_REAGENT)
+		if(!isobj(A) || isnull(A.reagents))
+			return
+		if(A.reagents.reagent_list.len)
+			var/reagents_length = A.reagents.reagent_list.len
+			to_chat(user, SPAN_NOTICE("[reagents_length] chemical agent[reagents_length > 1 ? "s" : ""] found."))
+			for(var/re in A.reagents.reagent_list)
+				to_chat(user, SPAN_NOTICE("    [re]"))
+		else
+			to_chat(user, SPAN_NOTICE("No active chemical agents found in [A]."))
+
+	else if(scan_mode == SCANNER_GAS)
+		analyze_gases(A, user)
+
+/obj/item/modular_computer/attack_ghost(var/mob/abstract/observer/user)
 	if(enabled)
 		ui_interact(user)
 	else if(check_rights(R_ADMIN, 0, user))
@@ -95,148 +176,139 @@
 		if(response == "Yes")
 			turn_on(user)
 
-/obj/item/modular_computer/attack_ai(var/mob/user)
-	return attack_self(user)
-
 /obj/item/modular_computer/attack_hand(var/mob/user)
 	if(anchored)
 		return attack_self(user)
 	return ..()
 
+/obj/item/modular_computer/attack_ai(var/mob/user)
+	if(anchored)
+		return attack_self(user)
+	return ..()
+
 // On-click handling. Turns on the computer if it's off and opens the GUI.
-/obj/item/modular_computer/attack_self(var/mob/user)
-	if(MUTATION_CLUMSY in user.mutations)
-		to_chat(user, SPAN_WARNING("You can't quite work out how to use [src]."))
-		return
+/obj/item/modular_computer/attack_self(mob/user)
 	if(enabled && screen_on)
 		ui_interact(user)
 	else if(!enabled && screen_on)
 		turn_on(user)
 
-/obj/item/modular_computer/attackby(var/obj/item/weapon/W as obj, var/mob/user as mob)
-	if(istype(W, /obj/item/weapon/card/id)) // ID Card, try to insert it.
-		var/obj/item/weapon/card/id/I = W
+/obj/item/modular_computer/attackby(obj/item/W, mob/user)
+	if(istype(W, /obj/item/card/tech_support))
+		if(!can_reset)
+			to_chat(user, SPAN_WARNING("You cannot reset this type of device."))
+			return
+		if(!enabled)
+			to_chat(user, SPAN_WARNING("You cannot reset the device if it isn't powered on."))
+			return
+		if(!hard_drive)
+			to_chat(user, SPAN_WARNING("You cannot reset a device that has no hard drive."))
+			return
+		enrolled = 0
+		hard_drive.reset_drive()
+		audible_message("[icon2html(src, viewers(get_turf(src)))] <b>[src]</b> pings, <span class='notice'>\"Enrollment status reset! Have a NanoTrasen day.\"</span>")
+	if(istype(W, /obj/item/card/id)) // ID Card, try to insert it.
+		var/obj/item/card/id/I = W
 		if(!card_slot)
-			to_chat(user, "You try to insert [I] into [src], but it does not have an ID card slot installed.")
+			to_chat(user, SPAN_WARNING("You try to insert \the [I] into \the [src], but it does not have an ID card slot installed."))
 			return
 
-		if(card_slot.insert_id(I, user))
-			update_verbs()
+		user.drop_from_inventory(I, src)
+		if(card_slot.stored_card)
+			eject_id()
+
+		card_slot.insert_id(I)
+		update_uis()
+		to_chat(user, SPAN_NOTICE("You insert \the [I] into \the [src]."))
 		return
-		
-	if(istype(W, /obj/item/weapon/pen) && stores_pen)
-		if(istype(stored_pen))
-			to_chat(user, "<span class='notice'>There is already a pen in [src].</span>")
+	if(is_type_in_list(W, card_slot?.allowed_items))
+		if(!card_slot)
+			to_chat(user, SPAN_WARNING("You try to insert \the [W] into \the [src], but it does not have an ID card slot installed."))
 			return
-		if(!user.unEquip(W, src))
+		if(card_slot.stored_item)
+			to_chat(user, SPAN_WARNING("You try to insert \the [W] into \the [src], but its storage slot is occupied."))
 			return
-		stored_pen = W
-		update_verbs()
-		to_chat(user, "<span class='notice'>You insert [W] into [src].</span>")
+
+		user.drop_from_inventory(W, src)
+		card_slot.stored_item = W
+		update_uis()
+		verbs += /obj/item/modular_computer/proc/eject_item
+		to_chat(user, SPAN_NOTICE("You insert \the [W] into \the [src]."))
 		return
-	if(istype(W, /obj/item/weapon/paper))
-		var/obj/item/weapon/paper/paper = W
-		if(scanner && paper.info)
-			scanner.do_on_attackby(user, W)
+	if(istype(W, /obj/item/paper))
+		if(!nano_printer)
 			return
-	if(istype(W, /obj/item/weapon/paper) || istype(W, /obj/item/weapon/paper_bundle))
-		if(nano_printer)
-			nano_printer.attackby(W, user)
-	if(istype(W, /obj/item/weapon/aicard))
+		nano_printer.attackby(W, user)
+	if(istype(W, /obj/item/aicard))
 		if(!ai_slot)
 			return
 		ai_slot.attackby(W, user)
-
-	if(!modifiable)
-		return ..()
-
-	if(istype(W, /obj/item/weapon/stock_parts/computer))
-		var/obj/item/weapon/stock_parts/computer/C = W
+	if(istype(W, /obj/item/computer_hardware))
+		var/obj/item/computer_hardware/C = W
 		if(C.hardware_size <= max_hardware_size)
 			try_install_component(user, C)
 		else
-			to_chat(user, "This component is too large for \the [src].")
-	if(isWrench(W))
+			to_chat(user, SPAN_WARNING("This component is too large for \the [src]."))
+	if(istype(W, /obj/item/device/paicard))
+		try_install_component(user, W)
+	if(W.iswrench())
 		var/list/components = get_all_components()
 		if(components.len)
-			to_chat(user, "Remove all components from \the [src] before disassembling it.")
+			to_chat(user, SPAN_WARNING("You have to remove all the components from \the [src] before disassembling it."))
 			return
-		new /obj/item/stack/material/steel( get_turf(src.loc), steel_sheet_cost )
-		src.visible_message("\The [src] has been disassembled by [user].")
-		qdel(src)
+		to_chat(user, SPAN_NOTICE("You begin to disassemble \the [src]."))
+		playsound(get_turf(src), W.usesound, 100, TRUE)
+		if (do_after(user, 20/W.toolspeed))
+			new /obj/item/stack/material/steel(get_turf(src), steel_sheet_cost)
+			user.visible_message(SPAN_NOTICE("\The [user] disassembles \the [src]."), SPAN_NOTICE("You disassemble \the [src]."), SPAN_NOTICE("You hear a ratcheting noise."))
+			qdel(src)
 		return
-	if(isWelder(W))
-		var/obj/item/weapon/weldingtool/WT = W
+	if(W.iswelder())
+		var/obj/item/weldingtool/WT = W
 		if(!WT.isOn())
-			to_chat(user, "\The [W] is off.")
+			to_chat(user, SPAN_WARNING("\The [W] is off."))
 			return
 
 		if(!damage)
-			to_chat(user, "\The [src] does not require repairs.")
+			to_chat(user, SPAN_WARNING("\The [src] does not require repairs."))
 			return
 
-		to_chat(user, "You begin repairing damage to \the [src]...")
-		if(WT.remove_fuel(round(damage/75)) && do_after(usr, damage/10))
+		to_chat(user, SPAN_NOTICE("You begin repairing the damage to \the [src]..."))
+		playsound(get_turf(src), 'sound/items/welder.ogg', 100, 1)
+		if(WT.remove_fuel(round(damage / 75)) && do_after(user, damage / 10))
 			damage = 0
-			to_chat(user, "You repair \the [src].")
+			to_chat(user, SPAN_NOTICE("You fully repair \the [src]."))
+		update_icon()
 		return
 
-	if(isScrewdriver(W))
+	if(W.isscrewdriver())
 		var/list/all_components = get_all_components()
 		if(!all_components.len)
-			to_chat(user, "This device doesn't have any components installed.")
+			to_chat(user, SPAN_WARNING("This device doesn't have any components installed."))
 			return
-		var/list/component_names = list()
-		for(var/obj/item/weapon/stock_parts/computer/H in all_components)
-			component_names.Add(H.name)
 
-		var/choice = input(usr, "Which component do you want to uninstall?", "Computer maintenance", null) as null|anything in component_names
-
+		var/obj/item/computer_hardware/choice = input(user, "Which component do you want to uninstall?", "Hardware Removal") as null|anything in all_components
 		if(!choice)
 			return
-
 		if(!Adjacent(usr))
 			return
 
-		var/obj/item/weapon/stock_parts/computer/H = find_hardware_by_name(choice)
-
+		var/obj/item/computer_hardware/H = find_hardware_by_name(initial(choice.name))
 		if(!H)
 			return
-
 		uninstall_component(user, H)
-
 		return
-
 	..()
 
-/obj/item/modular_computer/examine(mob/user)
-	. = ..()
-
-	if(enabled)
-		to_chat(user, "The time [stationtime2text()] is displayed in the corner of the screen.")
-
-	if(card_slot && card_slot.stored_card)
-		to_chat(user, "[card_slot.stored_card] is inserted into it.")
-
-/obj/item/modular_computer/MouseDrop(var/atom/over_object)
+/obj/item/modular_computer/MouseDrop(atom/over_object)
 	var/mob/M = usr
-	if(!istype(over_object, /obj/screen) && CanMouseDrop(M))
+	if(use_check_and_message(M))
+		return
+	if(istype(over_object, /obj/machinery/power/apc) && tesla_link)
+		return over_object.attackby(src, M)
+	if(!istype(over_object, /obj/screen) && !(over_object == src))
 		return attack_self(M)
 
-/obj/item/modular_computer/afterattack(atom/target, mob/user, proximity)
-	. = ..()
-	if(scanner)
-		scanner.do_on_afterattack(user, target, proximity)
-
-/obj/item/modular_computer/CtrlAltClick(mob/user)
-	if(!CanPhysicallyInteract(user))
-		return 0
-	var/datum/extension/interactive/ntos/os = get_extension(src, /datum/extension/interactive/ntos)
-	if(os)
-		os.open_terminal(user)
-		return 1
-
-/obj/item/modular_computer/CouldUseTopic(var/mob/user)
-	..()
-	if(LAZYLEN(interact_sounds) && CanPhysicallyInteract(user))
-		playsound(src, pick(interact_sounds), interact_sound_volume)
+/obj/item/modular_computer/GetID()
+	if(card_slot)
+		return card_slot.stored_card

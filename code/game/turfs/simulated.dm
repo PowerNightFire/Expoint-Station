@@ -1,41 +1,51 @@
 /turf/simulated
 	name = "station"
-	var/wet = 0
+	var/wet_type = 0
+	var/wet_amount = 0
 	var/image/wet_overlay = null
 
-	//Mining resources (for the large drills).
-	var/has_resources
-	var/list/resources
-
 	var/thermite = 0
-	initial_gas = list(GAS_OXYGEN = MOLES_O2STANDARD, GAS_NITROGEN = MOLES_N2STANDARD)
+	oxygen = MOLES_O2STANDARD
+	nitrogen = MOLES_N2STANDARD
 	var/to_be_destroyed = 0 //Used for fire, if a melting temperature was reached, it will be destroyed
 	var/max_fire_temperature_sustained = 0 //The max temperature of the fire which it was subjected to
 	var/dirt = 0
 
-	var/timer_id
+	var/unwet_timer	// Used to keep track of the unwet timer & delete it on turf change so we don't runtime if the new turf is not simulated.
 
-// This is not great.
-/turf/simulated/proc/wet_floor(var/wet_val = 1, var/overwrite = FALSE)
-	if(wet_val < wet && !overwrite)
-		return
+	roof_type = /turf/simulated/floor/airless/ceiling
 
-	if(!wet)
-		wet = wet_val
+/turf/simulated/proc/wet_floor(var/apply_type = WET_TYPE_WATER, var/amount = 1)
+
+	//Wet type:
+	//WET_TYPE_WATER = water
+	//WET_TYPE_LUBE = lube
+	//WET_TYPE_ICE = ice
+
+	if(!wet_type)
+		wet_type = apply_type
+	else if(apply_type != wet_type)
+		if(apply_type == WET_TYPE_WATER && wet_type == WET_TYPE_LUBE)
+			wet_type = WET_TYPE_WATER
+		else if(apply_type == WET_TYPE_ICE && (wet_type == WET_TYPE_WATER || wet_type == WET_TYPE_LUBE))
+			wet_type = apply_type
+
+	if(wet_amount <= 0)
+		wet_amount = 0 //Just in case
+
+	if(!wet_overlay)
 		wet_overlay = image('icons/effects/water.dmi',src,"wet_floor")
-		overlays += wet_overlay
+		add_overlay(wet_overlay, TRUE)
 
-	timer_id = addtimer(CALLBACK(src,/turf/simulated/proc/unwet_floor),8 SECONDS, TIMER_STOPPABLE|TIMER_UNIQUE|TIMER_NO_HASH_WAIT|TIMER_OVERRIDE)
+	wet_amount += amount
 
-/turf/simulated/proc/unwet_floor(var/check_very_wet = TRUE)
-	if(check_very_wet && wet >= 2)
-		wet--
-		timer_id = addtimer(CALLBACK(src,/turf/simulated/proc/unwet_floor), 8 SECONDS, TIMER_STOPPABLE|TIMER_UNIQUE|TIMER_NO_HASH_WAIT|TIMER_OVERRIDE)
-		return
+	unwet_timer = addtimer(CALLBACK(src, .proc/unwet_floor), 120 SECONDS, TIMER_UNIQUE | TIMER_OVERRIDE | TIMER_STOPPABLE)
 
-	wet = 0
+/turf/simulated/proc/unwet_floor()
+	wet_amount = 0
+	wet_type = 0
 	if(wet_overlay)
-		overlays -= wet_overlay
+		cut_overlay(wet_overlay, TRUE)
 		wet_overlay = null
 
 /turf/simulated/clean_blood()
@@ -43,94 +53,67 @@
 		B.clean_blood()
 	..()
 
-/turf/simulated/New()
-	..()
-	if(istype(loc, /area/chapel))
-		holy = 1
-	levelupdate()
+/turf/simulated/Initialize(mapload)
+	if (mapload)
+		if(istype(loc, /area/chapel))
+			holy = 1
 
-/turf/simulated/proc/AddTracks(var/typepath,var/bloodDNA,var/comingdir,var/goingdir,var/bloodcolor=COLOR_BLOOD_HUMAN)
-	var/obj/effect/decal/cleanable/blood/tracks/tracks = locate(typepath) in src
-	if(!tracks)
-		tracks = new typepath(src)
-	tracks.AddTracks(bloodDNA,comingdir,goingdir,bloodcolor)
+	. = ..()
+	levelupdate(mapload)
+	if (!mapload)
+		updateVisibility(src)
 
 /turf/simulated/proc/update_dirt()
-	dirt = min(dirt+0.5, 101)
+	dirt = min(dirt+1, 101)
 	var/obj/effect/decal/cleanable/dirt/dirtoverlay = locate(/obj/effect/decal/cleanable/dirt, src)
 	if (dirt > 50)
 		if (!dirtoverlay)
 			dirtoverlay = new/obj/effect/decal/cleanable/dirt(src)
 		dirtoverlay.alpha = min((dirt - 50) * 5, 255)
 
-/turf/simulated/remove_cleanables()
-	dirt = 0
-	. = ..()
-
 /turf/simulated/Entered(atom/A, atom/OL)
-	. = ..()
-	if (istype(A,/mob/living))
+	if(movement_disabled && usr.ckey != movement_disabled_exception)
+		to_chat(usr, SPAN_WARNING("Movement is admin-disabled.")) //This is to identify lag problems)
+		return
+
+	if(istype(A,/mob/living))
 		var/mob/living/M = A
-
-		// Dirt overlays.
-		update_dirt()
-
-		if(istype(M, /mob/living/carbon/human))
-			var/mob/living/carbon/human/H = M
-			// Tracking blood
-			var/list/bloodDNA = null
-			var/bloodcolor=""
-			if(H.shoes)
-				var/obj/item/clothing/shoes/S = H.shoes
-				if(istype(S))
-					S.handle_movement(src, MOVING_QUICKLY(H))
-					if(S.track_blood && S.blood_DNA)
-						bloodDNA = S.blood_DNA
-						bloodcolor = S.blood_color
-						S.track_blood--
-			else
-				if(H.track_blood && H.feet_blood_DNA)
-					bloodDNA = H.feet_blood_DNA
-					bloodcolor = H.feet_blood_color
-					H.track_blood--
-
-			if (bloodDNA && H.species.get_move_trail(H))
-				src.AddTracks(H.species.get_move_trail(H),bloodDNA,H.dir,0,bloodcolor) // Coming
-				var/turf/simulated/from = get_step(H,reverse_direction(H.dir))
-				if(istype(from) && from)
-					from.AddTracks(H.species.get_move_trail(H),bloodDNA,0,H.dir,bloodcolor) // Going
-
-				bloodDNA = null
-
-		if(M.lying)
-			return
-
-		if(src.wet)
-
-			if(M.buckled || (MOVING_DELIBERATELY(M) && prob(min(100, 100/(wet/10))) ) )
+		if(src.wet_type && src.wet_amount)
+			if(M.buckled || (src.wet_type == 1 && M.m_intent == "walk"))
 				return
 
-			// skillcheck for slipping
-			if(!prob(min(100, M.skill_fail_chance(SKILL_HAULING, 100, SKILL_MAX+1)/(3/wet))))
-				return
-
+			//Water
 			var/slip_dist = 1
 			var/slip_stun = 6
 			var/floor_type = "wet"
 
-			if(2 <= src.wet) // Lube
-				floor_type = "slippery"
-				slip_dist = 4
-				slip_stun = 10
+			switch(src.wet_type)
+				if(WET_TYPE_LUBE) // Lube
+					floor_type = "slippery"
+					slip_dist = 4
+					slip_stun = 10
+				if(WET_TYPE_ICE) // Ice
+					floor_type = "icy"
+					slip_stun = 4
 
-			if(M.slip("the [floor_type] floor", slip_stun))
-				for(var/i = 1 to slip_dist)
-					step(M, M.dir)
+			if(M.slip("the [floor_type] floor",slip_stun) && slip_dist)
+				for (var/i in 1 to slip_dist)
 					sleep(1)
-			else
-				M.inertia_dir = 0
-		else
-			M.inertia_dir = 0
+					step(M, M.dir)
+
+		if(M.lying)
+			return ..()
+
+		// Ugly hack :c Should never have multiple plants in the same tile.
+		var/obj/effect/plant/plant = locate() in contents
+		if(plant) plant.trodden_on(M)
+
+		// Dirt overlays.
+		update_dirt()
+
+		M.inertia_dir = 0
+
+	..()
 
 //returns 1 if made bloody, returns 0 otherwise
 /turf/simulated/add_blood(mob/living/carbon/human/M as mob)
@@ -156,17 +139,18 @@
 	else if( istype(M, /mob/living/silicon/robot ))
 		new /obj/effect/decal/cleanable/blood/oil(src)
 
-/turf/simulated/proc/can_build_cable(var/mob/user)
-	return 0
+/turf/simulated/Destroy()
+	if (zone)
+		// Try to remove it gracefully first.
+		if (can_safely_remove_from_zone())
+			c_copy_air()
+			zone.remove(src)
+		else	// Can't remove it safely, just rebuild the entire thing.
+			zone.rebuild()
 
-/turf/simulated/attackby(var/obj/item/thing, var/mob/user)
-	if(isCoil(thing) && can_build_cable(user))
-		var/obj/item/stack/cable_coil/coil = thing
-		coil.turf_place(src, user)
-		return
+	// Letting this timer continue to exist can cause runtimes, so we delete it.
+	if (unwet_timer)
+		// deltimer will no-op if the timer is already deleted, so we don't need to check the timer still exists.
+		deltimer(unwet_timer)
+
 	return ..()
-
-/turf/simulated/Initialize()
-	if(GAME_STATE >= RUNLEVEL_GAME)
-		fluid_update()
-	. = ..()

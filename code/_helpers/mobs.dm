@@ -1,67 +1,97 @@
 /atom/movable/proc/get_mob()
 	return
 
+/obj/machinery/bot/mulebot/get_mob()
+	if(load && istype(load,/mob/living))
+		return load
+
 /obj/vehicle/train/get_mob()
 	return buckled_mob
 
 /mob/get_mob()
 	return src
 
-/mob/living/bot/mulebot/get_mob()
-	if(load && istype(load, /mob/living))
-		return list(src, load)
-	return src
-
-//helper for inverting armor blocked values into a multiplier
-#define blocked_mult(blocked) max(1 - (blocked/100), 0)
-
 /proc/mobs_in_view(var/range, var/source)
-	var/list/mobs = list()
+	. = list()
 	for(var/atom/movable/AM in view(range, source))
-		var/M = AM.get_mob()
-		if(M)
-			mobs += M
+		if (ismob(AM))
+			. += AM
+			continue
 
-	return mobs
+		if (!AM.can_hold_mob)
+			continue
+
+		. += AM.get_mob()
 
 proc/random_hair_style(gender, species = SPECIES_HUMAN)
 	var/h_style = "Bald"
 
-	var/datum/species/mob_species = all_species[species]
-	var/list/valid_hairstyles = mob_species.get_hair_styles()
+	var/list/valid_hairstyles = list()
+	for(var/hairstyle in hair_styles_list)
+		var/datum/sprite_accessory/S = hair_styles_list[hairstyle]
+		if(gender == MALE && S.gender == FEMALE)
+			continue
+		if(gender == FEMALE && S.gender == MALE)
+			continue
+		if( !(species in S.species_allowed))
+			continue
+		valid_hairstyles[hairstyle] = hair_styles_list[hairstyle]
+
 	if(valid_hairstyles.len)
 		h_style = pick(valid_hairstyles)
 
 	return h_style
 
-proc/random_facial_hair_style(gender, var/species = SPECIES_HUMAN)
+proc/random_facial_hair_style(gender, species = SPECIES_HUMAN)
 	var/f_style = "Shaved"
-	var/datum/species/mob_species = all_species[species]
-	var/list/valid_facialhairstyles = mob_species.get_facial_hair_styles(gender)
+
+	var/list/valid_facialhairstyles = list()
+	for(var/facialhairstyle in facial_hair_styles_list)
+		var/datum/sprite_accessory/S = facial_hair_styles_list[facialhairstyle]
+		if(gender == MALE && S.gender == FEMALE)
+			continue
+		if(gender == FEMALE && S.gender == MALE)
+			continue
+		if( !(species in S.species_allowed))
+			continue
+
+		valid_facialhairstyles[facialhairstyle] = facial_hair_styles_list[facialhairstyle]
+
 	if(valid_facialhairstyles.len)
 		f_style = pick(valid_facialhairstyles)
+
 		return f_style
 
-proc/random_name(gender, species = SPECIES_HUMAN)
+proc/sanitize_name(name, species = SPECIES_HUMAN)
+	var/datum/species/current_species
 	if(species)
-		var/datum/species/current_species = all_species[species]
-		if(current_species)
-			var/decl/cultural_info/current_culture = SSculture.get_culture(current_species.default_cultural_info[TAG_CULTURE])
-			if(current_culture)
-				return current_culture.get_random_name(gender)
-	return capitalize(pick(gender == FEMALE ? GLOB.first_names_female : GLOB.first_names_male)) + " " + capitalize(pick(GLOB.last_names))
+		current_species = all_species[species]
 
-proc/random_skin_tone(var/datum/species/current_species)
-	var/species_tone = current_species ? 35 - current_species.max_skin_tone() : -185
+	return current_species ? current_species.sanitize_name(name) : sanitizeName(name)
+
+proc/random_name(gender, species = SPECIES_HUMAN)
+
+	var/datum/species/current_species
+	if(species)
+		current_species = all_species[species]
+
+	if(!current_species || current_species.name_language == null)
+		if(gender==FEMALE)
+			return capitalize(pick(first_names_female)) + " " + capitalize(pick(last_names))
+		else
+			return capitalize(pick(first_names_male)) + " " + capitalize(pick(last_names))
+	else
+		return current_species.get_random_name(gender)
+
+proc/random_skin_tone()
 	switch(pick(60;"caucasian", 15;"afroamerican", 10;"african", 10;"latino", 5;"albino"))
 		if("caucasian")		. = -10
 		if("afroamerican")	. = -115
 		if("african")		. = -165
 		if("latino")		. = -55
 		if("albino")		. = 34
-		else				. = rand(species_tone,34)
-
-	return min(max(. + rand(-25, 25), species_tone), 34)
+		else				. = rand(-185,34)
+	return min(max( .+rand(-25, 25), -185),34)
 
 proc/skintone2racedescription(tone)
 	switch (tone)
@@ -88,122 +118,63 @@ proc/age2agedescription(age)
 		if(70 to INFINITY)	return "elderly"
 		else				return "unknown"
 
-/proc/RoundHealth(health)
-	var/list/icon_states = icon_states('icons/mob/hud_med.dmi')
-	for(var/icon_state in icon_states)
-		if(health >= text2num(icon_state))
-			return icon_state
-	return icon_states[icon_states.len] // If we had no match, return the last element
+proc/RoundHealth(health)
+	switch(health)
+		if(100 to INFINITY)
+			return "health100"
+		if(90 to 100)
+			return "health95"
+		if(70 to 90)
+			return "health80"
+		if(50 to 70)
+			return "health60"
+		if(30 to 50)
+			return "health40"
+		if(18 to 30)
+			return "health25"
+		if(5 to 18)
+			return "health10"
+		if(1 to 5)
+			return "health1"
+		if(-99 to 0)
+			return "health0"
+		else
+			return "health-100"
+
+/*
+Proc for attack log creation, because really why not
+1 argument is the actor
+2 argument is the target of action
+3 is the description of action(like punched, throwed, or any other verb)
+4 should it make adminlog note or not
+5 is the tool with which the action was made(usually item)					5 and 6 are very similar(5 have "by " before it, that it) and are separated just to keep things in a bit more in order
+6 is additional information, anything that needs to be added
+*/
+
+/proc/add_logs(mob/user, mob/target, what_done, var/admin=1, var/object=null, var/addition=null)
+	if(user && ismob(user))
+		user.attack_log += text("\[[time_stamp()]\] <span class='warning'>Has [what_done] [target ? "[target.name][(ismob(target) && target.ckey) ? "([target.ckey])" : ""]" : "NON-EXISTANT SUBJECT"][object ? " with [object]" : " "][addition]</span>")
+	if(target && ismob(target))
+		target.attack_log += text("\[[time_stamp()]\] <font color='orange'>Has been [what_done] by [user ? "[user.name][(ismob(user) && user.ckey) ? "([user.ckey])" : ""]" : "NON-EXISTANT SUBJECT"][object ? " with [object]" : " "][addition]</font>")
+	if(admin)
+		log_attack("<span class='warning'>[user ? "[user.name][(ismob(user) && user.ckey) ? "([user.ckey])" : ""]" : "NON-EXISTANT SUBJECT"] [what_done] [target ? "[target.name][(ismob(target) && target.ckey)? "([target.ckey])" : ""]" : "NON-EXISTANT SUBJECT"][object ? " with [object]" : " "][addition]</span>",ckey=key_name(user),ckey_target=key_name(target))
 
 //checks whether this item is a module of the robot it is located in.
 /proc/is_robot_module(var/obj/item/thing)
 	if(!thing)
 		return FALSE
-	if(istype(thing.loc, /mob/living/exosuit))
+	if(istype(thing.loc, /mob/living/heavy_vehicle))
 		return FALSE
 	if(!istype(thing.loc, /mob/living/silicon/robot))
 		return FALSE
-	var/mob/living/silicon/robot/R = thing.loc
-	return (thing in R.module.equipment)
 
 /proc/get_exposed_defense_zone(var/atom/movable/target)
-	return pick(BP_HEAD, BP_L_HAND, BP_R_HAND, BP_L_FOOT, BP_R_FOOT, BP_L_ARM, BP_R_ARM, BP_L_LEG, BP_R_LEG, BP_CHEST, BP_GROIN)
+	var/obj/item/grab/G = locate() in target
+	if(G && G.state >= GRAB_NECK) //works because mobs are currently not allowed to upgrade to NECK if they are grabbing two people.
+		return pick(BP_HEAD, BP_L_HAND, BP_R_HAND, BP_L_FOOT, BP_R_FOOT, BP_L_ARM, BP_R_ARM, BP_L_LEG, BP_R_LEG)
+	else
+		return pick(BP_CHEST, BP_GROIN)
 
-
-/mob/var/do_unique_user_handle = 0
-/atom/var/do_unique_target_user
-
-/proc/do_after(mob/user, delay, atom/target, do_flags = DO_DEFAULT, incapacitation_flags = INCAPACITATION_DEFAULT)
-	return !do_after_detailed(user, delay, target, do_flags, incapacitation_flags)
-
-/proc/do_after_detailed(mob/user, delay, atom/target, do_flags = DO_DEFAULT, incapacitation_flags = INCAPACITATION_DEFAULT)
-	if (!delay)
-		return FALSE
-
-	if (!user)
-		return DO_MISSING_USER
-
-	var/initial_handle
-	if (do_flags & DO_USER_UNIQUE_ACT)
-		initial_handle = sequential_id("/proc/do_after")
-		user.do_unique_user_handle = initial_handle
-
-	if (target?.do_unique_target_user)
-		return DO_TARGET_UNIQUE_ACT
-
-	if ((do_flags & DO_TARGET_UNIQUE_ACT) && target)
-		target.do_unique_target_user = user
-
-	var/atom/user_loc = do_flags & DO_USER_CAN_MOVE ? null : user.loc
-	var/user_dir = do_flags & DO_USER_CAN_TURN ? null : user.dir
-	var/user_hand = do_flags & DO_USER_SAME_HAND ? user.hand : null
-
-	var/atom/target_loc = do_flags & DO_TARGET_CAN_MOVE ? null : target?.loc
-	var/target_dir = do_flags & DO_TARGET_CAN_TURN ? null : target?.dir
-	var/target_type = target?.type
-
-	var/target_zone = do_flags & DO_USER_SAME_ZONE ? user.zone_sel.selecting : null
-
-	var/datum/progressbar/bar
-	if (do_flags & DO_SHOW_PROGRESS)
-		if (do_flags & DO_PUBLIC_PROGRESS)
-			bar = new /datum/progressbar/public(user, delay, target)
-		else
-			bar = new /datum/progressbar/private(user, delay, target)
-
-	var/start_time = world.time
-	var/end_time = start_time + delay
-
-	. = FALSE
-
-	for (var/time = world.time, time < end_time, time = world.time)
-		sleep(1)
-		if (bar)
-			bar.update(time - start_time)
-		if (QDELETED(user))
-			. = DO_MISSING_USER
-			break
-		if (target_type && QDELETED(target))
-			. = DO_MISSING_TARGET
-			break
-		if (user.incapacitated(incapacitation_flags))
-			. = DO_INCAPACITATED
-			break
-		if (user_loc && user_loc != user.loc)
-			. = DO_USER_CAN_MOVE
-			break
-		if (target_loc && target_loc != target.loc)
-			. = DO_TARGET_CAN_MOVE
-			break
-		if (user_dir && user_dir != user.dir)
-			. = DO_USER_CAN_TURN
-			break
-		if (target_dir && target_dir != target.dir)
-			. = DO_TARGET_CAN_TURN
-			break
-		if (!isnull(user_hand) && user_hand != user.hand)
-			. = DO_USER_SAME_HAND
-			break
-		if (initial_handle && initial_handle != user.do_unique_user_handle)
-			. = DO_USER_UNIQUE_ACT
-			break
-		if (target_zone && user.zone_sel.selecting != target_zone)
-			. = DO_USER_SAME_ZONE
-			break
-
-	if (bar)
-		qdel(bar)
-	if ((do_flags & DO_USER_UNIQUE_ACT) && user.do_unique_user_handle == initial_handle)
-		user.do_unique_user_handle = 0
-	if ((do_flags & DO_TARGET_UNIQUE_ACT) && target)
-		target.do_unique_target_user = null
-
-/proc/able_mobs_in_oview(var/origin)
-	var/list/mobs = list()
-	for(var/mob/living/M in oview(origin)) // Only living mobs are considered able.
-		if(!M.is_physically_disabled())
-			mobs += M
-	return mobs
 
 // Returns true if M was not already in the dead mob list
 /mob/proc/switch_from_living_to_dead_mob_list()
@@ -219,71 +190,24 @@ proc/age2agedescription(age)
 /mob/proc/add_to_living_mob_list()
 	return FALSE
 /mob/living/add_to_living_mob_list()
-	if((src in GLOB.living_mob_list_) || (src in GLOB.dead_mob_list_))
+	if((src in living_mob_list) || (src in dead_mob_list))
 		return FALSE
-	GLOB.living_mob_list_ += src
+	living_mob_list += src
 	return TRUE
 
 // Returns true if the mob was removed from the living list
 /mob/proc/remove_from_living_mob_list()
-	return GLOB.living_mob_list_.Remove(src)
+	return living_mob_list.Remove(src)
 
 // Returns true if the mob was in neither the dead or living list
 /mob/proc/add_to_dead_mob_list()
 	return FALSE
 /mob/living/add_to_dead_mob_list()
-	if((src in GLOB.living_mob_list_) || (src in GLOB.dead_mob_list_))
+	if((src in living_mob_list) || (src in dead_mob_list))
 		return FALSE
-	GLOB.dead_mob_list_ += src
+	dead_mob_list += src
 	return TRUE
 
 // Returns true if the mob was removed form the dead list
 /mob/proc/remove_from_dead_mob_list()
-	return GLOB.dead_mob_list_.Remove(src)
-
-//Find a dead mob with a brain and client.
-/proc/find_dead_player(var/find_key, var/include_observers = 0)
-	if(isnull(find_key))
-		return
-
-	var/mob/selected = null
-
-	if(include_observers)
-		for(var/mob/M in GLOB.player_list)
-			if((M.stat != DEAD) || (!M.client))
-				continue
-			if(M.ckey == find_key)
-				selected = M
-				break
-	else
-		for(var/mob/living/M in GLOB.player_list)
-			//Dead people only thanks!
-			if((M.stat != DEAD) || (!M.client))
-				continue
-			//They need a brain!
-			if(istype(M, /mob/living/carbon/human))
-				var/mob/living/carbon/human/H = M
-				if(H.should_have_organ(BP_BRAIN) && !H.has_brain())
-					continue
-			if(M.ckey == find_key)
-				selected = M
-				break
-	return selected
-
-/proc/damflags_to_strings(damflags)
-	var/list/res = list()
-	if(damflags & DAM_SHARP)
-		res += "sharp"
-	if(damflags & DAM_EDGE)
-		res += "edge"
-	if(damflags & DAM_LASER)
-		res += "laser"
-	if(damflags & DAM_BULLET)
-		res += "bullet"
-	if(damflags & DAM_EXPLODE)
-		res += "explode"
-	if(damflags & DAM_DISPERSED)
-		res += "dispersed"
-	if(damflags & DAM_BIO)
-		res += "bio"
-	return english_list(res)
+	return dead_mob_list.Remove(src)

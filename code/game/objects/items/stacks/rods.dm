@@ -1,49 +1,73 @@
-/obj/item/stack/material/rods
-	name = "rod"
+var/global/list/datum/stack_recipe/rod_recipes = list(
+	new /datum/stack_recipe("grille", /obj/structure/grille, 2, time = 10, one_per_turf = TRUE, on_floor = TRUE),
+	new /datum/stack_recipe("floor-mounted catwalk", /obj/structure/lattice/catwalk/indoor, 4, time = 10, one_per_turf = TRUE, on_floor = TRUE),
+	new /datum/stack_recipe("grate, dark", /obj/structure/lattice/catwalk/indoor/grate, 1, time = 10, one_per_turf = TRUE, on_floor = TRUE),
+	new /datum/stack_recipe("grate, light", /obj/structure/lattice/catwalk/indoor/grate/light, 1, time = 10, one_per_turf = TRUE, on_floor = TRUE),
+	new /datum/stack_recipe("mine track", /obj/structure/track, 3, time = 10, one_per_turf = TRUE, on_floor = TRUE),
+	new /datum/stack_recipe("cane", /obj/item/cane, 1, time = 6),
+	new /datum/stack_recipe("crowbar", /obj/item/crowbar, 1, time = 6),
+	new /datum/stack_recipe("screwdriver", /obj/item/screwdriver, 1, time = 12),
+	new /datum/stack_recipe("wrench", /obj/item/wrench, 1, time = 6),
+	new /datum/stack_recipe("spade", /obj/item/shovel/spade, 2, time = 12),
+	new /datum/stack_recipe("bolt", /obj/item/arrow, 1, time = 6),
+	new /datum/stack_recipe("small animal trap", /obj/item/trap/animal, 6, time = 10),
+	new /datum/stack_recipe("medium animal trap", /obj/item/trap/animal/medium, 12, time = 20)
+)
+
+/obj/item/stack/rods
+	name = "metal rod"
 	desc = "Some rods. Can be used for building, or something."
-	singular_name = "rod"
-	plural_name = "rods"
-	icon_state = "rod"
-	plural_icon_state = "rod-mult"
-	max_icon_state = "rod-max"
-	w_class = ITEM_SIZE_LARGE
-	attack_cooldown = 21
-	melee_accuracy_bonus = -20
+	desc_info = "Made from metal sheets.  You can build a grille by using it in your hand. \
+	Clicking on a floor without any tiles will reinforce the floor.  You can make reinforced glass by combining rods and normal glass sheets."
+	singular_name = "metal rod"
+	icon_state = "rods"
+	flags = CONDUCT
+	w_class = ITEMSIZE_NORMAL
+	force = 9.0
+	throwforce = 15.0
 	throw_speed = 5
 	throw_range = 20
-	max_amount = 100
+	drop_sound = 'sound/items/drop/metalweapon.ogg'
+	pickup_sound = 'sound/items/pickup/metalweapon.ogg'
+	matter = list(DEFAULT_WALL_MATERIAL = 937.5)
+	recyclable = TRUE
+	max_amount = 60
 	attack_verb = list("hit", "bludgeoned", "whacked")
 	lock_picking_level = 3
-	matter_multiplier = 0.5
-	material_flags = USE_MATERIAL_COLOR
-	stacktype = /obj/item/stack/material/rods
-	default_type = MATERIAL_STEEL
 
-/obj/item/stack/material/rods/ten
-	amount = 10
+/obj/item/stack/rods/full/Initialize()
+	. = ..()
+	amount = max_amount
+	update_icon()
 
-/obj/item/stack/material/rods/fifty
-	amount = 50
-
-/obj/item/stack/material/rods/cyborg
+/obj/item/stack/rods/cyborg
 	name = "metal rod synthesizer"
 	desc = "A device that makes metal rods."
 	gender = NEUTER
 	matter = null
 	uses_charge = 1
 	charge_costs = list(500)
+	stacktype = /obj/item/stack/rods
 
-/obj/item/stack/material/rods/Initialize()
-	. = ..()
+/obj/item/stack/rods/New(var/loc, var/amount=null)
+	..()
+
+	recipes = rod_recipes
 	update_icon()
-	throwforce = round(0.25*material.get_edge_damage())
-	force = round(0.5*material.get_blunt_damage())
 
-/obj/item/stack/material/rods/attackby(obj/item/W as obj, mob/user as mob)
-	if(isWelder(W))
-		var/obj/item/weapon/weldingtool/WT = W
+/obj/item/stack/rods/update_icon()
+	var/amount = get_amount()
+	if((amount <= 5) && (amount > 0))
+		icon_state = "rods-[amount]"
+	else
+		icon_state = "rods"
 
-		if(!can_use(2))
+/obj/item/stack/rods/attackby(obj/item/W as obj, mob/user as mob)
+	..()
+	if (W.iswelder())
+		var/obj/item/weldingtool/WT = W
+
+		if(get_amount() < 2)
 			to_chat(user, "<span class='warning'>You need at least two rods to do this.</span>")
 			return
 
@@ -52,7 +76,7 @@
 			new_item.add_to_stacks(usr)
 			for (var/mob/M in viewers(src))
 				M.show_message("<span class='notice'>[src] is shaped into metal by [user.name] with the weldingtool.</span>", 3, "<span class='notice'>You hear welding.</span>", 2)
-			var/obj/item/stack/material/rods/R = src
+			var/obj/item/stack/rods/R = src
 			src = null
 			var/replace = (user.get_inactive_hand()==R)
 			R.use(2)
@@ -60,21 +84,13 @@
 				user.put_in_hands(new_item)
 		return
 
-	if (istype(W, /obj/item/weapon/tape_roll))
-		var/obj/item/stack/medical/splint/ghetto/new_splint = new(user.loc)
-		new_splint.dropInto(loc)
+	if (istype(W, /obj/item/tape_roll))
+		var/obj/item/stack/medical/splint/makeshift/new_splint = new(user.loc)
 		new_splint.add_fingerprint(user)
 
 		user.visible_message("<span class='notice'>\The [user] constructs \a [new_splint] out of a [singular_name].</span>", \
 				"<span class='notice'>You use make \a [new_splint] out of a [singular_name].</span>")
-		src.use(1)
+		use(1)
 		return
 
 	..()
-
-/obj/item/stack/material/rods/attack_self(mob/user as mob)
-	src.add_fingerprint(user)
-
-	if(!istype(user.loc,/turf)) return 0
-
-	place_grille(user, user.loc, src)

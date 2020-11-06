@@ -7,35 +7,35 @@
 	var/metal_amount = 0
 	var/operating = 0
 	var/obj/item/robot_parts/being_built = null
+	use_power = 1
 	idle_power_usage = 40
 	active_power_usage = 10000
 
 /obj/machinery/robotic_fabricator/attackby(var/obj/item/O as obj, var/mob/user as mob)
-	if (istype(O, /obj/item/stack/material) && O.get_material_name() == MATERIAL_STEEL)
+	if (istype(O, /obj/item/stack/material) && O.get_material_name() == DEFAULT_WALL_MATERIAL)
 		var/obj/item/stack/M = O
 		if (src.metal_amount < 150000.0)
 			var/count = 0
-			src.overlays += "fab-load-metal"
+			add_overlay("fab-load-metal")
 			spawn(15)
 				if(M)
 					if(!M.get_amount())
 						return
-					while(metal_amount < 150000 && M.use(1))
-						src.metal_amount += O.matter[MATERIAL_STEEL] /*O:height * O:width * O:length * 100000.0*/
+					while(metal_amount < 150000 && M.amount)
+						src.metal_amount += O.matter[DEFAULT_WALL_MATERIAL] /*O:height * O:width * O:length * 100000.0*/
+						M.use(1)
 						count++
 
 					to_chat(user, "You insert [count] metal sheet\s into the fabricator.")
-					src.overlays -= "fab-load-metal"
+					cut_overlay("fab-load-metal")
 					updateDialog()
 		else
 			to_chat(user, "The robot part maker is full. Please remove metal from the robot part maker in order to insert more.")
 
-/obj/machinery/robotic_fabricator/interface_interact(mob/user)
-	interact(user)
-	return TRUE
-
-/obj/machinery/robotic_fabricator/interact(mob/user)
+/obj/machinery/robotic_fabricator/attack_hand(user as mob)
 	var/dat
+	if (..())
+		return
 
 	if (src.operating)
 		dat = {"
@@ -56,7 +56,7 @@ Please wait until completion...</TT><BR>
 <A href='?src=\ref[src];make=7'>Robot Frame (75,000 cc metal).<BR>
 "}
 
-	show_browser(user, "<HEAD><TITLE>Robotic Fabricator Control Panel</TITLE></HEAD><TT>[dat]</TT>", "window=robot_fabricator")
+	user << browse("<HEAD><TITLE>Robotic Fabricator Control Panel</TITLE></HEAD><TT>[dat]</TT>", "window=robot_fabricator")
 	onclose(user, "robot_fabricator")
 	return
 
@@ -65,6 +65,7 @@ Please wait until completion...</TT><BR>
 		return
 
 	usr.set_machine(src)
+	src.add_fingerprint(usr)
 
 	if (href_list["make"])
 		if (!src.operating)
@@ -114,22 +115,22 @@ Please wait until completion...</TT><BR>
 			if (!isnull(building))
 				if (src.metal_amount >= build_cost)
 					src.operating = 1
-					src.update_use_power(POWER_USE_ACTIVE)
+					src.update_use_power(2)
 
 					src.metal_amount = max(0, src.metal_amount - build_cost)
 
 					src.being_built = new building(src)
 
-					src.overlays += "fab-active"
+					add_overlay("fab-active")
 					src.updateUsrDialog()
 
 					spawn (build_time)
 						if (!isnull(src.being_built))
-							src.being_built.dropInto(loc)
+							src.being_built.forceMove(get_turf(src))
 							src.being_built = null
-						src.update_use_power(POWER_USE_IDLE)
+						src.update_use_power(1)
 						src.operating = 0
-						src.overlays -= "fab-active"
+						cut_overlay("fab-active")
 		return
 
 	for (var/mob/M in viewers(1, src))

@@ -1,5 +1,5 @@
 /obj/screen/psi
-	icon = 'icons/screen/psi.dmi'
+	icon = 'icons/mob/screen/psi.dmi'
 	var/mob/living/owner
 	var/hidden = TRUE
 
@@ -12,9 +12,3 @@
 	if(owner && owner.client)
 		owner.client.screen -= src
 	. = ..()
-
-/obj/screen/psi/on_update_icon()
-	if(hidden)
-		invisibility = 101
-	else
-		invisibility = 0

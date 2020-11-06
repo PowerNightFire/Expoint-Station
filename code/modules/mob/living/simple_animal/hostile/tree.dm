@@ -8,10 +8,12 @@
 	icon_gib = "pine_1"
 	speak_chance = 0
 	turns_per_move = 5
-	meat_type = /obj/item/weapon/reagent_containers/food/snacks/fish
+	meat_type = /obj/item/reagent_containers/food/snacks/fish/carpmeat
+	organ_names = list("trunk", "branches", "roots")
 	response_help = "brushes"
 	response_disarm = "pushes"
 	response_harm = "hits"
+	blood_overlay_icon = null
 	speed = -1
 	maxHealth = 250
 	health = 250
@@ -25,8 +27,14 @@
 	attack_sound = 'sound/weapons/bite.ogg'
 
 	//Space carp aren't affected by atmos.
-	min_gas = null
-	max_gas = null
+	min_oxy = 0
+	max_oxy = 0
+	min_tox = 0
+	max_tox = 0
+	min_co2 = 0
+	max_co2 = 0
+	min_n2 = 0
+	max_n2 = 0
 	minbodytemp = 0
 
 	faction = "carp"
@@ -44,7 +52,7 @@
 			L.Weaken(3)
 			L.visible_message("<span class='danger'>\the [src] knocks down \the [L]!</span>")
 
-/mob/living/simple_animal/hostile/tree/death(gibbed, deathmessage, show_dead_message)
-	..(null,"is hacked into pieces!", show_dead_message)
+/mob/living/simple_animal/hostile/tree/death()
+	..(null,"is hacked into pieces!")
 	new /obj/item/stack/material/wood(loc)
 	qdel(src)

@@ -21,7 +21,7 @@
 
 	UNSETEMPTY(latencies)
 	var/rank_count = max(1, LAZYLEN(ranks))
-	if(force || last_rating != ceil(combined_rank/rank_count))
+	if(force || last_rating != Ceiling(combined_rank/rank_count))
 		if(highest_rank <= 1)
 			if(highest_rank == 0)
 				qdel(src)
@@ -29,18 +29,16 @@
 		else
 			rebuild_power_cache = TRUE
 			sound_to(owner, 'sound/effects/psi/power_unlock.ogg')
-			rating = ceil(combined_rank/rank_count)
+			rating = Ceiling(combined_rank/rank_count)
 			cost_modifier = 1
 			if(rating > 1)
 				cost_modifier -= min(1, max(0.1, (rating-1) / 10))
 			if(!ui)
 				ui = new(owner)
 				if(owner.client)
-					owner.client.screen += ui.components
 					owner.client.screen += ui
 			else
 				if(owner.client)
-					owner.client.screen |= ui.components
 					owner.client.screen |= ui
 			if(!suppressed && owner.client)
 				for(var/thing in SSpsi.all_aura_images)
@@ -60,8 +58,6 @@
 					aura_color = "#33cc33"
 				else if(highest_faculty == PSI_ENERGISTICS)
 					aura_color = "#cccc33"
-			aura_image.pixel_x = -64 - owner.default_pixel_x
-			aura_image.pixel_y = -64 - owner.default_pixel_y
 
 	if(!announced && owner && owner.client && !QDELETED(src))
 		announced = TRUE
@@ -70,18 +66,9 @@
 		to_chat(owner, SPAN_NOTICE("<b>Shift-left-click your Psi icon</b> on the bottom right to <b>view a summary of how to use them</b>, or <b>left click</b> it to <b>suppress or unsuppress</b> your psionics. Beware: overusing your gifts can have <b>deadly consequences</b>."))
 		to_chat(owner, "<hr>")
 
-/datum/psi_complexus/Process()
-	var/update_hud
-	if(armor_cost)
-		var/value = max(1, ceil(armor_cost * cost_modifier))
-		if(value <= stamina)
-			stamina -= value
-		else
-			backblast(abs(stamina - value))
-			stamina = 0
-		update_hud = TRUE
-		armor_cost = 0
+/datum/psi_complexus/process()
 
+	var/update_hud
 	if(stun)
 		stun--
 		if(stun)
@@ -91,22 +78,16 @@
 		else
 			to_chat(owner, SPAN_NOTICE("You have recovered your mental composure."))
 			update_hud = TRUE
-	else
-		var/psi_leech = owner.do_psionics_check()
-		if(psi_leech)
-			if(stamina > 10)
-				stamina = max(0, stamina - rand(15,20))
-				to_chat(owner, SPAN_DANGER("You feel your psi-power leeched away by \the [psi_leech]..."))
-			else
-				stamina++
-		else if(stamina < max_stamina)
-			if(owner.stat == CONSCIOUS)
-				stamina = min(max_stamina, stamina + rand(1,3))
-			else if(owner.stat == UNCONSCIOUS)
-				stamina = min(max_stamina, stamina + rand(3,5))
+		return
 
-		if(!owner.nervous_system_failure() && owner.stat == CONSCIOUS && stamina && !suppressed && get_rank(PSI_REDACTION) >= PSI_RANK_OPERANT)
-			attempt_regeneration()
+	else if(stamina < max_stamina)
+		if(owner?.stat == CONSCIOUS)
+			stamina = min(max_stamina, stamina + rand(1,3))
+		else if(owner?.stat == UNCONSCIOUS)
+			stamina = min(max_stamina, stamina + rand(3,5))
+
+	if(!owner.nervous_system_failure() && owner.stat == CONSCIOUS && stamina && !suppressed && get_rank(PSI_REDACTION) >= PSI_RANK_OPERANT)
+		attempt_regeneration()
 
 	var/next_aura_size = max(0.1,((stamina/max_stamina)*min(3,rating))/5)
 	var/next_aura_alpha = round(((suppressed ? max(0,rating - 2) : rating)/5)*255)
@@ -180,7 +161,7 @@
 			if(heal_internal)
 				for(var/obj/item/organ/I in H.internal_organs)
 
-					if(BP_IS_ROBOTIC(I) || BP_IS_CRYSTAL(I))
+					if(BP_IS_ROBOTIC(I))
 						continue
 
 					if(I.damage > 0 && spend_power(heal_rate))
@@ -196,7 +177,7 @@
 					if(BP_IS_ROBOTIC(E))
 						continue
 
-					if(heal_internal && (E.status & ORGAN_BROKEN) && E.damage < (E.min_broken_damage * config.organ_health_multiplier)) // So we don't mend and autobreak.
+					if(heal_internal && (E.status & ORGAN_BROKEN) && E.damage < E.min_broken_damage) // So we don't mend and autobreak.
 						if(spend_power(heal_rate))
 							if(E.mend_fracture())
 								to_chat(H, SPAN_NOTICE("Your autoredactive faculty coaxes together the shattered bones in your [E.name]."))
@@ -226,10 +207,10 @@
 	// Heal radiation, cloneloss and poisoning.
 	if(heal_poison)
 
-		if(owner.radiation && spend_power(heal_rate))
+		if(owner.total_radiation && spend_power(heal_rate))
 			if(prob(25))
 				to_chat(owner, SPAN_NOTICE("Your autoredactive faculty repairs some of the radiation damage to your body."))
-			owner.radiation = max(0, owner.radiation - heal_rate)
+			owner.total_radiation = max(0, owner.total_radiation - heal_rate)
 			return
 
 		if(owner.getCloneLoss() && spend_power(heal_rate))
