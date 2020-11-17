@@ -1,151 +1,191 @@
 /obj/machinery/optable
-	name = "Operating Table"
+	name = "operating table"
 	desc = "Used for advanced medical procedures."
+	desc_info = "Click your target with Grab intent, then click on the table with an empty hand, to place them on it."
 	icon = 'icons/obj/surgery.dmi'
 	icon_state = "table2-idle"
-	density = 1
-	anchored = 1
-	throwpass = 1
+	var/modify_state = "table2"
+	density = TRUE
+	anchored = TRUE
+	use_power = TRUE
 	idle_power_usage = 1
 	active_power_usage = 5
-	construct_state = /decl/machine_construction/default/panel_closed
-	uncreated_component_parts = null
-	stat_immune = 0
+	component_types = list(
+			/obj/item/circuitboard/optable,
+			/obj/item/stock_parts/scanning_module = 1
+		)
 
-	var/suppressing = FALSE
 	var/mob/living/carbon/human/victim = null
-	var/strapped = 0.0
+	var/suppressing = FALSE
+
 	var/obj/machinery/computer/operating/computer = null
 
 /obj/machinery/optable/Initialize()
 	. = ..()
-	for(dir in list(NORTH,EAST,SOUTH,WEST))
+	for(dir in cardinal)
 		computer = locate(/obj/machinery/computer/operating, get_step(src, dir))
-		if (computer)
+		if(computer)
 			computer.table = src
 			break
 
-/obj/machinery/optable/examine(mob/user)
+/obj/machinery/optable/examine(var/mob/user)
 	. = ..()
 	to_chat(user, SPAN_NOTICE("The neural suppressors are switched [suppressing ? "on" : "off"]."))
 
-/obj/machinery/optable/explosion_act(severity)
-	. = ..()
-	if(. && !QDELETED(src) && (severity == 1 || prob(100 - (25 * severity))))
-		physically_destroyed(src)
-
-/obj/machinery/optable/attackby(var/obj/item/O, var/mob/user)
-	if (istype(O, /obj/item/grab))
-		var/obj/item/grab/G = O
-		if(iscarbon(G.affecting) && check_table(G.affecting))
-			take_victim(G.affecting,usr)
-			qdel(O)
+/obj/machinery/optable/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			qdel(src)
 			return
-	return ..()
+		if(2.0)
+			if(prob(50))
+				qdel(src)
+				return
+		if(3.0)
+			if(prob(25))
+				density = FALSE
+	return
 
-/obj/machinery/optable/state_transition(var/decl/machine_construction/default/new_state)
-	. = ..()
-	if(istype(new_state))
-		updateUsrDialog()
-
-/obj/machinery/optable/physical_attack_hand(var/mob/user)
-	if(MUTATION_HULK in user.mutations)
-		visible_message("<span class='danger'>\The [usr] destroys \the [src]!</span>")
-		src.set_density(0)
+/obj/machinery/optable/attack_hand(mob/user)
+	if(HULK in user.mutations)
+		visible_message(SPAN_DANGER("\The [user] destroys \the [src]!"))
+		density = FALSE
 		qdel(src)
-		return TRUE
+		return
 
 	if(!victim)
-		to_chat(user, "<span class='warning'>There is nobody on \the [src]. It would be pointless to turn the suppressor on.</span>")
+		to_chat(user, SPAN_WARNING("There is nobody on \the [src]. It would be pointless to turn the suppressor on."))
 		return TRUE
 
-	if(user != victim && !suppressing) // Skip checks if you're doing it to yourself or turning it off, this is an anti-griefing mechanic more than anything.
-		user.visible_message("<span class='warning'>\The [user] begins switching on \the [src]'s neural suppressor.</span>")
-		if(!do_after(user, 30, src) || !user || !src || user.incapacitated() || !user.Adjacent(src))
-			return TRUE
+	if(user != victim && !use_check_and_message(user)) // Skip checks if you're doing it to yourself or turning it off, this is an anti-griefing mechanic more than anything.
+		user.visible_message(SPAN_WARNING("\The [user] begins switching [suppressing ? "off" : "on"] \the [src]'s neural suppressor."))
+		if(!do_after(user, 30, src))
+			return
 		if(!victim)
-			to_chat(user, "<span class='warning'>There is nobody on \the [src]. It would be pointless to turn the suppressor on.</span>")
-			return TRUE
+			to_chat(user, SPAN_WARNING("There is nobody on \the [src]. It would be pointless to turn the suppressor on."))
 
-	suppressing = !suppressing
-	user.visible_message("<span class='notice'>\The [user] switches [suppressing ? "on" : "off"] \the [src]'s neural suppressor.</span>")
-	return TRUE
+		suppressing = !suppressing
+		user.visible_message(SPAN_NOTICE("\The [user] switches [suppressing ? "on" : "off"] \the [src]'s neural suppressor."))
+		playsound(loc, /decl/sound_category/switch_sound, 50, 1)
 
-/obj/machinery/optable/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
-	if(air_group || (height==0)) return 1
+/obj/machinery/optable/CanPass(atom/movable/mover, turf/target, height = 0, air_group = 0)
+	if(air_group || (height == 0)) 
+		return FALSE
 
-	if(istype(mover) && mover.checkpass(PASS_FLAG_TABLE))
-		return 1
-	else
-		return 0
-
+	return istype(mover) && mover.checkpass(PASSTABLE)
 
 /obj/machinery/optable/MouseDrop_T(obj/O, mob/user)
-	if ((!( istype(O, /obj/item) ) || user.get_active_hand() != O))
-		return
-	if(!user.unEquip(O))
-		return
-	if (O.loc != src.loc)
-		step(O, get_dir(O, src))
+	if(istype(O, /obj/item))
+		user.drop_from_inventory(O,get_turf(src))
 
 /obj/machinery/optable/proc/check_victim()
 	if(!victim || !victim.lying || victim.loc != loc)
 		suppressing = FALSE
 		victim = null
-		if(locate(/mob/living/carbon/human) in loc)
-			for(var/mob/living/carbon/human/H in loc)
-				if(H.lying)
-					victim = H
-					break
-	icon_state = (victim && victim.pulse()) ? "table2-active" : "table2-idle"
-	if(victim)
+		var/mob/living/carbon/human/H = locate() in loc
+		if(istype(H))
+			if(H.lying)
+				icon_state = H.pulse() ? "[modify_state]-active" : "[modify_state]-idle"
+				victim = H
+	if(victim && !victim.isSynthetic())
 		if(suppressing && victim.sleeping < 3)
 			victim.Sleeping(3 - victim.sleeping)
-		return 1
-	return 0
+			victim.willfully_sleeping = FALSE
+		return TRUE
+	icon_state = "[modify_state]-idle"
+	return FALSE
 
-/obj/machinery/optable/Process()
+/obj/machinery/optable/machinery_process()
 	check_victim()
 
 /obj/machinery/optable/proc/take_victim(mob/living/carbon/C, mob/living/carbon/user)
-	if (C == user)
-		user.visible_message("[user] climbs on \the [src].","You climb on \the [src].")
+	if(C == user)
+		user.visible_message("\The [user] climbs on \the [src].","You climb on \the [src].")
 	else
-		visible_message("<span class='notice'>\The [C] has been laid on \the [src] by [user].</span>")
-	if (C.client)
+		visible_message(SPAN_NOTICE("\The [C] has been laid on \the [src] by \the [user]."))
+	if(C.client)
 		C.client.perspective = EYE_PERSPECTIVE
 		C.client.eye = src
-	C.resting = 1
-	C.dropInto(loc)
-	src.add_fingerprint(user)
+	C.resting = TRUE
+	C.forceMove(loc)
+	add_fingerprint(user)
 	if(ishuman(C))
 		var/mob/living/carbon/human/H = C
-		src.victim = H
-		icon_state = H.pulse() ? "table2-active" : "table2-idle"
+		victim = H
+		icon_state = H.pulse() ? "[modify_state]-active" : "[modify_state]-idle"
 	else
-		icon_state = "table2-idle"
+		icon_state = "[modify_state]-idle"
 
 /obj/machinery/optable/MouseDrop_T(mob/target, mob/user)
 	var/mob/living/M = user
-	if(user.stat || user.restrained() || !iscarbon(target) || !check_table(target))
+	if(user.stat || user.restrained() || !iscarbon(target))
 		return
 	if(istype(M))
-		take_victim(target,user)
+		var/mob/living/L = target
+		var/bucklestatus = L.bucklecheck(user)
+
+		if(!bucklestatus)//We must make sure the person is unbuckled before they go in
+			return
+
+		if(L == user)
+			user.visible_message(SPAN_NOTICE("\The [user] starts climbing onto \the [src]."), SPAN_NOTICE("You start climbing onto \the [src]."), range = 3)
+		else
+			user.visible_message(SPAN_NOTICE("\The [user] starts putting [L] onto \the [src]."), SPAN_NOTICE("You start putting \the [L] onto \the [src]."), range = 3)
+		if(do_mob(user, L, 10, needhand = FALSE))
+			if(bucklestatus == 2)
+				var/obj/structure/LB = L.buckled
+				LB.user_unbuckle_mob(user)
+			take_victim(target,user)
 	else
 		return ..()
 
-/obj/machinery/optable/climb_on()
-	if(usr.stat || !ishuman(usr) || usr.restrained() || !check_table(usr))
+/obj/machinery/optable/verb/climb_on()
+	set name = "Climb On Table"
+	set category = "Object"
+	set src in oview(1)
+
+	if(usr.stat || !ishuman(usr) || usr.restrained() )
 		return
 
 	take_victim(usr,usr)
 
+/obj/machinery/optable/attackby(obj/item/W, mob/living/carbon/user)
+	if(istype(W, /obj/item/grab))
+		var/obj/item/grab/G = W
+		if(victim)
+			to_chat(usr, SPAN_NOTICE(SPAN_BOLD("\The [src] is already occupied!")))
+			return FALSE
+
+		var/mob/living/L = G.affecting
+		var/bucklestatus = L.bucklecheck(user)
+
+		if(!bucklestatus)//We must make sure the person is unbuckled before they go in
+			return
+
+		if(L == user)
+			user.visible_message(SPAN_NOTICE("\The [user] starts climbing onto \the [src]."), SPAN_NOTICE("You start climbing onto \the [src]."), range = 3)
+		else
+			user.visible_message(SPAN_NOTICE("\The [user] starts putting \the [L] onto \the [src]."), SPAN_NOTICE("You start putting \the [L] onto \the [src]."), range = 3)
+		if(do_mob(user, L, 10, needhand = FALSE))
+			if(bucklestatus == 2)
+				var/obj/structure/LB = L.buckled
+				LB.user_unbuckle_mob(user)
+			take_victim(G.affecting,usr)
+			qdel(W)
+			return
+	if(default_deconstruction_screwdriver(user, W))
+		return
+	if(default_deconstruction_crowbar(user, W))
+		return
+	if(default_part_replacement(user, W))
+		return
+
 /obj/machinery/optable/proc/check_table(mob/living/carbon/patient)
 	check_victim()
-	if(src.victim && get_turf(victim) == get_turf(src) && victim.lying)
-		to_chat(usr, "<span class='warning'>\The [src] is already occupied!</span>")
-		return 0
+	if(victim?.lying && get_turf(victim) == get_turf(src))
+		to_chat(usr, SPAN_WARNING("\The [src] is already occupied!"))
+		return FALSE
 	if(patient.buckled)
-		to_chat(usr, "<span class='notice'>Unbuckle \the [patient] first!</span>")
-		return 0
-	return 1
+		to_chat(usr, SPAN_NOTICE("Unbuckle \the [patient] first!"))
+		return FALSE
+	return TRUE

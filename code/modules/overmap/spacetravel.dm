@@ -6,41 +6,41 @@ var/list/cached_space = list()
 /obj/effect/overmap/visitable/sector/temporary
 	name = "Deep Space"
 	invisibility = 101
-	sector_flags = OVERMAP_SECTOR_IN_SPACE
+	known = 0
 
-/obj/effect/overmap/visitable/sector/temporary/Initialize(mapload, var/nx, var/ny, var/nz)
-	var/start_loc = locate(1, 1, nz) // This will be moved to the overmap in ..(), but must start on this z level for init to function.
-	forceMove(start_loc)
-	start_x = nx // This is overmap position
-	start_y = ny
+/obj/effect/overmap/visitable/sector/temporary/New(var/nx, var/ny, var/nz)
+	loc = locate(nx, ny, current_map.overmap_z)
+	x = nx
+	y = ny
+	map_z += nz
+	map_sectors["[nz]"] = src
 	testing("Temporary sector at [x],[y] was created, corresponding zlevel is [nz].")
-	. = ..()
 
 /obj/effect/overmap/visitable/sector/temporary/Destroy()
-	for(var/num in map_z)
-		map_sectors["[num]"] = null
+	map_sectors["[map_z]"] = null
 	testing("Temporary sector at [x],[y] was deleted.")
 	return ..()
 
 /obj/effect/overmap/visitable/sector/temporary/proc/can_die(var/mob/observer)
 	testing("Checking if sector at [map_z[1]] can die.")
-	for(var/mob/M in GLOB.player_list)
+	for(var/mob/M in player_list)
 		if(M != observer && (M.z in map_z))
 			testing("There are people on it.")
 			return 0
 	return 1
 
 proc/get_deepspace(x,y)
-	var/obj/effect/overmap/visitable/sector/temporary/res = locate(x,y,GLOB.using_map.overmap_z)
+	var/obj/effect/overmap/visitable/sector/temporary/res = locate(x,y,current_map.overmap_z)
 	if(istype(res))
 		return res
 	else if(cached_space.len)
 		res = cached_space[cached_space.len]
 		cached_space -= res
-		res.forceMove(locate(x, y, GLOB.using_map.overmap_z))
+		res.x = x
+		res.y = y
 		return res
 	else
-		return new /obj/effect/overmap/visitable/sector/temporary(null, x, y, GLOB.using_map.get_empty_zlevel())
+		return new /obj/effect/overmap/visitable/sector/temporary(x, y, current_map.get_empty_zlevel())
 
 /atom/movable/proc/lost_in_space()
 	for(var/atom/movable/AM in contents)
@@ -52,7 +52,7 @@ proc/get_deepspace(x,y)
 	return isnull(client)
 
 /mob/living/carbon/human/lost_in_space()
-	return isnull(client) && (!last_ckey || stat == DEAD)
+	return isnull(client) && stat == DEAD
 
 proc/overmap_spacetravel(var/turf/space/T, var/atom/movable/A)
 	if (!T || !A)
@@ -89,10 +89,10 @@ proc/overmap_spacetravel(var/turf/space/T, var/atom/movable/A)
 
 	testing("[A] spacemoving from [M] ([M.x], [M.y]).")
 
-	var/turf/map = locate(M.x,M.y,GLOB.using_map.overmap_z)
+	var/turf/map = locate(M.x,M.y,current_map.overmap_z)
 	var/obj/effect/overmap/visitable/TM
 	for(var/obj/effect/overmap/visitable/O in map)
-		if(O != M && (O.sector_flags & OVERMAP_SECTOR_IN_SPACE) && prob(50))
+		if(O != M && O.in_space && prob(50))
 			TM = O
 			break
 	if(!TM)
@@ -100,12 +100,12 @@ proc/overmap_spacetravel(var/turf/space/T, var/atom/movable/A)
 	nz = pick(TM.map_z)
 
 	var/turf/dest = locate(nx,ny,nz)
-	if(dest && !dest.density)
+	if(dest)
 		A.forceMove(dest)
-		if(isliving(A))
-			var/mob/living/L = A
-			for(var/obj/item/grab/G in L.get_active_grabs())
-				G.affecting.forceMove(dest)
+		if(ismob(A))
+			var/mob/D = A
+			if(D.pulling)
+				D.pulling.forceMove(dest)
 
 	if(istype(M, /obj/effect/overmap/visitable/sector/temporary))
 		var/obj/effect/overmap/visitable/sector/temporary/source = M

@@ -1,14 +1,23 @@
-SUBSYSTEM_DEF(ao)
+/var/datum/controller/subsystem/ao/SSocclusion
+
+/datum/controller/subsystem/ao
 	name = "Ambient Occlusion"
-	init_order = SS_INIT_MISC_LATE
+	flags = SS_FIRE_IN_LOBBY
+	init_order = SS_INIT_AO
 	wait = 1
-	runlevels = RUNLEVELS_DEFAULT | RUNLEVEL_LOBBY
-	flags = SS_NO_INIT
+	priority = SS_PRIORITY_LIGHTING
+
 	var/list/queue = list()
-	var/list/cache = list()
+
+/datum/controller/subsystem/ao/New()
+	NEW_SS_GLOBAL(SSocclusion)
 
 /datum/controller/subsystem/ao/stat_entry()
 	..("P:[queue.len]")
+
+/datum/controller/subsystem/ao/Initialize()
+	fire(FALSE, TRUE)
+	..()
 
 /datum/controller/subsystem/ao/fire(resumed = 0, no_mc_tick = FALSE)
 	var/list/curr = queue
@@ -19,8 +28,9 @@ SUBSYSTEM_DEF(ao)
 		if (!QDELETED(target))
 			if (target.ao_queued == AO_UPDATE_REBUILD)
 				var/old_n = target.ao_neighbors
+				var/old_z = target.ao_neighbors_mimic
 				target.calculate_ao_neighbors()
-				if (old_n != target.ao_neighbors)
+				if (old_n != target.ao_neighbors || old_z != target.ao_neighbors_mimic)
 					target.update_ao()
 			else
 				target.update_ao()
@@ -31,8 +41,8 @@ SUBSYSTEM_DEF(ao)
 		else if (MC_TICK_CHECK)
 			return
 
-/datum/controller/subsystem/ao/StartLoadingMap()
+/datum/controller/subsystem/ao/ExplosionStart()
 	suspend()
 
-/datum/controller/subsystem/ao/StopLoadingMap()
+/datum/controller/subsystem/ao/ExplosionEnd()
 	wake()

@@ -1,104 +1,163 @@
 /obj/structure/lattice
 	name = "lattice"
 	desc = "A lightweight support lattice."
-	icon = 'icons/obj/structures/smoothlattice.dmi'
-	icon_state = "lattice0"
-	density = 0
-	anchored = 1
-	w_class = ITEM_SIZE_NORMAL
-	layer = LATTICE_LAYER
-	color = COLOR_STEEL
-	material = /decl/material/solid/metal/steel
-	obj_flags = OBJ_FLAG_NOFALL
-	material_alteration = MAT_FLAG_ALTERATION_ALL
+	desc_info = "Add a metal floor tile to build a floor on top of the lattice.<br>\
+	Lattices can be made by applying metal rods to a space tile."
+	icon = 'icons/obj/smooth/lattice.dmi'
+	icon_state = "lattice"
+	density = FALSE
+	anchored = TRUE
+	w_class = ITEMSIZE_NORMAL
+	layer = UNDER_PIPE_LAYER //under pipes
+	var/restrict_placement = TRUE
+	smooth = SMOOTH_MORE
+	canSmoothWith = list(
+		/obj/structure/lattice,
+		/turf/simulated/wall,
+		/turf/simulated/floor,
+		/turf/simulated/mineral,
+		/turf/unsimulated/wall,
+		/turf/unsimulated/floor,
+		/obj/structure/grille,
+		/turf/unsimulated/mineral/asteroid
+	)
+	footstep_sound = /decl/sound_category/catwalk_footstep
 
 /obj/structure/lattice/Initialize()
 	. = ..()
-	if(. != INITIALIZE_HINT_QDEL)
-		DELETE_IF_DUPLICATE_OF(/obj/structure/lattice)
-		if(!istype(material))
+	if (restrict_placement)
+		if(!(istype(loc, /turf/space) || isopenturf(loc) || istype(loc, /turf/unsimulated/floor/asteroid)))
 			return INITIALIZE_HINT_QDEL
-		if(!istype(src.loc, /turf/space) && !istype(src.loc, /turf/simulated/open))
-			return INITIALIZE_HINT_QDEL
-		. = INITIALIZE_HINT_LATELOAD
+	for(var/obj/structure/lattice/LAT in loc)
+		if(LAT != src)
+			qdel(LAT)
 
-/obj/structure/lattice/LateInitialize()
-	. = ..()
-	update_neighbors()
+/obj/structure/lattice/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			qdel(src)
+		if(2.0)
+			qdel(src)
+	return
 
-/obj/structure/lattice/update_material_desc()
-	if(material)
-		desc = "A lightweight support [material.solid_name] lattice."
-	else
-		desc = "A lightweight support [material.solid_name] lattice."
-
-/obj/structure/lattice/Destroy()
-	var/turf/old_loc = get_turf(src)
-	. = ..()
-	if(istype(old_loc))
-		update_neighbors(old_loc)
-		for(var/atom/movable/AM in old_loc)
-			AM.fall(old_loc)
-
-/obj/structure/lattice/proc/update_neighbors(var/location = loc)
-	for (var/dir in GLOB.cardinal)
-		var/obj/structure/lattice/L = locate(/obj/structure/lattice, get_step(location, dir))
-		if(L)
-			L.update_icon()
-
-/obj/structure/lattice/explosion_act(severity)
-	..()
-	if(!QDELETED(src) && severity <= 2)
-		physically_destroyed()
-
-/obj/structure/lattice/proc/deconstruct(var/mob/user)
-	to_chat(user, SPAN_NOTICE("Slicing lattice joints..."))
-	new /obj/item/stack/material/rods(loc, 1, material.type)
-	qdel(src)
-
-/obj/structure/lattice/attackby(obj/item/C, mob/user)
-
+/obj/structure/lattice/attackby(obj/item/C as obj, mob/user as mob)
 	if (istype(C, /obj/item/stack/tile/floor))
 		var/turf/T = get_turf(src)
 		T.attackby(C, user) //BubbleWrap - hand this off to the underlying turf instead
 		return
-	if(isWelder(C))
+	if (C.iswelder())
 		var/obj/item/weldingtool/WT = C
 		if(WT.remove_fuel(0, user))
-			deconstruct(user)
+			to_chat(user, "<span class='notice'>Slicing lattice joints ...</span>")
+		new /obj/item/stack/rods(src.loc)
+		qdel(src)
+	if (istype(C, /obj/item/stack/rods))
+		var/obj/item/stack/rods/R = C
+		if (R.use(2))
+			to_chat(user, "<span class='notice'>Constructing catwalk ...</span>")
+			playsound(src, 'sound/weapons/genhit.ogg', 50, 1)
+			new /obj/structure/lattice/catwalk(src.loc)
+			qdel(src)
 		return
-	if(istype(C, /obj/item/gun/energy/plasmacutter))
-		var/obj/item/gun/energy/plasmacutter/cutter = C
-		if(!cutter.slice(user))
-			return
-		deconstruct(user)
-		return
-	if (istype(C, /obj/item/stack/material/rods))
 
-		var/ladder = (locate(/obj/structure/ladder) in loc)
-		if(ladder)
-			to_chat(user, SPAN_WARNING("\The [ladder] is in the way."))
-			return TRUE
+/obj/structure/lattice/catwalk
+	name = "catwalk"
+	desc = "A catwalk for easier EVA maneuvering."
+	icon = 'icons/obj/smooth/catwalk.dmi'
+	icon_state = "catwalk"
+	smooth = TRUE
+	canSmoothWith = null
+	var/return_amount = 3
 
-		var/obj/item/stack/material/rods/R = C
-		if(locate(/obj/structure/catwalk) in get_turf(src))
-			to_chat(user, SPAN_WARNING("There is already a catwalk here."))
-			return
-		else if(R.use(2))
-			playsound(src, 'sound/weapons/Genhit.ogg', 50, 1)
-			new /obj/structure/catwalk(src.loc, R.material.type)
-			return
-		else
-			to_chat(user, SPAN_WARNING("You require at least two rods to complete the catwalk."))
+// Special catwalk that can be placed on regular flooring.
+/obj/structure/lattice/catwalk/indoor
+	desc = "A floor-mounted catwalk designed to protect pipes & station wiring from passing feet."
+	restrict_placement = FALSE
+	can_be_unanchored = TRUE
+	layer = 2.7	// Above wires.
 
-/obj/structure/lattice/on_update_icon()
+/obj/structure/lattice/catwalk/attackby(obj/item/C, mob/user)
+	if (C.iswelder())
+		var/obj/item/weldingtool/WT = C
+		if (do_after(user, 5/C.toolspeed, act_target = src) && WT.remove_fuel(1, user))
+			to_chat(user, "<span class='notice'>You slice apart [src].</span>")
+			playsound(src, 'sound/items/welder.ogg', 50, 1)
+			var/obj/item/stack/rods/R = new /obj/item/stack/rods(get_turf(src))
+			R.amount = return_amount
+			R.update_icon()
+			qdel(src)
+
+/obj/structure/lattice/catwalk/indoor/attackby(obj/item/C, mob/user)
+	if (C.isscrewdriver())
+		anchored = !anchored
+		to_chat(user, "<span class='notice'>You [anchored ? "" : "un"]anchor [src].</span>")
+		playsound(src, C.usesound, 50, 1)
+		queue_smooth(src)
+		queue_smooth_neighbors(src)
+	else
+		..()
+
+/obj/structure/lattice/catwalk/hoist_act(turf/dest)
+	for (var/A in loc)
+		var/atom/movable/AM = A
+		AM.forceMove(dest)
 	..()
-	var/dir_sum = 0
-	for (var/direction in GLOB.cardinal)
-		var/turf/T = get_step(src, direction)
-		if(locate(/obj/structure/lattice, T) || locate(/obj/structure/catwalk, T))
-			dir_sum += direction
-		else
-			if(!(istype(get_step(src, direction), /turf/space)) && !(istype(get_step(src, direction), /turf/simulated/open)))
-				dir_sum += direction
-	icon_state = "lattice[dir_sum]"
+
+/obj/structure/lattice/catwalk/indoor/grate
+	name = "grate"
+	desc = "A metal grate."
+	icon = 'icons/obj/grate.dmi'
+	icon_state = "grate_dark"
+	return_amount = 1
+	smooth = null
+	var/base_icon_state = "grate_dark"
+	var/damaged = FALSE
+
+/obj/structure/lattice/catwalk/indoor/grate/old
+	icon_state = "grate_dark_old"
+
+/obj/structure/lattice/catwalk/indoor/grate/damaged
+	icon_state = "grate_dark_dam0"
+	damaged = TRUE
+
+/obj/structure/lattice/catwalk/indoor/grate/damaged/Initialize()
+	.=..()
+	icon_state = "[base_icon_state]_dam[rand(0,3)]"
+
+/obj/structure/lattice/catwalk/indoor/grate/light
+	icon_state = "grate_light"
+	base_icon_state = "grate_light"
+	return_amount = 1
+
+/obj/structure/lattice/catwalk/indoor/grate/light/old
+	icon_state = "grate_light_old"
+
+/obj/structure/lattice/catwalk/indoor/grate/light/damaged
+	icon_state = "grate_light_dam0"
+	damaged = TRUE
+
+/obj/structure/lattice/catwalk/indoor/grate/light/damaged/Initialize()
+	.=..()
+	icon_state = "[base_icon_state]_dam[rand(0,3)]"
+
+/obj/structure/lattice/catwalk/indoor/grate/attackby(obj/item/C, mob/user)
+	if(C.iswelder() && damaged)
+		var/obj/item/weldingtool/WT = C
+		if(do_after(user, 5/C.toolspeed, act_target = src) && WT.remove_fuel(1, user))
+			to_chat(user, SPAN_NOTICE("You slice apart the [src] leaving nothing useful behind."))
+			playsound(src, 'sound/items/welder.ogg', 50, 1)
+			qdel(src)
+	else
+		..()
+
+/obj/structure/lattice/catwalk/indoor/grate/ex_act(severity)
+	switch(severity)
+		if(1.0)
+			qdel(src)
+		if(2.0)
+			if(!damaged)
+				icon_state = "[base_icon_state]_dam[rand(0,3)]"
+				damaged = TRUE
+			else
+				qdel(src)
+	return

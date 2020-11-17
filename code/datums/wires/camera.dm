@@ -4,14 +4,8 @@
 	random = 1
 	holder_type = /obj/machinery/camera
 	wire_count = 6
-	descriptions = list(
-		new /datum/wire_description(CAMERA_WIRE_FOCUS, "This wire runs to the camera's lens adjustment motors."),
-		new /datum/wire_description(CAMERA_WIRE_POWER, "This wire seems to be carrying a heavy current."),
-		new /datum/wire_description(CAMERA_WIRE_LIGHT, "This wire seems connected to the built-in light.", SKILL_EXPERT),
-		new /datum/wire_description(CAMERA_WIRE_ALARM, "This wire is connected to a remote signaling device of some sort.")
-	)
 
-/datum/wires/camera/GetInteractWindow(mob/user)
+/datum/wires/camera/GetInteractWindow()
 
 	. = ..()
 	var/obj/machinery/camera/C = holder
@@ -63,11 +57,14 @@ var/const/CAMERA_WIRE_NOTHING2 = 32
 			var/new_range = (C.view_range == initial(C.view_range) ? C.short_range : initial(C.view_range))
 			C.setViewRange(new_range)
 
+		if(CAMERA_WIRE_POWER)
+			C.kick_viewers() // Kicks anyone watching the camera
+
 		if(CAMERA_WIRE_LIGHT)
 			C.light_disabled = !C.light_disabled
 
 		if(CAMERA_WIRE_ALARM)
-			C.visible_message("[html_icon(C)] *beep*", "[html_icon(C)] *beep*")
+			C.visible_message("[icon2html(C, viewers(get_turf(C)))] *beep*", "[icon2html(C, viewers(get_turf(C)))] *beep*")
 	return
 
 /datum/wires/camera/proc/CanDeconstruct()

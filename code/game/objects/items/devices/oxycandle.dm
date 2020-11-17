@@ -1,56 +1,48 @@
-/obj/item/oxycandle
+/obj/item/device/oxycandle
 	name = "oxygen candle"
-	desc = "A steel tube with the words 'OXYGEN - PULL CORD TO IGNITE' stamped on the side.\nA small label reads <span class='warning'>'WARNING: NOT FOR LIGHTING USE. WILL IGNITE FLAMMABLE GASSES'</span>"
-	icon = 'icons/obj/items/oxygen_candle.dmi'
+	desc = "A steel tube with the words 'OXYGEN - PULL CORD TO IGNITE' stamped on the side. A small label warns against using the device underwater"
+	icon = 'icons/obj/device.dmi'
 	icon_state = "oxycandle"
 	item_state = "oxycandle"
-	w_class = ITEM_SIZE_SMALL // Should fit into internal's box or maybe pocket
-	material = /decl/material/solid/metal/steel
-	light_color = "#e58775"
-	light_outer_range = 2
-	light_max_bright = 1
-	action_button_name = null
-
+	w_class = ITEMSIZE_SMALL // Should fit into internal's box or maybe pocket
 	var/target_pressure = ONE_ATMOSPHERE
 	var/datum/gas_mixture/air_contents = null
-	var/volume = 4600
-	var/on = 0
-	var/activation_sound = 'sound/effects/flare.ogg'
-	var/brightness_on = 1 // Moderate-low bright.
+	var/volume = 5600 // One tile has 2500 volume of air, so two tiles plus a bit extra
+	var/on = FALSE
+	var/activation_sound = 'sound/items/flare.ogg'
+	light_color = LIGHT_COLOR_FLARE
+	uv_intensity = 50
+	var/brightness_on = 2 // Moderate bright.
+	light_power = 2
+	action_button_name = null
 
-/obj/item/oxycandle/Initialize()
-	. = ..()
-	update_icon()
-
-/obj/item/oxycandle/afterattack(var/obj/O, var/mob/user, var/proximity)
-	if(proximity && istype(O) && on)
-		O.HandleObjectHeating(src, user, 500)
-	..()
-
-/obj/item/oxycandle/attack_self(mob/user)
+/obj/item/device/oxycandle/attack_self(mob/user)
 	if(!on)
 		to_chat(user, "<span class='notice'>You pull the cord and [src] ignites.</span>")
-		on = 1
+		light_range = brightness_on
+		on = TRUE
 		update_icon()
 		playsound(src.loc, activation_sound, 75, 1)
 		air_contents = new /datum/gas_mixture()
 		air_contents.volume = 200 //liters
 		air_contents.temperature = T20C
-		var/list/air_mix = list(/decl/material/gas/oxygen = 1 * (target_pressure * air_contents.volume) / (R_IDEAL_GAS_EQUATION * air_contents.temperature))
-		air_contents.adjust_multi(/decl/material/gas/oxygen, air_mix[/decl/material/gas/oxygen])
+		var/list/air_mix = list(GAS_OXYGEN = O2STANDARD * (target_pressure * air_contents.volume) / (R_IDEAL_GAS_EQUATION * air_contents.temperature),
+		 						GAS_NITROGEN = N2STANDARD *  (target_pressure * air_contents.volume) / (R_IDEAL_GAS_EQUATION * air_contents.temperature))
+		air_contents.adjust_multi(GAS_OXYGEN, air_mix[GAS_OXYGEN], GAS_NITROGEN, air_mix[GAS_NITROGEN])
 		START_PROCESSING(SSprocessing, src)
 
-// Process of Oxygen candles releasing air. Makes 200 volume of oxygen
-/obj/item/oxycandle/Process()
+// Process of Oxygen candles releasing air. Makes 200 volume of oxygen and nitrogen mix
+/obj/item/device/oxycandle/process()
 	if(!loc)
 		return
 	var/turf/pos = get_turf(src)
-	if(volume <= 0 || !pos || (pos.turf_flags & TURF_IS_WET)) //Now uses turf flags instead of whatever aurora did
+	if(volume <= 0 || istype(pos, /turf/simulated/floor/beach/water) || istype(pos, /turf/unsimulated/beach/water))
 		STOP_PROCESSING(SSprocessing, src)
-		on = 2
-		update_icon()
+		icon_state = "oxycandle_burnt"
+		item_state = icon_state
+		set_light(0)
 		update_held_icon()
-		SetName("burnt oxygen candle")
+		name = "burnt oxygen candle"
 		desc += "This tube has exhausted its chemicals."
 		return
 	if(pos)
@@ -65,25 +57,22 @@
 		return
 	environment.merge(removed)
 	volume -= 200
-	var/list/air_mix = list(/decl/material/gas/oxygen = 1 * (target_pressure * air_contents.volume) / (R_IDEAL_GAS_EQUATION * air_contents.temperature))
-	air_contents.adjust_multi(/decl/material/gas/oxygen, air_mix[/decl/material/gas/oxygen])
+	var/list/air_mix = list(GAS_OXYGEN = O2STANDARD * (target_pressure * air_contents.volume) / (R_IDEAL_GAS_EQUATION * air_contents.temperature),
+	 						GAS_NITROGEN = N2STANDARD *  (target_pressure * air_contents.volume) / (R_IDEAL_GAS_EQUATION * air_contents.temperature))
+	air_contents.adjust_multi(GAS_OXYGEN, air_mix[GAS_OXYGEN], GAS_NITROGEN, air_mix[GAS_NITROGEN])
 
-/obj/item/oxycandle/on_update_icon()
-	if(on == 1)
+/obj/item/device/oxycandle/update_icon()
+	if(on)
 		icon_state = "oxycandle_on"
 		item_state = icon_state
 		set_light(brightness_on)
-	else if(on == 2)
-		icon_state = "oxycandle_burnt"
-		item_state = icon_state
-		set_light(0)
 	else
 		icon_state = "oxycandle"
 		item_state = icon_state
 		set_light(0)
 	update_held_icon()
 
-/obj/item/oxycandle/Destroy()
+/obj/item/device/oxycandle/Destroy()
 	QDEL_NULL(air_contents)
 	STOP_PROCESSING(SSprocessing, src)
 	. = ..()

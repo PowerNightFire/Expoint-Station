@@ -3,9 +3,11 @@
 #define SETUP_ERROR 3		// Something bad happened, and it's important so we won't continue setup.
 #define SETUP_DELAYED 4		// Wait for other things first.
 
+
 #define ENERGY_NITROGEN 115			// Roughly 8 emitter shots.
 #define ENERGY_CARBONDIOXIDE 150	// Roughly 10 emitter shots.
-#define ENERGY_HYDROGEN 300			// Roughly 20 emitter shots.
+#define ENERGY_PHORON 300			// Roughly 20 emitter shots. Phoron can take more but this is enough to max out both SMESs anyway.
+
 
 /datum/admins/proc/setup_supermatter()
 	set category = "Debug"
@@ -18,7 +20,7 @@
 		to_chat(usr, "Error: you are not an admin!")
 		return
 
-	var/response = input(usr, "Are you sure? This will start up the engine with selected gas as coolant.", "Engine setup") as null|anything in list("N2", "CO2", "H2", "Abort")
+	var/response = input(usr, "Are you sure? This will start up the engine with selected gas as coolant.", "Engine setup") as null|anything in list("N2", "CO2", "PH", "Abort")
 	if(!response || response == "Abort")
 		return
 
@@ -38,8 +40,8 @@
 			if("CO2")
 				C.canister_type = /obj/machinery/portable_atmospherics/canister/carbon_dioxide/engine_setup/
 				continue
-			if("H2")
-				C.canister_type = /obj/machinery/portable_atmospherics/canister/hydrogen/engine_setup/
+			if("PH")
+				C.canister_type = /obj/machinery/portable_atmospherics/canister/phoron/engine_setup/
 				continue
 
 	for(var/obj/effect/engine_setup/core/C in world)
@@ -50,8 +52,8 @@
 			if("CO2")
 				C.energy_setting = ENERGY_CARBONDIOXIDE
 				continue
-			if("H2")
-				C.energy_setting = ENERGY_HYDROGEN
+			if("PH")
+				C.energy_setting = ENERGY_PHORON
 				continue
 
 	for(var/obj/effect/engine_setup/filter/F in world)
@@ -103,8 +105,8 @@
 	invisibility = 101
 	anchored = 1
 	density = 0
-	icon = 'icons/mob/screen1.dmi'
-	icon_state = "x3"
+	icon = 'icons/mob/screen/generic.dmi'
+	icon_state = "x2"
 
 /obj/effect/engine_setup/proc/activate(var/last = 0)
 	return 1
@@ -122,7 +124,7 @@
 		log_and_message_admins("## WARNING: Unable to locate pump at [x] [y] [z]!")
 		return SETUP_WARNING
 	P.target_pressure = P.max_pressure_setting
-	P.update_use_power(POWER_USE_IDLE)
+	P.use_power = 1
 	P.update_icon()
 	return SETUP_OK
 
@@ -204,7 +206,7 @@
 
 
 
-// Sets up filters. This assumes filters are set to filter out CO2 back to the core loop by default!
+// Sets up filters. This assumes filters are set to filter out N2 back to the core loop by default!
 /obj/effect/engine_setup/filter/
 	name = "Omni Filter Marker"
 	var/coolant = null
@@ -219,23 +221,23 @@
 		log_and_message_admins("## WARNING: No coolant type set at [x] [y] [z]!")
 		return SETUP_WARNING
 
-	// Non-co2 coolant, adjust the filter's config first.
-	if(coolant != "CO2")
+	// Non-nitrogen coolant, adjust the filter's config first.
+	if(coolant != "N2")
 		for(var/datum/omni_port/P in F.ports)
-			if(P.mode != ATM_CO2)
+			if(P.mode != ATM_N2)
 				continue
-			else if(coolant == "N2")
-				P.mode = ATM_N2
+			if(coolant == "PH")
+				P.mode = ATM_P
 				break
-			else if(coolant == "H2")
-				P.mode = ATM_H2
+			else if(coolant == "CO2")
+				P.mode = ATM_CO2
 				break
 			else
-				log_and_message_admins("## WARNING: Inapropriate filter coolant type set at [x] [y] [z]!")
+				log_and_message_admins("## WARNING: Inappropriate filter coolant type set at [x] [y] [z]!")
 				return SETUP_WARNING
 		F.rebuild_filtering_list()
 
-	F.update_use_power(POWER_USE_IDLE)
+	F.use_power = 1
 	F.update_icon()
 	return SETUP_OK
 
@@ -246,4 +248,4 @@
 #undef SETUP_DELAYED
 #undef ENERGY_NITROGEN
 #undef ENERGY_CARBONDIOXIDE
-#undef ENERGY_HYDROGEN
+#undef ENERGY_PHORON

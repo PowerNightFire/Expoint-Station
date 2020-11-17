@@ -6,36 +6,42 @@
 		mloc = mloc.loc
 	return mloc
 
+/proc/iswall(turf/T)
+	return (istype(T, /turf/simulated/wall) || istype(T, /turf/unsimulated/wall))
+
+/proc/isfloor(turf/T)
+	return (istype(T, /turf/simulated/floor) || istype(T, /turf/unsimulated/floor))
+
+
+//Edit by Nanako
+//This proc is used in only two places, ive changed it to make more sense
+//The old behaviour returned zero if there were any simulated atoms at all, even pipes and wires
+//Now it just finds if the tile is blocked by anything solid.
 /proc/turf_clear(turf/T)
+	if (T.density)
+		return 0
 	for(var/atom/A in T)
-		if(A.simulated)
+		if(A.density)
 			return 0
 	return 1
 
-// Picks a turf without a mob from the given list of turfs, if one exists.
-// If no such turf exists, picks any random turf from the given list of turfs.
-/proc/pick_mobless_turf_if_exists(var/list/start_turfs)
-	if(!start_turfs.len)
-		return null
-
-	var/list/available_turfs = list()
-	for(var/start_turf in start_turfs)
-		var/mob/M = locate() in start_turf
-		if(!M)
-			available_turfs += start_turf
-	if(!available_turfs.len)
-		available_turfs = start_turfs
-	return pick(available_turfs)
-
-/proc/get_random_turf_in_range(var/atom/origin, var/outer_range, var/inner_range)
+/proc/get_random_turf_in_range(var/atom/origin, var/outer_range, var/inner_range, var/check_density, var/check_indoors)
 	origin = get_turf(origin)
 	if(!origin)
 		return
 	var/list/turfs = list()
-	for(var/turf/T in orange(origin, outer_range))
-		if(!(T.z in GLOB.using_map.sealed_levels)) // Picking a turf outside the map edge isn't recommended
-			if(T.x >= world.maxx-TRANSITIONEDGE || T.x <= TRANSITIONEDGE)	continue
-			if(T.y >= world.maxy-TRANSITIONEDGE || T.y <= TRANSITIONEDGE)	continue
+	for(var/turf/T in orange(outer_range, origin))
+		if(!(T.z in current_map.sealed_levels)) // Picking a turf outside the map edge isn't recommended
+			if(T.x >= world.maxx-TRANSITIONEDGE || T.x <= TRANSITIONEDGE)
+				continue
+			if(T.y >= world.maxy-TRANSITIONEDGE || T.y <= TRANSITIONEDGE)
+				continue
+			if(check_density && turf_contains_dense_objects(T))
+				continue
+			if(check_indoors)
+				var/area/A = get_area(T)
+				if(A.station_area)
+					continue
 		if(!inner_range || get_dist(origin, T) >= inner_range)
 			turfs += T
 	if(turfs.len)
@@ -54,21 +60,44 @@
 	tY = max(1, min(origin.y + 7 - tY, world.maxy))
 	return locate(tX, tY, tZ)
 
-/*
-	Predicate helpers
-*/
+// This proc will check if a neighboring tile in the stated direction "dir" is dense or not
+// Will return 1 if it is dense and zero if not
+/proc/check_neighbor_density(turf/T, var/dir)
+	if (!T.loc)
+		CRASH("The Turf has no location!")
+	switch (dir)
+		if (NORTH)
+			return !turf_clear(get_turf(locate(T.x, T.y+1, T.z)))
+		if (NORTHEAST)
+			return !turf_clear(get_turf(locate(T.x+1, T.y+1, T.z)))
+		if (EAST)
+			return !turf_clear(get_turf(locate(T.x+1, T.y, T.z)))
+		if (SOUTHEAST)
+			return !turf_clear(get_turf(locate(T.x+1, T.y-1, T.z)))
+		if (SOUTH)
+			return !turf_clear(get_turf(locate(T.x, T.y-1, T.z)))
+		if (SOUTHWEST)
+			return !turf_clear(get_turf(locate(T.x-1, T.y-1, T.z)))
+		if (WEST)
+			return !turf_clear(get_turf(locate(T.x-1, T.y, T.z)))
+		if (NORTHWEST)
+			return !turf_clear(get_turf(locate(T.x-1, T.y+1, T.z)))
+		else return
 
-/proc/is_space_turf(var/turf/T)
-	return istype(T, /turf/space)
+// Picks a turf without a mob from the given list of turfs, if one exists.
+// If no such turf exists, picks any random turf from the given list of turfs.
+/proc/pick_mobless_turf_if_exists(var/list/start_turfs)
+	if(!start_turfs.len)
+		return null
 
-/proc/is_not_space_turf(var/turf/T)
-	return !is_space_turf(T)
-
-/proc/is_holy_turf(var/turf/T)
-	return T && T.holy
-
-/proc/is_not_holy_turf(var/turf/T)
-	return !is_holy_turf(T)
+	var/list/available_turfs = list()
+	for(var/start_turf in start_turfs)
+		var/mob/M = locate() in start_turf
+		if(!M)
+			available_turfs += start_turf
+	if(!available_turfs.len)
+		available_turfs = start_turfs
+	return pick(available_turfs)
 
 /proc/turf_contains_dense_objects(var/turf/T)
 	return T.contains_dense_objects()
@@ -78,20 +107,6 @@
 
 /proc/is_station_turf(var/turf/T)
 	return T && isStationLevel(T.z)
-
-/proc/has_air(var/turf/T)
-	return !!T.return_air()
-
-/proc/IsTurfAtmosUnsafe(var/turf/T)
-	if(istype(T, /turf/space)) // Space tiles
-		return "Spawn location is open to space."
-	var/datum/gas_mixture/air = T.return_air()
-	if(!air)
-		return "Spawn location lacks atmosphere."
-	return get_atmosphere_issues(air, 1)
-
-/proc/IsTurfAtmosSafe(var/turf/T)
-	return !IsTurfAtmosUnsafe(T)
 
 /proc/is_below_sound_pressure(var/turf/T)
 	var/datum/gas_mixture/environment = T ? T.return_air() : null
@@ -129,21 +144,18 @@
 		if(target)
 			if(base_area)
 				ChangeArea(target, get_area(source))
-				transport_turf_contents(source, target)
 				ChangeArea(source, base_area)
-			else
-				transport_turf_contents(source, target)
+			transport_turf_contents(source, target)
+
 	//change the old turfs
 	for(var/turf/source in translation)
-		var/old_turf = source.prev_type || base_turf || get_base_turf_by_area(source)
-		source.ChangeTurf(old_turf)
+		source.ChangeTurf(base_turf ? base_turf : get_base_turf_by_area(source), 1, 1)
 
 //Transports a turf from a source turf to a target turf, moving all of the turf's contents and making the target a copy of the source.
 /proc/transport_turf_contents(turf/source, turf/target)
-	var/target_type = target.type
+
 	var/turf/new_turf = target.ChangeTurf(source.type, 1, 1)
 	new_turf.transport_properties_from(source)
-	new_turf.prev_type = target_type
 
 	for(var/obj/O in source)
 		if(O.simulated)

@@ -21,7 +21,7 @@
 	var/problem = 0				// If this is not 0 there is some sort of issue in the powernet. Monitors will display warnings.
 
 /datum/powernet/New()
-	START_PROCESSING_POWERNET(src)
+	SSpower.powernets += src
 	..()
 
 /datum/powernet/Destroy()
@@ -31,7 +31,7 @@
 	for(var/obj/machinery/power/M in nodes)
 		nodes -= M
 		M.powernet = null
-	STOP_PROCESSING_POWERNET(src)
+	SSpower.powernets -= src
 	return ..()
 
 //Returns the amount of excess power (before refunding to SMESs) from last tick.
@@ -103,7 +103,7 @@
 
 	if(nodes && nodes.len) // Added to fix a bad list bug -- TLE
 		for(var/obj/machinery/power/terminal/term in nodes)
-			if( istype( term.master_machine(), /obj/machinery/power/apc ) )
+			if( istype( term.master, /obj/machinery/power/apc ) )
 				numapc++
 
 	netexcess = avail - load

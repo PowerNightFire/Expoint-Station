@@ -3,17 +3,23 @@
 
 // Called when the ID card is removed from computer. ID is removed AFTER this proc.
 /datum/computer_file/program/proc/event_idremoved(var/background)
+	return
+
+/datum/computer_file/program/proc/event_silentmode(var/background)
+	return
+
+// Called when an ID is unregistered from the device.
+/datum/computer_file/program/proc/event_unregistered(var/background)
+	return
 
 // Called when the computer fails due to power loss. Override when program wants to specifically react to power loss.
 /datum/computer_file/program/proc/event_powerfailure(var/background)
+	kill_program(TRUE)
 
-// Called when the network connectivity fails. Computer does necessary checks and only calls this when requires_network_feature and similar variables are not met.
+// Called when the network connectivity fails. Computer does necessary checks and only calls this when requires_ntnet_feature and similar variables are not met.
 /datum/computer_file/program/proc/event_networkfailure(var/background)
-	if(!computer)
-		return
-	computer.kill_program(src, 1)
+	kill_program(TRUE)
 	if(background)
-		computer.visible_error("Network connectivity lost - process [filename].[filetype] (PID [rand(100,999)]) terminated.")
+		computer.output_error(FONT_SMALL(SPAN_WARNING("Process [filename].[filetype] (PID [rand(100,999)]) terminated - Network Error")))
 	else
-		computer.visible_error("FATAL NETWORK ERROR - Network connection lost. Please try again later. If problem persists, please contact your system administrator.")
-		computer.update_host_icon()
+		computer.output_error(FONT_SMALL(SPAN_WARNING("NETWORK ERROR - NTNet connection lost. Please retry. If problem persists contact your system administrator.")))

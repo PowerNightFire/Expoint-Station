@@ -4,10 +4,6 @@
 	var/tmp/turf/below
 	var/tmp/atom/movable/openspace/turf_overlay/bound_overlay
 	var/tmp/atom/movable/openspace/multiplier/shadower		// Overlay used to multiply color of all OO overlays at once.
-	var/tmp/z_queued = 0	// How many times this turf is currently queued - multiple queue occurrences are allowed to ensure update consistency
-	var/tmp/z_eventually_space = FALSE
-	var/z_flags = 0
-	var/tmp/z_depth
 
 /turf/Entered(atom/movable/thing, turf/oldLoc)
 	. = ..()
@@ -19,29 +15,32 @@
 	if (TURF_IS_MIMICING(above))
 		above.update_mimic()
 
-/turf/proc/update_mimic()
-	if (!(z_flags & ZM_MIMIC_BELOW))
+/turf/proc/update_mimic(recurse = TRUE)
+	if (!(flags & MIMIC_BELOW))
 		return
 
-	if (below)
-		z_queued += 1
+	if (below && !(flags & MIMIC_QUEUED))	
+		flags |= MIMIC_QUEUED
 		SSzcopy.queued_turfs += src
+
+	if (recurse)
+		update_above()	// Even if we're already updating, the turf above us might not be.
 
 // Enables Z-mimic for a turf that didn't already have it enabled.
 /turf/proc/enable_zmimic(additional_flags = 0)
-	if (z_flags & ZM_MIMIC_BELOW)
+	if (flags & MIMIC_BELOW)
 		return FALSE
 
-	z_flags |= ZM_MIMIC_BELOW | additional_flags
+	flags |= MIMIC_BELOW | additional_flags
 	setup_zmimic(FALSE)
 	return TRUE
 
 // Disables Z-mimic for a turf.
 /turf/proc/disable_zmimic()
-	if (!(z_flags & ZM_MIMIC_BELOW))
+	if (!(flags & MIMIC_BELOW))
 		return FALSE
 
-	z_flags &= ~ZM_MIMIC_BELOW
+	flags &= ~MIMIC_BELOW
 	cleanup_zmimic()
 
 // Sets up Z-mimic for this turf. You shouldn't call this directly 99% of the time.
@@ -49,7 +48,7 @@
 	if (shadower)
 		CRASH("Attempt to enable Z-mimic on already-enabled turf!")
 	shadower = new(src)
-	SSzcopy.openspace_turfs += 1
+	SSzcopy.openspace_turfs += src
 	var/turf/under = GetBelow(src)
 	if (under)
 		below = under
@@ -59,14 +58,14 @@
 
 // Cleans up Z-mimic objects for this turf. You shouldn't call this directly 99% of the time.
 /turf/proc/cleanup_zmimic()
-	SSzcopy.openspace_turfs -= 1
-	// Don't remove ourselves from the queue, the subsystem will explode. We'll naturally fall out of the queue.
-	z_queued = 0
+	SSzcopy.openspace_turfs -= src
+	if (flags & MIMIC_QUEUED)
+		SSzcopy.queued_turfs -= src
 
 	QDEL_NULL(shadower)
 
-	for (var/atom/movable/openspace/overlay/OO in src)
-		OO.owning_turf_changed()
+	for (var/atom/movable/openspace/overlay/OwO in src)	// wats this~?
+		OwO.owning_turf_changed()
 
 	if (above)
 		above.update_mimic()
@@ -80,11 +79,13 @@
 	plane = OPENTURF_MAX_PLANE
 
 /atom/movable/openspace/turf_overlay/attackby(obj/item/W, mob/user)
-	return loc.attackby(W, user)
+	loc.attackby(W, user)
 
-/atom/movable/openspace/turf_overlay/attack_hand(mob/user)
-	return loc.attack_hand(user)
+/atom/movable/openspace/turf_overlay/attack_hand(mob/user as mob)
+	loc.attack_hand(user)
+
+/atom/movable/openspace/turf_overlay/attack_generic(mob/user as mob)
+	loc.attack_generic(user)
 
 /atom/movable/openspace/turf_overlay/examine(mob/examiner)
-	SHOULD_CALL_PARENT(FALSE)
-	. = loc.examine(examiner)
+	loc.examine(examiner)

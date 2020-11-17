@@ -1,5 +1,5 @@
 /mob/living/silicon/ai/proc/show_laws_verb()
-	set category = "Silicon Commands"
+	set category = "AI Commands"
 	set name = "Show Laws"
 	src.show_laws()
 
@@ -10,19 +10,20 @@
 		who = world
 	else
 		who = src
-		to_chat(who, SPAN_BOLD("Obey the following laws."))
-		to_chat(who, SPAN_ITALIC("All laws have equal priority. Laws may override other laws if written specifically to do so. If laws conflict, break the least."))
+		to_chat(src, "<b>Obey these laws:</b>")
+		if(vr_mob)
+			to_chat(vr_mob, "<b>Obey these laws:</b>")
 
 	src.laws_sanity_check()
 	src.laws.show_laws(who)
 
 /mob/living/silicon/ai/add_ion_law(var/law)
 	..()
-	for(var/mob/living/silicon/robot/R in GLOB.silicon_mob_list)
-		if(R.lawupdate && (R.connected_ai == src))
+	for(var/mob/living/silicon/robot/R in mob_list)
+		if(R.law_update && (R.connected_ai == src))
 			R.show_laws()
 
 /mob/living/silicon/ai/proc/ai_checklaws()
-	set category = "Silicon Commands"
+	set category = "AI Commands"
 	set name = "State Laws"
-	open_subsystem(/datum/nano_module/law_manager)
+	subsystem_law_manager()

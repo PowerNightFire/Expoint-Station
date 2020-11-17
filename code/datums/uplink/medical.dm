@@ -6,36 +6,35 @@
 
 /datum/uplink_item/item/medical/sinpockets
 	name = "Box of Sin-Pockets"
-	desc = "A box of filled dough pockets. Great for a quick meal when you're hiding from Security. Instructions included on the box."
-	item_cost = 8
+	item_cost = 1
 	path = /obj/item/storage/box/sinpockets
 
-/datum/uplink_item/item/medical/stabilisation
-	name = "Stabilisation First Aid Kit"
-	desc = "Contains variety of emergency medical pouches."
-	item_cost = 16
-	path = /obj/item/storage/firstaid/stab
-
-/datum/uplink_item/item/medical/stasis
-	name = "Stasis Bag"
-	desc = "Reusable bag designed to slow down life functions of occupant, especially useful if short on time or in a hostile enviroment."
-	item_cost = 24
-	path = /obj/item/bodybag/cryobag
-
-/datum/uplink_item/item/medical/defib
-	name = "Combat Defibrillator"
-	desc = "A belt-equipped defibrillator that can be rapidly deployed. Does not have the restrictions or safeties of conventional defibrillators and can revive through space suits."
-	item_cost = 24
-	path = /obj/item/defibrillator/compact/combat/loaded
+/datum/uplink_item/item/medical/combathypo
+	name = "Combat Hypospray"
+	item_cost = 5
+	path = /obj/item/reagent_containers/hypospray/combat
 
 /datum/uplink_item/item/medical/surgery
 	name = "Surgery Kit"
-	desc = "Contains all the tools needed for on the spot surgery, assuming you actually know what you're doing with them. Floor sterilization not included."
-	item_cost = 40
+	item_cost = 8
 	path = /obj/item/storage/firstaid/surgery
 
 /datum/uplink_item/item/medical/combat
 	name = "Combat Medical Kit"
-	desc = "Contains most medicines you need to recover from injuries and illnesses, all in a convenient pill form. Splints for broken bones also included!"
-	item_cost = 48
+	item_cost = 6
 	path = /obj/item/storage/firstaid/combat
+
+/datum/uplink_item/item/medical/stimulants
+	name = "Box of Combat Stimulants"
+	item_cost = 4
+	path = /obj/item/storage/box/syndie_kit/stimulants
+
+/datum/uplink_item/item/medical/sideeffectbegone
+	name = "Box of Sideeffect-Be-Gone Injectors"
+	item_cost = 3
+	path = /obj/item/storage/box/syndie_kit/sideeffectbegone
+
+/datum/uplink_item/item/medical/firstaid
+	name = "Standard First-Aid Kit"
+	item_cost = 2
+	path = /obj/item/storage/firstaid/regular

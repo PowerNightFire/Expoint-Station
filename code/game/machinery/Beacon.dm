@@ -1,46 +1,53 @@
-/obj/machinery/tracking_beacon
+/obj/machinery/bluespace_beacon
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "floor_beaconf"
-	name = "tracking beacon"
-	desc = "A device that uses zero-point energy to create a permanent tracking beacon."
+	name = "Bluespace Gigabeacon"
+	desc = "A device that draws power from bluespace and creates a permanent tracking beacon."
 	level = 1		// underfloor
+	layer = 2.5
 	anchored = 1
+	use_power = 1
 	idle_power_usage = 0
-	var/obj/item/radio/beacon/beacon
+	var/obj/item/device/radio/beacon/Beacon
 
-/obj/machinery/tracking_beacon/Initialize()
-	. = ..()
-	var/turf/T = get_turf(src)
-	beacon = new /obj/item/radio/beacon(T)
-	beacon.invisibility = INVISIBILITY_MAXIMUM
+/obj/machinery/bluespace_beacon/New()
+	..()
+	var/turf/T = loc
+	Beacon = new /obj/item/device/radio/beacon
+	Beacon.invisibility = INVISIBILITY_MAXIMUM
+	Beacon.forceMove(T)
 
 	hide(!T.is_plating())
 
-/obj/machinery/tracking_beacon/Destroy()
-	QDEL_NULL(beacon)
-	. = ..()
+/obj/machinery/bluespace_beacon/Destroy()
+	if(Beacon)
+		qdel(Beacon)
+	return ..()
 
 	// update the invisibility and icon
-/obj/machinery/tracking_beacon/hide(var/intact)
-	set_invisibility(intact ? 101 : 0)
-	update_icon()
+/obj/machinery/bluespace_beacon/hide(var/intact)
+		invisibility = intact ? 101 : 0
+		update_icon()
 
 	// update the icon_state
-/obj/machinery/tracking_beacon/on_update_icon()
+/obj/machinery/bluespace_beacon/update_icon()
 	var/state="floor_beacon"
 
 	if(invisibility)
 		icon_state = "[state]f"
-
 	else
 		icon_state = "[state]"
 
-/obj/machinery/tracking_beacon/Process()
-	if(!beacon)
-		beacon = new /obj/item/radio/beacon(get_turf(src))
-		beacon.set_invisibility(INVISIBILITY_MAXIMUM)
-	if(beacon)
-		if(beacon.loc != loc)
-			beacon.forceMove(loc)
+/obj/machinery/bluespace_beacon/process()
+	if(!Beacon)
+		var/turf/T = loc
+		Beacon = new /obj/item/device/radio/beacon
+		Beacon.invisibility = INVISIBILITY_MAXIMUM
+		Beacon.forceMove(T)
+	if(Beacon)
+		if(Beacon.loc != loc)
+			Beacon.forceMove(loc)
 
 	update_icon()
+
+

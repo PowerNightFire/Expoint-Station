@@ -1,11 +1,15 @@
-/obj/item/stock_parts/circuitboard/commsrelay
-	name = T_BOARD("communication relay")
-	build_path = /obj/machinery/commsrelay
+#ifndef T_BOARD
+#error T_BOARD macro is not defined but we need it!
+#endif
+
+/obj/item/circuitboard/bluespacerelay
+	name = T_BOARD("bluespacerelay")
+	build_path = /obj/machinery/bluespacerelay
 	board_type = "machine"
-	origin_tech = "{'wormholes':2,'programming':2}"
+	origin_tech = list(TECH_BLUESPACE = 2, TECH_DATA = 2)
 	req_components = list(
-							/obj/item/stack/cable_coil = 30,
-							/obj/item/stock_parts/manipulator = 2,
-							/obj/item/stock_parts/subspace/filter = 1,
-							/obj/item/stock_parts/subspace/crystal = 1
+							"/obj/item/stack/cable_coil" = 30,
+							"/obj/item/stock_parts/manipulator" = 2,
+							"/obj/item/stock_parts/subspace/filter" = 1,
+							"/obj/item/stock_parts/subspace/crystal" = 1
 						  )

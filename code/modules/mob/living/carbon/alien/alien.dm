@@ -1,21 +1,33 @@
 /mob/living/carbon/alien
+
 	name = "alien"
 	desc = "What IS that?"
-	pass_flags = PASS_FLAG_TABLE
+	icon = 'icons/mob/npc/alien.dmi'
+	icon_state = "alien_s"
+	pass_flags = PASSTABLE
 	health = 100
 	maxHealth = 100
-	mob_size = MOB_SIZE_TINY
+	mob_size = 4
+
+	var/adult_form
 	var/dead_icon
+	var/amount_grown = 0
+	var/max_grown = 200
+	var/time_of_birth
 	var/language
 	var/death_msg = "lets out a waning guttural screech, green blood bubbling from its maw."
-	var/instance_num
+	var/meat_amount = 0
+	var/meat_type
 
 /mob/living/carbon/alien/Initialize()
+	. = ..()
+
+	time_of_birth = world.time
+
 	verbs += /mob/living/proc/ventcrawl
 	verbs += /mob/living/proc/hide
 
-	instance_num = rand(1, 1000)
-	name = "[initial(name)] ([instance_num])"
+	name = "[initial(name)] ([rand(1, 1000)])"
 	real_name = name
 	regenerate_icons()
 
@@ -23,14 +35,21 @@
 		add_language(language)
 
 	gender = NEUTER
-	. = ..()
 
-/mob/living/carbon/alien/u_equip(obj/item/W)
-	SHOULD_CALL_PARENT(FALSE)
-	return FALSE
+/mob/living/carbon/alien/u_equip(obj/item/W as obj)
+	return
+
+/mob/living/carbon/alien/Stat()
+	..()
+	stat(null, "Progress: [amount_grown]/[max_grown]")
 
 /mob/living/carbon/alien/restrained()
 	return 0
 
-/mob/living/carbon/alien/show_inv(mob/user)
+/mob/living/carbon/alien/show_inv(mob/user as mob)
 	return //Consider adding cuffs and hats to this, for the sake of fun.
+
+/mob/living/carbon/alien/cannot_use_vents()
+	return
+
+

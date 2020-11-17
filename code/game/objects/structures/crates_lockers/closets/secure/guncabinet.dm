@@ -2,28 +2,32 @@
 	name = "gun cabinet"
 	req_access = list(access_armory)
 	icon = 'icons/obj/guncabinet.dmi'
-	closet_appearance = null
+	icon_state = "base"
+	icon_off ="base"
+	icon_broken ="base"
+	icon_locked ="base"
+	icon_closed ="base"
+	icon_opened = "base"
+	anchored = 1
+	canbemoved = 1
+
 
 /obj/structure/closet/secure_closet/guncabinet/Initialize()
-	. = ..()
-	update_icon()
+	..()
+	return INITIALIZE_HINT_LATELOAD
 
-/obj/structure/closet/secure_closet/guncabinet/LateInitialize(mapload, ...)
-	. = ..()
+/obj/structure/closet/secure_closet/guncabinet/LateInitialize()
+	..()
 	update_icon()
 
 /obj/structure/closet/secure_closet/guncabinet/toggle()
 	..()
 	update_icon()
 
-/obj/structure/closet/secure_closet/guncabinet/open() //There are plenty of things that can open it that don't use toggle
-	..()
-	update_icon()
-
-/obj/structure/closet/secure_closet/guncabinet/on_update_icon()
-	overlays.Cut()
+/obj/structure/closet/secure_closet/guncabinet/update_icon()
+	cut_overlays()
 	if(opened)
-		overlays += icon(icon,"door_open")
+		add_overlay("door_open")
 	else
 		var/lazors = 0
 		var/shottas = 0
@@ -32,25 +36,22 @@
 				lazors++
 			if (istype(G, /obj/item/gun/projectile/))
 				shottas++
-		for (var/i = 0 to 2)
-			if(lazors || shottas) // only make icons if we have one of the two types.
-				var/image/gun = image(icon(src.icon))
-				if (lazors > shottas)
+		if (lazors || shottas)
+			for (var/i = 0 to 2)
+				if (lazors > 0 && (shottas <= 0 || prob(50)))
 					lazors--
-					gun.icon_state = "laser"
-				else if (shottas)
+					add_overlay("laser[i]")
+				else if (shottas > 0)
 					shottas--
-					gun.icon_state = "projectile"
-				gun.pixel_x = i*4
-				overlays += gun
+					add_overlay("projectile[i]")
 
-		overlays += icon(src.icon, "door")
-
+		add_overlay("door")
 		if(welded)
-			overlays += icon(src.icon,"welded")
+			add_overlay(welded_overlay_state)
 
-		if(!broken)
-			if(locked)
-				overlays += icon(src.icon,"locked")
-			else
-				overlays += icon(src.icon,"open")
+		if(broken)
+			add_overlay("broken")
+		else if (locked)
+			add_overlay("locked")
+		else
+			add_overlay("open")

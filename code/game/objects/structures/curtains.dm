@@ -1,112 +1,71 @@
-/obj/item/curtain
-	name = "rolled curtain"
-	desc = "A rolled curtains."
-	icon = 'icons/obj/structures/curtain.dmi'
-	icon_state = "curtain_rolled"
-	force = 3 //just plastic
-	w_class = ITEM_SIZE_HUGE //curtains, yeap
-	var/obj/structure/curtain/holder = /obj/structure/curtain
-
-/obj/item/curtain/attackby(obj/item/W, mob/user)
-	if(isScrewdriver(W))
-		if(!holder)
-			return
-
-		if(!isturf(loc))
-			to_chat(user, SPAN_DANGER("You cannot install \the [src] from your hands."))
-			return
-
-		if(is_space_turf(loc))
-			to_chat(user, SPAN_DANGER("You cannot install \the [src] in space."))
-			return
-
-		user.visible_message(
-			SPAN_NOTICE("\The [user] begins installing \the [src]."),
-			SPAN_NOTICE("You begin installing \the [src]."))
-		playsound(src, 'sound/items/Screwdriver.ogg', 100, 1)
-
-		if(!do_after(user, 4 SECONDS, src))
-			return
-
-		if(QDELETED(src))
-			return
-
-		var/obj/structure/curtain/C = new holder(loc)
-		transfer_fingerprints_to(C)
-		C.SetName(replacetext(name, "rolled", ""))
-		C.color = color
-		qdel(src)
-	else
-		..()
+#define SHOWER_OPEN_LAYER OBJ_LAYER + 0.4
+#define SHOWER_CLOSED_LAYER MOB_LAYER + 0.1
 
 /obj/structure/curtain
 	name = "curtain"
-	icon = 'icons/obj/structures/curtain.dmi'
+	icon = 'icons/obj/curtain.dmi'
 	icon_state = "closed"
-	layer = ABOVE_WINDOW_LAYER
-	opacity = TRUE
-	density = FALSE
-	anchored = TRUE
-	var/obj/item/curtain/holder = /obj/item/curtain
+	layer = SHOWER_OPEN_LAYER
+	opacity = 1
+	density = 0
+	anchored = TRUE //curtains start secured in place
+	build_amt = 2
+	var/manipulating = FALSE //prevents queuing up multiple deconstructs and returning a bunch of cloth
 
 /obj/structure/curtain/open
 	icon_state = "open"
-	layer = ABOVE_HUMAN_LAYER
-	opacity = FALSE
-
-/obj/structure/curtain/Initialize()
-	. = ..()
-	set_extension(src, /datum/extension/turf_hand)
+	layer = SHOWER_CLOSED_LAYER
+	opacity = 0
 
 /obj/structure/curtain/bullet_act(obj/item/projectile/P, def_zone)
 	if(!P.nodamage)
-		visible_message(SPAN_WARNING("[P] tears [src] down!"))
+		visible_message("<span class='warning'>[P] tears [src] down!</span>")
 		qdel(src)
 	else
 		..(P, def_zone)
 
 /obj/structure/curtain/attack_hand(mob/user)
+	playsound(get_turf(loc), 'sound/effects/curtain.ogg', 15, 1, -5)
 	toggle()
 	..()
 
+/obj/structure/curtain/attack_ai(mob/user)
+	if(istype(user, /mob/living/silicon/robot) && Adjacent(user)) // Robots can open/close it, but not the AI.
+		attack_hand(user)
+
 /obj/structure/curtain/attackby(obj/item/W, mob/user)
-	if(isScrewdriver(W))
-		if(!holder)
+
+	if(W.iswirecutter() || W.sharp && !W.noslice)
+		if(manipulating)	return
+		manipulating = TRUE
+		visible_message(SPAN_NOTICE("[user] begins cutting down \the [src]."),
+					SPAN_NOTICE("You begin cutting down \the [src]."))
+		if(!do_after(user, 30/W.toolspeed))
+			manipulating = FALSE
 			return
+		playsound(src.loc, 'sound/items/wirecutter.ogg', 50, 1)
+		visible_message(SPAN_NOTICE("[user] cuts down \the [src]."),
+					SPAN_NOTICE("You cut down \the [src]."))
+		dismantle()
 
-		user.visible_message(
-			SPAN_NOTICE("\The [user] begins uninstalling \the [src]."),
-			SPAN_NOTICE("You begin uninstalling \the [src]."))
-		playsound(src, 'sound/items/Screwdriver.ogg', 100, 1)
-
-		if(!do_after(user, 4 SECONDS, src))
-			return
-
-		if(QDELETED(src))
-			return
-
-		var/obj/item/curtain/C = new holder(loc)
-		transfer_fingerprints_to(C)
-		C.SetName("rolled [name]")
-		C.color = color
-		qdel(src)
-	else
-		..()
+	if(W.isscrewdriver()) //You can anchor/unanchor curtains
+		anchored = !anchored
+		var/obj/structure/curtain/C
+		for(C in src.loc)
+			if(C != src && C.anchored) //Can't secure more than one curtain in a tile
+				to_chat(user, "There is already a curtain secured here!")
+				return
+		playsound(src.loc, W.usesound, 50, 1)
+		visible_message(SPAN_NOTICE("\The [src] has been [anchored ? "secured in place" : "unsecured"] by \the [user]."))
 
 /obj/structure/curtain/proc/toggle()
-	playsound(src, 'sound/effects/curtain.ogg', 15, 1, -5)
-	set_opacity(!opacity)
+	src.set_opacity(!src.opacity)
 	if(opacity)
 		icon_state = "closed"
-		layer = ABOVE_HUMAN_LAYER
+		layer = SHOWER_CLOSED_LAYER
 	else
 		icon_state = "open"
-		layer = ABOVE_WINDOW_LAYER
-
-// Normal subtypes
-/obj/structure/curtain/bed
-	name = "bed curtain"
-	color = "#854636"
+		layer = SHOWER_OPEN_LAYER
 
 /obj/structure/curtain/black
 	name = "black curtain"
@@ -114,59 +73,35 @@
 
 /obj/structure/curtain/medical
 	name = "plastic curtain"
-	color = "#b8f5e3"
+	color = "#B8F5E3"
+	anchored = FALSE
 	alpha = 200
 
-/obj/structure/curtain/bar
-	name = "bar curtain"
-	color = "#854636"
-
-/obj/structure/curtain/privacy
-	name = "privacy curtain"
-	color = "#b8f5e3"
-
-/obj/structure/curtain/shower
-	name = "shower curtain"
-	color = "#acd1e9"
+/obj/structure/curtain/open/medical
+	name = "plastic curtain"
+	color = "#B8F5E3"
+	anchored = FALSE
 	alpha = 200
 
-/obj/structure/curtain/canteen
-	name = "privacy curtain"
-	color = COLOR_BLUE_GRAY
-
-// Open subtypes
 /obj/structure/curtain/open/bed
 	name = "bed curtain"
 	color = "#854636"
 
-/obj/structure/curtain/open/black
-	name = "black curtain"
-	color = "#222222"
-
-/obj/structure/curtain/open/medical
-	name = "plastic curtain"
-	color = "#b8f5e3"
-	alpha = 200
-
-/obj/structure/curtain/open/bar
-	name = "bar curtain"
-	color = "#854636"
-
 /obj/structure/curtain/open/privacy
 	name = "privacy curtain"
-	color = "#b8f5e3"
+	color = "#B8F5E3"
+	anchored = FALSE
 
 /obj/structure/curtain/open/shower
 	name = "shower curtain"
-	color = "#acd1e9"
+	color = "#ACD1E9"
 	alpha = 200
 
-/obj/structure/curtain/open/canteen
-	name = "privacy curtain"
-	color = COLOR_BLUE_GRAY
-
 /obj/structure/curtain/open/shower/engineering
-	color = "#ffa500"
+	color = "#FFA500"
 
 /obj/structure/curtain/open/shower/security
-	color = "#aa0000"
+	color = "#AA0000"
+
+#undef SHOWER_OPEN_LAYER
+#undef SHOWER_CLOSED_LAYER

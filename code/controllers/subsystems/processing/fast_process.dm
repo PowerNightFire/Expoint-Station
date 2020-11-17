@@ -1,5 +1,10 @@
-//Fires five times every second.
+/var/datum/controller/subsystem/processing/fast/SSfast_process
 
-PROCESSING_SUBSYSTEM_DEF(fastprocess)
-	name = "Fast Processing"
-	wait = 2
+// Not really much to it, literally just a faster-ticking SSprocessing.
+
+/datum/controller/subsystem/processing/fast
+	name = "Processing (Fast)"
+	wait = 5
+
+/datum/controller/subsystem/processing/fast/New()
+	NEW_SS_GLOBAL(SSfast_process)

@@ -35,8 +35,6 @@ nanoui is used to open and update nano browser uis
 	var/templates[0]
 	// the layout key for this ui (this is used on the frontend, leave it as "default" unless you know what you're doing)
 	var/layout_key = "default"
-	// optional layout key for additional ui header content to include
-	var/layout_header_key = "default_header"
 	// this sets whether to re-render the ui layout with each update (default 0, turning on will break the map ui if it's in use)
 	var/auto_update_layout = 0
 	// this sets whether to re-render the ui content with each update (default 1)
@@ -46,7 +44,7 @@ nanoui is used to open and update nano browser uis
 	// show the map ui, this is used by the default layout
 	var/show_map = 0
 	// the map z level to display
-	var/map_z_level = 1
+	var/map_z_level = 3
 	// initial data, containing the full data structure, must be sent to the ui (the data structure cannot be extended later on)
 	var/list/initial_data[0]
 	// set to 1 to update the ui automatically every master_controller tick
@@ -73,7 +71,7 @@ nanoui is used to open and update nano browser uis
   *
   * @return /nanoui new nanoui object
   */
-/datum/nanoui/New(nuser, nsrc_object, nui_key, ntemplate_filename, ntitle = 0, nwidth = 0, nheight = 0, var/atom/nref = null, var/datum/nanoui/master_ui = null, var/datum/topic_state/state = GLOB.default_state)
+/datum/nanoui/New(nuser, nsrc_object, nui_key, ntemplate_filename, ntitle = 0, nwidth = 0, nheight = 0, var/atom/nref = null, var/datum/nanoui/master_ui = null, var/datum/topic_state/state = default_state)
 	user = nuser
 	src_object = nsrc_object
 	ui_key = nui_key
@@ -97,15 +95,6 @@ nanoui is used to open and update nano browser uis
 		ref = nref
 
 	add_common_assets()
-	var/datum/asset/assets = get_asset_datum(/datum/asset/nanoui)
-	assets.send(user, ntemplate_filename)
-
-//Do not qdel nanouis. Use close() instead.
-/datum/nanoui/Destroy()
-	user = null
-	src_object = null
-	state = null
-	. = ..()
 
  /**
   * Use this proc to add assets which are common to (and required by) all nano uis
@@ -113,6 +102,8 @@ nanoui is used to open and update nano browser uis
   * @return nothing
   */
 /datum/nanoui/proc/add_common_assets()
+	add_script("https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js")
+	add_script("https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js")
 	add_script("libraries.min.js") // A JS file comprising of jQuery, doT.js and jQuery Timer libraries (compressed together)
 	add_script("nano_utility.js") // The NanoUtility JS, this is used to store utility functions.
 	add_script("nano_template.js") // The NanoTemplate JS, this is used to render templates.
@@ -122,7 +113,6 @@ nanoui is used to open and update nano browser uis
 	add_script("nano_base_callbacks.js") // The NanoBaseCallbacks JS, this is used to set up (before and after update) callbacks which are common to all UIs
 	add_script("nano_base_helpers.js") // The NanoBaseHelpers JS, this is used to set up template helpers which are common to all UIs
 	add_stylesheet("shared.css") // this CSS sheet is common to all UIs
-	add_stylesheet("tgui.css") // this CSS sheet is common to all UIs
 	add_stylesheet("icons.css") // this CSS sheet is common to all UIs
 
  /**
@@ -149,21 +139,17 @@ nanoui is used to open and update nano browser uis
   *
   * @param push_update int (bool) Push an update to the ui to update it's status. This is set to 0/false if an update is going to be pushed anyway (to avoid unnessary updates)
   *
-  * @return 1 if closed, null otherwise.
+  * @return nothing
   */
 /datum/nanoui/proc/update_status(var/push_update = 0)
-	var/atom/host = src_object && src_object.nano_host()
-	if(!host)
-		close()
-		return 1
+	var/obj/host = src_object.ui_host()
 	var/new_status = host.CanUseTopic(user, state)
 	if(master_ui)
 		new_status = min(new_status, master_ui.status)
 
+	set_status(new_status, push_update)
 	if(new_status == STATUS_CLOSE)
 		close()
-		return 1
-	set_status(new_status, push_update)
 
  /**
   * Set the ui to auto update (every master_controller tick)
@@ -193,7 +179,6 @@ nanoui is used to open and update nano browser uis
 /datum/nanoui/proc/get_config_data()
 	var/name = "[src_object]"
 	name = sanitize(name)
-	var/decl/currency/cur = decls_repository.get_decl(GLOB.using_map.default_currency)
 	var/list/config_data = list(
 			"title" = title,
 			"srcObject" = list("name" = name),
@@ -202,11 +187,10 @@ nanoui is used to open and update nano browser uis
 			"autoUpdateLayout" = auto_update_layout,
 			"autoUpdateContent" = auto_update_content,
 			"showMap" = show_map,
-			"mapName" = GLOB.using_map.path,
+			"mapName" = "Aurora",
 			"mapZLevel" = map_z_level,
-			"mapZLevels" = GLOB.using_map.map_levels,
-			"user" = list("name" = user.name),
-			"currency" = cur.name,
+			"mapZLevels" = current_map.map_levels,
+			"user" = list("name" = user.name)
 		)
 	return config_data
 
@@ -356,8 +340,6 @@ nanoui is used to open and update nano browser uis
 	// before the UI opens, add the layout files based on the layout key
 	add_stylesheet("layout_[layout_key].css")
 	add_template("layout", "layout_[layout_key].tmpl")
-	if (layout_header_key)
-		add_template("layoutHeader", "layout_[layout_header_key].tmpl")
 
 	var/head_content = ""
 
@@ -378,24 +360,19 @@ nanoui is used to open and update nano browser uis
 	var/url_parameters_json = json_encode(list("src" = "\ref[src]"))
 
 	return {"
-<!DOCTYPE html>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 	<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 	<head>
-		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<script type='text/javascript'>
 			function receiveUpdateData(jsonString)
 			{
-				// We need both jQuery and NanoStateManager to be able to recieve data
+				// We need both jQuery and NanoStateManager to be able to receive data
 				// At the moment any data received before those libraries are loaded will be lost
 				if (typeof NanoStateManager != 'undefined' && typeof jQuery != 'undefined')
 				{
 					NanoStateManager.receiveUpdateData(jsonString);
 				}
-				//else
-				//{
-				//	alert('browser.recieveUpdateData failed due to jQuery or NanoStateManager being unavailiable.');
-				//}
 			}
 		</script>
 		[head_content]
@@ -423,20 +400,23 @@ nanoui is used to open and update nano browser uis
 	if(!user.client)
 		return
 
+	// An attempted fix to UIs sometimes locking up spamming runtime errors due to src_object being null for whatever reason.
+	// This hard-deletes the UI, preventing the device that uses the UI from being locked up permanently.
 	if(!src_object)
-		close()
+		del(src)
 
 	var/window_size = ""
 	if (width && height)
 		window_size = "size=[width]x[height];"
-	if(update_status(0))
-		return // Will be closed by update_status().
+	update_status(0)
+	if(status == STATUS_CLOSE)
+		return
 
-	show_browser(user, get_html(), "window=[window_id];[window_size][window_options]")
+	user << browse(get_html(), "window=[window_id];[window_size][window_options]")
 	winset(user, "mapwindow.map", "focus=true") // return keyboard focus to map
 	on_close_winset()
 	//onclose(user, window_id)
-	SSnano.ui_opened(src)
+	SSnanoui.ui_opened(src)
 
  /**
   * Reinitialise this UI, potentially with a different template and/or initial data
@@ -457,14 +437,13 @@ nanoui is used to open and update nano browser uis
   */
 /datum/nanoui/proc/close()
 	is_auto_updating = 0
-	SSnano.ui_closed(src)
-	show_browser(user, null, "window=[window_id]")
+	SSnanoui.ui_closed(src)
+	user << browse(null, "window=[window_id]")
 	for(var/datum/nanoui/child in children)
 		child.close()
 	children.Cut()
 	state = null
 	master_ui = null
-	qdel(src)
 
  /**
   * Set the UI window to call the nanoclose verb when the window is closed
@@ -477,10 +456,7 @@ nanoui is used to open and update nano browser uis
 		return
 	var/params = "\ref[src]"
 
-	spawn(2)
-		if(!user || !user.client)
-			return
-		winset(user, window_id, "on-close=\"nanoclose [params]\"")
+	winset(user, window_id, "on-close=\"nanoclose [params]\"")
 
  /**
   * Push data to an already open UI window
@@ -488,16 +464,14 @@ nanoui is used to open and update nano browser uis
   * @return nothing
   */
 /datum/nanoui/proc/push_data(data, force_push = 0)
-	if(update_status(0))
-		return // Closed
+	update_status(0)
 	if (status == STATUS_DISABLED && !force_push)
 		return // Cannot update UI, no visibility
 
 	var/list/send_data = get_send_data(data)
 
-//	to_chat(user, list2json_usecache(send_data))// used for debugging //NANO DEBUG HOOK
-
-	user << output(list2params(list(strip_improper(json_encode(send_data)))),"[window_id].browser:receiveUpdateData")
+	//to_chat(user, list2json(data) // used for debugging)
+	send_output(user, list2params(list(json_encode(send_data))),"[window_id].browser:receiveUpdateData")
 
  /**
   * This Topic() proc is called whenever a user clicks on a link within a Nano UI
@@ -518,22 +492,25 @@ nanoui is used to open and update nano browser uis
 		map_update = 1
 
 	if(href_list["mapZLevel"])
-		var/map_z = text2num(href_list["mapZLevel"])
-		if(map_z in GLOB.using_map.map_levels)
+		var/map_z = (text2num(href_list["mapZLevel"]))
+		if(map_z in current_map.map_levels)
 			set_map_z_level(map_z)
 			map_update = 1
+		else
+			return
 
 	if ((src_object && src_object.Topic(href, href_list, state)) || map_update)
-		SSnano.update_uis(src_object) // update all UIs attached to src_object
+		SSnanoui.update_uis(src_object) // update all UIs attached to src_object
 
  /**
   * Process this UI, updating the entire UI or just the status (aka visibility)
+  * This process proc is called by the master_controller
   *
   * @param update string For this UI to update
   *
   * @return nothing
   */
-/datum/nanoui/proc/try_update(update = 0)
+/datum/nanoui/process(update = 0)
 	if (!src_object || !user)
 		close()
 		return
@@ -542,13 +519,6 @@ nanoui is used to open and update nano browser uis
 		update() // Update the UI (update_status() is called whenever a UI is updated)
 	else
 		update_status(1) // Not updating UI, so lets check here if status has changed
-
- /**
-  * This Process proc is called by SSnano.
-  * Use try_update() to make manual updates.
-  */
-/datum/nanoui/Process()
-	try_update(0)
 
  /**
   * Update the UI

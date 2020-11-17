@@ -35,9 +35,9 @@
 		return
 
 	if(!visor.active)
-		visor.activate()
+		visor.activate(usr)
 	else
-		visor.deactivate()
+		visor.deactivate(usr)
 
 /obj/item/rig/proc/toggle_helmet()
 
@@ -65,7 +65,7 @@
 	if(!check_suit_access(usr))
 		return
 
-	toggle_piece("chest",wearer)
+	toggle_piece(BP_CHEST,wearer)
 
 /obj/item/rig/proc/toggle_gauntlets()
 
@@ -156,15 +156,15 @@
 		return
 
 	if(!visor.active)
-		visor.activate()
+		visor.activate(usr)
 
 	if(!visor.active)
 		to_chat(usr, "<span class='warning'>The visor is suffering a hardware fault and cannot be configured.</span>")
 		return
 
-	visor.engage()
+	visor.engage(null, usr)
 
-/obj/item/rig/proc/alter_voice()
+/obj/item/rig/verb/alter_voice()
 
 	set name = "Configure Voice Synthesiser"
 	set desc = "Toggles or configures your voice synthesizer."
@@ -186,7 +186,7 @@
 		to_chat(usr, "<span class='warning'>The hardsuit does not have a speech synthesiser.</span>")
 		return
 
-	speech.engage()
+	speech.engage(null, usr)
 
 /obj/item/rig/verb/select_module()
 
@@ -197,7 +197,7 @@
 
 	if(malfunction_check(usr))
 		return
-	
+
 	if(!check_power_cost(usr, 0, 0, 0, 0))
 		return
 
@@ -217,12 +217,12 @@
 	var/obj/item/rig_module/module = input("Which module do you wish to select?") as null|anything in selectable
 
 	if(!istype(module))
-		deselect_module()
-		to_chat(usr, "<font color='blue'><b>Primary system is now: deselected.</b></font>")
+		selected_module = null
+		to_chat(usr, "<span class='notice'><b>Primary system is now: deselected.</b></span>")
 		return
 
-	module.select()
-	to_chat(usr, "<font color='blue'><b>Primary system is now: [selected_module.interface_name].</b></font>")
+	selected_module = module
+	to_chat(usr, "<span class='notice'><b>Primary system is now: [selected_module.interface_name].</b></span>")
 
 /obj/item/rig/verb/toggle_module()
 
@@ -257,10 +257,10 @@
 
 	if(module.active)
 		to_chat(usr, "<font color='blue'><b>You attempt to deactivate \the [module.interface_name].</b></font>")
-		module.deactivate()
+		module.deactivate(usr)
 	else
 		to_chat(usr, "<font color='blue'><b>You attempt to activate \the [module.interface_name].</b></font>")
-		module.activate()
+		module.activate(usr)
 
 /obj/item/rig/verb/engage_module()
 
@@ -294,4 +294,4 @@
 		return
 
 	to_chat(usr, "<font color='blue'><b>You attempt to engage the [module.interface_name].</b></font>")
-	module.engage()
+	module.engage(null, usr)

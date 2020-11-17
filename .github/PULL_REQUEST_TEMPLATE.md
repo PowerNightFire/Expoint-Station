@@ -1,14 +1,7 @@
-<!-- 
-Do not forget to add a changelog when you have made admin/player facing changes that can alter gameplay.
-Examples which require a changelog entry include:
-* Adding/removing objects that players may interact with, or the way they function.
-* Adding/removing/altering admin tools.
-* Changing the map.
+* Please describe the intent of your changes in a clear fashion.
+* Please make sure that, in the case of mapping changes, you include images of these changes in the PR's description.
+* Please make sure to mark your PR as wip or review required by making a comment with !wip or !review required
 
-Examples were changelog entries are optional/not typically required:
-* Cosmetic changes such as descriptions, sound effects, etc.
-* Optimizations and other changes to underlying systems which do not affect gameplay.
-* Minor bug fixes.
-
-You'll find a README and example file in .\html\changelogs\ for further instructions.
--->
+### IC changelog
+`It is possible and encouraged (for changes that will have a larger impact on players) to write a ic changelog and add it to the PR description.
+This changelog will be pushed to the newscasters when the PR is merged`

@@ -6,16 +6,13 @@
 	desc = "For all your occult needs!"
 	icon_state = "deck_tarot"
 
-/obj/item/deck/tarot/Initialize()
-	. = ..()
-
+/obj/item/deck/tarot/generate_deck()
 	var/datum/playingcard/P
 	for(var/name in list("Fool","Magician","High Priestess","Empress","Emperor","Hierophant","Lovers","Chariot","Strength","Hermit","Wheel of Fortune","Justice","Hanged Man","Death","Temperance","Devil","Tower","Star","Moon","Sun","Judgement","World"))
 		P = new()
 		P.name = "[name]"
 		P.card_icon = "tarot_major"
 		P.back_icon = "card_back_tarot"
-		P.desc = "Some sort of major tarot card."
 		cards += P
 	for(var/suit in list("wands","pentacles","cups","swords"))
 
@@ -25,10 +22,9 @@
 			P.name = "[number] of [suit]"
 			P.card_icon = "tarot_[suit]"
 			P.back_icon = "card_back_tarot"
-			P.desc = "A Rider-Waite tarot card."
 			cards += P
 
-/obj/item/deck/tarot/attack_self(var/mob/user)
+/obj/item/deck/tarot/attack_self(var/mob/user as mob)
 	var/list/newcards = list()
 	while(cards.len)
 		var/datum/playingcard/P = pick(cards)
@@ -38,4 +34,5 @@
 		newcards += P
 		cards -= P
 	cards = newcards
+	playsound(src.loc, 'sound/items/cardshuffle.ogg', 100, 1, -4)
 	user.visible_message("\The [user] shuffles [src].")

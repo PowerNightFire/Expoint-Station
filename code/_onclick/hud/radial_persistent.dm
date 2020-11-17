@@ -37,7 +37,7 @@
 
 /datum/radial_menu/persistent/Destroy()
 	QDEL_NULL(select_proc_callback)
-	GLOB.radial_menus -= uniqueid
+	radial_menus -= uniqueid
 	Reset()
 	hide()
 	return ..()
@@ -55,12 +55,12 @@
 	if(!uniqueid)
 		uniqueid = "defmenu_\ref[user]_\ref[anchor]"
 
-	if(GLOB.radial_menus[uniqueid])
+	if(radial_menus[uniqueid])
 		return
 
 	var/datum/radial_menu/persistent/menu = new
 	menu.uniqueid = uniqueid
-	GLOB.radial_menus[uniqueid] = menu
+	radial_menus[uniqueid] = menu
 	if(radius)
 		menu.radius = radius
 	menu.select_proc_callback = select_proc

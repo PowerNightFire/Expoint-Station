@@ -5,81 +5,73 @@
 	name = "light switch"
 	desc = "It turns lights on and off. What are you, simple?"
 	icon = 'icons/obj/power.dmi'
-	icon_state = "light0"
+	icon_state = "light-p"
 	anchored = 1.0
-	idle_power_usage = 20
+	var/on = 1
+	var/area/area = null
+	var/otherarea = null
 	power_channel = LIGHT
-	required_interaction_dexterity = DEXTERITY_SIMPLE_MACHINES
-
-	var/on = 0
-	var/area/connected_area = null
-	var/other_area = null
-	var/image/overlay
-
-	construct_state = /decl/machine_construction/wall_frame/panel_closed/simple
-	frame_type = /obj/item/frame/button/light_switch
-	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc/buildable
-	)
-	base_type = /obj/machinery/light_switch/buildable
-
-/obj/machinery/light_switch/buildable
-	uncreated_component_parts = null
-
-/obj/machinery/light_switch/on
-	on = TRUE
+	//	luminosity = 1
 
 /obj/machinery/light_switch/Initialize()
-	..()
-	if(other_area)
-		connected_area = locate(other_area)
-	else
-		connected_area = get_area(src)
-
-	if(connected_area && name == initial(name))
-		SetName("light switch ([connected_area.name])")
-	return INITIALIZE_HINT_LATELOAD
-
-/obj/machinery/light_switch/LateInitialize()
 	. = ..()
-	connected_area?.set_lightswitch(on)
+	src.area = get_area(src)
+
+	if(otherarea)
+		src.area = locate(text2path("/area/[otherarea]"))
+
+	if(!name)
+		name = "light switch ([area.name])"
+
+	src.on = src.area.lightswitch
+	addtimer(CALLBACK(src, .proc/sync_lights), 25)
 	update_icon()
 
-/obj/machinery/light_switch/on_update_icon()
-	if(!overlay)
-		overlay = image(icon, "light1-overlay")
-		overlay.plane = EFFECTS_ABOVE_LIGHTING_PLANE
-		overlay.layer = ABOVE_LIGHTING_LAYER
+/obj/machinery/light_switch/update_icon()
+	cut_overlays()
+	if(!(stat & NOPOWER))
+		holographic_overlay(src, icon, "light_switch[on]-overlay")
+		if (!light_range || light_color != on ? "#82ff4c" : "#f86060")
+			set_light(2, 0.3, on ? "#82ff4c" : "#f86060")
+	else if (light_range)
+		set_light(FALSE)
 
-	overlays.Cut()
-	if(stat & (NOPOWER|BROKEN))
-		icon_state = "light-p"
-		set_light(0)
-	else
-		icon_state = "light[on]"
-		overlay.icon_state = "light[on]-overlay"
-		overlays += overlay
-		set_light(0.1, 0.1, 1, 2, on ? "#82ff4c" : "#f86060")
-
-/obj/machinery/light_switch/examine(mob/user, distance)
-	. = ..()
-	if(distance)
+/obj/machinery/light_switch/examine(mob/user)
+	if(..(user, 1))
 		to_chat(user, "A light switch. It is [on? "on" : "off"].")
 
-/obj/machinery/light_switch/proc/set_state(var/newstate)
-	if(on != newstate)
-		on = newstate
-		connected_area.set_lightswitch(on)
+/obj/machinery/light_switch/attack_hand(mob/user)
+	playsound(src, /decl/sound_category/switch_sound, 30)
+	on = !on
+	sync_lights()
+
+/obj/machinery/light_switch/proc/sync_lights()
+	var/area/A = get_area(src)
+	if(!A)
+		return
+
+	A.lightswitch = on
+
+	for(var/obj/machinery/light_switch/L in area)
+		L.on = on
+		L.update_icon()
+
+	for (var/obj/machinery/light/L in area)
+		if (on)
+			L.stat &= ~POWEROFF
+		else
+			L.stat |= POWEROFF
+		L.update()
+
+/obj/machinery/light_switch/power_change()
+	if(!otherarea)
+		..()
+
 		update_icon()
 
-/obj/machinery/light_switch/proc/sync_state()
-	if(connected_area && on != connected_area.lightswitch)
-		on = connected_area.lightswitch
-		update_icon()
-		return 1
-
-/obj/machinery/light_switch/interface_interact(mob/user)
-	if(CanInteract(user, DefaultTopicState()))
-		playsound(src, "switch", 30)
-		set_state(!on)
-		return TRUE
+/obj/machinery/light_switch/emp_act(severity)
+	if(stat & (BROKEN|NOPOWER))
+		..(severity)
+		return
+	power_change()
+	..(severity)

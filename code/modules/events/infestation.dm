@@ -1,96 +1,131 @@
-#define LOC_KITCHEN 0
-#define LOC_ATMOS 1
-#define LOC_INCIN 2
-#define LOC_CHAPEL 3
-#define LOC_LIBRARY 4
-#define LOC_HYDRO 5
-#define LOC_VAULT 6
-#define LOC_CONSTR 7
-#define LOC_TECH 8
-#define LOC_TACTICAL 9
-
-#define VERM_MICE 0
-#define VERM_LIZARDS 1
-#define VERM_SPIDERS 2
+#define INFESTATION_RATS "rats"
+#define INFESTATION_LIZARDS "lizards"
+#define INFESTATION_SPACE_BATS "space bats"
+#define INFESTATION_SPIDERLINGS "spiderlings"
+#define INFESTATION_HIVEBOTS "hivebots"
+#define INFESTATION_SLIMES "slimes"
 
 /datum/event/infestation
+	startWhen = 1
 	announceWhen = 10
 	endWhen = 11
-	var/area/location
-	var/vermin
-	var/vermstring
+	no_fake = 1
+	var/area/chosen_area
+	var/event_name = "Slime Leak"
+	var/chosen_mob = INFESTATION_SLIMES
+	var/chosen_verb = "have leaked into"
+	var/list/chosen_mob_types = list()
+	var/chosen_scan_type = "Bioscans"
+	var/list/possible_mobs = list(
+		INFESTATION_RATS = 1,
+		INFESTATION_LIZARDS = 1
+	)
+
+/datum/event/infestation/moderate
+	possible_mobs = list(
+		INFESTATION_SPACE_BATS = 1,
+		INFESTATION_SPIDERLINGS = 1
+	)
+
+/datum/event/infestation/major/setup()
+	var/player_count = 0
+	for(var/mob/living/carbon/human/H in living_mob_list)
+		if(H.stat == CONSCIOUS && H.client)
+			player_count++
+	if(player_count >= 15)
+		possible_mobs = list(
+			INFESTATION_HIVEBOTS = 1,
+			INFESTATION_SLIMES = 1
+		)
+	else
+		possible_mobs = list(
+			INFESTATION_SLIMES = 1
+		)
+	..()
+
+/datum/event/infestation/setup()
+	choose_area()
+	choose_mobs()
 
 /datum/event/infestation/start()
-	var/list/vermin_turfs
-	var/attempts = 3
-	do
-		vermin_turfs = set_location_get_infestation_turfs()
-		if(!location)
-			return
-	while(!vermin_turfs && --attempts > 0)
+	spawn_mobs()
 
-	if(!vermin_turfs)
-		log_debug("Vermin infestation failed to find a viable spawn after 3 attempts. Aborting.")
-		kill()
+/datum/event/infestation/proc/choose_area()
+	chosen_area = random_station_area(TRUE)
 
-	var/list/spawn_types = list()
-	var/max_number
-	vermin = rand(0,2)
-	switch(vermin)
-		if(VERM_MICE)
-			spawn_types = list(/mob/living/simple_animal/mouse) // The base mouse type selects a random color for us
-			max_number = 12
-			vermstring = "mice"
-		if(VERM_LIZARDS)
-			spawn_types = list(/mob/living/simple_animal/lizard)
-			max_number = 6
-			vermstring = "lizards"
-		if(VERM_SPIDERS)
-			spawn_types = list(/obj/effect/spider/spiderling)
-			max_number = 3
-			vermstring = "spiders"
+/datum/event/infestation/proc/choose_mobs()
 
-	spawn(0)
-		var/num = 0
-		for(var/i = 1 to severity)
-			num += rand(2,max_number)
-		log_and_message_admins("Vermin infestation spawned ([vermstring] x[num]) in \the [location]", location = pick_area_turf(location))
-		while(vermin_turfs.len && num > 0)
-			var/turf/simulated/floor/T = pick(vermin_turfs)
-			vermin_turfs.Remove(T)
-			num--
+	chosen_mob = pickweight(possible_mobs)
 
-			var/spawn_type = pick(spawn_types)
-			var/obj/effect/spider/spiderling/S = new spawn_type(T)
-			if(istype(S))
-				S.amount_grown = -1
+	switch(chosen_mob)
+		if(INFESTATION_HIVEBOTS)
+			event_name = "Hivebot Invasion"
+			chosen_verb = "have invaded"
+			chosen_scan_type = "Bluespace readings"
+			var/list/beacon_types = list(
+				/mob/living/simple_animal/hostile/hivebotbeacon = 1,
+				/mob/living/simple_animal/hostile/hivebotbeacon/toxic = 1,
+				/mob/living/simple_animal/hostile/hivebotbeacon/incendiary = 1
+			)
+			chosen_mob_types += pickweight(beacon_types)
+
+		if(INFESTATION_SPACE_BATS)
+			event_name = "Space Bat Nest"
+			chosen_verb = "have been breeding in"
+			for(var/i = 1, i < rand(3,5),i++)
+				chosen_mob_types += /mob/living/simple_animal/hostile/scarybat
+
+		if(INFESTATION_LIZARDS)
+			event_name = "Lizard Nest"
+			chosen_verb = "have been breeding in"
+			for(var/i = 1, i < rand(6,8),i++)
+				chosen_mob_types += /mob/living/simple_animal/lizard
+
+		if(INFESTATION_RATS)
+			event_name = "Rat Nest"
+			chosen_verb = "have been breeding in"
+			var/list/rat_breeds = list(
+				/mob/living/simple_animal/rat/gray = 4,
+				/mob/living/simple_animal/rat/brown = 2,
+				/mob/living/simple_animal/rat/white = 3,
+				/mob/living/simple_animal/rat/hooded = 1,
+				/mob/living/simple_animal/rat/irish = 2,
+			)
+			for(var/i = 1, i < rand(8,24),i++)
+				chosen_mob_types += pickweight(rat_breeds)
+
+		if(INFESTATION_SLIMES)
+			event_name = "Xenobiology Containment Breach"
+			chosen_verb = "have leaked into"
+			var/list/slime_types = list(
+				/mob/living/carbon/slime,
+				/mob/living/carbon/slime/purple,
+				/mob/living/carbon/slime/metal,
+				/mob/living/carbon/slime/orange,
+				/mob/living/carbon/slime/blue,
+				/mob/living/carbon/slime/dark_blue,
+				/mob/living/carbon/slime/dark_purple,
+				/mob/living/carbon/slime/yellow,
+				/mob/living/carbon/slime/silver,
+				/mob/living/carbon/slime/pink,
+				/mob/living/carbon/slime/red,
+				/mob/living/carbon/slime/green,
+				/mob/living/carbon/slime/oil
+			)
+			var/chosen_slime_type = pick(slime_types)
+			for(var/i = 1, i < rand(5,8),i++)
+				chosen_mob_types += chosen_slime_type
+
+		if(INFESTATION_SPIDERLINGS)
+			event_name = "Spiderling Infestation"
+			chosen_verb = "have burrowed into"
+			for(var/i = 1, i < rand(3,6),i++)
+				chosen_mob_types += /obj/effect/spider/spiderling
+			chosen_mob_types += /obj/effect/spider/eggcluster
+
+/datum/event/infestation/proc/spawn_mobs()
+	for(var/spawned_mob in chosen_mob_types)
+		new spawned_mob(chosen_area.random_space())
 
 /datum/event/infestation/announce()
-	command_announcement.Announce("Bioscans indicate that [vermstring] have been breeding in \the [location]. Further infestation is likely if left unchecked.", "[location_name()] Biologic Sensor Network", zlevels = affecting_z)
-
-/datum/event/infestation/proc/set_location_get_infestation_turfs()
-	location = pick_area(list(/proc/is_not_space_area, /proc/is_station_area))
-	if(!location)
-		log_debug("Vermin infestation failed to find a viable area. Aborting.")
-		kill()
-		return
-
-	var/list/vermin_turfs = get_area_turfs(location, list(/proc/not_turf_contains_dense_objects, /proc/IsTurfAtmosSafe))
-	if(!vermin_turfs.len)
-		log_debug("Vermin infestation failed to find viable turfs in \the [location].")
-		return
-	return vermin_turfs
-
-#undef LOC_KITCHEN
-#undef LOC_ATMOS
-#undef LOC_INCIN
-#undef LOC_CHAPEL
-#undef LOC_LIBRARY
-#undef LOC_HYDRO
-#undef LOC_VAULT
-#undef LOC_TECH
-#undef LOC_TACTICAL
-
-#undef VERM_MICE
-#undef VERM_LIZARDS
-#undef VERM_SPIDERS
+	command_announcement.Announce("[chosen_scan_type] indicate that [chosen_mob] [chosen_verb] [chosen_area]. Clear them out before this starts to affect productivity.", event_name, new_sound = 'sound/AI/vermin.ogg')

@@ -9,10 +9,11 @@
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "floor_magnet-f"
 	name = "Electromagnetic Generator"
-	desc = "A device that uses powernet to create points of magnetic energy."
+	desc = "A device that uses station power to create points of magnetic energy."
 	level = 1		// underfloor
-	layer = ABOVE_WIRE_LAYER
+	layer = 2.5
 	anchored = 1
+	use_power = 1
 	idle_power_usage = 50
 
 	var/freq = 1449		// radio frequency
@@ -28,24 +29,24 @@
 	var/center_y = 0
 	var/max_dist = 20 // absolute value of center_x,y cannot exceed this integer
 
-/obj/machinery/magnetic_module/Initialize()
-	. = ..()
+/obj/machinery/magnetic_module/New()
+	..()
 	var/turf/T = loc
 	hide(!T.is_plating())
 	center = T
 
-	if(radio_controller)
-		radio_controller.add_object(src, freq, RADIO_MAGNETS)
+	addtimer(CALLBACK(src, .proc/magnetic_process), 0, TIMER_UNIQUE)
 
-	magnetic_process()
+/obj/machinery/magnetic_module/LateInitialize()
+	if(SSradio)
+		SSradio.add_object(src, freq, RADIO_MAGNETS)
 
 	// update the invisibility and icon
 /obj/machinery/magnetic_module/hide(var/intact)
-	set_invisibility(intact ? 101 : 0)
+	invisibility = intact ? 101 : 0
 	update_icon()
 
-	// update the icon_state
-/obj/machinery/magnetic_module/on_update_icon()
+/obj/machinery/magnetic_module/update_icon()
 	var/state="floor_magnet"
 	var/onstate=""
 	if(!on)
@@ -58,7 +59,6 @@
 		icon_state = "[state][onstate]"
 
 /obj/machinery/magnetic_module/receive_signal(datum/signal/signal)
-
 	var/command = signal.data["command"]
 	var/modifier = signal.data["modifier"]
 	var/signal_code = signal.data["code"]
@@ -66,10 +66,7 @@
 
 		Cmd(command, modifier)
 
-
-
 /obj/machinery/magnetic_module/proc/Cmd(var/command, var/modifier)
-
 	if(command)
 		switch(command)
 			if("set-electriclevel")
@@ -123,9 +120,7 @@
 					spawn()
 						magnetic_process()
 
-
-
-/obj/machinery/magnetic_module/Process()
+/obj/machinery/magnetic_module/process()
 	if(stat & NOPOWER)
 		on = 0
 
@@ -148,16 +143,26 @@
 
 	// Update power usage:
 	if(on)
-		update_use_power(POWER_USE_ACTIVE)
-		change_power_consumption(electricity_level*15, POWER_USE_ACTIVE)
+		use_power = 2
+		active_power_usage = electricity_level*15
 	else
-		update_use_power(POWER_USE_IDLE)
+		use_power = 0
+
+
+	// Overload conditions:
+	/* // Eeeehhh kinda stupid
+	if(on)
+		if(electricity_level > 11)
+			if(prob(electricity_level))
+				explosion(loc, 0, 1, 2, 3) // ooo dat shit EXPLODES son
+				spawn(2)
+					qdel(src)
+	*/
 
 	update_icon()
 
 
 /obj/machinery/magnetic_module/proc/magnetic_process() // proc that actually does the pulling
-	set waitfor = FALSE
 	if(pulling) return
 	while(on)
 
@@ -165,21 +170,21 @@
 		center = locate(x+center_x, y+center_y, z)
 		if(center)
 			for(var/obj/M in orange(magnetic_field, center))
-				if(!M.anchored && (M.obj_flags & OBJ_FLAG_CONDUCTIBLE))
+				if(!M.anchored && (M.flags & CONDUCT))
 					step_towards(M, center)
 
 			for(var/mob/living/silicon/S in orange(magnetic_field, center))
 				if(istype(S, /mob/living/silicon/ai)) continue
 				step_towards(S, center)
 
-		use_power_oneoff(electricity_level * 5)
+		use_power(electricity_level * 5)
 		sleep(13 - electricity_level)
 
 	pulling = 0
 
 /obj/machinery/magnetic_module/Destroy()
-	if(radio_controller)
-		radio_controller.remove_object(src, freq)
+	if(SSradio)
+		SSradio.remove_object(src, freq)
 	return ..()
 
 /obj/machinery/magnetic_controller
@@ -188,6 +193,7 @@
 	icon_state = "airlock_control_standby"
 	density = 1
 	anchored = 1.0
+	use_power = 1
 	idle_power_usage = 45
 	var/frequency = 1449
 	var/code = 0
@@ -208,29 +214,30 @@
 
 /obj/machinery/magnetic_controller/Initialize()
 	. = ..()
-	if(autolink)
-		for(var/obj/machinery/magnetic_module/M in world)
-			if(M.freq == frequency && M.code == code)
-				magnets.Add(M)
 
-	if(radio_controller)
-		radio_connection = radio_controller.add_object(src, frequency, RADIO_MAGNETS)
+	if(autolink)
+		. = INITIALIZE_HINT_LATELOAD
+		radio_connection = SSradio.add_object(src, frequency, RADIO_MAGNETS)
 
 	if(path) // check for default path
 		filter_path() // renders rpath
 
+/obj/machinery/magnetic_controller/LateInitialize()
+	for(var/obj/machinery/magnetic_module/M in SSmachinery.all_machines)
+		if(M.freq == frequency && M.code == code)
+			magnets += M
 
-/obj/machinery/magnetic_controller/Process()
+/obj/machinery/magnetic_controller/process()
 	if(magnets.len == 0 && autolink)
-		for(var/obj/machinery/magnetic_module/M in world)
+		for(var/obj/machinery/magnetic_module/M in SSmachinery.all_machines)
 			if(M.freq == frequency && M.code == code)
-				magnets.Add(M)
+				magnets += M
 
-/obj/machinery/magnetic_controller/interface_interact(user)
-	interact(user)
-	return TRUE
 
-/obj/machinery/magnetic_controller/interact(mob/user)
+/obj/machinery/magnetic_controller/attack_ai(mob/user as mob)
+	return src.attack_hand(user)
+
+/obj/machinery/magnetic_controller/attack_hand(mob/user as mob)
 	if(stat & (BROKEN|NOPOWER))
 		return
 	user.set_machine(src)
@@ -255,21 +262,20 @@
 	dat += "Moving: <a href='?src=\ref[src];operation=togglemoving'>[moving ? "Enabled":"Disabled"]</a>"
 
 
-	show_browser(user, dat, "window=magnet;size=400x500")
+	user << browse(dat, "window=magnet;size=400x500")
 	onclose(user, "magnet")
 
 /obj/machinery/magnetic_controller/Topic(href, href_list)
-	if(..())
-		return 1
 	if(stat & (BROKEN|NOPOWER))
 		return
 	usr.set_machine(src)
+	src.add_fingerprint(usr)
 
 	if(href_list["radio-op"])
 
 		// Prepare signal beforehand, because this is a radio operation
 		var/datum/signal/signal = new
-		signal.transmission_method = 1 // radio transmission
+		signal.transmission_method = TRANSMISSION_RADIO
 		signal.source = src
 		signal.frequency = frequency
 		signal.data["code"] = code
@@ -292,7 +298,7 @@
 
 		// Broadcast the signal
 
-		radio_connection.post_signal(src, signal, radio_filter = RADIO_MAGNETS)
+		radio_connection.post_signal(src, signal, filter = RADIO_MAGNETS)
 
 		spawn(1)
 			updateUsrDialog() // pretty sure this increases responsiveness
@@ -335,7 +341,7 @@
 
 		// Prepare the radio signal
 		var/datum/signal/signal = new
-		signal.transmission_method = 1 // radio transmission
+		signal.transmission_method = TRANSMISSION_RADIO
 		signal.source = src
 		signal.frequency = frequency
 		signal.data["code"] = code
@@ -359,7 +365,7 @@
 
 		// Broadcast the signal
 		spawn()
-			radio_connection.post_signal(src, signal, radio_filter = RADIO_MAGNETS)
+			radio_connection.post_signal(src, signal, filter = RADIO_MAGNETS)
 
 		if(speed == 10)
 			sleep(1)
@@ -367,7 +373,6 @@
 			sleep(12-speed)
 
 	looping = 0
-
 
 /obj/machinery/magnetic_controller/proc/filter_path()
 	// Generates the rpath variable using the path string, think of this as "string2list"
@@ -385,6 +390,6 @@
 		// there doesn't HAVE to be separators but it makes paths syntatically visible
 
 /obj/machinery/magnetic_controller/Destroy()
-	if(radio_controller)
-		radio_controller.remove_object(src, frequency)
+	if(SSradio)
+		SSradio.remove_object(src, frequency)
 	return ..()

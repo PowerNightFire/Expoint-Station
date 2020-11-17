@@ -7,35 +7,40 @@ FLOOR SAFES
 //SAFES
 /obj/structure/safe
 	name = "safe"
-	desc = "A huge chunk of metal with a dial embedded in it. Fine print on the dial reads \"Scarborough Arms - 2 tumbler safe, guaranteed thermite resistant, explosion resistant, and assistant resistant.\"."
-	icon = 'icons/obj/structures/safe.dmi'
+	desc = "A huge chunk of metal with a dial embedded in it. Fine print on the dial reads \"Scarborough Arms - 2 tumbler safe, guaranteed thermite resistant, explosion resistant, and assistant resistant.\""
+	icon = 'icons/obj/structures.dmi'
 	icon_state = "safe"
 	anchored = 1
 	density = 1
 	var/open = 0		//is the safe open?
-	var/tumbler_1_pos	//the tumbler position- from 0 to 72
-	var/tumbler_1_open	//the tumbler position to open at- 0 to 72
+	var/tumbler_1_pos	//the tumbler position- from 0 to 71
+	var/tumbler_1_open	//the tumbler position to open at- 0 to 71
 	var/tumbler_2_pos
 	var/tumbler_2_open
 	var/dial = 0		//where is the dial pointing?
 	var/space = 0		//the combined w_class of everything in the safe
 	var/maxspace = 24	//the maximum combined w_class of stuff in the safe
 
+
+/obj/structure/safe/New()
+	tumbler_1_pos = rand(0, 71)
+	tumbler_1_open = rand(0, 71)
+
+	tumbler_2_pos = rand(0, 71)
+	tumbler_2_open = min(71 , max( 1 , abs(tumbler_1_open + rand(-34, 34))))
+
+
 /obj/structure/safe/Initialize()
+	. = ..()
 	for(var/obj/item/I in loc)
 		if(space >= maxspace)
 			return
-		if(I.w_class + space <= maxspace) //todo replace with internal storage or something
+		if(I.w_class + space <= maxspace)
 			space += I.w_class
 			I.forceMove(src)
-	. = ..()
-	tumbler_1_pos = rand(0, 72)
-	tumbler_1_open = rand(0, 72)
 
-	tumbler_2_pos = rand(0, 72)
-	tumbler_2_open = rand(0, 72)
 
-/obj/structure/safe/proc/check_unlocked(mob/user, canhear)
+/obj/structure/safe/proc/check_unlocked(mob/user as mob, canhear)
 	if(user && canhear)
 		if(tumbler_1_pos == tumbler_1_open)
 			to_chat(user, "<span class='notice'>You hear a [pick("tonk", "krunk", "plunk")] from [src].</span>")
@@ -61,14 +66,14 @@ FLOOR SAFES
 	return num
 
 
-/obj/structure/safe/on_update_icon()
+/obj/structure/safe/update_icon()
 	if(open)
 		icon_state = "[initial(icon_state)]-open"
 	else
 		icon_state = initial(icon_state)
 
 
-/obj/structure/safe/attack_hand(mob/user)
+/obj/structure/safe/attack_hand(mob/user as mob)
 	user.set_machine(src)
 	var/dat = "<center>"
 	dat += "<a href='?src=\ref[src];open=1'>[open ? "Close" : "Open"] [src]</a> | <a href='?src=\ref[src];decrement=1'>-</a> [dial * 5] <a href='?src=\ref[src];increment=1'>+</a>"
@@ -78,12 +83,16 @@ FLOOR SAFES
 			var/obj/item/P = contents[i]
 			dat += "<tr><td><a href='?src=\ref[src];retrieve=\ref[P]'>[P.name]</a></td></tr>"
 		dat += "</table></center>"
-	show_browser(user, "<html><head><title>[name]</title></head><body>[dat]</body></html>", "window=safe;size=350x300")
+	user << browse("<html><head><title>[name]</title></head><body>[dat]</body></html>", "window=safe;size=350x300")
 
 
 /obj/structure/safe/Topic(href, href_list)
 	if(!ishuman(usr))	return
 	var/mob/living/carbon/human/user = usr
+
+	var/canhear = 0
+	if(istype(user.l_hand, /obj/item/clothing/accessory/stethoscope) || istype(user.r_hand, /obj/item/clothing/accessory/stethoscope))
+		canhear = 1
 
 	if(href_list["open"])
 		if(check_unlocked())
@@ -96,7 +105,6 @@ FLOOR SAFES
 			to_chat(user, "<span class='notice'>You can't [open ? "close" : "open"] [src], the lock is engaged!</span>")
 			return
 
-	var/canhear = locate(/obj/item/clothing/accessory/stethoscope) in usr.get_held_items()
 	if(href_list["decrement"])
 		dial = decrement(dial)
 		if(dial == tumbler_1_pos + 1 || dial == tumbler_1_pos - 71)
@@ -126,7 +134,7 @@ FLOOR SAFES
 		return
 
 	if(href_list["retrieve"])
-		close_browser(user, "window=safe") // Close the menu
+		user << browse("", "window=safe") // Close the menu)
 
 		var/obj/item/P = locate(href_list["retrieve"]) in src
 		if(open)
@@ -135,12 +143,11 @@ FLOOR SAFES
 				updateUsrDialog()
 
 
-/obj/structure/safe/attackby(obj/item/I, mob/user)
+/obj/structure/safe/attackby(obj/item/I as obj, mob/user as mob)
 	if(open)
 		if(I.w_class + space <= maxspace)
-			if(!user.unEquip(I, src))
-				return
 			space += I.w_class
+			user.drop_from_inventory(I,src)
 			to_chat(user, "<span class='notice'>You put [I] in [src].</span>")
 			updateUsrDialog()
 			return
@@ -153,8 +160,7 @@ FLOOR SAFES
 			return
 
 
-obj/structure/safe/explosion_act(severity)
-	SHOULD_CALL_PARENT(FALSE)
+obj/structure/safe/ex_act(severity)
 	return
 
 //FLOOR SAFES
@@ -163,7 +169,7 @@ obj/structure/safe/explosion_act(severity)
 	icon_state = "floorsafe"
 	density = 0
 	level = 1	//underfloor
-	layer = BELOW_OBJ_LAYER
+	layer = 2.5
 
 /obj/structure/safe/floor/Initialize()
 	. = ..()
@@ -173,7 +179,18 @@ obj/structure/safe/explosion_act(severity)
 	update_icon()
 
 /obj/structure/safe/floor/hide(var/intact)
-	set_invisibility(intact ? 101 : 0)
+	invisibility = intact ? 101 : 0
 
 /obj/structure/safe/floor/hides_under_flooring()
 	return 1
+
+//random station safe, may come with some different loot
+/obj/structure/safe/station
+	name = "corporate safe"
+
+/obj/structure/safe/station/Initialize()
+	. = ..()
+	new /obj/random/highvalue(src)
+	new /obj/random/highvalue(src)
+	new /obj/random/highvalue(src)
+	new /obj/random/highvalue(src)

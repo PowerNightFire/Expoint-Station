@@ -1,11 +1,11 @@
 
 /obj/item/plantspray
-	icon = 'icons/obj/hydroponics/hydroponics_machines.dmi'
+	icon = 'icons/obj/hydroponics_machines.dmi'
 	item_state = "spray"
-	item_flags = ITEM_FLAG_NO_BLUDGEON
-	slot_flags = SLOT_LOWER_BODY
+	flags = NOBLUDGEON
+	slot_flags = SLOT_BELT
 	throwforce = 4
-	w_class = ITEM_SIZE_SMALL
+	w_class = ITEMSIZE_SMALL
 	throw_speed = 2
 	throw_range = 10
 	var/toxicity = 4
@@ -27,7 +27,7 @@
 
 /obj/item/plantspray/pests/old
 	name = "bottle of pestkiller"
-	icon = 'icons/obj/items/chem/bottle.dmi'
+	icon = 'icons/obj/chemical.dmi'
 	icon_state = "bottle16"
 
 /obj/item/plantspray/pests/old/carbaryl
@@ -54,25 +54,66 @@
 
 /obj/item/weedkiller
 	name = "bottle of weedkiller"
-	icon = 'icons/obj/items/chem/bottle.dmi'
+	icon = 'icons/obj/chemical.dmi'
 	icon_state = "bottle16"
 	var/toxicity = 0
 	var/weed_kill_str = 0
 
 /obj/item/weedkiller/triclopyr
 	name = "bottle of glyphosate"
+	icon = 'icons/obj/chemical.dmi'
 	icon_state = "bottle16"
 	toxicity = 4
 	weed_kill_str = 2
 
 /obj/item/weedkiller/lindane
 	name = "bottle of triclopyr"
+	icon = 'icons/obj/chemical.dmi'
 	icon_state = "bottle18"
 	toxicity = 6
 	weed_kill_str = 4
 
 /obj/item/weedkiller/D24
 	name = "bottle of 2,4-D"
+	icon = 'icons/obj/chemical.dmi'
 	icon_state = "bottle15"
 	toxicity = 8
 	weed_kill_str = 7
+
+// *************************************
+// Nutrient defines for hydroponics
+// *************************************
+
+/obj/item/reagent_containers/glass/fertilizer
+	name = "fertilizer bottle"
+	desc = "A small glass bottle. Can hold up to 60 units."
+	icon = 'icons/obj/chemical.dmi'
+	icon_state = "bottle16"
+	flags = OPENCONTAINER
+	possible_transfer_amounts = null
+	w_class = ITEMSIZE_SMALL
+
+	//Like a shot glass!
+	amount_per_transfer_from_this = 10
+	volume = 60
+
+/obj/item/reagent_containers/glass/fertilizer/Initialize()
+	. = ..()
+
+	src.pixel_x = rand(-5.0, 5)
+	src.pixel_y = rand(-5.0, 5)
+
+/obj/item/reagent_containers/glass/fertilizer/ez
+	name = "bottle of E-Z-Nutrient"
+	icon_state = "bottle16"
+	reagents_to_add = list(/datum/reagent/toxin/fertilizer/eznutrient = 60)
+
+/obj/item/reagent_containers/glass/fertilizer/l4z
+	name = "bottle of Left 4 Zed"
+	icon_state = "bottle18"
+	reagents_to_add = list(/datum/reagent/toxin/fertilizer/left4zed = 60)
+
+/obj/item/reagent_containers/glass/fertilizer/rh
+	name = "bottle of Robust Harvest"
+	icon_state = "bottle15"
+	reagents_to_add = list(/datum/reagent/toxin/fertilizer/robustharvest = 60)

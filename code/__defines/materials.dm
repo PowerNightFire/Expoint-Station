@@ -1,60 +1,66 @@
-// defaults
-#define DEFAULT_WALL_MATERIAL       /decl/material/solid/metal/steel
-#define DEFAULT_FURNITURE_MATERIAL  /decl/material/solid/metal/aluminium
+#define MATERIAL_PLASTIC                 "plastic"
+#define MATERIAL_PLASTIC_HOLO            "holoplastic"
+#define MATERIAL_PLASTEEL                "plasteel"
+#define MATERIAL_STEEL                   "steel"
+#define MATERIAL_GLASS                   "glass"
+#define MATERIAL_GLASS_REINFORCED        "rglass"
+#define MATERIAL_GLASS_WIRED             "wired glass"
+#define MATERIAL_GLASS_PHORON            "borosilicate glass"
+#define MATERIAL_GLASS_REINFORCED_PHORON "reinforced borosilicate glass"
+#define MATERIAL_GOLD                    "gold"
+#define MATERIAL_SILVER                  "silver"
+#define MATERIAL_DIAMOND                 "diamond"
+#define MATERIAL_PHORON                  "phoron"
+#define MATERIAL_URANIUM                 "uranium"
+#define MATERIAL_SANDSTONE               "sandstone"
+#define MATERIAL_CONCRETE                "concrete"
+#define MATERIAL_IRON                    "iron"
+#define MATERIAL_PLATINUM                "platinum"
+#define MATERIAL_BRONZE                  "bronze"
+#define MATERIAL_OSMIUM                  "osmium"
+#define MATERIAL_MARBLE                  "marble"
+#define MATERIAL_CULT                    "cult"
+#define MATERIAL_CULT_REINFORCED         "cult_reinforced"
+#define MATERIAL_TITANIUM                "titanium"
+#define MATERIAL_SAND                    "sand"
+#define MATERIAL_DIONA                   "biomass"
+#define MATERIAL_VAURCA                  "alien biomass"
+#define MATERIAL_TRITIUM                 "tritium"
+#define MATERIAL_HYDROGEN_METALLIC       "mhydrogen"
+#define MATERIAL_ELEVATOR                "elevatorium"
+#define MATERIAL_SHUTTLE                 "shuttle"
+#define MATERIAL_SHUTTLE_SKRELL          "skrell"
+#define MATERIAL_RUST                    "rust"
+#define MATERIAL_CARDBOARD               "cardboard"
 
-#define MAT_FLAG_ALTERATION_NONE    BITFLAG(0)
-#define MAT_FLAG_ALTERATION_NAME    BITFLAG(1)
-#define MAT_FLAG_ALTERATION_DESC    BITFLAG(2)
-#define MAT_FLAG_ALTERATION_COLOR   BITFLAG(3)
-#define MAT_FLAG_ALTERATION_ALL     (~MAT_FLAG_ALTERATION_NONE)
+// Leathers and related.
+#define MATERIAL_RESIN                   "resin"
+#define MATERIAL_LEATHER                 "leather"
+#define MATERIAL_BONE                    "bone"
+#define MATERIAL_BONE_CURSED             "cursed bone"
+#define MATERIAL_HIDE                    "hide"
+#define MATERIAL_HIDE_CORGI              "corgi hide"
+#define MATERIAL_HIDE_CAT                "cat hide"
+#define MATERIAL_HIDE_MONKEY             "monkey hide"
+#define MATERIAL_HIDE_LIZARD             "lizard hide"
+#define MATERIAL_HIDE_ALIEN              "alien hide"
+#define MATERIAL_HIDE_HUMAN              "human hide"
 
-#define MAT_FLAG_UNMELTABLE         BITFLAG(0)
-#define MAT_FLAG_BRITTLE            BITFLAG(1)
-#define MAT_FLAG_PADDING            BITFLAG(2)
-#define MAT_FLAG_FUSION_FUEL        BITFLAG(3)
+// Wood.
+#define MATERIAL_WOOD                    "wood"
+#define MATERIAL_WOOD_HOLO               "holowood"
+#define MATERIAL_WOOD_LOG                "log"
+#define MATERIAL_WOOD_BRANCH             "branch"
 
-#define SHARD_SHARD                 "shard"
-#define SHARD_SHRAPNEL              "shrapnel"
-#define SHARD_STONE_PIECE           "piece"
-#define SHARD_SPLINTER              "splinters"
-#define SHARD_NONE                  ""
+// Cloth and related.
+#define MATERIAL_CLOTH                   "cloth"
+#define MATERIAL_COTTON                  "cotton"
+#define MATERIAL_CARPET                  "carpet"
+#define MATERIAL_CLOTH_TEAL              "teal"
+#define MATERIAL_CLOTH_BLACK             "black"
+#define MATERIAL_CLOTH_GREEN             "green"
+#define MATERIAL_CLOTH_PURPLE            "purple"
+#define MATERIAL_CLOTH_BLUE              "blue"
+#define MATERIAL_CLOTH_BEIGE             "beige"
+#define MATERIAL_CLOTH_LIME              "lime"
 
-//Arbitrary weight thresholds
-#define MAT_VALUE_EXTREMELY_LIGHT	 10		// fabric tier
-#define MAT_VALUE_VERY_LIGHT         30		// glass tier
-#define MAT_VALUE_LIGHT              40		// titanium tier
-#define MAT_VALUE_NORMAL             50		// steel tier
-#define MAT_VALUE_HEAVY              70		// silver tier
-#define MAT_VALUE_VERY_HEAVY         80		// uranium tier
-
-//Construction difficulty
-#define MAT_VALUE_EASY_DIY          0
-#define MAT_VALUE_NORMAL_DIY        1
-#define MAT_VALUE_HARD_DIY          2
-#define MAT_VALUE_VERY_HARD_DIY     3
-
-//Stack flags
-#define USE_MATERIAL_COLOR          BITFLAG(0)
-#define USE_MATERIAL_SINGULAR_NAME  BITFLAG(1)
-#define USE_MATERIAL_PLURAL_NAME    BITFLAG(2)
-
-//Arbitrary hardness thresholds
-#define MAT_VALUE_SOFT              10
-#define MAT_VALUE_FLEXIBLE          20
-#define MAT_VALUE_RIGID             40
-#define MAT_VALUE_HARD              60
-#define MAT_VALUE_VERY_HARD         80
-
-// Arbitrary reflectiveness thresholds
-#define MAT_VALUE_DULL              10
-#define MAT_VALUE_MATTE             20
-#define MAT_VALUE_SHINY             40
-#define MAT_VALUE_VERY_SHINY        60
-#define MAT_VALUE_MIRRORED          80
-
-#define STRUCTURE_BRITTLE_MATERIAL_DAMAGE_MULTIPLIER 4 // Amount table damage is multiplied by if it is made of a brittle material (e.g. glass)
-
-#define ORE_SURFACE  "surface minerals"
-#define ORE_PRECIOUS "precious metals"
-#define ORE_NUCLEAR  "nuclear fuel"
-#define ORE_EXOTIC   "exotic matter"

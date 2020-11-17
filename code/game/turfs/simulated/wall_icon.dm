@@ -1,173 +1,131 @@
 /turf/simulated/wall/proc/update_material()
-	if(construction_stage != -1)
-		if(reinf_material)
-			construction_stage = 6
-		else
-			construction_stage = null
 	if(!material)
-		material = decls_repository.get_decl(get_default_material())
+		return
+
+	if(reinf_material)
+		construction_stage = 6
+	else
+		construction_stage = null
+	if(!material)
+		material = SSmaterials.get_material_by_name(DEFAULT_WALL_MATERIAL)
 	if(material)
 		explosion_resistance = material.explosion_resistance
+		if (material.wall_icon)
+			icon = material.wall_icon
+
 	if(reinf_material && reinf_material.explosion_resistance > explosion_resistance)
 		explosion_resistance = reinf_material.explosion_resistance
-	update_strings()
-	set_opacity(material.opacity >= 0.5)
-	SSradiation.resistance_cache.Remove(src)
-	for(var/turf/simulated/wall/W in RANGE_TURFS(src, 1))
-		W.wall_connections = null
-		W.other_connections = null
-		W.queue_icon_update()
 
-/turf/simulated/wall/proc/update_strings()
 	if(reinf_material)
-		SetName("reinforced [material.solid_name] [material.wall_name]")
-		desc = "It seems to be a section of hull reinforced with [reinf_material.solid_name] and plated with [material.solid_name]."
+		name = "reinforced [material.display_name] wall"
+		if(material.display_name == reinf_material.display_name)
+			desc = "It seems to be a section of hull reinforced and plated with [material.display_name]."
+		else
+			desc = "It seems to be a section of hull reinforced with [reinf_material.display_name] and plated with [material.display_name]."
 	else
-		SetName("[material.solid_name] [material.wall_name]")
-		desc = "It seems to be a section of hull plated with [material.solid_name]."
+		name = "[material.display_name] wall"
+		desc = "It seems to be a section of hull plated with [material.display_name]."
 
-/turf/simulated/wall/proc/get_default_material()
-	. = DEFAULT_WALL_MATERIAL
+	if(material.opacity < 0.5)
+		opacity = FALSE
+		alpha = 125
 
-/turf/simulated/wall/proc/set_material(var/decl/material/newmaterial, var/decl/material/newrmaterial, var/decl/material/newgmaterial)
+	if(!opacity)
+		var/turf/under_floor = under_turf
+		var/image/under_image = image(initial(under_floor.icon), icon_state = initial(under_floor.icon_state))
+		under_image.alpha = 255
+		underlays += under_image
 
+	update_icon()
+
+/turf/simulated/wall/proc/set_material(var/material/newmaterial, var/material/newrmaterial)
 	material = newmaterial
-	if(ispath(material, /decl/material))
-		material = decls_repository.get_decl(material)
-	else if(!istype(material))
-		crash_with("Wall has been supplied non-material '[newmaterial]'.")
-		material = decls_repository.get_decl(get_default_material())
-
 	reinf_material = newrmaterial
-	if(ispath(reinf_material, /decl/material))
-		reinf_material = decls_repository.get_decl(reinf_material)
-	else if(!istype(reinf_material))
-		reinf_material = null
-
-	girder_material = newgmaterial
-	if(ispath(girder_material, /decl/material))
-		girder_material = decls_repository.get_decl(girder_material)
-	else if(!istype(girder_material))
-		girder_material = null
-
 	update_material()
 
-/turf/simulated/wall/proc/get_wall_icon()
-	. = (istype(material) && material.icon_base) || 'icons/turf/walls/solid.dmi'
-
-/turf/simulated/wall/proc/apply_reinf_overlay()
-	. = istype(reinf_material)
-
-/turf/simulated/wall/on_update_icon()
-
-	. = ..()
-	cut_overlays()
-
-	if(!istype(material))
+/turf/simulated/wall/update_icon()
+	if(!material)
 		return
 
-	if(!wall_connections || !other_connections)
+	if(!damage_overlays[1]) //list hasn't been populated
+		generate_overlays()
 
-		var/list/wall_dirs =  list()
-		var/list/other_dirs = list()
-		for(var/stepdir in GLOB.alldirs)
-			var/turf/T = get_step(src, stepdir)
-			if(!T)
-				continue
-			if(istype(T, /turf/simulated/wall))
-				switch(can_join_with(T))
-					if(0)
-						continue
-					if(1)
-						wall_dirs += get_dir(src, T)
-					if(2)
-						wall_dirs += get_dir(src, T)
-						other_dirs += get_dir(src, T)
-			if(handle_structure_blending)
-				var/success = 0
-				for(var/O in T)
-					for(var/b_type in global.wall_blend_objects)
-						if(istype(O, b_type))
-							success = TRUE
-							break
-					for(var/nb_type in global.wall_noblend_objects)
-						if(istype(O, nb_type))
-							success = FALSE
-							break
-					if(success)
-						wall_dirs += get_dir(src, T)
-						if(get_dir(src, T) in GLOB.cardinal)
-							other_dirs += get_dir(src, T)
-						break
-		wall_connections = dirs_to_corner_states(wall_dirs)
-		other_connections = dirs_to_corner_states(other_dirs)
+	if (LAZYLEN(reinforcement_images))
+		cut_overlay(reinforcement_images, TRUE)
+	if (damage_image)
+		cut_overlay(damage_image, TRUE)
 
-	var/material_icon_base = get_wall_icon()
-	var/image/I
-	var/base_color = paint_color ? paint_color : material.color
-	if(!density)
-		if(check_state_in_icon(material_icon_base, "fwall_open"))
-			I = image(material_icon_base, "fwall_open")
-			I.color = base_color
-			add_overlay(I)
+	LAZYCLEARLIST(reinforcement_images)
+	damage_image = null
+
+	var/list/overlays_to_add = list()
+
+	if (!density)	// We're a fake and we're open.
+		clear_smooth_overlays()
+		fake_wall_image = image('icons/turf/wall_masks.dmi', "[material.icon_base]fwall_open")
+		fake_wall_image.color = material.icon_colour
+		add_overlay(fake_wall_image)
+		smooth = SMOOTH_FALSE
 		return
+	else if (fake_wall_image)
+		cut_overlay(fake_wall_image)
+		fake_wall_image = null
+		smooth = initial(smooth)
 
-	for(var/i = 1 to 4)
-		var/apply_state = "[wall_connections[i]]"
-		if(check_state_in_icon(apply_state, material_icon_base))
-			I = image(material_icon_base, apply_state, dir = 1<<(i-1))
-			I.color = base_color
-			add_overlay(I)
-		if(other_connections[i] != "0" && check_state_in_icon(apply_state, material_icon_base))
-			apply_state = "other[wall_connections[i]]"
-			I = image(material_icon_base, apply_state, dir = 1<<(i-1))
-			I.color = base_color
-			add_overlay(I)
+	calculate_adjacencies()	// Update cached_adjacency
 
-	if(apply_reinf_overlay())
-		var/reinf_color = paint_color ? paint_color : reinf_material.color
+	if(reinf_material)
+		var/image/I
 		if(construction_stage != null && construction_stage < 6)
-			I = image('icons/turf/walls/_construction_overlays.dmi', "[construction_stage]")
-			I.color = reinf_color
-			add_overlay(I)
+			I = image('icons/turf/wall_masks.dmi', "reinf_construct-[construction_stage]")
+			I.color = reinf_material.icon_colour
+			LAZYADD(reinforcement_images, I)
 		else
-			if(check_state_in_icon("0", reinf_material.icon_reinf))
-				// Directional icon
-				for(var/i = 1 to 4)
-					var/apply_state = "[wall_connections[i]]"
-					if(check_state_in_icon(apply_state, reinf_material.icon_reinf))
-						I = image(reinf_material.icon_reinf, apply_state, dir = 1<<(i-1))
-						I.color = reinf_color
-						add_overlay(I)
-			else if(check_state_in_icon("full", reinf_material.icon_reinf))
-				I = image(reinf_material.icon_reinf, "full")
-				I.color = reinf_color
-				add_overlay(I)
-
-	var/image/texture = material.get_wall_texture()
-	if(texture)
-		add_overlay(texture)
-	if(stripe_color && material.icon_stripe)
-		for(var/i = 1 to 4)
-			var/apply_icon
-			if(other_connections[i] != "0")
-				apply_icon = "other[wall_connections[i]]"
+			if (reinf_material.multipart_reinf_icon)
+				LAZYADD(reinforcement_images, cardinal_smooth_fromicon(reinf_material.multipart_reinf_icon, cached_adjacency))
 			else
-				apply_icon = "[wall_connections[i]]"
-			if(apply_icon && check_state_in_icon(apply_icon, material.icon_stripe))
-				I = image(material.icon_stripe, apply_icon, dir = 1<<(i-1))
-				I.color = stripe_color
-				add_overlay(I)
+				I = image('icons/turf/wall_masks.dmi', reinf_material.icon_reinf)
+				I.color = reinf_material.icon_colour
+				LAZYADD(reinforcement_images, I)
 
-	if(damage != 0 && SSmaterials.wall_damage_overlays)
+		if (reinforcement_images)
+			overlays_to_add += reinforcement_images
+
+	if(damage != 0)
 		var/integrity = material.integrity
 		if(reinf_material)
 			integrity += reinf_material.integrity
-		add_overlay(SSmaterials.wall_damage_overlays[Clamp(round(damage / integrity * DAMAGE_OVERLAY_COUNT) + 1, 1, DAMAGE_OVERLAY_COUNT)])
 
-/turf/simulated/wall/proc/can_join_with(var/turf/simulated/wall/W)
-	if(material && istype(W.material) && get_wall_icon() == W.get_wall_icon())
-		if((reinf_material && W.reinf_material) || (!reinf_material && !W.reinf_material))
-			return 1
-		return 2
-	return 0
+		var/overlay = round(damage / integrity * damage_overlays.len) + 1
+		if(overlay > damage_overlays.len)
+			overlay = damage_overlays.len
+
+		damage_image = damage_overlays[overlay]
+		overlays_to_add += damage_image
+
+	add_overlay(overlays_to_add, TRUE)
+	UNSETEMPTY(reinforcement_images)
+	queue_smooth(src)
+
+/turf/simulated/wall/proc/generate_overlays()
+	var/alpha_inc = 256 / damage_overlays.len
+
+	for(var/i = 1; i <= damage_overlays.len; i++)
+		var/image/img = image(icon = 'icons/turf/walls.dmi', icon_state = "overlay_damage")
+		img.blend_mode = BLEND_MULTIPLY
+		img.alpha = (i * alpha_inc) - 1
+		damage_overlays[i] = img
+
+/turf/simulated/wall/calculate_adjacencies()
+	if(use_standard_smoothing)
+		return ..()
+	. = 0
+	if (!loc || !material)
+		return
+
+	var/turf/simulated/wall/W
+	var/our_icon_base = material.icon_base
+
+	CALCULATE_NEIGHBORS(src, ., W, istype(W) && (W.smooth || !W.density) && W.material && W.material.icon_base == our_icon_base)
+
+	cached_adjacency = .

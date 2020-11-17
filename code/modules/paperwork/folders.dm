@@ -3,11 +3,17 @@
 	desc = "A folder."
 	icon = 'icons/obj/bureaucracy.dmi'
 	icon_state = "folder"
-	w_class = ITEM_SIZE_SMALL
+	w_class = ITEMSIZE_SMALL
+	drop_sound = 'sound/items/drop/paper.ogg'
+	pickup_sound = 'sound/items/pickup/paper.ogg'
 
 /obj/item/folder/blue
 	desc = "A blue folder."
 	icon_state = "folder_blue"
+
+/obj/item/folder/sec
+	desc = "A gold and blue folder, specifically designed for the Internal Security Department."
+	icon_state = "folder_blue_gold"
 
 /obj/item/folder/red
 	desc = "A red folder."
@@ -17,37 +23,43 @@
 	desc = "A yellow folder."
 	icon_state = "folder_yellow"
 
-/obj/item/folder/cyan
-	desc = "A cyan folder."
-	icon_state = "folder_cyan"
+/obj/item/folder/white
+	desc = "A white folder."
+	icon_state = "folder_white"
 
-/obj/item/folder/on_update_icon()
-	overlays.Cut()
+/obj/item/folder/purple
+	desc = "A purple folder, specifically designed for the Research Division facilities of the company."
+	icon_state = "folder_purple"
+
+/obj/item/folder/update_icon()
+	cut_overlays()
 	if(contents.len)
-		overlays += "folder_paper"
+		add_overlay("folder_paper")
 	return
 
-/obj/item/folder/attackby(obj/item/W, mob/user)
-	if(istype(W, /obj/item/paper) || istype(W, /obj/item/photo) || istype(W, /obj/item/paper_bundle))
-		if(!user.unEquip(W, src))
-			return
+/obj/item/folder/attackby(obj/item/W as obj, mob/user as mob)
+	if(istype(W, /obj/item/paper) || istype(W, /obj/item/photo) || istype(W, /obj/item/paper_bundle) || istype(W, /obj/item/sample/print))
+		user.drop_from_inventory(W,src)
 		to_chat(user, "<span class='notice'>You put the [W] into \the [src].</span>")
 		update_icon()
-	else if(istype(W, /obj/item/pen))
+	else if(W.ispen())
 		var/n_name = sanitizeSafe(input(usr, "What would you like to label the folder?", "Folder Labelling", null)  as text, MAX_NAME_LEN)
 		if((loc == usr && usr.stat == 0))
-			SetName("folder[(n_name ? text("- '[n_name]'") : null)]")
+			name = "folder[(n_name ? text("- '[n_name]'") : null)]"
 	return
 
-/obj/item/folder/attack_self(mob/user)
+/obj/item/folder/attack_self(mob/user as mob)
 	var/dat = "<title>[name]</title>"
+
 	for(var/obj/item/paper/P in src)
 		dat += "<A href='?src=\ref[src];remove=\ref[P]'>Remove</A> <A href='?src=\ref[src];rename=\ref[P]'>Rename</A> - <A href='?src=\ref[src];read=\ref[P]'>[P.name]</A><BR>"
 	for(var/obj/item/photo/Ph in src)
 		dat += "<A href='?src=\ref[src];remove=\ref[Ph]'>Remove</A> <A href='?src=\ref[src];rename=\ref[Ph]'>Rename</A> - <A href='?src=\ref[src];look=\ref[Ph]'>[Ph.name]</A><BR>"
 	for(var/obj/item/paper_bundle/Pb in src)
 		dat += "<A href='?src=\ref[src];remove=\ref[Pb]'>Remove</A> <A href='?src=\ref[src];rename=\ref[Pb]'>Rename</A> - <A href='?src=\ref[src];browse=\ref[Pb]'>[Pb.name]</A><BR>"
-	show_browser(user, dat, "window=folder")
+	for(var/obj/item/sample/print/Pf in src)
+		dat += "<A href='?src=\ref[src];remove=\ref[Pf]'>Remove</A> - [Pf.name]<BR>"
+	user << browse(dat, "window=folder")
 	onclose(user, "folder")
 	add_fingerprint(usr)
 	return
@@ -62,16 +74,17 @@
 		if(href_list["remove"])
 			var/obj/item/P = locate(href_list["remove"])
 			if(P && (P.loc == src) && istype(P))
+				P.forceMove(usr.loc)
 				usr.put_in_hands(P)
 
-		else if(href_list["read"])			
+		else if(href_list["read"])
 			var/obj/item/paper/P = locate(href_list["read"])
 			if(P && (P.loc == src) && istype(P))
-				if(!(istype(usr, /mob/living/carbon/human) || isghost(usr) || istype(usr, /mob/living/silicon)))
-					show_browser(usr, "<HTML><HEAD><TITLE>[P.name]</TITLE></HEAD><BODY>[stars(P.show_info(usr))][P.stamps]</BODY></HTML>", "window=[P.name]")
+				if(!(istype(usr, /mob/living/carbon/human) || istype(usr, /mob/abstract/observer) || istype(usr, /mob/living/silicon)))
+					usr << browse("<HTML><HEAD><TITLE>[P.name]</TITLE></HEAD><BODY>[stars(P.info)][P.stamps]</BODY></HTML>", "window=[P.name]")
 					onclose(usr, "[P.name]")
 				else
-					show_browser(usr, "<HTML><HEAD><TITLE>[P.name]</TITLE></HEAD><BODY>[P.show_info(usr)][P.stamps]</BODY></HTML>", "window=[P.name]")
+					usr << browse("<HTML><HEAD><TITLE>[P.name]</TITLE></HEAD><BODY>[P.info][P.stamps]</BODY></HTML>", "window=[P.name]")
 					onclose(usr, "[P.name]")
 		else if(href_list["look"])
 			var/obj/item/photo/P = locate(href_list["look"])
@@ -103,40 +116,10 @@
 		update_icon()
 	return
 
-/obj/item/folder/envelope
-	name = "envelope"
-	desc = "A thick envelope. You can't see what's inside."
-	icon_state = "envelope_sealed"
-	var/sealed = 1
-
-/obj/item/folder/envelope/on_update_icon()
-	if(sealed)
-		icon_state = "envelope_sealed"
-	else
-		icon_state = "envelope[contents.len > 0]"
-
-/obj/item/folder/envelope/examine(mob/user)
+/obj/item/folder/blue/nka/Initialize()
 	. = ..()
-	to_chat(user, "The seal is [sealed ? "intact" : "broken"].")
-
-/obj/item/folder/envelope/proc/sealcheck(user)
-	var/ripperoni = alert("Are you sure you want to break the seal on \the [src]?", "Confirmation","Yes", "No")
-	if(ripperoni == "Yes")
-		visible_message("[user] breaks the seal on \the [src], and opens it.")
-		sealed = 0
-		update_icon()
-		return 1
-
-/obj/item/folder/envelope/attack_self(mob/user)
-	if(sealed)
-		sealcheck(user)
-		return
-	else
-		..()
-
-/obj/item/folder/envelope/attackby(obj/item/W, mob/user)
-	if(sealed)
-		sealcheck(user)
-		return
-	else
-		..()
+	new /obj/item/paper/nka_pledge(src)
+	new /obj/item/paper/nka_pledge(src)
+	new /obj/item/paper/nka_pledge(src)
+	new /obj/item/paper/nka_pledge(src)
+	new /obj/item/paper/nka_pledge(src)

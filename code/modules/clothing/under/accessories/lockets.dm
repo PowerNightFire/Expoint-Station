@@ -4,13 +4,16 @@
 	icon_state = "locket"
 	item_state = "locket"
 	slot_flags = 0
-	w_class = ITEM_SIZE_SMALL
-	slot_flags = SLOT_FACE | SLOT_TIE
+	w_class = ITEMSIZE_SMALL
+	slot_flags = SLOT_MASK | SLOT_TIE
 	var/base_icon
 	var/open
 	var/obj/item/held //Item inside locket.
 
-/obj/item/clothing/accessory/locket/attack_self(mob/user)
+	drop_sound = 'sound/items/drop/ring.ogg'
+	pickup_sound = 'sound/items/pickup/ring.ogg'
+
+/obj/item/clothing/accessory/locket/attack_self(mob/user as mob)
 	if(!base_icon)
 		base_icon = icon_state
 
@@ -24,12 +27,12 @@
 		icon_state = "[base_icon]_open"
 		if(held)
 			to_chat(user, "\The [held] falls out!")
-			held.dropInto(user.loc)
+			held.forceMove(get_turf(user))
 			src.held = null
 	else
 		icon_state = "[base_icon]"
 
-/obj/item/clothing/accessory/locket/attackby(var/obj/item/O, mob/user)
+/obj/item/clothing/accessory/locket/attackby(var/obj/item/O as obj, mob/user as mob)
 	if(!open)
 		to_chat(user, "You have to open it first.")
 		return
@@ -38,9 +41,8 @@
 		if(held)
 			to_chat(usr, "\The [src] already has something inside it.")
 		else
-			if(!user.unEquip(O, src))
-				return
 			to_chat(usr, "You slip [O] into [src].")
+			user.drop_from_inventory(O,src)
 			src.held = O
 		return
 	..()

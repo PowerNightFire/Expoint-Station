@@ -1,8 +1,4 @@
-//as core click exists at the mob level
-/mob/proc/trigger_aiming(var/trigger_type)
-	return
-
-/mob/living/trigger_aiming(var/trigger_type)
+/mob/living/proc/trigger_aiming(var/trigger_type)
 	if(!aimed.len)
 		return
 	for(var/obj/aiming_overlay/AO in aimed)
@@ -13,18 +9,29 @@
 				AO.update_aiming_deferred()
 
 /obj/aiming_overlay/proc/trigger(var/perm)
+	var/obj/item/gun/G = aiming_with
+	if(istype(G) && G.safety())
+		if(owner.a_intent == I_HURT)
+			G.toggle_safety()
+		else
+			G.handle_click_empty(owner)
+			to_chat(owner, SPAN_WARNING("Your [G]'s safety prevents firing."))
 	if(!owner || !aiming_with || !aiming_at || !locked)
 		return
 	if(perm && (target_permissions & perm))
 		return
 	if(!owner.canClick())
 		return
-	if(prob(owner.skill_fail_chance(SKILL_WEAPONS, 30, SKILL_ADEPT, 3)))
-		to_chat(owner, "<span class='warning'>You fumble with the gun, throwing your aim off!</span>")
-		owner.stop_aiming(aiming_with)
-		return
-	owner.setClickCooldown(DEFAULT_QUICK_COOLDOWN) // Spam prevention, essentially.
+	owner.setClickCooldown(5) // Spam prevention, essentially.
 	owner.visible_message("<span class='danger'>\The [owner] pulls the trigger reflexively!</span>")
-	var/obj/item/gun/G = aiming_with
 	if(istype(G))
 		G.Fire(aiming_at, owner)
+	cancel_aiming()//if you can't remove it, nerf it
+	aim_cooldown(3)
+	toggle_active()
+	if (owner.client)
+		owner.client.remove_gun_icons()
+
+/mob/living/ClickOn(var/atom/A, var/params)
+	. = ..()
+	trigger_aiming(TARGET_CAN_CLICK)

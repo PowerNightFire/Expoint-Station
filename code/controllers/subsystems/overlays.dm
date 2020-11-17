@@ -1,22 +1,29 @@
-SUBSYSTEM_DEF(overlays)
+var/datum/controller/subsystem/overlays/SSoverlays
+
+/datum/controller/subsystem/overlays
 	name = "Overlay"
+	flags = SS_TICKER|SS_FIRE_IN_LOBBY
 	wait = 1
 	priority = SS_PRIORITY_OVERLAY
 	init_order = SS_INIT_OVERLAY
-	runlevels = RUNLEVEL_LOBBY | RUNLEVELS_DEFAULT
 
 	var/list/processing = list()
 
 	var/idex = 1
 	var/list/overlay_icon_state_caches = list()
 	var/list/overlay_icon_cache = list()
+	var/initialized = FALSE
 
 /datum/controller/subsystem/overlays/stat_entry()
 	..("Ov:[processing.len - (idex - 1)]")
 
+/datum/controller/subsystem/overlays/New()
+	NEW_SS_GLOBAL(SSoverlays)
+
 /datum/controller/subsystem/overlays/Initialize()
+	initialized = TRUE
 	Flush()
-	. = ..()
+	..()
 
 /datum/controller/subsystem/overlays/Recover()
 	overlay_icon_state_caches = SSoverlays.overlay_icon_state_caches
@@ -60,9 +67,18 @@ SUBSYSTEM_DEF(overlays)
 
 	overlay_queued = FALSE
 
+/atom/movable/compile_overlays()
+	..()
+	UPDATE_OO_IF_PRESENT
+
+/turf/compile_overlays()
+	..()
+	if (istype(above))
+		update_above()
+
 /proc/iconstate2appearance(icon, iconstate)
 	var/static/image/stringbro = new()
-	var/list/icon_states_cache = SSoverlays.overlay_icon_state_caches
+	var/list/icon_states_cache = SSoverlays.overlay_icon_state_caches 
 	var/list/cached_icon = icon_states_cache[icon]
 	if (cached_icon)
 		var/cached_appearance = cached_icon["[iconstate]"]
@@ -119,7 +135,7 @@ SUBSYSTEM_DEF(overlays)
 /atom/proc/cut_overlays(priority = FALSE)
 	var/list/cached_overlays = our_overlays
 	var/list/cached_priority = priority_overlays
-
+	
 	var/need_compile = FALSE
 
 	if(LAZYLEN(cached_overlays)) //don't queue empty lists, don't cut priority overlays
@@ -133,56 +149,56 @@ SUBSYSTEM_DEF(overlays)
 	if(NOT_QUEUED_ALREADY && need_compile)
 		QUEUE_FOR_COMPILE
 
-/atom/proc/cut_overlay(list/overlays_list, priority)
-	if(!overlays_list)
+/atom/proc/cut_overlay(list/overlays, priority)
+	if(!overlays)
 		return
 
-	overlays_list = build_appearance_list(overlays_list)
+	overlays = build_appearance_list(overlays)
 
 	var/list/cached_overlays = our_overlays	//sanic
 	var/list/cached_priority = priority_overlays
 	var/init_o_len = LAZYLEN(cached_overlays)
 	var/init_p_len = LAZYLEN(cached_priority)  //starter pokemon
 
-	LAZYREMOVE(cached_overlays, overlays_list)
+	LAZYREMOVE(cached_overlays, overlays)
 	if(priority)
-		LAZYREMOVE(cached_priority, overlays_list)
+		LAZYREMOVE(cached_priority, overlays)
 
 	if(NOT_QUEUED_ALREADY && ((init_o_len != LAZYLEN(cached_priority)) || (init_p_len != LAZYLEN(cached_overlays))))
 		QUEUE_FOR_COMPILE
 
-/atom/proc/add_overlay(list/overlays_list, priority = FALSE)
-	if(!overlays_list)
+/atom/proc/add_overlay(list/overlays, priority = FALSE)
+	if(!overlays)
 		return
 
-	overlays_list = build_appearance_list(overlays_list)
+	overlays = build_appearance_list(overlays)
 
-	if (!overlays_list || (islist(overlays_list) && !overlays_list.len))
+	if (!overlays || (islist(overlays) && !overlays.len))
 		// No point trying to compile if we don't have any overlays.
 		return
 
 	if(priority)
-		LAZYADD(priority_overlays, overlays_list)
+		LAZYADD(priority_overlays, overlays)
 	else
-		LAZYADD(our_overlays, overlays_list)
+		LAZYADD(our_overlays, overlays)
 
 	if(NOT_QUEUED_ALREADY)
 		QUEUE_FOR_COMPILE
 
-/atom/proc/set_overlays(list/overlays_list, priority = FALSE)	// Sets overlays to a list, equivalent to cut_overlays() + add_overlays().
-	if (!overlays_list)
+/atom/proc/set_overlays(list/overlays, priority = FALSE)	// Sets overlays to a list, equivalent to cut_overlays() + add_overlays().
+	if (!overlays)
 		return
 
-	overlays_list = build_appearance_list(overlays_list)
+	overlays = build_appearance_list(overlays)
 
 	if (priority)
 		LAZYCLEARLIST(priority_overlays)
-		if (overlays_list)
-			LAZYADD(priority_overlays, overlays_list)
+		if (overlays)
+			LAZYADD(priority_overlays, overlays)
 	else
 		LAZYCLEARLIST(our_overlays)
-		if (overlays_list)
-			LAZYADD(our_overlays, overlays_list)
+		if (overlays)
+			LAZYADD(our_overlays, overlays)
 
 	if (NOT_QUEUED_ALREADY)
 		QUEUE_FOR_COMPILE

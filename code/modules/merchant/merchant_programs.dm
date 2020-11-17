@@ -3,11 +3,14 @@
 	filedesc = "Merchant's List"
 	extended_desc = "Allows communication and trade between passing vessels, even while jumping."
 	program_icon_state = "comm"
-	program_menu_icon = "cart"
 	nanomodule_path = /datum/nano_module/program/merchant
+	requires_ntnet = 0
+	available_on_ntnet = 0
 	size = 12
 	usage_flags = PROGRAM_CONSOLE
-	required_access = access_merchant
+	requires_access_to_run = PROGRAM_ACCESS_LIST_ONE
+	required_access_run = list(access_merchant, access_kataphract_trader)
+	required_access_download = list(access_merchant, access_kataphract_trader)
 	var/obj/machinery/merchant_pad/pad = null
 	var/current_merchant = 0
 	var/show_trades = 0
@@ -25,7 +28,7 @@
 	if(num)
 		return SStrade.traders[num]
 
-/datum/nano_module/program/merchant/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = GLOB.default_state)
+/datum/nano_module/program/merchant/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = default_state)
 	var/list/data = host.initial_data()
 	var/show_trade = 0
 	var/hailed = 0
@@ -51,7 +54,7 @@
 				for(var/i in 1 to T.trading_items.len)
 					trades += T.print_trading_items(i)
 			data["trades"] = trades
-	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnanoui.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "merchant.tmpl", "Merchant List", 575, 700, state = state)
 		ui.auto_update_layout = 1
@@ -68,15 +71,35 @@
 		return 1
 	return 0
 
-/datum/computer_file/program/merchant/proc/offer_money(var/datum/trader/T, var/num, skill)
+/datum/computer_file/program/merchant/proc/offer_money(var/datum/trader/T, var/num)
 	if(pad)
-		var/response = T.offer_money_for_trade(num, bank, skill)
+		var/response = T.offer_money_for_trade(num, bank)
 		if(istext(response))
 			last_comms = T.get_response(response, "No thank you.")
 		else
 			last_comms = T.get_response("trade_complete", "Thank you!")
 			T.trade(null,num, get_turf(pad))
 			bank -= response
+		return
+	last_comms = "PAD NOT CONNECTED"
+	
+/datum/computer_file/program/merchant/proc/bulk_offer(var/datum/trader/T, var/num)
+	var/BulkAmount = input("How many items? (Buy 1-50 items. 0 to cancel.)") as num
+	if(istext(BulkAmount))
+		last_comms = "ERROR: NUMBER EXPECTED"
+		return 
+	if(BulkAmount < 0 || BulkAmount > 50)
+		last_comms = "ERROR: POSITIVE NUMBER UP TO 50 EXPECTED"
+		return
+	if(pad)
+		for(var/BulkCounter = 0, BulkCounter < BulkAmount, BulkCounter++)
+			var/response = T.offer_money_for_trade(num, bank)
+			if(istext(response))
+				last_comms = T.get_response(response, "No thank you.")
+			else
+				last_comms = T.get_response("trade_complete", "Thank you!")
+				T.trade(null,num, get_turf(pad))
+				bank -= response
 		return
 	last_comms = "PAD NOT CONNECTED"
 
@@ -88,14 +111,14 @@
 	bank -= amt
 	last_comms = T.bribe_to_stay_longer(amt)
 
-/datum/computer_file/program/merchant/proc/offer_item(var/datum/trader/T, var/num, skill)
+/datum/computer_file/program/merchant/proc/offer_item(var/datum/trader/T, var/num)
 	if(pad)
 		var/list/targets = pad.get_targets()
 		for(var/target in targets)
 			if(!computer_emagged && istype(target,/mob/living/carbon/human))
 				last_comms = "SAFETY LOCK ENABLED: SENTIENT MATTER UNTRANSMITTABLE"
 				return
-		var/response = T.offer_items_for_trade(targets,num, get_turf(pad), skill)
+		var/response = T.offer_items_for_trade(targets,num, get_turf(pad))
 		if(istext(response))
 			last_comms = T.get_response(response,"No, a million times no.")
 		else
@@ -104,10 +127,10 @@
 		return
 	last_comms = "PAD NOT CONNECTED"
 
-/datum/computer_file/program/merchant/proc/sell_items(var/datum/trader/T, skill)
+/datum/computer_file/program/merchant/proc/sell_items(var/datum/trader/T)
 	if(pad)
 		var/list/targets = pad.get_targets()
-		var/response = T.sell_items(targets, skill)
+		var/response = T.sell_items(targets)
 		if(istext(response))
 			last_comms = T.get_response(response, "Nope. Nope nope nope.")
 		else
@@ -120,9 +143,9 @@
 	if(pad)
 		var/list/targets = pad.get_targets()
 		for(var/target in targets)
-			if(istype(target, /obj/item/cash))
-				var/obj/item/cash/cash = target
-				bank += cash.absolute_worth
+			if(istype(target, /obj/item/spacecash))
+				var/obj/item/spacecash/cash = target
+				bank += cash.worth
 				qdel(target)
 		last_comms = "ALL MONEY DETECTED ON PAD TRANSFERED"
 		return
@@ -133,9 +156,10 @@
 		last_comms = "PAD NOT CONNECTED. CANNOT TRANSFER"
 		return
 	var/turf/T = get_turf(pad)
-	var/obj/item/cash/B = new(T)
-	B.adjust_worth(bank)
+	var/obj/item/spacecash/bundle/B = new(T)
+	B.worth = bank
 	bank = 0
+	B.update_icon()
 
 /datum/computer_file/program/merchant/Topic(href, href_list)
 	if(..())
@@ -206,19 +230,22 @@
 				last_comms = T.compliment()
 			if(href_list["PRG_offer_item"])
 				. = 1
-				offer_item(T,text2num(href_list["PRG_offer_item"]) + 1, user.get_skill_value(SKILL_FINANCE))
+				offer_item(T,text2num(href_list["PRG_offer_item"]) + 1)
 			if(href_list["PRG_how_much_do_you_want"])
 				. = 1
-				last_comms = T.how_much_do_you_want(text2num(href_list["PRG_how_much_do_you_want"]) + 1, user.get_skill_value(SKILL_FINANCE))
+				last_comms = T.how_much_do_you_want(text2num(href_list["PRG_how_much_do_you_want"]) + 1)
 			if(href_list["PRG_offer_money_for_item"])
 				. = 1
-				offer_money(T, text2num(href_list["PRG_offer_money_for_item"])+1, user.get_skill_value(SKILL_FINANCE))
+				offer_money(T, text2num(href_list["PRG_offer_money_for_item"])+1)
+			if (href_list["PRG_bulk_money_for_item"])
+				. = 1
+				bulk_offer(T, text2num(href_list["PRG_bulk_money_for_item"])+1)
 			if(href_list["PRG_what_do_you_want"])
 				. = 1
 				last_comms = T.what_do_you_want()
 			if(href_list["PRG_sell_items"])
 				. = 1
-				sell_items(T, user.get_skill_value(SKILL_FINANCE))
+				sell_items(T)
 			if(href_list["PRG_bribe"])
 				. = 1
 				bribe(T, text2num(href_list["PRG_bribe"]))

@@ -1,112 +1,116 @@
 /obj/item/storage/wallet
 	name = "wallet"
 	desc = "It can hold a few small and personal things."
-	icon = 'icons/obj/items/wallet.dmi'
-	icon_state = "wallet-white"
-	w_class = ITEM_SIZE_SMALL
-	max_w_class = ITEM_SIZE_SMALL //Don't worry, see can_hold[]
-	max_storage_space = 8
+	storage_slots = 10
+	icon_state = "wallet"
+	w_class = ITEMSIZE_SMALL
+	max_w_class = ITEMSIZE_SMALL
 	can_hold = list(
-		/obj/item/cash,
+		/obj/item/spacecash,
 		/obj/item/card,
 		/obj/item/clothing/mask/smokable,
-		/obj/item/lipstick,
-		/obj/item/haircomb,
-		/obj/item/mirror,
+		/obj/item/clothing/accessory/badge,
 		/obj/item/clothing/accessory/locket,
-		/obj/item/clothing/head/hairflower,
-		/obj/item/flashlight/pen,
-		/obj/item/flashlight/slime,
+		/obj/item/clothing/ring,
+		/obj/item/device/flashlight/pen,
 		/obj/item/seeds,
+		/obj/item/stack/medical,
 		/obj/item/coin,
 		/obj/item/dice,
 		/obj/item/disk,
-		/obj/item/implant,
 		/obj/item/implanter,
-		/obj/item/flame,
+		/obj/item/flame/lighter,
+		/obj/item/flame/match,
+		/obj/item/lipstick,
+		/obj/item/haircomb,
 		/obj/item/paper,
 		/obj/item/paper_bundle,
 		/obj/item/pen,
 		/obj/item/photo,
-		/obj/item/chems/dropper,
-		/obj/item/chems/syringe,
-		/obj/item/chems/pill,
-		/obj/item/chems/hypospray/autoinjector,
-		/obj/item/chems/glass/beaker/vial,
-		/obj/item/radio/headset,
-		/obj/item/paicard,
+		/obj/item/reagent_containers/dropper,
+		/obj/item/reagent_containers/syringe,
+		/obj/item/reagent_containers/pill,
+		/obj/item/reagent_containers/hypospray/autoinjector,
+		/obj/item/screwdriver,
 		/obj/item/stamp,
-		/obj/item/key,
-		/obj/item/clothing/accessory/badge,
-		/obj/item/clothing/accessory/medal,
-		/obj/item/clothing/accessory/armor/tag,
-		)
+		/obj/item/device/paicard,
+		/obj/item/device/encryptionkey,
+		/obj/item/fluff)
 	slot_flags = SLOT_ID
 
 	var/obj/item/card/id/front_id = null
-	var/obj/item/charge_stick/front_stick = null
+	var/flipped = null
+	var/flippable = 1
+	var/wear_over_suit = 0
 
-/obj/item/storage/wallet/leather
-	color = COLOR_SEDONA
 
-/obj/item/storage/wallet/Destroy()
-	if(front_id)
-		front_id.dropInto(loc)
-		front_id = null
-	if(front_stick)
-		front_stick.dropInto(loc)
-		front_stick = null
-	. = ..()
-
-/obj/item/storage/wallet/remove_from_storage(obj/item/W, atom/new_location)
+/obj/item/storage/wallet/remove_from_storage(obj/item/W as obj, atom/new_location)
 	. = ..(W, new_location)
 	if(.)
 		if(W == front_id)
 			front_id = null
-			SetName(initial(name))
+			name = initial(name)
 			update_icon()
-		if(W == front_stick)
-			front_stick = null
 
-/obj/item/storage/wallet/handle_item_insertion(obj/item/W, prevent_warning = 0)
+/obj/item/storage/wallet/handle_item_insertion(obj/item/W as obj, prevent_warning = 0)
 	. = ..(W, prevent_warning)
 	if(.)
 		if(!front_id && istype(W, /obj/item/card/id))
 			front_id = W
+			name = "[name] ([front_id])"
 			update_icon()
-		if(!front_stick && istype(W, /obj/item/charge_stick))
-			front_stick = W
 
-/obj/item/storage/wallet/on_update_icon()
+/obj/item/storage/wallet/update_icon()
 	overlays.Cut()
 	if(front_id)
 		var/tiny_state = "id-generic"
-		if(("id-"+front_id.icon_state) in icon_states(icon))
+		if(("id-" + front_id.icon_state) in icon_states(icon))
 			tiny_state = "id-"+front_id.icon_state
 		var/image/tiny_image = new/image(icon, icon_state = tiny_state)
 		tiny_image.appearance_flags = RESET_COLOR
 		overlays += tiny_image
+	mob_icon_update()
 
-/obj/item/storage/wallet/GetIdCard()
+/obj/item/storage/wallet/GetID()
 	return front_id
 
-/obj/item/storage/wallet/GetChargeStick()
-	return front_stick
-
 /obj/item/storage/wallet/GetAccess()
-	var/obj/item/I = GetIdCard()
+	var/obj/item/I = GetID()
 	if(I)
 		return I.GetAccess()
 	else
 		return ..()
 
-/obj/item/storage/wallet/random/Initialize()
-	. = ..()
-	var/item1_type = pick( /obj/item/cash/c10,/obj/item/cash/c100,/obj/item/cash/c1000,/obj/item/cash/c20,/obj/item/cash/c200,/obj/item/cash/c50, /obj/item/cash/c500)
+/obj/item/storage/wallet/random/fill()
+	..()
+	var/item1_type = pick(                \
+		/obj/item/spacecash/c10,   \
+		/obj/item/spacecash/c100,  \
+		/obj/item/spacecash/c1000, \
+		/obj/item/spacecash/c20,   \
+		/obj/item/spacecash/c200,  \
+		/obj/item/spacecash/c50,   \
+		/obj/item/spacecash/c500   \
+	)
 	var/item2_type
 	if(prob(50))
-		item2_type = pick( /obj/item/cash/c10,/obj/item/cash/c100,/obj/item/cash/c1000,/obj/item/cash/c20,/obj/item/cash/c200,/obj/item/cash/c50, /obj/item/cash/c500)
-	var/item3_type = pick( /obj/item/coin/silver, /obj/item/coin/silver, /obj/item/coin/gold, /obj/item/coin/iron, /obj/item/coin/iron, /obj/item/coin/iron )
+		item2_type = pick(                    \
+			/obj/item/spacecash/c10,   \
+			/obj/item/spacecash/c100,  \
+			/obj/item/spacecash/c1000, \
+			/obj/item/spacecash/c20,   \
+			/obj/item/spacecash/c200,  \
+			/obj/item/spacecash/c50,   \
+			/obj/item/spacecash/c500   \
+		)
+	var/item3_type = pick(            \
+		/obj/item/coin/silver, \
+		/obj/item/coin/silver, \
+		/obj/item/coin/gold,   \
+		/obj/item/coin/iron,   \
+		/obj/item/coin/iron,   \
+		/obj/item/coin/iron    \
+	)
 
 	if(item1_type)
 		new item1_type(src)
@@ -114,36 +118,88 @@
 		new item2_type(src)
 	if(item3_type)
 		new item3_type(src)
-	update_icon()
 
-/obj/item/storage/wallet/poly
-	name = "polychromic wallet"
-	desc = "You can recolor it! Fancy! The future is NOW!"
+/obj/item/storage/wallet/proc/mob_icon_update()
+	if (ismob(src.loc))
+		var/mob/M = src.loc
+		M.update_inv_wear_id()
 
-/obj/item/storage/wallet/poly/Initialize()
-	. = ..()
-	color = get_random_colour()
-	update_icon()
-
-/obj/item/storage/wallet/poly/verb/change_color()
-	set name = "Change Wallet Color"
+/obj/item/storage/wallet/verb/flip_side()
+	set name = "Flip wallet side"
 	set category = "Object"
-	set desc = "Change the color of the wallet."
+	set src in usr
+	if(use_check_and_message(usr, use_flags = USE_DISALLOW_SILICONS))
+		return
+	if (!flippable)
+		to_chat(usr, "You cannot flip \the [src] as it is not a flippable item.")
+		return
+
+	src.flipped = !src.flipped
+	if(src.flipped)
+		src.overlay_state = "[overlay_state]_flip"
+	else
+		src.overlay_state = initial(overlay_state)
+	to_chat(usr, "You change \the [src] to be on your [src.flipped ? "left" : "right"] side.")
+	mob_icon_update()
+
+/obj/item/storage/wallet/verb/toggle_icon_layer()
+	set name = "Switch Wallet Layer"
+	set category = "Object"
 	set src in usr
 
-	if(usr.incapacitated())
+	if(use_check_and_message(usr, use_flags = USE_DISALLOW_SILICONS))
 		return
-
-	var/new_color = input(usr, "Pick a new color", "Wallet Color", color) as color|null
-	if(!new_color || new_color == color || usr.incapacitated())
+	if(wear_over_suit == -1)
+		to_chat(usr, "<span class='notice'>\The [src] cannot be worn above your suit!</span>")
 		return
-	color = new_color
+	wear_over_suit = !wear_over_suit
+	mob_icon_update()
 
-/obj/item/storage/wallet/poly/emp_act()
-	icon_state = "wallet-emp"
-	update_icon()
+/obj/item/storage/wallet/colourable
+	icon_state = "wallet-white"
 
-	spawn(200)
-		if(src)
-			icon_state = initial(icon_state)
-			update_icon()
+/obj/item/storage/wallet/purse
+	name = "wallet purse"
+	desc = "A stylish long wallet purse with several slots."
+	icon_state = "wallet-purse"
+
+/obj/item/storage/wallet/lanyard
+	name = "lanyard"
+	desc = "A thick cord with a hook and plastic film designed for the hunter of elk, lover of women, sovereign of the moon."
+	storage_slots = 2
+	icon_state = "lanyard"
+	item_state = "lanyard"
+	overlay_state = "lanyard"
+	attack_verb = list("whipped", "lashed", "lightly garroted")
+	w_class = ITEMSIZE_TINY
+	max_w_class = ITEMSIZE_TINY
+	can_hold = list(
+		/obj/item/card,
+		/obj/item/clothing/accessory/badge,
+		/obj/item/clothing/accessory/locket,
+		/obj/item/disk,
+		/obj/item/paper,
+		/obj/item/paper_bundle,
+		/obj/item/pen,
+		/obj/item/photo)
+	flippable = 0 //until a cleaner way is implemented to just simply have the verb not show up at all
+	var/plastic_film_overlay_state = "plasticfilm"
+	var/front_id_overlay_state
+
+	drop_sound = 'sound/items/drop/cloth.ogg'
+	pickup_sound = 'sound/items/pickup/cloth.ogg'
+
+/obj/item/storage/wallet/lanyard/New()
+	..()
+	var/image/film_image = new/image(icon, icon_state = "lanyard_film")
+	film_image.appearance_flags = RESET_COLOR
+	overlays += film_image
+
+/obj/item/storage/wallet/lanyard/update_icon()
+	..()
+	if(front_id)
+		front_id_overlay_state = front_id.icon_state
+	var/image/film_image = new/image(icon, icon_state = "lanyard_film")
+	film_image.appearance_flags = RESET_COLOR
+	overlays += film_image
+	mob_icon_update()

@@ -1,57 +1,142 @@
+//I will need to recode parts of this but I am way too tired atm
 /obj/effect/blob
-	name = "pulsating mass"
-	desc = "A pulsating mass of interwoven tendrils."
-	icon = 'icons/mob/blob.dmi'
+	name = "blob"
+	icon = 'icons/mob/npc/blob.dmi'
 	icon_state = "blob"
-	light_outer_range = 2
-	light_color = BLOB_COLOR_PULS
+	light_range = 3
+	light_color = "#b5ff5b"
+	desc = "Some blob creature thingy"
 	density = 1
-	opacity = 1
+	opacity = 0
 	anchored = 1
 	mouse_opacity = 2
-
-	layer = BLOB_SHIELD_LAYER
+	layer = 4
 
 	var/maxHealth = 30
 	var/health
-	var/regen_rate = 5
-	var/brute_resist = 4.3
-	var/fire_resist = 0.8
-	var/laser_resist = 2	// Special resist for laser based weapons - Emitters or handheld energy weaponry. Damage is divided by this and THEN by fire_resist.
+	var/regen_rate = 4
+	var/brute_resist = 4
+	var/fire_resist = 1.75
+	var/secondary_core_growth_chance = 10.0 //% chance to grow a secondary blob core instead of whatever was suposed to grown. Secondary cores are considerably weaker, but still nasty.
 	var/expandType = /obj/effect/blob
-	var/secondary_core_growth_chance = 5 //% chance to grow a secondary blob core instead of whatever was suposed to grown. Secondary cores are considerably weaker, but still nasty.
-	var/damage_min = 15
-	var/damage_max = 30
-	var/pruned = FALSE
-	var/product = /obj/item/blob_tendril
-	var/attack_freq = 5 //see proc/attempt_attack; lower is more often, min 1
+	var/obj/effect/blob/core/parent_core = null
+	var/blob_may_process = 0
+	var/hangry = 0 //if the blob will attack or not.
+	var/blob_cost = 1 //point cost of the blob tile
 
-/obj/effect/blob/Initialize()
-	. = ..()
+/obj/effect/blob/New(loc)
+	START_PROCESSING(SScalamity, src)
 	health = maxHealth
+	var/matrix/M = matrix()
+	M.Turn(90 * pick(0,1,2,3))
+	src.transform = M
 	update_icon()
-	START_PROCESSING(SSobj, src)
+	return ..(loc)
+
+/obj/effect/blob/Destroy()
+	// Sanity time.
+	if (parent_core)
+		parent_core.blob_count -= blob_cost
+		parent_core = null
+
+	STOP_PROCESSING(SScalamity, src)
+
+	return ..()
+
+/obj/effect/blob/process()
+	if(!parent_core)
+		src.take_damage(5)
+		src.regen_rate = -5
+		playsound(loc, 'sound/effects/splat.ogg', 50, 1)
+		return
+
+	// Make deleting the parent more responsive.
+	if(QDELING(parent_core))
+		parent_core = null
+		return
+
+	for(var/mob/living/L in src.loc)
+		if(L.stat == DEAD)
+			if(prob(10))
+				if(istype(L, /mob/living/carbon/human))
+					var/mob/living/carbon/human/H = L
+					H.ChangeToHusk()
+					if(!(HUSK in H.mutations))
+						if(health < maxHealth)
+							health += rand(10,30)
+							if(health > maxHealth)
+								health = maxHealth
+				else if(istype(L, /mob/living/silicon))
+					continue
+				else
+					L.gib()
+					if(health < maxHealth)
+						health += rand(10,30)
+						if(health > maxHealth)
+							health = maxHealth
+			continue
+		L.visible_message("<span class='danger'>The blob absorbs \the [L]!</span>", "<span class='danger'>The blob absorbs you!</span>")
+		playsound(loc, 'sound/effects/attackblob.ogg', 50, 1)
+		L.take_organ_damage(rand(5, 10))
+		if(health < maxHealth)
+			health += rand(1,10)
+			if(health > maxHealth)
+				health = maxHealth
+		hangry += 8
+
+	for(var/mob/living/L in range(src,"3x3"))
+		var/obj/effect/blob/B = locate() in get_turf(L)
+		if(!B)
+			if(!hangry)
+				if(L.stat == DEAD)
+					continue
+				if(prob(40))
+					L.visible_message("<span class='danger'>The blob sucks \the [L] into itself!</span>", "<span class='danger'>The blob sucks you in!</span>")
+					playsound(loc, 'sound/effects/attackblob.ogg', 50, 1)
+					L.take_organ_damage(rand(5, 10))
+					L.forceMove(src.loc)
+				else
+					L.visible_message("<span class='danger'>The blob glomps \the [L]!</span>", "<span class='danger'>The blob glomps you!</span>")
+					playsound(loc, 'sound/effects/attackblob.ogg', 50, 1)
+					L.take_organ_damage(rand(5, 20))
+					if(health < maxHealth)
+						health += rand(1,10)
+						if(health > maxHealth)
+							health = maxHealth
+				hangry += 2
+
+	for(var/obj/fire/F in range(src,"3x3")) //very snowflake, but much better than actually coding complex thermodynamics for these fuckers
+		if(prob(50))
+			src.visible_message("<span class='danger'>The blob melts away under the heat of the flames!</span>")
+		F = locate() in get_turf(src)
+		if(F)
+			src.take_damage(rand(5, 20) / fire_resist)
+		else
+			src.take_damage(rand(1, 10) / fire_resist)
+
+	hangry -= 1
+	if(hangry < 0)
+		hangry = 0
 
 /obj/effect/blob/CanPass(var/atom/movable/mover, var/turf/target, var/height = 0, var/air_group = 0)
 	if(air_group || height == 0)
 		return 1
 	return 0
 
-/obj/effect/blob/explosion_act(var/severity)
-	SHOULD_CALL_PARENT(FALSE)
-	take_damage(rand(140 - (severity * 40), 140 - (severity * 20)) / brute_resist)
+/obj/effect/blob/ex_act(var/severity)
+	switch(severity)
+		if(1)
+			take_damage(rand(100, 120) / brute_resist)
+		if(2)
+			take_damage(rand(60, 100) / brute_resist)
+		if(3)
+			take_damage(rand(20, 60) / brute_resist)
 
-/obj/effect/blob/on_update_icon()
+/obj/effect/blob/update_icon()
 	if(health > maxHealth / 2)
 		icon_state = "blob"
 	else
 		icon_state = "blob_damaged"
-
-/obj/effect/blob/Process(wait, times_fired)
-	regen()
-	if(times_fired % attack_freq)
-		return
-	attempt_attack(GLOB.alldirs)
 
 /obj/effect/blob/proc/take_damage(var/damage)
 	health -= damage
@@ -66,86 +151,77 @@
 	update_icon()
 
 /obj/effect/blob/proc/expand(var/turf/T)
-	if(istype(T, /turf/unsimulated/) || istype(T, /turf/space))
-		return
-	if(istype(T, /turf/simulated/wall))
-		var/turf/simulated/wall/SW = T
-		SW.take_damage(80)
-		return
-	var/obj/structure/girder/G = locate() in T
-	if(G)
-		if(prob(40))
-			G.dismantle()
-		return
-	var/obj/structure/window/W = locate() in T
-	if(W)
-		W.shatter()
-		return
-	var/obj/structure/grille/GR = locate() in T
-	if(GR)
-		qdel(GR)
-		return
-	for(var/obj/machinery/door/D in T) // There can be several - and some of them can be open, locate() is not suitable
-		if(D.density)
-			D.explosion_act(2)
-			return
-	var/obj/structure/foamedmetal/F = locate() in T
-	if(F)
-		qdel(F)
-		return
-	var/obj/structure/inflatable/I = locate() in T
-	if(I)
-		I.deflate(1)
+	//Dont epxand over unsimulated unless its astroid trufs
+	if(istype(T, /turf/unsimulated/) && !istype(T, /turf/unsimulated/floor/asteroid/))
 		return
 
-	var/obj/vehicle/V = locate() in T
-	if(V)
-		V.explosion_act(2)
+	//Dont expand over space or holes, unless there´s a lattice
+	if((istype(T, /turf/simulated/open) || istype(T, /turf/space)) && !(locate(/obj/structure/lattice) in T))
 		return
-	var/obj/machinery/camera/CA = locate() in T
-	if(CA)
-		CA.take_damage(30)
+
+	//If its rock, mine it
+	if(istype(T,/turf/simulated/mineral))
+		var/turf/simulated/mineral/M = T
+		M.kinetic_hit(8,get_dir(src,M)) //8 so its destroyed in 2 or 3 hits (mineral health is randomized between 10 and 20)
 		return
+
+	//If its a wall, destroy it
+	if(istype(T, /turf/simulated/wall))
+		var/turf/simulated/wall/SW = T
+		SW.ex_act(2)
+		return
+
+	for(var/obj/O in T)
+		if(O.density)
+			O.ex_act(2)
+			return
 
 	// Above things, we destroy completely and thus can use locate. Mobs are different.
 	for(var/mob/living/L in T)
 		if(L.stat == DEAD)
 			continue
-		attack_living(L)
+		if(prob(30))
+			L.visible_message("<span class='danger'>The blob sucks \the [L] into itself!</span>", "<span class='danger'>The blob sucks you in!</span>")
+			playsound(loc, 'sound/effects/attackblob.ogg', 50, 1)
+			L.take_organ_damage(rand(5, 10))
+			L.forceMove(src.loc)
+		else
+			L.visible_message("<span class='danger'>The blob pulverizes \the [L]!</span>", "<span class='danger'>The blob pulverizes you!</span>")
+			playsound(loc, 'sound/effects/attackblob.ogg', 50, 1)
+			L.take_organ_damage(rand(30, 40))
+			if(health < maxHealth)
+				health += rand(1,10)
+				if(health > maxHealth)
+					health = maxHealth
+		return
 
-	if(!(locate(/obj/effect/blob/core) in range(T, 2)) && prob(secondary_core_growth_chance))
-		new/obj/effect/blob/core/secondary(T)
-	else
-		new expandType(T, min(health, 30))
+	//If its a astroid turf, ignore it with a 50% chance (so the expansion mostly focuses on the station)
+	if(istype(T,/turf/unsimulated/floor/asteroid/) && prob(50))
+		return
+
+	if(parent_core)
+		if(parent_core.blob_count < parent_core.blob_limit)
+			if(!(locate(/obj/effect/blob/core/) in range(T, 2)) && prob(secondary_core_growth_chance) && (parent_core.core_count < parent_core.core_limit))
+				var/obj/effect/blob/core/secondary/S = new /obj/effect/blob/core/secondary(T)
+				S.parent_core = src.parent_core
+				src.parent_core.core_count += blob_cost
+			else
+				var/obj/effect/blob/C = new expandType(T)
+				C.parent_core = src.parent_core
+			parent_core.blob_count += blob_cost
 
 /obj/effect/blob/proc/pulse(var/forceLeft, var/list/dirs)
-	set waitfor = FALSE
+	regen()
 	sleep(4)
 	var/pushDir = pick(dirs)
 	var/turf/T = get_step(src, pushDir)
 	var/obj/effect/blob/B = (locate() in T)
 	if(!B)
-		if(prob(health))
+		if(prob(health+45))
 			expand(T)
 		return
 	if(forceLeft)
 		B.pulse(forceLeft - 1, dirs)
-
-/obj/effect/blob/proc/attack_living(var/mob/living/L)
-	if(!L)
-		return
-	var/blob_damage = pick(BRUTE, BURN)
-	L.visible_message(SPAN_DANGER("A tendril flies out from \the [src] and smashes into \the [L]!"), SPAN_DANGER("A tendril flies out from \the [src] and smashes into you!"))
-	playsound(loc, 'sound/effects/attackblob.ogg', 50, 1)
-	L.apply_damage(rand(damage_min, damage_max), blob_damage, used_weapon = "blob tendril")
-
-/obj/effect/blob/proc/attempt_attack(var/list/dirs)
-	var/attackDir = pick(dirs)
-	var/turf/T = get_step(src, attackDir)
-	for(var/mob/living/victim in T)
-		if(victim.stat == DEAD)
-			continue
-		attack_living(victim)
 
 /obj/effect/blob/bullet_act(var/obj/item/projectile/Proj)
 	if(!Proj)
@@ -155,106 +231,56 @@
 		if(BRUTE)
 			take_damage(Proj.damage / brute_resist)
 		if(BURN)
-			take_damage((Proj.damage / laser_resist) / fire_resist)
+			take_damage(Proj.damage / fire_resist)
 	return 0
 
 /obj/effect/blob/attackby(var/obj/item/W, var/mob/user)
 	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 	user.do_attack_animation(src)
 	playsound(loc, 'sound/effects/attackblob.ogg', 50, 1)
-	if(isWirecutter(W))
-		if(prob(user.skill_fail_chance(SKILL_SCIENCE, 90, SKILL_EXPERT)))
-			to_chat(user, SPAN_WARNING("You fail to collect a sample from \the [src]."))
-			return
-		else
-			if(!pruned)
-				to_chat(user, SPAN_NOTICE("You collect a sample from \the [src]."))
-				new product(user.loc)
-				pruned = TRUE
-				return
-			else
-				to_chat(user, SPAN_WARNING("\The [src] has already been pruned."))
-				return
-
+	visible_message("<span class='danger'>\The [src] has been attacked with \the [W][(user ? " by [user]." : ".")]</span>")
 	var/damage = 0
 	switch(W.damtype)
 		if("fire")
 			damage = (W.force / fire_resist)
-			if(isWelder(W))
-				playsound(loc, 'sound/items/Welder.ogg', 100, 1)
+			if(W.iswelder())
+				playsound(loc, 'sound/items/welder.ogg', 100, 1)
 		if("brute")
+			if(prob(30) && !issilicon(user))
+				visible_message("<span class='danger'>\The [W] gets caught in the gelatinous folds of \the [src]</span>")
+				user.drop_from_inventory(W,get_turf(src))
+				return
 			damage = (W.force / brute_resist)
 
 	take_damage(damage)
 	return
 
 /obj/effect/blob/core
-	name = "master nucleus"
-	desc = "A massive, fragile nucleus guarded by a shield of thick tendrils."
+	name = "blob core"
 	icon_state = "blob_core"
-	maxHealth = 450
-	damage_min = 30
-	damage_max = 40
+	light_range = 1
+	light_power = 2
+	light_color = "#F3D203"
+	maxHealth = 200
+	brute_resist = 2
+	regen_rate = 2
+	fire_resist = 2
+	var/core_count //amount of secondary cores
+	var/core_limit = 4 //for if a badmin ever wants the station to die, they can set this higher
+	var/blob_count = 1 //amount of actual blob pieces
+	var/blob_limit = 150 //9x4+100 + a bit, maximum amount of blobs allowed.
+
 	expandType = /obj/effect/blob/shield
-	product = /obj/item/blob_tendril/core
 
-	light_color = BLOB_COLOR_CORE
-	layer = BLOB_CORE_LAYER
 
-	var/growth_range = 8 // Maximal distance for new blob pieces from this core.
-	var/blob_may_process = 1
-	var/reported_low_damage = FALSE
-	var/times_to_pulse = 0
+/obj/effect/blob/core/New()
+	if(!parent_core)
+		parent_core = src
+	..()
 
-/obj/effect/blob/core/proc/get_health_percent()
-	return ((health / maxHealth) * 100)
-
-/*
-the master core becomes more vulnereable to damage as it weakens,
-but it also becomes more aggressive, and channels more of its energy into regenerating rather than spreading
-regen() will cover update_icon() for this proc
-*/
-/obj/effect/blob/core/proc/process_core_health() 
-	switch(get_health_percent())
-		if(75 to INFINITY)
-			brute_resist = 3.5
-			fire_resist = 2
-			attack_freq = 5
-			regen_rate = 2
-			times_to_pulse = 4
-			if(reported_low_damage)
-				report_shield_status("high")
-		if(50 to 74)
-			brute_resist = 2.5
-			fire_resist = 1.5
-			attack_freq = 4
-			regen_rate = 3
-			times_to_pulse = 3
-		if(34 to 49)
-			brute_resist = 1
-			fire_resist = 0.8
-			attack_freq = 3
-			regen_rate = 4
-			times_to_pulse = 2
-		if(-INFINITY to 33)
-			brute_resist = 0.5
-			fire_resist = 0.3
-			regen_rate = 5
-			times_to_pulse = 1
-			if(!reported_low_damage)
-				report_shield_status("low")
-
-/obj/effect/blob/core/proc/report_shield_status(var/status)
-	if(status == "low")
-		visible_message(SPAN_DANGER("The [src]'s tendril shield fails, leaving the nucleus vulnerable!"), 3)
-		reported_low_damage = TRUE
-	if(status == "high")
-		visible_message(SPAN_NOTICE("The [src]'s tendril shield seems to have fully reformed."), 3)
-		reported_low_damage = FALSE
-
-// Rough icon state changes that reflect the core's health
-/obj/effect/blob/core/on_update_icon()
-	switch(get_health_percent())
+/obj/effect/blob/core/update_icon()
+	var/health_percent = (health / maxHealth) * 100
+	switch(health_percent)
 		if(66 to INFINITY)
 			icon_state = "blob_core"
 		if(33 to 66)
@@ -262,60 +288,55 @@ regen() will cover update_icon() for this proc
 		if(-INFINITY to 33)
 			icon_state = "blob_factory"
 
-/obj/effect/blob/core/Process()
-	if(!blob_may_process)
+/obj/effect/blob/core/process()
+	set waitfor = 0
+	..()
+	if(world.time < blob_may_process)
 		return
-	blob_may_process = 0
-	process_core_health()
-	regen()
-	for(var/I in 1 to times_to_pulse)
-		pulse(20, GLOB.alldirs)
-	attempt_attack(GLOB.alldirs)
-	attempt_attack(GLOB.alldirs)
-	blob_may_process = 1
+	blob_may_process = world.time + 8 SECONDS
+	sleep(0)
+	pulse(20, list(NORTH, EAST))
+	pulse(20, list(NORTH, WEST))
+	pulse(20, list(SOUTH, EAST))
+	pulse(20, list(SOUTH, WEST))
 
-// Blob has a very small probability of growing these when spreading. These will spread the blob further.
 /obj/effect/blob/core/secondary
-	name = "auxiliary nucleus"
-	desc = "An interwoven mass of tendrils. A glowing nucleus pulses at its center."
-	icon_state = "blob_node"
-	maxHealth = 125
+	name = "small blob core"
+	icon_state = "blob_core"
+	maxHealth = 100
+	brute_resist = 1
+	fire_resist = 1.75
 	regen_rate = 1
-	growth_range = 4
-	damage_min = 15
-	damage_max = 20
-	layer = BLOB_NODE_LAYER
-	product = /obj/item/blob_tendril/core/aux
-	times_to_pulse = 4
+	expandType = /obj/effect/blob
 
-/obj/effect/blob/core/secondary/process_core_health()
-	return
+/obj/effect/blob/core/secondary/New()
+	health = maxHealth
+	update_icon()
+	return ..(loc)
 
-/obj/effect/blob/core/secondary/on_update_icon()
-	icon_state = (health / maxHealth >= 0.5) ? "blob_node" : "blob_factory"
+/obj/effect/blob/core/secondary/Destroy()
+	if(parent_core)
+		parent_core.core_count -= 1
+	return ..()
 
 /obj/effect/blob/shield
-	name = "shielding mass"
-	desc = "A pulsating mass of interwoven tendrils. These seem particularly robust, but not quite as active."
+	name = "strong blob"
 	icon_state = "blob_idle"
-	maxHealth = 120
-	damage_min = 13
-	damage_max = 25
-	attack_freq = 7
-	regen_rate = 4
-	expandType = /obj/effect/blob/ravaging
-	light_color = BLOB_COLOR_SHIELD
+	maxHealth = 60
+	brute_resist = 1
+	fire_resist = 2.5
+	blob_cost = 0 //so that the core can regrow its shields when they break
 
-/obj/effect/blob/shield/Initialize()
-	. = ..()
-	update_nearby_tiles()
-
-/obj/effect/blob/shield/Destroy()
-	set_density(0)
+/obj/effect/blob/shield/New()
 	update_nearby_tiles()
 	..()
 
-/obj/effect/blob/shield/on_update_icon()
+/obj/effect/blob/shield/Destroy()
+	density = 0
+	update_nearby_tiles()
+	return ..()
+
+/obj/effect/blob/shield/update_icon()
 	if(health > maxHealth * 2 / 3)
 		icon_state = "blob_idle"
 	else if(health > maxHealth / 3)
@@ -325,72 +346,3 @@ regen() will cover update_icon() for this proc
 
 /obj/effect/blob/shield/CanPass(var/atom/movable/mover, var/turf/target, var/height = 0, var/air_group = 0)
 	return !density
-
-/obj/effect/blob/ravaging
-	name = "ravaging mass"
-	desc = "A mass of interwoven tendrils. They thrash around haphazardly at anything in reach."
-	maxHealth = 20
-	damage_min = 27
-	damage_max = 36
-	attack_freq = 3
-	light_color = BLOB_COLOR_RAV
-	color = "#ffd400" //Temporary, for until they get a new sprite.
-
-//produce
-/obj/item/blob_tendril
-	name = "asteroclast tendril"
-	desc = "A tendril removed from an asteroclast. It's entirely lifeless."
-	icon = 'icons/mob/blob.dmi'
-	icon_state = "tendril"
-	item_state = "blob_tendril"
-	w_class = ITEM_SIZE_LARGE
-	attack_verb = list("smacked", "smashed", "whipped")
-	var/is_tendril = TRUE
-	var/types_of_tendril = list("solid", "fire")
-
-/obj/item/blob_tendril/get_heat()
-	. = max(..(), damtype == BURN ? 1000 : 0)
-
-/obj/item/blob_tendril/Initialize()
-	. = ..()
-	if(is_tendril)
-		var/tendril_type
-		tendril_type = pick(types_of_tendril)
-		switch(tendril_type)
-			if("solid")
-				desc = "An incredibly dense, yet flexible, tendril, removed from an asteroclast."
-				force = 10
-				color = COLOR_BRONZE
-				origin_tech = "{'materials':2}"
-			if("fire")
-				desc = "A tendril removed from an asteroclast. It's hot to the touch."
-				damtype = BURN
-				force = 15
-				color = COLOR_AMBER
-				origin_tech = "{'powerstorage':2}"
-
-/obj/item/blob_tendril/afterattack(obj/O, mob/user, proximity)
-	if(!proximity)
-		return
-	if(is_tendril && prob(50))
-		force--
-		if(force <= 0)
-			visible_message(SPAN_NOTICE("\The [src] crumbles apart!"))
-			user.drop_from_inventory(src)
-			new /obj/effect/decal/cleanable/ash(src.loc)
-			qdel(src)
-
-/obj/item/blob_tendril/core
-	name = "asteroclast nucleus sample"
-	desc = "A sample taken from an asteroclast's nucleus. It pulses with energy."
-	icon_state = "core_sample"
-	item_state = "blob_core"
-	w_class = ITEM_SIZE_NORMAL
-	origin_tech = "{'materials':4,'wormholes':5,'biotech':7}"
-	is_tendril = FALSE
-
-/obj/item/blob_tendril/core/aux
-	name = "asteroclast auxiliary nucleus sample"
-	desc = "A sample taken from an asteroclast's auxiliary nucleus."
-	icon_state = "core_sample_2"
-	origin_tech = "{'materials':2,'wormholes':3,'biotech':4}"

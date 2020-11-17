@@ -2,18 +2,14 @@
 
 	if(!istype(player))
 		return 0
-	
-	if (required_language)
-		player.add_language(required_language)
-		player.set_default_language(required_language)
 
 	// This could use work.
 	if(flags & ANTAG_CLEAR_EQUIPMENT)
 		for(var/obj/item/thing in player.contents)
-			if(player.canUnEquip(thing))
+			player.drop_from_inventory(thing)
+			if(thing.loc != player)
 				qdel(thing)
-		//mainly for vox antag compatibility. Should not effect item spawning.
-		player.species.equip_survival_gear(player)
+	player.species.before_equip(player)
 	return 1
 
 /datum/antagonist/proc/unequip(var/mob/living/carbon/human/player)
@@ -21,17 +17,13 @@
 		return 0
 	return 1
 
-/datum/antagonist/proc/equip_rig(var/rig_type, var/mob/living/carbon/human/player)
-	set waitfor = 0
-	if(istype(player) && ispath(rig_type))
-		var/obj/item/rig/rig = new rig_type(player)
-		rig.seal_delay = 0
-		player.put_in_hands(rig)
-		player.equip_to_slot_or_del(rig,slot_back_str)
-		if(rig)
-			rig.visible_name = player.real_name
-			rig.toggle_seals(src,1)
-			rig.seal_delay = initial(rig.seal_delay)
-			if(rig.air_supply)
-				player.set_internals(rig.air_supply)
-		return rig 
+/datum/antagonist/proc/get_antag_radio()
+	return
+
+/datum/antagonist/proc/give_codewords(mob/living/traitor_mob)
+	to_chat(traitor_mob, "<u><b>Your employers/contacts provided you with the following information on how to identify possible allies:</b></u>")
+	to_chat(traitor_mob, "<b>Code Phrase</b>: <span class='danger'>[syndicate_code_phrase]</span>")
+	to_chat(traitor_mob, "<b>Code Response</b>: <span class='danger'>[syndicate_code_response]</span>")
+	traitor_mob.mind.store_memory("<b>Code Phrase</b>: [syndicate_code_phrase]")
+	traitor_mob.mind.store_memory("<b>Code Response</b>: [syndicate_code_response]")
+	to_chat(traitor_mob, "Use the code words, preferably in the order provided, during regular conversation, to identify other agents. Proceed with caution, however, as everyone is a potential foe.")

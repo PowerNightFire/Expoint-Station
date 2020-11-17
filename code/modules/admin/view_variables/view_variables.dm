@@ -1,13 +1,20 @@
+
+// Variables to not even show in the list.
+// step_* and bound_* are here because they literally break the game and do nothing else.
+// parent_type is here because it's pointless to show in VV.
+/var/list/view_variables_hide_vars = list("bound_x", "bound_y", "bound_height", "bound_width", "bounds", "parent_type", "step_x", "step_y", "step_size")
 // Variables not to expand the lists of. Vars is pointless to expand, and overlays/underlays cannot be expanded.
-/var/list/view_variables_dont_expand = list("overlays", "underlays", "vars", "vis_contents")
+/var/list/view_variables_dont_expand = list("overlays", "underlays", "vars", "screen", "our_overlays", "priority_overlays", "queued_overlays")
 // Variables that runtime if you try to test associativity of the lists they contain by indexing
-/var/list/view_variables_no_assoc = list("verbs", "contents","screen","images")
+/var/list/view_variables_no_assoc = list("verbs", "contents")
 
 // Acceptable 'in world', as VV would be incredibly hampered otherwise
 /client/proc/debug_variables(datum/D in world)
 	set category = "Debug"
 	set name = "View Variables"
+	debug_variables_open(D)
 
+/client/proc/debug_variables_open(var/datum/D, var/search = "")
 	if(!check_rights(0))
 		return
 
@@ -15,14 +22,13 @@
 		return
 
 	var/icon/sprite
-	var/atom/A
 	if(istype(D, /atom))
-		A = D
+		var/atom/A = D
 		if(A.icon && A.icon_state)
 			sprite = icon(A.icon, A.icon_state)
 			send_rsc(usr, sprite, "view_vars_sprite.png")
 
-	send_rsc(usr,'code/js/view_variables.js', "view_variables.js")
+	send_rsc(usr, 'code/js/view_variables.js', "view_variables.js")
 
 	var/html = {"
 		<html>
@@ -30,11 +36,12 @@
 			<script src='view_variables.js'></script>
 			<title>[D] (\ref[D] - [D.type])</title>
 			<style>
-				body { font-family: Verdana, sans-serif; font-size: 9pt; }
-				.value { font-family: "Courier New", monospace; font-size: 8pt; }
+				body { font-family: Arial, "Helvetica Neue", Helvetica, sans-serif; font-size: 10pt; }
+				.key, .value { font-family: "Fira Code", Consolas, Menlo, Monaco, "Lucida Console", "Liberation Mono", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Courier New", monospace, sans-serif; font-size: 9pt; }
+				.key { font-weight: bold }
 			</style>
 		</head>
-		<body onload='selectTextField(); updateSearch()'; onkeyup='updateSearch()'>
+		<body onload='selectTextField(); updateSearch()'>
 			<div align='center'>
 				<table width='100%'><tr>
 					<td width='50%'>
@@ -44,13 +51,12 @@
 						</tr></table>
 						<div align='center'>
 							<b><font size='1'>[replacetext("[D.type]", "/", "/<wbr>")]</font></b>
-							[holder.marked_datum() == D ? "<br/><font size='1' color='red'><b>Marked Object</b></font>" : ""]
+							[holder.marked_datum == D ? "<br/><font size='1' color='red'><b>Marked Object</b></font>" : ""]
 						</div>
 					</td>
 					<td width='50%'>
 						<div align='center'>
-							<a href='?_src_=vars;datumrefresh=\ref[D]'>Refresh</a>
-							[A ? "<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[A.x];Y=[A.y];Z=[A.z]'>Jump To</a>":""]
+							<a id='refresh' data-initial-href='?_src_=vars;datumrefresh=\ref[D];search=' href='?_src_=vars;datumrefresh=\ref[D];search=[search]'>Refresh</a>
 							<form>
 								<select name='file'
 								        size='1'
@@ -86,7 +92,9 @@
 					<input type='text'
 					       id='filter'
 					       name='filter_text'
-					       value=''
+					       value='[search]'
+					       onkeyup='updateSearch()'
+					       onchange='updateSearch()'
 					       style='width:100%;' />
 				</td>
 			</tr></table>
@@ -98,57 +106,21 @@
 		</html>
 		"}
 
-	show_browser(usr, html, "window=variables\ref[D];size=475x650")
+	usr << browse(html, "window=variables\ref[D];size=520x720")
 
-/client
-	var/list/watched_variables = list()
-	var/datum/browser/watched_variables/watched_variables_window
-
-/client/proc/watched_variables()
-	set category = "Debug"
-	set name = "View Watched Variables"
-
-	watched_variables_window = new(usr, "watchedvariables", "Watched Variables", 640, 640, src)
-
-	watched_variables_window.set_content()
-	watched_variables_window.open()
-
-/datum/browser/watched_variables/set_content()
-	var/list/dat = list()
-
-	if(!user || !user.client)
-		return
-
-	dat += "<style>div.var { padding: 5px; } div.var:nth-child(even) { background-color: #555; }</style>"
-	for(var/datum/D in user.client.watched_variables)
-		dat += "<h1>[make_view_variables_value(D)]</h1>"
-		for(var/v in user.client.watched_variables[D])
-			dat += "<div class='var'>"
-			dat += "(<a href='?_src_=vars;datumunwatch=\ref[D];varnameunwatch=[v]'>X</a>) "
-			dat += "[D.make_view_variables_variable_entry(v, D.get_variable_value(v), 1)] [v] = [make_view_variables_value(D.get_variable_value(v), v)]"
-			dat += "</div>"
-
-	..(jointext(dat, null))
-
-/datum/browser/watched_variables/update()
-	set_content()
-	..()
-
-/datum/browser/watched_variables/Process()
-	update()
-
-/datum/browser/watched_variables/Destroy()
-	STOP_PROCESSING(SSprocessing, src)
-
-	. = ..()
 
 /proc/make_view_variables_var_list(datum/D)
-	. = list()
-	var/list/variables = D.get_variables()
+	. = ""
+	var/list/variables = list()
+	for(var/x in D.vars)
+		CHECK_TICK
+		if(x in view_variables_hide_vars)
+			continue
+		variables += x
 	variables = sortList(variables)
 	for(var/x in variables)
-		. += make_view_variables_var_entry(D, x, D.get_variable_value(x))
-	return jointext(., null)
+		CHECK_TICK
+		. += make_view_variables_var_entry(D, x, D.vars[x])
 
 /proc/make_view_variables_value(value, varname = "*")
 	var/vtext = ""
@@ -185,14 +157,18 @@
 	else
 		vtext = "[value]"
 
-	return "<span class=value>[vtext]</span>[jointext(extra, null)]"
+	return "<span class=value>[vtext]</span>[jointext(extra, "")]"
 
 /proc/make_view_variables_var_entry(datum/D, varname, value, level=0)
 	var/ecm = null
 
 	if(D)
-		ecm = D.make_view_variables_variable_entry(varname, value)
+		ecm = {"
+			(<a href='?_src_=vars;datumedit=\ref[D];varnameedit=[varname]'>E</a>)
+			(<a href='?_src_=vars;datumchange=\ref[D];varnamechange=[varname]'>C</a>)
+			(<a href='?_src_=vars;datummass=\ref[D];varnamemass=[varname]'>M</a>)
+			"}
 
 	var/valuestr = make_view_variables_value(value, varname)
 
-	return "<li>[ecm][varname] = [valuestr]</li>"
+	return "<li>[ecm]<span class='key'>[varname]</span> = [valuestr]</li>"

@@ -1,6 +1,7 @@
 /obj/vehicle/train/cargo/engine
 	name = "cargo train tug"
 	desc = "A ridable electric car designed for pulling cargo trolleys."
+	desc_info = "Use ctrl-click to quickly toggle the engine if you're adjacent (only when vehicle is stationary). Alt-click will grab the keys, if present."
 	icon = 'icons/obj/vehicles.dmi'
 	icon_state = "cargo_engine"
 	on = 0
@@ -9,10 +10,9 @@
 
 	load_item_visible = 1
 	load_offset_x = 0
-	buckle_pixel_shift = @"{'x':0,'y':0,'z':7}"
+	mob_offset_y = 7
 
 	var/car_limit = 3		//how many cars an engine can pull before performance degrades
-	charge_use = 1 KILOWATTS
 	active_engines = 1
 	var/obj/item/key/cargo_train/key
 
@@ -21,7 +21,7 @@
 	desc = "A keyring with a small steel key, and a yellow fob reading \"Choo Choo!\"."
 	icon = 'icons/obj/vehicles.dmi'
 	icon_state = "train_keys"
-	w_class = ITEM_SIZE_TINY
+	w_class = ITEMSIZE_TINY
 
 /obj/vehicle/train/cargo/trolley
 	name = "cargo train trolley"
@@ -34,7 +34,7 @@
 	load_item_visible = 1
 	load_offset_x = 0
 	load_offset_y = 4
-	buckle_pixel_shift = @"{'x':0,'y':0,'z':8}"
+	mob_offset_y = 8
 
 //-------------------------------------------
 // Standard procs
@@ -43,14 +43,12 @@
 	. = ..()
 	cell = new /obj/item/cell/high(src)
 	key = new(src)
-	var/image/I = new(icon = icon, icon_state = "cargo_engine_overlay")
-	I.plane = plane
-	I.layer = layer
-	overlays += I
+	var/image/I = new(icon = icon, icon_state = "[icon_state]_overlay", layer = src.layer + 0.2) //over mobs
+	add_overlay(I)
 	turn_off()	//so engine verbs are correctly set
 
 /obj/vehicle/train/cargo/engine/Move(var/turf/destination)
-	if(on && cell.charge < (charge_use * CELLRATE))
+	if(on && cell.charge < charge_use)
 		turn_off()
 		update_stats()
 		if(load && is_train_head())
@@ -65,31 +63,31 @@
 
 	return ..()
 
-/obj/vehicle/train/cargo/trolley/attackby(obj/item/W, mob/user)
-	if(open && isWirecutter(W))
+/obj/vehicle/train/cargo/trolley/attackby(obj/item/W as obj, mob/user as mob)
+	if(open && W.iswirecutter())
 		passenger_allowed = !passenger_allowed
 		user.visible_message("<span class='notice'>[user] [passenger_allowed ? "cuts" : "mends"] a cable in [src].</span>","<span class='notice'>You [passenger_allowed ? "cut" : "mend"] the load limiter cable.</span>")
 	else
 		..()
 
-/obj/vehicle/train/cargo/engine/attackby(obj/item/W, mob/user)
+/obj/vehicle/train/cargo/engine/attackby(obj/item/W as obj, mob/user as mob)
 	if(istype(W, /obj/item/key/cargo_train))
 		if(!key)
-			if(!user.unEquip(W, src))
-				return
+			user.drop_from_inventory(W,src)
 			key = W
 			verbs += /obj/vehicle/train/cargo/engine/verb/remove_key
 		return
 	..()
 
-//cargo trains are open topped, so there is a chance the projectile will hit the mob ridding the train instead
+// Cargo trains are open topped, so you can shoot at the driver.
+// Or you can shoot at the tug itself, if you're good.
 /obj/vehicle/train/cargo/bullet_act(var/obj/item/projectile/Proj)
-	if(buckled_mob && prob(70))
+	if (buckled_mob && Proj.original == buckled_mob)
 		buckled_mob.bullet_act(Proj)
-		return
-	..()
+	else
+		..()
 
-/obj/vehicle/train/cargo/on_update_icon()
+/obj/vehicle/train/cargo/update_icon()
 	if(open)
 		icon_state = initial(icon_state) + "_open"
 	else
@@ -106,18 +104,18 @@
 	..()
 	update_stats()
 
-/obj/vehicle/train/cargo/engine/Bump(atom/Obstacle)
+/obj/vehicle/train/cargo/engine/Collide(atom/Obstacle)
 	var/obj/machinery/door/D = Obstacle
 	var/mob/living/carbon/human/H = load
 	if(istype(D) && istype(H))
-		D.Bumped(H)		//a little hacky, but hey, it works, and respects access rights
+		H.Collide(D)		//a little hacky, but hey, it works, and respects access rights
 
-	..()
+	. = ..()
 
-/obj/vehicle/train/cargo/trolley/Bump(atom/Obstacle)
+/obj/vehicle/train/cargo/trolley/Collide(atom/Obstacle)
 	if(!lead)
 		return //so people can't knock others over by pushing a trolley around
-	..()
+	. = ..()
 
 //-------------------------------------------
 // Train procs
@@ -154,11 +152,11 @@
 	H.apply_effects(5, 5)
 	for(var/i = 0, i < rand(1,5), i++)
 		var/def_zone = pick(parts)
-		H.apply_damage(rand(5,10), BRUTE, def_zone)
+		H.apply_damage(rand(5,10), BRUTE, def_zone, H.run_armor_check(def_zone, "melee"))
 
 /obj/vehicle/train/cargo/trolley/RunOver(var/mob/living/carbon/human/H)
 	..()
-	attack_log += text("\[[time_stamp()]\] <font color='red'>ran over [H.name] ([H.ckey])</font>")
+	attack_log += text("\[[time_stamp()]\] <span class='warning'>ran over [H.name] ([H.ckey])</span>")
 
 /obj/vehicle/train/cargo/engine/RunOver(var/mob/living/carbon/human/H)
 	..()
@@ -166,22 +164,25 @@
 	if(is_train_head() && istype(load, /mob/living/carbon/human))
 		var/mob/living/carbon/human/D = load
 		to_chat(D, "<span class='danger'>You ran over [H]!</span>")
-		visible_message("<span class='danger'>>\The [src] ran over [H]!</span>")
-		attack_log += text("\[[time_stamp()]\] <font color='red'>ran over [H.name] ([H.ckey]), driven by [D.name] ([D.ckey])</font>")
-		msg_admin_attack("[D.name] ([D.ckey]) ran over [H.name] ([H.ckey]). (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[src.x];Y=[src.y];Z=[src.z]'>JMP</a>)")
+		visible_message("<span class='danger'>\The [src] ran over [H]!</span>")
+		attack_log += text("\[[time_stamp()]\] <span class='warning'>ran over [H.name] ([H.ckey]), driven by [D.name] ([D.ckey])</span>")
+		msg_admin_attack("[D.name] ([D.ckey]) ran over [H.name] ([H.ckey]). (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[src.x];Y=[src.y];Z=[src.z]'>JMP</a>)",ckey=key_name(D),ckey_target=key_name(H))
 	else
-		attack_log += text("\[[time_stamp()]\] <font color='red'>ran over [H.name] ([H.ckey])</font>")
+		attack_log += text("\[[time_stamp()]\] <span class='warning'>ran over [H.name] ([H.ckey])</span>")
 
 
 //-------------------------------------------
 // Interaction procs
 //-------------------------------------------
 /obj/vehicle/train/cargo/engine/relaymove(mob/user, direction)
-	if(user != load || user.incapacitated())
+	if(user != load)
+		return 0
+
+	if(user.restrained())
 		return 0
 
 	if(is_train_head())
-		if(direction == GLOB.reverse_dir[dir] && tow)
+		if(direction == reverse_direction(dir) && tow)
 			return 0
 		if(Move(get_step(src, direction)))
 			return 1
@@ -189,10 +190,8 @@
 	else
 		return ..()
 
-/obj/vehicle/train/cargo/engine/examine(mob/user, distance)
-	. = ..()
-
-	if(distance > 1)
+/obj/vehicle/train/cargo/engine/examine(mob/user)
+	if(!..(user, 1))
 		return
 
 	if(!istype(usr, /mob/living/carbon/human))
@@ -201,9 +200,24 @@
 	to_chat(user, "The power light is [on ? "on" : "off"].\nThere are[key ? "" : " no"] keys in the ignition.")
 	to_chat(user, "The charge meter reads [cell? round(cell.percent(), 0.01) : 0]%")
 
+/obj/vehicle/train/cargo/engine/CtrlClick(var/mob/user)
+	if(Adjacent(user))
+		if(on)
+			stop_engine()
+		else
+			start_engine()
+	else
+		return ..()
+
+/obj/vehicle/train/cargo/engine/AltClick(var/mob/user)
+	if(Adjacent(user))
+		remove_key()
+	else
+		return ..()
+
 /obj/vehicle/train/cargo/engine/verb/start_engine()
 	set name = "Start engine"
-	set category = "Object"
+	set category = "Vehicle"
 	set src in view(0)
 
 	if(!istype(usr, /mob/living/carbon/human))
@@ -224,7 +238,7 @@
 
 /obj/vehicle/train/cargo/engine/verb/stop_engine()
 	set name = "Stop engine"
-	set category = "Object"
+	set category = "Vehicle"
 	set src in view(0)
 
 	if(!istype(usr, /mob/living/carbon/human))
@@ -240,7 +254,7 @@
 
 /obj/vehicle/train/cargo/engine/verb/remove_key()
 	set name = "Remove key"
-	set category = "Object"
+	set category = "Vehicle"
 	set src in view(0)
 
 	if(!istype(usr, /mob/living/carbon/human))
@@ -252,7 +266,9 @@
 	if(on)
 		turn_off()
 
-	usr.put_in_hands(key)
+	key.loc = usr.loc
+	if(!usr.get_active_hand())
+		usr.put_in_hands(key)
 	key = null
 
 	verbs -= /obj/vehicle/train/cargo/engine/verb/remove_key
@@ -301,17 +317,12 @@
 	C.forceMove(src)
 
 	if(load_item_visible)
-		C.pixel_x += load_offset_x
-		C.pixel_y += load_offset_y
-		C.plane = plane
-		C.layer = VEHICLE_LOAD_LAYER
+		var/mutable_appearance/MA = new(C)
+		MA.pixel_x += load_offset_x
+		MA.pixel_y += load_offset_y
+		MA.layer = FLOAT_LAYER
 
-		overlays += C
-
-		//we can set these back now since we have already cloned the icon into the overlay
-		C.pixel_x = initial(C.pixel_x)
-		C.pixel_y = initial(C.pixel_y)
-		C.reset_plane_and_layer()
+		add_overlay(MA)
 
 /obj/vehicle/train/cargo/trolley/unload(var/mob/user, var/direction)
 	if(istype(load, /datum/vehicle_dummy_load))
@@ -319,7 +330,7 @@
 		load = dummy_load.actual_load
 		dummy_load.actual_load = null
 		qdel(dummy_load)
-		overlays.Cut()
+		cut_overlays()
 	..()
 
 //-------------------------------------------
@@ -339,7 +350,7 @@
 
 		if(dir == T_dir) 	//if car is ahead
 			src.attach_to(T, user)
-		else if(GLOB.reverse_dir[dir] == T_dir)	//else if car is behind
+		else if(reverse_direction(dir) == T_dir)	//else if car is behind
 			T.attach_to(src, user)
 
 //-------------------------------------------------------
@@ -363,8 +374,8 @@
 	else
 		move_delay = max(0, (-car_limit * active_engines) + train_length - active_engines)	//limits base overweight so you cant overspeed trains
 		move_delay *= (1 / max(1, active_engines)) * 2 										//overweight penalty (scaled by the number of engines)
-		move_delay += config.run_delay 														//base reference speed
-		move_delay *= 1.1																	//makes cargo trains 10% slower than running when not overweight
+		move_delay += config.walk_speed 													//base reference speed
+		move_delay *= config.vehicle_delay_multiplier												//makes cargo trains 10% slower than running when not overweight
 
 /obj/vehicle/train/cargo/trolley/update_car(var/train_length, var/active_engines)
 	src.train_length = train_length

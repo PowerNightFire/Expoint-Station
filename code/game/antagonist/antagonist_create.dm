@@ -8,7 +8,8 @@
 		remove_antagonist(target)
 		return 0
 	if(flags & ANTAG_CHOOSE_NAME)
-		INVOKE_ASYNC(src, .proc/set_antag_name, target.current)
+		spawn(1)
+			set_antag_name(target.current)
 	if(move)
 		place_mob(target.current)
 	update_leader()
@@ -17,6 +18,7 @@
 	greet(target)
 	if(!gag_announcement)
 		announce_antagonist_spawn()
+	LAZYDISTINCTADD(SSticker.mode.antag_templates, src)
 
 /datum/antagonist/proc/create_default(var/mob/source)
 	var/mob/living/M
@@ -24,6 +26,8 @@
 		M = new mob_path(get_turf(source))
 	else
 		M = new /mob/living/carbon/human(get_turf(source))
+	M.real_name = source.real_name
+	M.name = M.real_name
 	M.ckey = source.ckey
 	add_antagonist(M.mind, 1, 0, 1) // Equip them and move them to spawn.
 	return M
@@ -35,22 +39,27 @@
 	W.access |= default_access
 	W.assignment = "[assignment]"
 	player.set_id_info(W)
-	if(equip) player.equip_to_slot_or_del(W, slot_wear_id_str)
+	if(equip) player.equip_to_slot_or_del(W, slot_wear_id)
 	return W
 
 /datum/antagonist/proc/create_radio(var/freq, var/mob/living/carbon/human/player)
-	var/obj/item/radio/R
+	var/obj/item/device/radio/R
 
 	switch(freq)
+		if(NINJ_FREQ)
+			R = new/obj/item/device/radio/headset/ninja(player)
+		if(BURG_FREQ)
+			R = new /obj/item/device/radio/headset/burglar(player)
 		if(SYND_FREQ)
-			R = new/obj/item/radio/headset/syndicate(player)
+			R = new/obj/item/device/radio/headset/syndicate(player)
 		if(RAID_FREQ)
-			R = new/obj/item/radio/headset/raider(player)
+			R = new/obj/item/device/radio/headset/raider(player)
 		else
-			R = new/obj/item/radio/headset(player)
+			R = new/obj/item/device/radio/headset(player)
 			R.set_frequency(freq)
 
-	player.equip_to_slot_or_del(R, slot_l_ear_str)
+	R.set_frequency(freq)
+	player.equip_to_slot_or_del(R, slot_l_ear)
 	return R
 
 /datum/antagonist/proc/create_nuke(var/atom/paper_spawn_loc, var/datum/mind/code_owner)
@@ -74,16 +83,15 @@
 		if(paper_spawn_loc)
 			// Create and pass on the bomb code paper.
 			var/obj/item/paper/P = new(paper_spawn_loc)
-			P.info = "The nuclear authorization code is: <b>[code]</b>"
-			P.SetName("nuclear bomb code")
+			P.set_content_unsafe("nuclear bomb code", "The nuclear authorization code is: <b>[code]</b>")
 			if(leader && leader.current)
-				if(get_turf(P) == get_turf(leader.current) && leader.current.get_empty_hand_slot())
+				if(get_turf(P) == get_turf(leader.current) && !(leader.current.l_hand && leader.current.r_hand))
 					leader.current.put_in_hands(P)
 
 		if(!code_owner && leader)
 			code_owner = leader
 		if(code_owner)
-			code_owner.StoreMemory("<B>Nuclear Bomb Code</B>: [code]", /decl/memory_options/system)
+			code_owner.store_memory("<B>Nuclear Bomb Code</B>: [code]", 0, 0)
 			to_chat(code_owner.current, "The nuclear authorization code is: <B>[code]</B>")
 	else
 		message_admins("<span class='danger'>Could not spawn nuclear bomb. Contact a developer.</span>")
@@ -97,26 +105,35 @@
 	// Basic intro text.
 	to_chat(player.current, "<span class='danger'><font size=3>You are a [role_text]!</font></span>")
 	if(leader_welcome_text && player == leader)
-		to_chat(player.current, "<span class='antagdesc'>[leader_welcome_text]</span>")
+		to_chat(player.current, "<span class='notice'>[leader_welcome_text]</span>")
 	else
-		to_chat(player.current, "<span class='antagdesc'>[welcome_text]</span>")
-	if (config.objectives_disabled == CONFIG_OBJECTIVE_NONE || !player.objectives.len)
-		to_chat(player.current, "[antag_text]")
+		to_chat(player.current, "<span class='notice'>[welcome_text]</span>")
+
+	if(antag_sound)
+		player.current.playsound_simple(get_turf(src), sound(antag_sound), 50, FALSE)
 
 	if((flags & ANTAG_HAS_NUKE) && !spawned_nuke)
 		create_nuke()
 
-	src.show_objectives_at_creation(player)
+	show_objectives(player)
+
 	return 1
 
 /datum/antagonist/proc/set_antag_name(var/mob/living/player)
 	// Choose a name, if any.
+	if(ishuman(player))
+		var/mob/living/carbon/human/H = player
+		var/datum/language/L = H.default_language
+		if(!L)
+			L = all_languages[LANGUAGE_TCB]
+		H.real_name = L.get_random_name()
+		H.name = H.real_name
+		H.dna.real_name = H.real_name
 	var/newname = sanitize(input(player, "You are a [role_text]. Would you like to change your name to something else?", "Name change") as null|text, MAX_NAME_LEN)
 	if (newname)
 		player.real_name = newname
-		player.SetName(player.real_name)
-		if(player.dna)
-			player.dna.real_name = newname
+		player.name = player.real_name
+		player.dna.real_name = newname
 	if(player.mind) player.mind.name = player.name
 	// Update any ID cards.
 	update_access(player)

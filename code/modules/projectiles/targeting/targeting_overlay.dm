@@ -6,7 +6,8 @@
 	anchored = 1
 	density = 0
 	opacity = 0
-	layer = ABOVE_HUMAN_LAYER
+	layer = FLY_LAYER
+	appearance_flags = NO_CLIENT_COLOR
 	simulated = 0
 	mouse_opacity = 0
 
@@ -16,11 +17,11 @@
 	var/locked =    0          // Have we locked on?
 	var/lock_time = 0          // When -will- we lock on?
 	var/active =    0          // Is our owner intending to take hostages?
-	var/target_permissions = TARGET_CAN_MOVE | TARGET_CAN_CLICK | TARGET_CAN_RADIO	// Permission bitflags.
-
-/obj/aiming_overlay/Initialize()
-	. = ..()
-	owner = loc
+	var/target_permissions = 0 // Permission bitflags.
+	var/aimcooldown			   // How long untill we can re-aim?
+/obj/aiming_overlay/New(var/newowner)
+	..()
+	owner = newowner
 	loc = null
 	verbs.Cut()
 
@@ -35,26 +36,26 @@
 	if(owner.gun_move_icon)
 		if(!(target_permissions & TARGET_CAN_MOVE))
 			owner.gun_move_icon.icon_state = "no_walk0"
-			owner.gun_move_icon.SetName("Allow Movement")
+			owner.gun_move_icon.name = "Allow Movement"
 		else
 			owner.gun_move_icon.icon_state = "no_walk1"
-			owner.gun_move_icon.SetName("Disallow Movement")
+			owner.gun_move_icon.name = "Disallow Movement"
 
 	if(owner.item_use_icon)
 		if(!(target_permissions & TARGET_CAN_CLICK))
 			owner.item_use_icon.icon_state = "no_item0"
-			owner.item_use_icon.SetName("Allow Item Use")
+			owner.item_use_icon.name = "Allow Item Use"
 		else
 			owner.item_use_icon.icon_state = "no_item1"
-			owner.item_use_icon.SetName("Disallow Item Use")
+			owner.item_use_icon.name = "Disallow Item Use"
 
 	if(owner.radio_use_icon)
 		if(!(target_permissions & TARGET_CAN_RADIO))
 			owner.radio_use_icon.icon_state = "no_radio0"
-			owner.radio_use_icon.SetName("Allow Radio Use")
+			owner.radio_use_icon.name = "Allow Radio Use"
 		else
 			owner.radio_use_icon.icon_state = "no_radio1"
-			owner.radio_use_icon.SetName("Disallow Radio Use")
+			owner.radio_use_icon.name = "Disallow Radio Use"
 
 	var/message = "no longer permitted to "
 	var/use_span = "warning"
@@ -72,11 +73,12 @@
 		else
 			return
 
-	var/aim_message = "<span class='[use_span]'>[aiming_at ? "\The [aiming_at] is" : "Your targets are"] [message].</span>"
-	to_chat(owner, aim_message)
+	var/a_certain_scientific_railgun = (aiming_at ? "\The [aiming_at] is" : "Your targets are")
+	to_chat(owner, "<span class='[use_span]'> [a_certain_scientific_railgun] [message].</span>")
 	if(aiming_at)
 		to_chat(aiming_at, "<span class='[use_span]'>You are [message].</span>")
-/obj/aiming_overlay/Process()
+
+/obj/aiming_overlay/process()
 	if(!owner)
 		qdel(src)
 		return
@@ -109,18 +111,16 @@ obj/aiming_overlay/proc/update_aiming_deferred()
 
 	var/cancel_aim = 1
 
-	if(!(aiming_with in owner) || (istype(owner, /mob/living/carbon/human) && !(aiming_with in owner.get_held_items())))
-		to_chat(owner, SPAN_WARNING("You must keep hold of your weapon!"))
-	else if(owner.eye_blind)
-		to_chat(owner, SPAN_WARNING("You are blind and cannot see your target!"))
+	if(!(aiming_with in owner) || (istype(owner, /mob/living/carbon/human) && (owner.l_hand != aiming_with && owner.r_hand != aiming_with)))
+		to_chat(owner, "<span class='warning'>You must keep hold of your weapon!</span>")
 	else if(!aiming_at || !istype(aiming_at.loc, /turf))
-		to_chat(owner, SPAN_WARNING("You have lost sight of your target!"))
+		to_chat(owner, "<span class='warning'>You have lost sight of your target!</span>")
 	else if(owner.incapacitated() || owner.lying || owner.restrained())
-		to_chat(owner, SPAN_WARNING("You must be conscious and standing to keep track of your target!"))
+		to_chat(owner, "<span class='warning'>You must be conscious and standing to keep track of your target!</span>")
 	else if(aiming_at.is_invisible_to(owner))
-		to_chat(owner, SPAN_WARNING("Your target has become invisible!"))
+		to_chat(owner, "<span class='warning'>Your target has become invisible!</span>")
 	else if(!(aiming_at in view(owner)))
-		to_chat(owner, SPAN_WARNING("Your target is too far away to track!"))
+		to_chat(owner, "<span class='warning'>Your target is too far away to track!</span>")
 	else
 		cancel_aim = 0
 
@@ -135,8 +135,10 @@ obj/aiming_overlay/proc/update_aiming_deferred()
 			owner.set_dir(get_dir(get_turf(owner), get_turf(src)))
 
 /obj/aiming_overlay/proc/aim_at(var/mob/target, var/obj/thing)
+	if (aimcooldown > world.time)
+		return
 
-	if(!owner || !isliving(target))
+	if(!owner)
 		return
 
 	if(owner.incapacitated())
@@ -163,22 +165,26 @@ obj/aiming_overlay/proc/update_aiming_deferred()
 	aiming_with = thing
 	aiming_at = target
 	if(istype(aiming_with, /obj/item/gun))
-		sound_to(aiming_at, sound('sound/weapons/TargetOn.ogg'))
-		sound_to(owner, sound('sound/weapons/TargetOn.ogg'))
+		playsound(get_turf(owner), 'sound/weapons/TargetOn.ogg', 50,1)
+
+	admin_attack_log(owner, aiming_at, "\The [owner] is aiming at \the [aiming_at] with \the [aiming_with].", "\The [owner] is aiming at \the [aiming_at] with \the [aiming_with].", "\The [owner] is aiming at \the [aiming_at] with \the [aiming_with].")
 
 	forceMove(get_turf(target))
-	START_PROCESSING(SSobj, src)
+	START_PROCESSING(SSprocessing, src)
 
 	aiming_at.aimed |= src
 	toggle_active(1)
 	locked = 0
 	update_icon()
 	lock_time = world.time + 35
-	GLOB.moved_event.register(owner, src, /obj/aiming_overlay/proc/update_aiming)
-	GLOB.moved_event.register(aiming_at, src, /obj/aiming_overlay/proc/target_moved)
-	GLOB.destroyed_event.register(aiming_at, src, /obj/aiming_overlay/proc/cancel_aiming)
+	moved_event.register(owner, src, /obj/aiming_overlay/proc/update_aiming)
+	moved_event.register(aiming_at, src, /obj/aiming_overlay/proc/target_moved)
+	destroyed_event.register(aiming_at, src, /obj/aiming_overlay/proc/cancel_aiming)
 
-/obj/aiming_overlay/on_update_icon()
+/obj/aiming_overlay/proc/aim_cooldown(var/seconds)
+	aimcooldown = world.time + seconds SECONDS
+
+/obj/aiming_overlay/update_icon()
 	if(locked)
 		icon_state = "locked"
 	else
@@ -202,28 +208,28 @@ obj/aiming_overlay/proc/update_aiming_deferred()
 		else
 			to_chat(owner, "<span class='notice'>You will no longer aim rather than fire.</span>")
 			owner.client.remove_gun_icons()
-		owner.gun_setting_icon.icon_state = "gun[active]"
 
 /obj/aiming_overlay/proc/cancel_aiming(var/no_message = 0)
 	if(!aiming_with || !aiming_at)
 		return
+	admin_attack_log(owner, aiming_at, "\The [owner] is no longer aiming at \the [aiming_at] with \the [aiming_with].", "\The [owner] is no longer aiming at \the [aiming_at] with \the [aiming_with].", "\The [owner] is no longer aiming at \the [aiming_at] with \the [aiming_with].")
 	if(istype(aiming_with, /obj/item/gun))
-		sound_to(aiming_at, sound('sound/weapons/TargetOff.ogg'))
-		sound_to(owner, sound('sound/weapons/TargetOff.ogg'))
+		playsound(get_turf(owner), 'sound/weapons/TargetOff.ogg', 50,1)
 	if(!no_message)
 		owner.visible_message("<span class='notice'>\The [owner] lowers \the [aiming_with].</span>")
 
-	GLOB.moved_event.unregister(owner, src)
+	moved_event.unregister(owner, src)
 	if(aiming_at)
-		GLOB.moved_event.unregister(aiming_at, src)
-		GLOB.destroyed_event.unregister(aiming_at, src)
+		moved_event.unregister(aiming_at, src)
+		destroyed_event.unregister(aiming_at, src)
 		aiming_at.aimed -= src
 		aiming_at = null
 
 	aiming_with = null
 	loc = null
-	STOP_PROCESSING(SSobj, src)
+	STOP_PROCESSING(SSprocessing, src)
 
 /obj/aiming_overlay/proc/target_moved()
 	update_aiming()
 	trigger(TARGET_CAN_MOVE)
+

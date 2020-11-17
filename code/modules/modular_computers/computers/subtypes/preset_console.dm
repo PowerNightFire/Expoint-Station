@@ -1,145 +1,156 @@
-/obj/machinery/computer/modular/preset
-	var/list/default_software
-	var/datum/computer_file/program/autorun_program
-	base_type = /obj/machinery/computer/modular
+/obj/item/modular_computer/console/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
+	if(istype(mover,/obj/item/projectile))
+		if(prob(80))
+	//Holoscreens are non solid, and the frames of the computers are thin. So projectiles will usually
+	//pass through
+			return TRUE
+	else if(istype(mover) && mover.checkpass(PASSTABLE))
+	//Animals can run under them, lots of empty space
+		return TRUE
+	return ..()
 
-/obj/machinery/computer/modular/preset/full
-	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc,
-		/obj/item/stock_parts/computer/card_slot,
-		/obj/item/stock_parts/computer/ai_slot,
-		)
+/obj/item/modular_computer/console/preset/install_default_hardware()
+	..()
+	processor_unit = new /obj/item/computer_hardware/processor_unit(src)
+	tesla_link = new /obj/item/computer_hardware/tesla_link(src)
+	hard_drive = new /obj/item/computer_hardware/hard_drive/super(src)
+	network_card = new /obj/item/computer_hardware/network_card/wired(src)
+	nano_printer = new /obj/item/computer_hardware/nano_printer(src)
 
-/obj/machinery/computer/modular/preset/aislot
-	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc,
-		/obj/item/stock_parts/computer/ai_slot
-		)
+/obj/item/modular_computer/console/preset/install_default_programs()
+	..()
 
-/obj/machinery/computer/modular/preset/cardslot
-	uncreated_component_parts = list(
-		/obj/item/stock_parts/power/apc,
-		/obj/item/stock_parts/computer/card_slot
-		)
+// Engineering
+/obj/item/modular_computer/console/preset/engineering
+	name = "engineering console"
+	_app_preset_type = /datum/modular_computer_app_presets/engineering
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/Initialize()
-	. = ..()
-	var/datum/extension/interactive/ntos/os = get_extension(src, /datum/extension/interactive/ntos)
-	if(os)
-		for(var/program_type in default_software)
-			os.store_file(new program_type())
-		if(autorun_program)
-			os.set_autorun(initial(autorun_program.filename))
+/obj/item/modular_computer/console/preset/engineering/ce
+	name = "engineering console"
+	_app_preset_type = /datum/modular_computer_app_presets/engineering/ce
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/engineering
-	default_software = list(
-		/datum/computer_file/program/power_monitor,
-		/datum/computer_file/program/supermatter_monitor,
-		/datum/computer_file/program/alarm_monitor,
-		/datum/computer_file/program/atmos_control,
-		/datum/computer_file/program/rcon_console,
-		/datum/computer_file/program/camera_monitor,
-		/datum/computer_file/program/shields_monitor
-	)
+// Medical
+/obj/item/modular_computer/console/preset/medical
+	name = "medical console"
+	_app_preset_type = /datum/modular_computer_app_presets/medical
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/medical
-	default_software = list(
-		/datum/computer_file/program/suit_sensors,
-		/datum/computer_file/program/camera_monitor,
-		/datum/computer_file/program/records,
-		/datum/computer_file/program/wordprocessor
-	)
-	autorun_program = /datum/computer_file/program/suit_sensors
+/obj/item/modular_computer/console/preset/medical/cmo
+	name = "medical console"
+	_app_preset_type = /datum/modular_computer_app_presets/medical/cmo
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/aislot/research
-	default_software = list(
-		/datum/computer_file/program/network_monitor,
-		/datum/computer_file/program/camera_monitor,
-		/datum/computer_file/program/aidiag,
-		/datum/computer_file/program/email_client,
-		/datum/computer_file/program/wordprocessor
-	)
+// Research
+/obj/item/modular_computer/console/preset/research
+	name = "research console"
+	_app_preset_type = /datum/modular_computer_app_presets/research
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/aislot/sysadmin
-	default_software = list(
-		/datum/computer_file/program/network_monitor,
-		/datum/computer_file/program/camera_monitor,
-		/datum/computer_file/program/aidiag,
-		/datum/computer_file/program/email_client,
-		/datum/computer_file/program/email_administration,
-		/datum/computer_file/program/records,
-		/datum/computer_file/program/wordprocessor
-	)
+/obj/item/modular_computer/console/preset/research/install_default_hardware()
+	..()
+	ai_slot = new /obj/item/computer_hardware/ai_slot(src)
 
-/obj/machinery/computer/modular/preset/cardslot/command
-	default_software = list(
-		/datum/computer_file/program/comm,
-		/datum/computer_file/program/camera_monitor,
-		/datum/computer_file/program/email_client,
-		/datum/computer_file/program/records,
-		/datum/computer_file/program/docking,
-		/datum/computer_file/program/records,
-		/datum/computer_file/program/wordprocessor
-	)
+// Command
+/obj/item/modular_computer/console/preset/command
+	name = "command console"
+	_app_preset_type = /datum/modular_computer_app_presets/command
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/security
-	default_software = list(
-		/datum/computer_file/program/digitalwarrant,
-		/datum/computer_file/program/camera_monitor,
-		/datum/computer_file/program/records,
-		/datum/computer_file/program/forceauthorization,
-		/datum/computer_file/program/wordprocessor
-	)
+/obj/item/modular_computer/console/preset/command/install_default_hardware()
+	..()
+	nano_printer = new /obj/item/computer_hardware/nano_printer(src)
+	nano_printer.max_paper = 25
+	nano_printer.stored_paper = 20
+	card_slot = new /obj/item/computer_hardware/card_slot(src)
 
-/obj/machinery/computer/modular/preset/civilian
-	default_software = list(
-		/datum/computer_file/program/camera_monitor,
-		/datum/computer_file/program/records,
-		/datum/computer_file/program/email_client,
-		/datum/computer_file/program/supply,
-		/datum/computer_file/program/wordprocessor
-	)
+/obj/item/modular_computer/console/preset/command/captain
+	name = "captain's console"
+	_app_preset_type = /datum/modular_computer_app_presets/command/captain
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/dock
-	default_software = list(
-		/datum/computer_file/program/reports,
-		/datum/computer_file/program/records,
-		/datum/computer_file/program/email_client,
-		/datum/computer_file/program/supply,
-		/datum/computer_file/program/docking
-	)
+/obj/item/modular_computer/console/preset/command/hop
+	name = "command console"
+	_app_preset_type = /datum/modular_computer_app_presets/command/hop
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/supply_public
-	default_software = list(
-		/datum/computer_file/program/supply
-	)
-	autorun_program = /datum/computer_file/program/supply
+// Security
+/obj/item/modular_computer/console/preset/security
+	name = "security console"
+	_app_preset_type = /datum/modular_computer_app_presets/security
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/full/ert
-	default_software = list(
-		/datum/computer_file/program/camera_monitor/ert,
-		/datum/computer_file/program/email_client,
-		/datum/computer_file/program/alarm_monitor,
-		/datum/computer_file/program/comm,
-		/datum/computer_file/program/aidiag,
-		/datum/computer_file/program/records,
-		/datum/computer_file/program/wordprocessor
-	)
+/obj/item/modular_computer/console/preset/security/investigations
+	name = "investigations console"
+	_app_preset_type = /datum/modular_computer_app_presets/security/investigations
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/full/merc
-	default_software = list(
-		/datum/computer_file/program/camera_monitor/hacked,
-		/datum/computer_file/program/alarm_monitor,
-		/datum/computer_file/program/aidiag
-	)
+/obj/item/modular_computer/console/preset/security/armory
+	name = "armory console"
+	_app_preset_type = /datum/modular_computer_app_presets/security/armory
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/full/merc/Initialize()
-	. = ..()
-	emag_act(INFINITY)
+/obj/item/modular_computer/console/preset/security/hos
+	name = "head of security's console"
+	_app_preset_type = /datum/modular_computer_app_presets/security/hos
+	enrolled = 1
 
-/obj/machinery/computer/modular/preset/merchant
-	default_software = list(
-		/datum/computer_file/program/merchant,
-		/datum/computer_file/program/email_client,
-		/datum/computer_file/program/wordprocessor
-	)
+// Civilian
+/obj/item/modular_computer/console/preset/civilian
+	name = "civilian console"
+	_app_preset_type = /datum/modular_computer_app_presets/civilian
+	enrolled = 1
+
+// Supply
+/obj/item/modular_computer/console/preset/supply
+	name = "supply console"
+	_app_preset_type = /datum/modular_computer_app_presets/supply
+	enrolled = 1
+
+/obj/item/modular_computer/console/preset/supply/install_default_hardware()
+	..()
+	nano_printer.max_paper = 25
+	nano_printer.stored_paper = 20
+	card_slot = new /obj/item/computer_hardware/card_slot(src)
+
+// ERT
+/obj/item/modular_computer/console/preset/ert/install_default_hardware()
+	..()
+	ai_slot = new /obj/item/computer_hardware/ai_slot(src)
+	nano_printer.max_paper = 25
+	nano_printer.stored_paper = 20
+	card_slot = new /obj/item/computer_hardware/card_slot(src)
+
+/obj/item/modular_computer/console/preset/ert
+	_app_preset_type = /datum/modular_computer_app_presets/ert
+	enrolled = 2
+	computer_emagged = TRUE
+
+// Mercenary
+/obj/item/modular_computer/console/preset/mercenary
+	_app_preset_type = /datum/modular_computer_app_presets/merc
+	computer_emagged = TRUE
+	enrolled = 2
+
+/obj/item/modular_computer/console/preset/mercenary/install_default_hardware()
+	..()
+	ai_slot = new /obj/item/computer_hardware/ai_slot(src)
+	card_slot = new /obj/item/computer_hardware/card_slot(src)
+
+
+// Merchant
+/obj/item/modular_computer/console/preset/merchant
+	_app_preset_type = /datum/modular_computer_app_presets/merchant
+	enrolled = 2
+
+/obj/item/modular_computer/console/preset/merchant/install_default_hardware()
+	..()
+	ai_slot = new/obj/item/computer_hardware/ai_slot(src)
+	card_slot = new/obj/item/computer_hardware/card_slot(src)
+
+
+// AI
+/obj/item/modular_computer/console/preset/ai
+	_app_preset_type = /datum/modular_computer_app_presets/ai
+	enrolled = 2

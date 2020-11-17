@@ -8,8 +8,6 @@
 	var/list/obj/structure/fuel_port/fuel_ports //the fuel ports of the shuttle (but usually just one)
 
 	category = /datum/shuttle/autodock/overmap
-	var/skill_needed = SKILL_BASIC
-	var/operator_skill = SKILL_MIN
 
 /datum/shuttle/autodock/overmap/New(var/_name, var/obj/effect/shuttle_landmark/start_waypoint)
 	..(_name, start_waypoint)
@@ -26,8 +24,8 @@
 	if(!src.try_consume_fuel()) //insufficient fuel
 		for(var/area/A in shuttle_area)
 			for(var/mob/living/M in A)
-				M.show_message(SPAN_WARNING("You hear the shuttle engines sputter... perhaps it doesn't have enough fuel?"), AUDIBLE_MESSAGE,
-				SPAN_WARNING("The shuttle shakes but fails to take off."), VISIBLE_MESSAGE)
+				M.show_message(SPAN_WARNING("You hear the shuttle engines sputter... perhaps it doesn't have enough fuel?"), 2,
+							   SPAN_WARNING("The shuttle shakes but fails to take off."), 1)
 				return 0 //failure!
 	return 1 //sucess, continue with launch
 
@@ -36,7 +34,6 @@
 		return FALSE
 	if(moving_status == SHUTTLE_INTRANSIT)
 		return FALSE //already going somewhere, current_location may be an intransit location instead of in a sector
-
 	return get_dist(waypoint_sector(current_location), waypoint_sector(next_location)) <= range
 
 /datum/shuttle/autodock/overmap/can_launch()
@@ -47,22 +44,11 @@
 
 /datum/shuttle/autodock/overmap/get_travel_time()
 	var/distance_mod = get_dist(waypoint_sector(current_location),waypoint_sector(next_location))
-	var/skill_mod = 0.2*(skill_needed - operator_skill)
-	return move_time * (1 + distance_mod + skill_mod)
-
-/datum/shuttle/autodock/overmap/process_launch()
-	if(prob(10*max(0, skill_needed - operator_skill)))
-		var/places = get_possible_destinations()
-		var/place = pick(places)
-		set_destination(places[place])
-	..()
+	return move_time * (1 + distance_mod)
 
 /datum/shuttle/autodock/overmap/proc/set_destination(var/obj/effect/shuttle_landmark/A)
 	if(A != current_location)
-		if(next_location)
-			next_location.landmark_deselected(src)
 		next_location = A
-		next_location.landmark_selected(src)
 
 /datum/shuttle/autodock/overmap/proc/get_possible_destinations()
 	var/list/res = list()
@@ -128,17 +114,18 @@
 
 /obj/structure/fuel_port/Initialize()
 	. = ..()
-	new /obj/item/tank/hydrogen(src)
+	new /obj/item/tank/phoron(src)
 
 /obj/structure/fuel_port/attack_hand(mob/user)
 	if(!opened)
-		to_chat(user, SPAN_WARNING("The door is secured tightly. You'll need a crowbar to open it."))
+		to_chat(user, SPAN_WARNING("\The [src] is secured tightly. You'll need to pry it open with a crowbar."))
 		return
 	else if(contents.len > 0)
 		user.put_in_hands(contents[1])
 	update_icon()
 
-/obj/structure/fuel_port/on_update_icon()
+/obj/structure/fuel_port/update_icon()
+	. = ..()
 	if(opened)
 		if(contents.len > 0)
 			icon_state = icon_full
@@ -148,18 +135,18 @@
 		icon_state = icon_closed
 
 /obj/structure/fuel_port/attackby(obj/item/W, mob/user)
-	if(isCrowbar(W))
+	if(iscrowbar(W))
 		if(opened)
-			to_chat(user, SPAN_NOTICE("You tightly shut \the [src] door."))
-			playsound(src.loc, 'sound/effects/locker_close.ogg', 25, 0, -3)
+			to_chat(user, SPAN_NOTICE("You close \the [src]."))
+			playsound(src.loc, 'sound/effects/closet_close.ogg', 25, 0, -3)
 			opened = 0
 		else
-			to_chat(user, SPAN_NOTICE("You open up \the [src] door."))
-			playsound(src.loc, 'sound/effects/locker_open.ogg', 15, 1, -3)
+			to_chat(user, SPAN_NOTICE("You pry \the [src] open."))
+			playsound(src.loc, 'sound/effects/closet_open.ogg', 15, 1, -3)
 			opened = 1
 	else if(istype(W,/obj/item/tank))
 		if(!opened)
-			to_chat(user, SPAN_WARNING("\The [src] door is still closed!"))
+			to_chat(user, SPAN_NOTICE("\The [src] isn't open!"))
 			return
 		if(contents.len == 0)
 			user.unEquip(W, src)
@@ -168,3 +155,5 @@
 // Walls hide stuff inside them, but we want to be visible.
 /obj/structure/fuel_port/hide()
 	return
+
+#undef waypoint_sector

@@ -1,110 +1,73 @@
-//Commonly used
-/turf/simulated/wall/prepainted
-	paint_color = COLOR_GUNMETAL
-
-/turf/simulated/wall/r_wall/prepainted
-	paint_color = COLOR_GUNMETAL
-
 /turf/simulated/wall/r_wall
-	icon_state = "reinforced_solid"
-	material = /decl/material/solid/metal/plasteel
-	reinf_material = /decl/material/solid/metal/plasteel
+	icon_state = "rgeneric"
 
-/turf/simulated/wall/r_wall/hull
-	name = "hull"
-	color = COLOR_HULL
+/turf/simulated/wall/r_wall/Initialize(mapload)
+	. = ..(mapload, "plasteel","plasteel") //3strong
 
-/turf/simulated/wall/prepainted
-	paint_color = COLOR_WALL_GUNMETAL
-/turf/simulated/wall/r_wall/prepainted
-	paint_color = COLOR_WALL_GUNMETAL
-
-/turf/simulated/wall/r_wall/hull/Initialize()
-	. = ..()
-	paint_color = color
-	color = null //color is just for mapping
-	if(prob(40))
-		var/spacefacing = FALSE
-		for(var/direction in GLOB.cardinal)
-			var/turf/T = get_step(src, direction)
-			var/area/A = get_area(T)
-			if(A && (A.area_flags & AREA_FLAG_EXTERNAL))
-				spacefacing = TRUE
-				break
-		if(spacefacing)
-			var/bleach_factor = rand(10,50)
-			paint_color = adjust_brightness(paint_color, bleach_factor)
-	update_icon()
-
-/turf/simulated/wall/titanium
-	color = COLOR_SILVER
-	material = /decl/material/solid/metal/plasteel/titanium
-
-/turf/simulated/wall/r_titanium
-	icon_state = "reinforced_solid"
-	material = /decl/material/solid/metal/plasteel/titanium
-	reinf_material = /decl/material/solid/metal/plasteel/titanium
-
-/turf/simulated/wall/ocp_wall
-	color = COLOR_GUNMETAL
-	material = /decl/material/solid/metal/plasteel/ocp
-	reinf_material = /decl/material/solid/metal/plasteel/ocp
-
-/turf/simulated/wall/iron
-	icon_state = "metal"
-	material = /decl/material/solid/metal/iron
-
-/turf/simulated/wall/sandstone
-	color = COLOR_GOLD
-	icon_state = "stone"
-	material = /decl/material/solid/stone/sandstone
-
-/turf/simulated/wall/wood
-	color = COLOR_BROWN
-	icon_state = "wood"
-	material = /decl/material/solid/wood
-
-/turf/simulated/wall/walnut
-	color = COLOR_BROWN_ORANGE
-	icon_state = "wood"
-	material = /decl/material/solid/wood/walnut
-
-/turf/simulated/wall/voxshuttle
-	color = COLOR_GREEN_GRAY
-	icon_state = "metal"
-	material = /decl/material/solid/metal/voxalloy
-
-/turf/simulated/wall/voxshuttle/attackby()
-	return
-
-//Alien metal walls
-/turf/simulated/wall/alium
-	color = COLOR_BLUE_GRAY
-	floor_type = /turf/simulated/floor/fixed/alium
-	material = /decl/material/solid/metal/aliumium
-
-/turf/simulated/wall/alium/explosion_act(severity)
-	SHOULD_CALL_PARENT(TRUE)
-	if(prob(explosion_resistance))
-		..()
-
-//Cult wall
 /turf/simulated/wall/cult
 	icon_state = "cult"
-	color = COLOR_RED_GRAY
-	material = /decl/material/solid/stone/cult
+	desc = "Hideous images dance beneath the surface."
+	appearance_flags = NO_CLIENT_COLOR
 
-/turf/simulated/wall/cult/reinf
-	icon_state = "reinforced_cult"
-	reinf_material = /decl/material/solid/stone/cult/reinforced
+/turf/simulated/wall/cult/Initialize(mapload)
+	. = ..(mapload, MATERIAL_CULT)
+	desc = "Hideous images dance beneath the surface."
 
-/turf/simulated/wall/cult/dismantle_wall()
-	GLOB.cult.remove_cultiness(CULTINESS_PER_TURF)
-	. = ..()
+/turf/simulated/wall/cult_reinforced/Initialize(mapload)
+	. = ..(mapload, MATERIAL_CULT, MATERIAL_CULT_REINFORCED)
+	desc = "Hideous images dance beneath the surface."
 
-/turf/simulated/wall/cult/can_join_with(var/turf/simulated/wall/W)
-	if(material && W.material && material.icon_base == W.material.icon_base)
-		return 1
-	else if(istype(W, /turf/simulated/wall))
-		return 1
-	return 0
+/turf/unsimulated/wall/cult
+	name = "cult wall"
+	desc = "Hideous images dance beneath the surface."
+	icon = 'icons/turf/smooth/cult_wall.dmi'
+	canSmoothWith = null
+	smooth = SMOOTH_TRUE
+	smoothing_hints = SMOOTHHINT_TARGETS_NOT_UNIQUE | SMOOTHHINT_ONLY_MATCH_TURF
+	icon_state = "cult"
+	appearance_flags = NO_CLIENT_COLOR
+
+/turf/simulated/wall/vaurca/Initialize(mapload)
+	. = ..(mapload, MATERIAL_VAURCA)
+
+/turf/simulated/wall/iron/Initialize(mapload)
+	. = ..(mapload, MATERIAL_IRON)
+
+/turf/simulated/wall/uranium/Initialize(mapload)
+	. = ..(mapload, MATERIAL_URANIUM)
+
+/turf/simulated/wall/diamond/Initialize(mapload)
+	. = ..(mapload, MATERIAL_DIAMOND)
+
+/turf/simulated/wall/gold/Initialize(mapload)
+	. = ..(mapload, MATERIAL_GOLD)
+
+/turf/simulated/wall/silver/Initialize(mapload)
+	. = ..(mapload, MATERIAL_SILVER)
+
+/turf/simulated/wall/phoron/Initialize(mapload)
+	. = ..(mapload, MATERIAL_PHORON)
+
+/turf/simulated/wall/sandstone/Initialize(mapload)
+	. = ..(mapload, MATERIAL_SANDSTONE)
+
+/turf/simulated/wall/ironphoron/Initialize(mapload)
+	. = ..(mapload, MATERIAL_IRON, MATERIAL_PHORON)
+
+/turf/simulated/wall/golddiamond/Initialize(mapload)
+	. = ..(mapload, MATERIAL_GOLD, MATERIAL_DIAMOND)
+
+/turf/simulated/wall/silvergold/Initialize(mapload)
+	. = ..(mapload, MATERIAL_SILVER, MATERIAL_GOLD)
+
+/turf/simulated/wall/sandstonediamond/Initialize(mapload)
+	. = ..(mapload, MATERIAL_SANDSTONE, MATERIAL_DIAMOND)
+
+/turf/simulated/wall/titanium/Initialize(mapload)
+	. = ..(mapload, MATERIAL_TITANIUM)
+
+/turf/simulated/wall/titanium_reinforced/Initialize(mapload)
+	. = ..(mapload, MATERIAL_TITANIUM, MATERIAL_TITANIUM)
+
+/turf/simulated/wall/wood/Initialize(mapload)
+	. = ..(mapload, MATERIAL_WOOD)

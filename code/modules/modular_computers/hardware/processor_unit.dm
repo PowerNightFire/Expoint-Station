@@ -1,46 +1,49 @@
 // CPU that allows the computer to run programs.
 // Better CPUs are obtainable via research and can run more programs on background.
 
-/obj/item/stock_parts/computer/processor_unit
+/obj/item/computer_hardware/processor_unit
 	name = "standard processor"
-	desc = "A standard CPU used in most computers."
+	desc = "A standard CPU used in most computers. It can run up to three programs simultaneously."
 	icon_state = "cpu_normal"
 	hardware_size = 2
-	power_usage = 100
-	critical = 1
-	origin_tech = "{'programming':3,'engineering':2}"
-	material = /decl/material/solid/metal/steel
+	power_usage = 75
+	malfunction_probability = 1
+	origin_tech = list(TECH_DATA = 3, TECH_ENGINEERING = 2)
 
-	var/processing_power = 2 // Used for DDoS speed calculations
+	var/max_idle_programs = 2 // 2 idle, + 1 active = 3 as said in description.
 
-/obj/item/stock_parts/computer/processor_unit/small
+/obj/item/computer_hardware/processor_unit/small
 	name = "standard microprocessor"
 	desc = "A standard miniaturised CPU used in portable devices. It can run up to two programs simultaneously."
 	icon_state = "cpu_small"
 	hardware_size = 1
-	power_usage = 25
-	processing_power = 1
-	origin_tech = "{'programming':2,'engineering':2}"
-	material = /decl/material/solid/metal/steel
+	power_usage = 50
+	max_idle_programs = 1
+	origin_tech = list(TECH_DATA = 2, TECH_ENGINEERING = 2)
 
-/obj/item/stock_parts/computer/processor_unit/photonic
+/obj/item/computer_hardware/processor_unit/small/adv
+	name = "upgraded microprocessor"
+	desc = "An expensive, upgraded mini-CPU used in portable devices. It can run up to three programs simultaneously, though with less power efficiency than slower models."
+	icon_state = "cpu_small"
+	hardware_size = 1
+	power_usage = 100
+	max_idle_programs = 2
+	origin_tech = list(TECH_DATA = 2, TECH_ENGINEERING = 2)
+
+/obj/item/computer_hardware/processor_unit/photonic
 	name = "photonic processor"
-	desc = "An advanced experimental CPU that uses photonic core instead of regular circuitry. It is more power efficient than its elecron analog."
+	desc = "An advanced experimental CPU that uses photonic core instead of regular circuitry. It can run up to five programs simultaneously, but uses a lot of power."
 	icon_state = "cpu_normal_photonic"
 	hardware_size = 2
-	power_usage = 50
-	processing_power = 4
-	origin_tech = "{'programming':5,'engineering':4}"
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
+	power_usage = 250
+	max_idle_programs = 4
+	origin_tech = list(TECH_DATA = 5, TECH_ENGINEERING = 4)
 
-/obj/item/stock_parts/computer/processor_unit/photonic/small
+/obj/item/computer_hardware/processor_unit/photonic/small
 	name = "photonic microprocessor"
-	desc = "An advanced miniaturised CPU for use in portable devices. It uses photonic core instead of regular circuitry. It is more power efficient than its elecron analog."
+	desc = "An advanced miniaturised CPU for use in portable devices. It uses photonic core instead of regular circuitry. It can run up to three programs simultaneously."
 	icon_state = "cpu_small_photonic"
 	hardware_size = 1
-	power_usage = 10
-	processing_power = 2
-	origin_tech = "{'programming':4,'engineering':3}"
-	material = /decl/material/solid/metal/steel
-	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)
+	power_usage = 75
+	max_idle_programs = 3
+	origin_tech = list(TECH_DATA = 4, TECH_ENGINEERING = 3)

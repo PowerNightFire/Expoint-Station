@@ -1,38 +1,89 @@
-/obj/item/paicard
+/obj/item/device/paicard
 	name = "personal AI device"
-	icon = 'icons/obj/items/device/pai.dmi'
+	icon = 'icons/obj/pai.dmi'
 	icon_state = "pai"
 	item_state = "electronic"
-	w_class = ITEM_SIZE_SMALL
-	slot_flags = SLOT_LOWER_BODY
-	origin_tech = "{'programming':2}"
-	material = /decl/material/solid/glass
-	matter = list(/decl/material/solid/metal/steel = MATTER_AMOUNT_REINFORCEMENT)
-
-	var/current_emotion = 1
-	var/obj/item/radio/radio
+	w_class = ITEMSIZE_SMALL
+	slot_flags = SLOT_BELT
+	origin_tech = list(TECH_DATA = 2)
+	var/obj/item/device/radio/radio
 	var/looking_for_personality = 0
 	var/mob/living/silicon/pai/pai
+	var/move_delay = 0
 
-/obj/item/paicard/relaymove(var/mob/user, var/direction)
+	light_power = 1
+	light_range = 1
+	light_color = COLOR_BRIGHT_GREEN
+
+/obj/item/device/paicard/relaymove(var/mob/user, var/direction)
 	if(user.stat || user.stunned)
 		return
+	if(istype(loc, /mob/living/bot))
+		if(world.time < move_delay)
+			return
+		var/mob/living/bot/B = loc
+		move_delay = world.time + 1 SECOND
+		if(!B.on)
+			to_chat(pai, SPAN_WARNING("\The [B] isn't turned on!"))
+			return
+		step_towards(B, get_step(B, direction))
 	var/obj/item/rig/rig = src.get_rig()
 	if(istype(rig))
 		rig.forced_move(direction, user)
 
-/obj/item/paicard/Initialize()
+/obj/item/device/paicard/Initialize()
 	. = ..()
-	overlays += "pai-off"
+	add_overlay("pai_off")
+	SSpai.all_pai_devices += src
+	update_light()
 
-/obj/item/paicard/Destroy()
+/obj/item/device/paicard/Destroy()
+	SSpai.all_pai_devices -= src
 	//Will stop people throwing friend pAIs into the singularity so they can respawn
-	if(!isnull(pai))
+	if(pai)
 		pai.death(0)
-	QDEL_NULL(radio)
 	return ..()
 
-/obj/item/paicard/attack_self(mob/user)
+/obj/item/device/paicard/attackby(obj/item/C as obj, mob/user as mob)
+	if(istype(C, /obj/item/card/id))
+		scan_ID(C, user)
+
+
+//This proc is called when the user scans their ID on the pAI card.
+//It registers their ID and copies their access to the pai, allowing it to use airlocks the owner can
+//Scanning an ID replaces any previously stored access with the new set.
+//Only cards that match the imprinted DNA can be used, it's not a free Agent ID card.
+//Possible TODO in future, allow emagging a paicard to let it work like an agent ID, accumulating access from any ID
+/obj/item/device/paicard/proc/scan_ID(var/obj/item/card/id/card, var/mob/user)
+	if (!pai)
+		to_chat(user, "<span class='warning'>Error: ID Registration failed. No pAI personality installed.</span>")
+		playsound(src.loc, 'sound/machines/buzz-two.ogg', 20, 0)
+		return 0
+
+	if (!pai.master_dna)
+		to_chat(user, "<span class='warning'>Error: ID Registration failed. User not registered as owner. Please complete imprinting process first.</span>")
+		playsound(src.loc, 'sound/machines/buzz-two.ogg', 20, 0)
+		return 0
+
+	if (pai.master_dna != card.dna_hash)
+		to_chat(user, "<span class='warning'>Error: ID Registration failed. Biometric data on ID card does not match DNA sample of registered owner.</span>")
+		playsound(src.loc, 'sound/machines/buzz-two.ogg', 20, 0)
+		return 0
+
+	pai.id_card.access.Cut()
+	pai.id_card.access = card.access.Copy()
+	pai.id_card.registered_name = card.registered_name
+	playsound(src.loc, 'sound/machines/ping.ogg', 50, 0)
+	to_chat(user, "<span class='notice'>ID Registration for [pai.id_card.registered_name] is a success. PAI access updated!</span>")
+	return 1
+
+/obj/item/device/paicard/proc/ID_readout()
+	if (pai.id_card.registered_name)
+		return "<span class='notice'>Identity of owner: [pai.id_card.registered_name] registered.</span>"
+	else
+		return "<span class='warning'>No ID card registered! Please scan your ID to share access.</span>"
+
+/obj/item/device/paicard/attack_self(mob/user)
 	if (!in_range(src, user))
 		return
 	user.set_machine(src)
@@ -47,7 +98,7 @@
 					    color:white;
 					    font-size:13px;
 					    background-image:url('uiBackground.png');
-					    background-repeat:repeat;
+					    background-repeat:repeat-x;
 					    background-color:#272727;
 						background-position:center top;
 					}
@@ -79,7 +130,7 @@
 					    color: white;
 					}
 					tr.d2 td {
-					    background-color: #00ff00;
+					    background-color: #00FF00;
 					    color: white;
 					    text-align:center;
 					}
@@ -94,7 +145,7 @@
 					}
 					td.button_red {
 					    border: 1px solid #161616;
-					    background-color: #b04040;
+					    background-color: #B04040;
 					    text-align: center;
 					}
 					td.download {
@@ -118,7 +169,7 @@
 					    vertical-align:top;
 					}
 					a {
-					    color:#4477e0;
+					    color:#4477E0;
 					}
 					a.button {
 					    color:white;
@@ -148,6 +199,10 @@
 					<td class="request">Additional directives:</td>
 					<td>[pai.pai_laws]</td>
 				</tr>
+				<tr>
+					<td class="request">ID:</td>
+					<td>[ID_readout()]</td>
+				</tr>
 			</table>
 			<br>
 		"}
@@ -173,13 +228,13 @@
 				<table class="request">
 					<tr>
 						<td class="radio">Transmit:</td>
-						<td><a href='byond://?src=\ref[src];wires=4'>[radio.broadcasting ? "<font color=#55ff55>En" : "<font color=#ff5555>Dis" ]abled</font></a>
+						<td><a href='byond://?src=\ref[src];wires=4'>[radio.broadcasting ? "<font color=#55FF55>En" : "<font color=#FF5555>Dis" ]abled</font></a>
 
 						</td>
 					</tr>
 					<tr>
 						<td class="radio">Receive:</td>
-						<td><a href='byond://?src=\ref[src];wires=2'>[radio.listening ? "<font color=#55ff55>En" : "<font color=#ff5555>Dis" ]abled</font></a>
+						<td><a href='byond://?src=\ref[src];wires=2'>[radio.listening ? "<font color=#55FF55>En" : "<font color=#FF5555>Dis" ]abled</font></a>
 
 						</td>
 					</tr>
@@ -222,20 +277,15 @@
 					</tr>
 				</table>
 				<br>
-				<p>Each time this button is pressed, a request will be sent out to any available personalities. Check back often give plenty of time for personalities to respond. This process could take anywhere from 15 seconds to several minutes, depending on the available personalities' timeliness.</p>
+				<p>Each time this button is pressed, a request will be sent out to any available personalities. Check back often give plenty of time for personalities to respond. This process could take anywhere from 15 seconds to several minutes, depending on the available personalities' timelines.</p>
 			"}
-	show_browser(user, dat, "window=paicard")
+	user << browse(dat, "window=paicard")
 	onclose(user, "paicard")
 	return
 
-/obj/item/paicard/CanUseTopic(mob/user, datum/topic_state/state, href_list)
-	. = ..()
-	// possible NRE in Topic
-	if(href_list && (href_list["setdna"] || href_list["setlaws"] || href_list["wires"]) && !istype(pai))
-		return FALSE
+/obj/item/device/paicard/Topic(href, href_list)
 
-/obj/item/paicard/Topic(href, href_list)
-	if ((. = ..()))
+	if(!usr || usr.stat)
 		return
 
 	if(href_list["setdna"])
@@ -243,22 +293,25 @@
 			return
 		var/mob/M = usr
 		if(!istype(M, /mob/living/carbon))
-			to_chat(usr, "<span class='notice'>You don't have any DNA, or your DNA is incompatible with this device.</span>")
+			to_chat(usr, "<font color=blue>You don't have any DNA, or your DNA is incompatible with this device.</font>")
 		else
 			var/datum/dna/dna = usr.dna
 			pai.master = M.real_name
 			pai.master_dna = dna.unique_enzymes
-			to_chat(pai, "<span class='warning'>You have been bound to a new master.</span>")
+			to_chat(pai, "<font color = red><h3>You have been bound to a new master.</h3></font>")
 	if(href_list["request"])
 		src.looking_for_personality = 1
-		paiController.findPAI(src, usr)
+		SSpai.findPAI(src, usr)
 	if(href_list["wipe"])
 		var/confirm = input("Are you CERTAIN you wish to delete the current personality? This action cannot be undone.", "Personality Wipe") in list("Yes", "No")
 		if(confirm == "Yes")
 			for(var/mob/M in src)
 				to_chat(M, "<font color = #ff0000><h2>You feel yourself slipping away from reality.</h2></font>")
+				sleep(30)
 				to_chat(M, "<font color = #ff4d4d><h3>Byte by byte you lose your sense of self.</h3></font>")
+				sleep(20)
 				to_chat(M, "<font color = #ff8787><h4>Your mental faculties leave you.</h4></font>")
+				sleep(30)
 				to_chat(M, "<font color = #ffc4c4><h5>oblivion... </h5></font>")
 				M.death(0)
 			removePersonality()
@@ -282,60 +335,86 @@
 //		WIRE_RECEIVE = 2
 //		WIRE_TRANSMIT = 4
 
-/obj/item/paicard/proc/setPersonality(mob/living/silicon/pai/personality)
+/obj/item/device/paicard/proc/setPersonality(mob/living/silicon/pai/personality)
 	src.pai = personality
-	src.overlays += "pai-happy"
+	add_overlay("pai-happy")
 
-/obj/item/paicard/proc/removePersonality()
+/obj/item/device/paicard/proc/removePersonality()
 	src.pai = null
-	src.overlays.Cut()
-	src.overlays += "pai-off"
+	cut_overlays()
+	add_overlay("pai-off")
 
-/obj/item/paicard/proc/setEmotion(var/emotion)
+/obj/item/device/paicard
+	var/current_emotion = 1
+/obj/item/device/paicard/proc/setEmotion(var/emotion)
 	if(pai)
-		src.overlays.Cut()
+		cut_overlays()
+		var/new_state
 		switch(emotion)
-			if(1) src.overlays += "pai-happy"
-			if(2) src.overlays += "pai-cat"
-			if(3) src.overlays += "pai-extremely-happy"
-			if(4) src.overlays += "pai-face"
-			if(5) src.overlays += "pai-laugh"
-			if(6) src.overlays += "pai-off"
-			if(7) src.overlays += "pai-sad"
-			if(8) src.overlays += "pai-angry"
-			if(9) src.overlays += "pai-what"
-			if(10) src.overlays += "pai-neutral"
-			if(11) src.overlays += "pai-silly"
-			if(12) src.overlays += "pai-nose"
-			if(13) src.overlays += "pai-smirk"
-			if(14) src.overlays += "pai-exclamation"
-			if(15) src.overlays += "pai-question"
+			if(1) new_state = "pai-happy"
+			if(2) new_state = "pai-cat"
+			if(3) new_state = "pai-extremely-happy"
+			if(4) new_state = "pai-face"
+			if(5) new_state = "pai-laugh"
+			if(6) new_state = "pai-off"
+			if(7) new_state = "pai-sad"
+			if(8) new_state = "pai-angry"
+			if(9) new_state = "pai-what"
+			if(10) new_state = "pai-neutral"
+			if(11) new_state = "pai-silly"
+			if(12) new_state = "pai-nose"
+			if(13) new_state = "pai-smirk"
+			if(14) new_state = "pai-exclamation"
+			if(15) new_state = "pai-question"
+		if (new_state)
+			add_overlay(new_state)
 		current_emotion = emotion
 
-/obj/item/paicard/proc/alertUpdate()
+/obj/item/device/paicard/proc/alertUpdate()
 	var/turf/T = get_turf_or_move(src.loc)
 	for (var/mob/M in viewers(T))
 		M.show_message("<span class='notice'>\The [src] flashes a message across its screen, \"Additional personalities available for download.\"</span>", 3, "<span class='notice'>\The [src] bleeps electronically.</span>", 2)
 
-/obj/item/paicard/emp_act(severity)
+/obj/item/device/paicard/emp_act(severity)
 	for(var/mob/M in src)
 		M.emp_act(severity)
 
-/obj/item/paicard/explosion_act(severity)
-	..()
-	if(!QDELETED(src))
-		if(pai)
-			pai.explosion_act(severity)
-		else
-			qdel(src)
+/obj/item/device/paicard/ex_act(severity)
+	if(pai)
+		pai.ex_act(severity)
+	else
+		qdel(src)
 
-/obj/item/paicard/see_emote(mob/living/M, text)
-	if(pai && pai.client && pai.stat == CONSCIOUS)
+/obj/item/device/paicard/see_emote(mob/living/M, text)
+	if(pai && pai.client && !pai.canmove)
 		var/rendered = "<span class='message'>[text]</span>"
 		pai.show_message(rendered, 2)
 	..()
 
-/obj/item/paicard/show_message(msg, type, alt, alt_type)
+/obj/item/device/paicard/dropped(mob/user)
+
+	///When an object is put into a container, drop fires twice.
+	//once with it on the floor, and then once in the container
+	//We only care about the second one
+	if (istype(loc, /obj/item/storage))	//The second drop reads the container its placed into as the location
+		update_location()
+
+
+/obj/item/device/paicard/equipped(var/mob/user, var/slot)
+	..()
+	update_location(slot)
+
+/obj/item/device/paicard/proc/update_location(var/slotnumber = null)
+	if (!pai)
+		return
+
+	if (!slotnumber)
+		if (istype(loc, /mob))
+			slotnumber = get_equip_slot()
+
+	report_onmob_location(1, slotnumber, pai)
+
+/obj/item/device/paicard/show_message(msg, type, alt, alt_type)
 	if(pai && pai.client)
 		var/rendered = "<span class='message'>[msg]</span>"
 		pai.show_message(rendered, type)

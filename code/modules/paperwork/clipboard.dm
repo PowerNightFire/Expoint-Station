@@ -1,66 +1,76 @@
 /obj/item/clipboard
 	name = "clipboard"
-	desc = "It's a board with a clip used to organise papers."
 	icon = 'icons/obj/bureaucracy.dmi'
 	icon_state = "clipboard"
 	item_state = "clipboard"
 	throwforce = 0
-	w_class = ITEM_SIZE_SMALL
+	w_class = ITEMSIZE_SMALL
 	throw_speed = 3
 	throw_range = 10
 	var/obj/item/pen/haspen		//The stored pen.
 	var/obj/item/toppaper	//The topmost piece of paper.
-	slot_flags = SLOT_LOWER_BODY
-	material = /decl/material/solid/wood
-	applies_material_name = FALSE
-	material = /decl/material/solid/wood
+	var/list/r_contents = list()
+	var/ui_open = FALSE
+	slot_flags = SLOT_BELT
 
 /obj/item/clipboard/Initialize()
 	. = ..()
 	update_icon()
-	if(material)
-		desc = initial(desc)
-		desc += " It's made of [material.use_name]."
 
-/obj/item/clipboard/MouseDrop(obj/over_object) //Quick clipboard fix. -Agouri
+/obj/item/clipboard/MouseDrop(obj/over_object as obj) //Quick clipboard fix. -Agouri
 	if(ishuman(usr))
 		var/mob/M = usr
-		if(!(istype(over_object, /obj/screen/inventory) ))
+		if(!(istype(over_object, /obj/screen) ))
 			return ..()
 
 		if(!M.restrained() && !M.stat)
-			var/obj/screen/inventory/inv = over_object
-			src.add_fingerprint(M)
-			if(M.unEquip(src))
-				M.equip_to_slot_if_possible(src, inv.slot_id)
+			switch(over_object.name)
+				if(BP_R_HAND)
+					M.u_equip(src)
+					M.put_in_r_hand(src)
+				if(BP_L_HAND)
+					M.u_equip(src)
+					M.put_in_l_hand(src)
 
-/obj/item/clipboard/on_update_icon()
-	..()
+			add_fingerprint(usr)
+			return
+
+/obj/item/clipboard/update_icon()
+	cut_overlays()
+	var/list/to_add = list()
 	if(toppaper)
-		overlays += overlay_image(toppaper.icon, toppaper.icon_state, flags=RESET_COLOR)
-		overlays += toppaper.overlays
+		to_add += toppaper.icon_state
+		// The overlay list is a special internal format.
+		// We need to copy it into a normal list before we can give it to SSoverlay.
+		to_add += toppaper.overlays.Copy()
 	if(haspen)
-		overlays += overlay_image(icon, "clipboard_pen", flags=RESET_COLOR)
-	overlays += overlay_image(icon, "clipboard_over", flags=RESET_COLOR)
-	return
+		to_add += "clipboard_pen"
+	to_add += "clipboard_over"
+	add_overlay(to_add)
 
-/obj/item/clipboard/attackby(obj/item/W, mob/user)
+/obj/item/clipboard/attackby(obj/item/W as obj, mob/user as mob)
 
 	if(istype(W, /obj/item/paper) || istype(W, /obj/item/photo))
-		if(!user.unEquip(W, src))
-			return
+		user.drop_from_inventory(W,src)
 		if(istype(W, /obj/item/paper))
 			toppaper = W
+		r_contents = reverselist(contents)
 		to_chat(user, "<span class='notice'>You clip the [W] onto \the [src].</span>")
-		update_icon()
 
-	else if(istype(toppaper) && istype(W, /obj/item/pen))
-		toppaper.attackby(W, usr)
-		update_icon()
+	else if(istype(toppaper) && W.ispen())
+		toppaper.attackby(W, user)
+
+	else if(W.ispen())
+		add_pen(user)
+
+	if(ui_open)
+		attack_self(user)
+
+	update_icon()
 
 	return
 
-/obj/item/clipboard/attack_self(mob/user)
+/obj/item/clipboard/attack_self(mob/user as mob)
 	var/dat = "<title>Clipboard</title>"
 	if(haspen)
 		dat += "<A href='?src=\ref[src];pen=1'>Remove Pen</A><BR><HR>"
@@ -68,21 +78,35 @@
 		dat += "<A href='?src=\ref[src];addpen=1'>Add Pen</A><BR><HR>"
 
 	//The topmost paper. I don't think there's any way to organise contents in byond, so this is what we're stuck with.	-Pete
+	//i'm leaving this here because it's funny - wildkins
+
 	if(toppaper)
 		var/obj/item/paper/P = toppaper
 		dat += "<A href='?src=\ref[src];write=\ref[P]'>Write</A> <A href='?src=\ref[src];remove=\ref[P]'>Remove</A> <A href='?src=\ref[src];rename=\ref[P]'>Rename</A> - <A href='?src=\ref[src];read=\ref[P]'>[P.name]</A><BR><HR>"
 
-	for(var/obj/item/paper/P in src)
+	for(var/obj/item/paper/P in r_contents) // now this is podracing
 		if(P==toppaper)
 			continue
-		dat += "<A href='?src=\ref[src];remove=\ref[P]'>Remove</A> <A href='?src=\ref[src];rename=\ref[P]'>Rename</A> - <A href='?src=\ref[src];read=\ref[P]'>[P.name]</A><BR>"
-	for(var/obj/item/photo/Ph in src)
+		dat += "<A href='?src=\ref[src];write=\ref[P]'>Write</A> <A href='?src=\ref[src];remove=\ref[P]'>Remove</A> <A href='?src=\ref[src];rename=\ref[P]'>Rename</A> - <A href='?src=\ref[src];read=\ref[P]'>[P.name]</A><BR>"
+	for(var/obj/item/photo/Ph in r_contents)
 		dat += "<A href='?src=\ref[src];remove=\ref[Ph]'>Remove</A> <A href='?src=\ref[src];rename=\ref[Ph]'>Rename</A> - <A href='?src=\ref[src];look=\ref[Ph]'>[Ph.name]</A><BR>"
 
-	show_browser(user, dat, "window=clipboard")
+	user << browse(dat, "window=clipboard")
+	if(!ui_open)
+		ui_open = TRUE
 	onclose(user, "clipboard")
-	add_fingerprint(usr)
+	add_fingerprint(user)
 	return
+
+/obj/item/clipboard/proc/add_pen(mob/user)
+	if(!haspen)
+		var/obj/item/pen/W = user.get_active_hand()
+		if(W.ispen())
+			user.drop_from_inventory(W,src)
+			haspen = W
+			to_chat(user, "<span class='notice'>You slot the pen into \the [src].</span>")
+	else
+		to_chat(user, SPAN_NOTICE("This clipboard already has a pen!"))
 
 /obj/item/clipboard/Topic(href, href_list)
 	..()
@@ -93,33 +117,32 @@
 
 		if(href_list["pen"])
 			if(istype(haspen) && (haspen.loc == src))
+				haspen.forceMove(usr.loc)
 				usr.put_in_hands(haspen)
 				haspen = null
 
 		else if(href_list["addpen"])
-			if(!haspen)
-				var/obj/item/pen/W = usr.get_active_hand()
-				if(istype(W, /obj/item/pen))
-					if(!usr.unEquip(W, src))
-						return
-					haspen = W
-					to_chat(usr, "<span class='notice'>You slot the pen into \the [src].</span>")
+			add_pen(usr)
 
 		else if(href_list["write"])
 			var/obj/item/P = locate(href_list["write"])
 
-			if(P && (P.loc == src) && istype(P, /obj/item/paper) && (P == toppaper) )
+			if(P && (P.loc == src) && istype(P, /obj/item/paper))
 
 				var/obj/item/I = usr.get_active_hand()
 
-				if(istype(I, /obj/item/pen))
-
+				if(I.ispen())
 					P.attackby(I, usr)
+				else if (haspen)
+					P.attackby(haspen, usr)
 
 		else if(href_list["remove"])
 			var/obj/item/P = locate(href_list["remove"])
 
 			if(P && (P.loc == src) && (istype(P, /obj/item/paper) || istype(P, /obj/item/photo)) )
+
+				r_contents -= P
+				P.forceMove(usr.loc)
 				usr.put_in_hands(P)
 				if(P == toppaper)
 					toppaper = null
@@ -146,11 +169,11 @@
 
 			if(P && (P.loc == src) && istype(P, /obj/item/paper) )
 
-				if(!(istype(usr, /mob/living/carbon/human) || isghost(usr) || istype(usr, /mob/living/silicon)))
-					show_browser(usr, "<HTML><HEAD><TITLE>[P.name]</TITLE></HEAD><BODY>[stars(P.info)][P.stamps]</BODY></HTML>", "window=[P.name]")
+				if(!(istype(usr, /mob/living/carbon/human) || istype(usr, /mob/abstract/observer) || istype(usr, /mob/living/silicon)))
+					usr << browse("<HTML><HEAD><TITLE>[P.name]</TITLE></HEAD><BODY>[stars(P.info)][P.stamps]</BODY></HTML>", "window=[P.name]")
 					onclose(usr, "[P.name]")
 				else
-					show_browser(usr, "<HTML><HEAD><TITLE>[P.name]</TITLE></HEAD><BODY>[P.info][P.stamps]</BODY></HTML>", "window=[P.name]")
+					usr << browse("<HTML><HEAD><TITLE>[P.name]</TITLE></HEAD><BODY>[P.info][P.stamps]</BODY></HTML>", "window=[P.name]")
 					onclose(usr, "[P.name]")
 
 		else if(href_list["look"])
@@ -168,22 +191,3 @@
 		attack_self(usr)
 		update_icon()
 	return
-
-/obj/item/clipboard/ebony
-	material = /decl/material/solid/wood/ebony
-
-/obj/item/clipboard/steel
-	material = /decl/material/solid/metal/steel
-	material = /decl/material/solid/metal/steel
-
-/obj/item/clipboard/aluminium
-	material = /decl/material/solid/metal/aluminium
-	material = /decl/material/solid/metal/aluminium
-
-/obj/item/clipboard/glass
-	material = /decl/material/solid/glass
-	material = /decl/material/solid/glass
-
-/obj/item/clipboard/plastic
-	material = /decl/material/solid/plastic
-	material = /decl/material/solid/plastic

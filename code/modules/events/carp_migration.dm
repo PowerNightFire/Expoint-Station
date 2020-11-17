@@ -1,125 +1,98 @@
-GLOBAL_LIST_INIT(carp_count,list())// a list of Z levels (string), associated with a list of all the carp spawned by carp events
-
 /datum/event/carp_migration
-	announceWhen	= 45
-	endWhen			= 75
-	var/no_show = FALSE // Carp are laggy, so if there is too much stuff going on we're going to dial it down.
-	var/spawned_carp	//for debugging purposes only?
-	var/carp_per_z = 8
-	var/carp_per_event = 5
+	announceWhen	= 50
+	endWhen 		= 900
+
+	var/list/spawned_carp = list()
+
+	var/list/despawn_turfs = list(
+		/turf/space,
+		/turf/unsimulated/floor/asteroid,
+		/turf/simulated/open,
+		/turf/simulated/floor/reinforced/airless	// Station roof.
+	)
+
+	ic_name = "biological entities"
 
 /datum/event/carp_migration/setup()
-	announceWhen = rand(30, 60)
-	endWhen += severity*25
-
-/datum/event/carp_migration/proc/count_carps()
-	var/total_carps
-	var/local_carps
-	for(var/Z in GLOB.carp_count)
-		var/list/L = GLOB.carp_count[Z]
-		total_carps += L.len
-		if(text2num(Z) in affecting_z)
-			local_carps += L.len
-
-	if(total_carps >= 65 || SSmobs.ticks >= 10 || local_carps >= (affecting_z.len*carp_per_z+carp_per_event) || !living_observers_present(affecting_z))
-		no_show = TRUE
-	else
-		no_show = FALSE
+	announceWhen = rand(40, 60)
+	endWhen = rand(600, 1200)
+	despawn_turfs = typecacheof(despawn_turfs)
 
 /datum/event/carp_migration/announce()
 	var/announcement = ""
-	if(severity > EVENT_LEVEL_MODERATE)
-		announcement = "A massive migration of unknown biological entities has been detected in the vicinity of the [location_name()]. Exercise external operations with caution."
+	var/soundfile = 'sound/AI/spacecarp.ogg'
+	if(severity == EVENT_LEVEL_MAJOR)
+		announcement = "Massive migration of unknown biological entities has been detected near [station_name()], please stand-by. The NDV Icarus has dispatched combat drones to assist."
+		soundfile = 'sound/AI/massivespacecarp.ogg'
 	else
-		announcement = "A large migration of unknown biological entities has been detected in the vicinity of the [location_name()]. Caution is advised."
-	
-	command_announcement.Announce(announcement, "[location_name()] Sensor Array", zlevels = affecting_z)
+		announcement = "Unknown biological [length(spawned_carp) == 1 ? "entity has" : "entities have"] been detected near [station_name()], please stand-by.[severity == EVENT_LEVEL_MODERATE ? " The NDV Icarus has dispatched combat drones to assist." : ""]"
+	command_announcement.Announce(announcement, "Lifesign Alert", new_sound = soundfile)
 
-/datum/event/carp_migration/tick()
-	count_carps()
-	if(no_show && prob(95))
-		return
+/datum/event/carp_migration/start()
+	if(severity == EVENT_LEVEL_MAJOR)
+		spawn_fish(length(landmarks_list), spawn_drones = TRUE)
+		spawn_caverndweller(length(landmarks_list), spawn_drones = TRUE)
+	else if(severity == EVENT_LEVEL_MODERATE)
+		spawn_fish(rand(4, 6), spawn_drones = TRUE)			//12 to 30 carp, in small groups
+		spawn_caverndweller(rand(1, 2), spawn_drones = TRUE) //less of those, also don't happen in the regular event
+	else
+		spawn_fish(rand(1, 3), 1, 2)	//1 to 6 carp, alone or in pairs
 
-	spawn_carp()
+/datum/event/carp_migration/proc/spawn_fish(var/num_groups, var/group_size_min = 3, var/group_size_max = 5, var/spawn_drones = FALSE)
+	set waitfor = FALSE
+	var/list/spawn_locations = list()
 
-/datum/event/carp_migration/proc/spawn_carp(var/direction, var/speed)
-	if(!living_observers_present(affecting_z))
-		return
-	var/Z = pick(affecting_z)
+	for(var/obj/effect/landmark/C in landmarks_list)
+		if(C.name == "carpspawn")
+			spawn_locations.Add(C.loc)
+	spawn_locations = shuffle(spawn_locations)
+	num_groups = min(num_groups, spawn_locations.len)
 
-	if(!direction)
-		direction = pick(GLOB.cardinal)
-
-	if(!speed)
-		speed = rand(1,3)
-
-	var/n = rand(severity-1, severity*2)
-	var/I = 0
-	while(I < n)
-		var/turf/T = get_random_edge_turf(direction,TRANSITIONEDGE + 2, Z)
-		if(istype(T,/turf/space))
-			var/mob/living/simple_animal/hostile/M
-			if(prob(96))
-				M = new /mob/living/simple_animal/hostile/carp(T)
+	var/i = 1
+	while (i <= num_groups)
+		var/group_size = rand(group_size_min, group_size_max)
+		if(spawn_drones && prob(25))
+			var/drone_num = rand(1, 2)
+			for(var/d = 1, d <= drone_num, d++)
+				new /mob/living/simple_animal/hostile/icarus_drone(get_random_turf_in_range(spawn_locations[i], 10, 6, TRUE, TRUE))
+		for(var/j = 1, j <= group_size, j++)
+			if(prob(95))
+				var/mob/living/simple_animal/hostile/carp/carp = new(spawn_locations[i])
+				spawned_carp += WEAKREF(carp)
+			else if(prob(80))
+				var/mob/living/simple_animal/carp/baby/carp = new(spawn_locations[i])
+				spawned_carp += WEAKREF(carp)
 			else
-				M = new /mob/living/simple_animal/hostile/carp/pike(T)
-				I += 3
-			GLOB.death_event.register(M,src,/datum/event/carp_migration/proc/reduce_carp_count)
-			GLOB.destroyed_event.register(M,src,/datum/event/carp_migration/proc/reduce_carp_count)
-			LAZYADD(GLOB.carp_count["[Z]"], M)
-			spawned_carp ++
-			M.throw_at(get_random_edge_turf(GLOB.reverse_dir[direction],TRANSITIONEDGE + 2, Z), 250, speed, callback = CALLBACK(src,/datum/event/carp_migration/proc/check_gib,M))
-		I++
-		if(no_show)
-			break
+				var/mob/living/simple_animal/hostile/carp/shark/carp = new(spawn_locations[i])
+				spawned_carp += WEAKREF(carp)
+			CHECK_TICK
+		i++
 
-/datum/event/carp_migration/proc/check_gib(var/mob/living/simple_animal/hostile/carp/M)	//awesome road kills
-	if(M.health <= 0 && prob(60))
-		M.gib()
+/datum/event/carp_migration/proc/spawn_caverndweller(var/num_groups, var/group_size_min=2, var/group_size_max=3, var/spawn_drones = FALSE)
+	set waitfor = FALSE
+	var/list/spawn_locations = list()
 
-/proc/get_random_edge_turf(var/direction, var/clearance = TRANSITIONEDGE + 1, var/Z)
-	if(!direction)
-		return
+	for(var/obj/effect/landmark/C in landmarks_list)
+		if(C.name == "cavernspawn")
+			spawn_locations.Add(C.loc)
+	spawn_locations = shuffle(spawn_locations)
+	num_groups = min(num_groups, spawn_locations.len)
 
-	switch(direction)
-		if(NORTH)
-			return locate(rand(clearance, world.maxx - clearance), world.maxy - clearance, Z)
-		if(SOUTH)
-			return locate(rand(clearance, world.maxx - clearance), clearance, Z)
-		if(EAST)
-			return locate(world.maxx - clearance, rand(clearance, world.maxy - clearance), Z)
-		if(WEST)
-			return locate(clearance, rand(clearance, world.maxy - clearance), Z)
-
-/datum/event/carp_migration/proc/reduce_carp_count(var/mob/M)
-	for(var/Z in affecting_z)
-		var/list/L = GLOB.carp_count["[Z]"]
-		if(M in L)
-			LAZYREMOVE(L,M)
-			break
-	GLOB.death_event.unregister(M,src,/datum/event/carp_migration/proc/reduce_carp_count)
-	GLOB.destroyed_event.unregister(M,src,/datum/event/carp_migration/proc/reduce_carp_count)
+	var/i = 1
+	while (i <= num_groups)
+		var/group_size = rand(group_size_min, group_size_max)
+		if(spawn_drones && prob(25))
+			var/drone_num = rand(1, 2)
+			for(var/d = 1, d <= drone_num, d++)
+				new /mob/living/simple_animal/hostile/icarus_drone(get_random_turf_in_range(spawn_locations[i], 10, 6, TRUE))
+		for (var/j in 1 to group_size)
+			new /mob/living/simple_animal/hostile/retaliate/cavern_dweller(spawn_locations[i])
+			CHECK_TICK
+		i++
 
 /datum/event/carp_migration/end()
-	log_debug("Carp migration event spawned [spawned_carp] carp.")
-
-/datum/event/carp_migration/overmap
-	announceWhen = 1
-	carp_per_z = 5
-	carp_per_event = 10
-	var/obj/effect/overmap/visitable/ship/victim
-
-/datum/event/carp_migration/overmap/Destroy()
-	victim = null
-	. = ..()
-
-/datum/event/carp_migration/overmap/tick()
-	count_carps()
-	if(no_show && prob(95))
-		return
-
-	var/speed
-	if(victim && !victim.is_still())
-		speed = round(victim.get_speed()* (1000 + (victim.get_helm_skill()-SKILL_MIN)*250))//more skill more roadkills
-
-	spawn_carp((victim && prob(80)? victim.fore_dir : null), speed)
+	for (var/carp_ref in spawned_carp)
+		var/datum/weakref/carp_weakref = carp_ref
+		var/mob/living/simple_animal/hostile/carp/fish = carp_weakref.resolve()
+		if (fish && prob(50) && is_type_in_typecache(fish.loc, despawn_turfs))
+			qdel(fish)

@@ -2,41 +2,32 @@
 /obj/item/clothing/head/helmet/space/void/merc
 	name = "blood-red voidsuit helmet"
 	desc = "An advanced helmet designed for work in special operations. Property of Gorlex Marauders."
-	icon = 'icons/clothing/spacesuit/void/merc/helmet.dmi'
-	armor = list(
-		melee = ARMOR_MELEE_RESISTANT,
-		bullet = ARMOR_BALLISTIC_RESISTANT,
-		laser = ARMOR_LASER_MAJOR,
-		energy = ARMOR_ENERGY_MINOR,
-		bomb = ARMOR_BOMB_PADDED,
-		bio = ARMOR_BIO_SHIELDED,
-		rad = ARMOR_RAD_SMALL
-		)
-	siemens_coefficient = 0.3
+	icon_state = "rig0-syndie"
+	item_state = "syndie_helm"
+	item_state_slots = list(
+		slot_l_hand_str = "syndie_helm",
+		slot_r_hand_str = "syndie_helm"
+	)
+	armor = list(melee = 60, bullet = 50, laser = 30,energy = 15, bomb = 35, bio = 100, rad = 60)
+	siemens_coefficient = 0.35
+	species_restricted = list(BODYTYPE_HUMAN, BODYTYPE_IPC_INDUSTRIAL, BODYTYPE_IPC_ZENGHU, BODYTYPE_IPC_BISHOP)
+	light_overlay = "merc_voidsuit_lights"
 	camera = /obj/machinery/camera/network/mercenary
+	brightness_on = 6
+	light_color = "#ffffff"
 
 /obj/item/clothing/suit/space/void/merc
 	name = "blood-red voidsuit"
 	desc = "An advanced suit that protects against injuries during special operations. Property of Gorlex Marauders."
-	icon = 'icons/clothing/spacesuit/void/merc/suit.dmi'
-	w_class = ITEM_SIZE_LARGE //normally voidsuits are bulky but the merc voidsuit is 'advanced' or something
-	armor = list(
-		melee = ARMOR_MELEE_RESISTANT,
-		bullet = ARMOR_BALLISTIC_RESISTANT,
-		laser = ARMOR_LASER_MAJOR,
-		energy = ARMOR_ENERGY_MINOR,
-		bomb = ARMOR_BOMB_PADDED,
-		bio = ARMOR_BIO_SHIELDED,
-		rad = ARMOR_RAD_SMALL
-		)
-	allowed = list(/obj/item/flashlight,/obj/item/tank,/obj/item/suit_cooling_unit,/obj/item/gun,/obj/item/ammo_magazine,/obj/item/ammo_casing,/obj/item/baton,/obj/item/energy_blade/sword,/obj/item/handcuffs)
-	siemens_coefficient = 0.3
-
-/obj/item/clothing/suit/space/void/merc/Initialize()
-	. = ..()
-	LAZYSET(slowdown_per_slot, slot_wear_suit_str, 1)
-
-/obj/item/clothing/suit/space/void/merc/prepared
-	helmet = /obj/item/clothing/head/helmet/space/void/merc
-	boots = /obj/item/clothing/shoes/magboots
-	tank = /obj/item/tank/oxygen
+	icon_state = "rig-syndie"
+	item_state = "rig-syndie"
+	item_state_slots = list(
+		slot_l_hand_str = "syndie_hardsuit",
+		slot_r_hand_str = "syndie_hardsuit"
+	)
+	slowdown = 1
+	w_class = ITEMSIZE_NORMAL
+	armor = list(melee = 60, bullet = 50, laser = 30, energy = 15, bomb = 35, bio = 100, rad = 60)
+	allowed = list(/obj/item/device/flashlight,/obj/item/tank,/obj/item/device/suit_cooling_unit,/obj/item/gun,/obj/item/ammo_magazine,/obj/item/ammo_casing,/obj/item/melee/baton,/obj/item/melee/energy/sword,/obj/item/handcuffs)
+	siemens_coefficient = 0.35
+	species_restricted = list(BODYTYPE_HUMAN, BODYTYPE_SKRELL, BODYTYPE_IPC_INDUSTRIAL, BODYTYPE_IPC_ZENGHU, BODYTYPE_IPC_BISHOP)

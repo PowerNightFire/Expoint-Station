@@ -5,12 +5,12 @@
 #define NOTESFILE "data/player_notes.sav"	//where the player notes are saved
 
 datum/admins/proc/notes_show(var/ckey)
-	show_browser(usr, "<head><title>Player Notes</title></head><body>[notes_gethtml(ckey)]</body>", "window=player_notes;size=700x400")
+	usr << browse("<head><title>Player Notes</title></head><body>[notes_gethtml(ckey)]</body>","window=player_notes;size=700x400")
 
 
 datum/admins/proc/notes_gethtml(var/ckey)
 	var/savefile/notesfile = new(NOTESFILE)
-	if(!notesfile)	return "<font color='red'>Error: Cannot access [NOTESFILE]</font>"
+	if(!notesfile)	return "<span class='warning'>Error: Cannot access [NOTESFILE]</span>"
 	if(ckey)
 		. = "<b>Notes for <a href='?src=\ref[src];notes=show'>[ckey]</a>:</b> <a href='?src=\ref[src];notes=add;ckey=[ckey]'>\[+\]</a> <a href='?src=\ref[src];notes=remove;ckey=[ckey]'>\[-\]</a><br>"
 		notesfile.cd = "/[ckey]"
@@ -91,12 +91,9 @@ datum/admins/proc/notes_gethtml(var/ckey)
 	var/day_loc = findtext(full_date, time2text(world.timeofday, "DD"))
 
 	var/datum/player_info/P = new
-	if (ismob(user))
+	if (user)
 		P.author = user.key
 		P.rank = user.client.holder.rank
-	else if (istext(user))
-		P.author = user
-		P.rank = "Bot"
 	else
 		P.author = "Adminbot"
 		P.rank = "Friendly Robot"
@@ -106,8 +103,8 @@ datum/admins/proc/notes_gethtml(var/ckey)
 	infos += P
 	info << infos
 
-	message_staff("<span class='notice'>[P.author] has edited [key]'s notes.</span>")
-	log_admin("[P.author] has edited [key]'s notes.")
+	message_admins("<span class='notice'>[key_name_admin(user)] has edited [key]'s notes.</span>")
+	log_admin("[key_name(user)] has edited [key]'s notes.",admin_key=key_name(user),ckey=key)
 
 	del(info) // savefile, so NOT qdel
 
@@ -131,10 +128,10 @@ datum/admins/proc/notes_gethtml(var/ckey)
 	infos.Remove(item)
 	info << infos
 
-	message_staff("<span class='notice'>[key_name_admin(usr)] deleted one of [key]'s notes.</span>")
-	log_admin("[key_name(usr)] deleted one of [key]'s notes.")
+	message_admins("<span class='notice'>[key_name_admin(usr)] deleted one of [key]'s notes.</span>")
+	log_admin("[key_name(usr)] deleted one of [key]'s notes.",admin_key=key_name(usr),ckey=key)
 
-	del(info) // savefile, so NOT qdel
+	qdel(info)
 
 /proc/show_player_info_irc(var/key as text)
 	var/dat = "          Info on [key]\n"

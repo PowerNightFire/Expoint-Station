@@ -35,7 +35,7 @@ for var; do
         sed -i 's!// BEGIN_INCLUDE!// BEGIN_INCLUDE\n#include "'$arg'"!' $dmepath.mdme
     elif [[ $var == -M* ]]; then
         sed -i '1s/^/#define MAP_OVERRIDE\n/' $dmepath.mdme
-        sed -i 's!#include "maps\\_map_include.dm"!#include "maps\\'$arg'\\'$arg'.dm"!' $dmepath.mdme
+        sed -i 's!// BEGIN_INCLUDE!// BEGIN_INCLUDE\n#include "_maps\\'$arg'.dm"!' $dmepath.mdme
     fi
 done
 
@@ -46,11 +46,13 @@ if [[ $DM == "" ]]; then
     exit 3
 fi
 
-"$DM" $dmepath.mdme | tee build_log.txt
+"$DM" $dmepath.mdme | grep --invert-match -E "^including.*\.dmm?\$" | tee build_log.txt
 retval=$?
 
-[[ -e $dmepath.mdme.dmb ]] && mv $dmepath.mdme.dmb $dmepath.dmb
-[[ -e $dmepath.mdme.rsc ]] && mv $dmepath.mdme.rsc $dmepath.rsc
+if [[ $retval == 0 ]]; then
+    mv $dmepath.mdme.dmb $dmepath.dmb
+    mv $dmepath.mdme.rsc $dmepath.rsc
+fi
 
 rm $dmepath.mdme
 

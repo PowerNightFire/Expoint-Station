@@ -42,8 +42,31 @@
 		/decl/emote/audible/gnarl
 		)
 
+/mob/living/carbon/alien/diona
+	default_emotes = list(
+		/decl/emote/visible,
+		/decl/emote/visible/scratch,
+		/decl/emote/visible/drool,
+		/decl/emote/visible/nod,
+		/decl/emote/visible/sway,
+		/decl/emote/visible/sulk,
+		/decl/emote/visible/twitch,
+		/decl/emote/visible/dance,
+		/decl/emote/visible/roll,
+		/decl/emote/visible/shake,
+		/decl/emote/visible/jump,
+		/decl/emote/visible/shiver,
+		/decl/emote/visible/collapse,
+		/decl/emote/audible/hiss,
+		/decl/emote/audible,
+		/decl/emote/audible/scretch,
+		/decl/emote/audible/choke,
+		/decl/emote/audible/gnarl,
+		/decl/emote/audible/chirp
+		)
+
 /mob/living/carbon/brain/can_emote()
-	return (istype(container, /obj/item/mmi) && ..())
+	return (istype(container, /obj/item/device/mmi) && ..())
 
 /mob/living/carbon/brain
 	default_emotes = list(
@@ -76,6 +99,7 @@
 		/decl/emote/audible/whimper,
 		/decl/emote/audible/yawn,
 		/decl/emote/audible/clap,
+		/decl/emote/audible/golfclap,
 		/decl/emote/audible/chuckle,
 		/decl/emote/audible/cough,
 		/decl/emote/audible/cry,
@@ -87,6 +111,7 @@
 		/decl/emote/audible/moan,
 		/decl/emote/audible/grunt,
 		/decl/emote/audible/slap,
+		/decl/emote/audible/snap,
 		/decl/emote/human,
 		/decl/emote/human/deathgasp,
 		/decl/emote/audible/giggle,
@@ -138,7 +163,8 @@
 		/decl/emote/visible/rshoulder,
 		/decl/emote/visible/squint,
 		/decl/emote/visible/tfist,
-		/decl/emote/visible/tilt
+		/decl/emote/visible/tilt,
+		/decl/emote/visible/flail
 	)
 
 /mob/living/silicon/robot
@@ -161,8 +187,6 @@
 		/decl/emote/audible/synth/buzz,
 		/decl/emote/audible/synth/confirm,
 		/decl/emote/audible/synth/deny,
-		/decl/emote/audible/synth/security,
-		/decl/emote/audible/synth/security/halt
 		)
 
 /mob/living/carbon/slime

@@ -1,118 +1,132 @@
-GLOBAL_LIST(all_warrants)
-
 /datum/computer_file/program/digitalwarrant
 	filename = "digitalwarrant"
 	filedesc = "Warrant Assistant"
 	extended_desc = "Official NTsec program for creation and handling of warrants."
+	program_icon_state = "security"
+	color = LIGHT_COLOR_ORANGE
 	size = 8
-	program_icon_state = "warrant"
-	program_key_state = "security_key"
-	program_menu_icon = "star"
-	requires_network = 1
-	available_on_network = 1
-	required_access = access_security
-	nanomodule_path = /datum/nano_module/program/digitalwarrant/
-	category = PROG_SEC
+	requires_ntnet = TRUE
+	available_on_ntnet = TRUE
+	required_access_download = access_hos
+	required_access_run = access_security
+	nanomodule_path = /datum/nano_module/program/digitalwarrant
+	usage_flags = PROGRAM_ALL_REGULAR | PROGRAM_STATIONBOUND
 
-/datum/nano_module/program/digitalwarrant/
+/datum/nano_module/program/digitalwarrant
 	name = "Warrant Assistant"
-	var/datum/computer_file/report/warrant/active
+	var/datum/record/warrant/active_warrant
 
-/datum/nano_module/program/proc/get_warrants()
-	var/datum/computer_network/network = program.computer.get_network()
-	if(network)
-		return network.get_all_files_of_type(/datum/computer_file/report/warrant)
-
-/datum/nano_module/program/proc/remove_warrant(datum/computer_file/report/warrant/W)
-	var/datum/computer_network/network = program.computer.get_network()
-	if(network)
-		return network.remove_file(W)
-
-/datum/nano_module/program/proc/save_warrant(datum/computer_file/report/warrant/W)
-	var/datum/computer_network/network = program.computer.get_network()
-	if(network)
-		return network.store_file(W)
-
-/datum/nano_module/program/digitalwarrant/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = GLOB.default_state)
+/datum/nano_module/program/digitalwarrant/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = default_state)
 	var/list/data = host.initial_data()
 
-	if(active)
-		data["details"] = active.generate_nano_data(using_access)
+	if(active_warrant)
+		data["warrantname"] = active_warrant.name
+		data["warrantcharges"] = active_warrant.notes
+		data["warrantauth"] = active_warrant.authorization
+		data["type"] = active_warrant.wtype
 	else
-		for(var/datum/computer_file/report/warrant/W in GLOB.all_warrants)
-			LAZYADD(data[W.get_category()],  W.get_nano_summary())
+		var/list/allwarrants = list()
+		for(var/datum/record/warrant/W in SSrecords.warrants)
+			allwarrants.Add(list(list(
+			"warrantname" = W.name,
+			"charges" = "[copytext(W.notes,1,min(length(W.notes) + 1, 50))]...",
+			"auth" = W.authorization,
+			"id" = W.id,
+			"arrestsearch" = W.wtype
+		)))
+		data["allwarrants"] = allwarrants
 
-	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnanoui.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
-		ui = new(user, src, ui_key, "digitalwarrant.tmpl", name, 700, 450, state = state)
+		ui = new(user, src, ui_key, "digitalwarrant.tmpl", name, 500, 350, state = state)
 		ui.auto_update_layout = 1
 		ui.set_initial_data(data)
 		ui.open()
 
 /datum/nano_module/program/digitalwarrant/Topic(href, href_list)
 	if(..())
-		return 1
+		return TRUE
+
+	if(href_list["sw_menu"])
+		active_warrant = null
 
 	if(href_list["editwarrant"])
-		. = 1
-		for(var/datum/computer_file/report/warrant/W in GLOB.all_warrants)
-			if(W.uid == text2num(href_list["editwarrant"]))
-				active = W
+		. = TRUE
+		for(var/datum/record/warrant/W in SSrecords.warrants)
+			if(W.id == text2num(href_list["editwarrant"]))
+				active_warrant = W
 				break
 
-	if(href_list["sendtoarchive"])
-		. = 1
-		for(var/datum/computer_file/report/warrant/W in GLOB.all_warrants)
-			if(W.uid == text2num(href_list["sendtoarchive"]))
-				W.archived = TRUE
-				break
+	// The following actions will only be possible if the user has an ID with security access equipped. This is in line with modular computer framework's authentication methods,
+	// which also use RFID scanning to allow or disallow access to some functions. Anyone can view warrants, editing requires ID.
 
-	if(href_list["restore"])
-		. = 1
-		for(var/datum/computer_file/report/warrant/W in GLOB.all_warrants)
-			if(W.uid == text2num(href_list["restore"]))
-				W.archived = FALSE
-				break
+	var/mob/user = usr
+	if(!istype(user))
+		return
+	var/obj/item/card/id/I = user.GetIdCard()
+	if(!istype(I) || !I.registered_name || !(access_armory in I.access) || issilicon(user))
+		to_chat(user, SPAN_WARNING("Authentication error: Unable to locate ID with appropriate access to allow this operation."))
+		return
 
 	if(href_list["addwarrant"])
-		. = 1
-		var/datum/computer_file/report/warrant/W
-		if(href_list["addwarrant"] == "arrest")
-			W = new /datum/computer_file/report/warrant/arrest()
-		else
-			W = new /datum/computer_file/report/warrant/search()
-		active = W
+		. = TRUE
+		var/datum/record/warrant/W = new()
+		var/temp = sanitize(input(usr, "Do you want to create a search-, or an arrest warrant?") as null|anything in list("search", "arrest"))
+		if(CanInteract(user, default_state))
+			if(temp == "arrest")
+				W.name = "Unknown"
+				W.notes = "No charges present"
+				W.authorization = "Unauthorized"
+				W.wtype = "arrest"
+			if(temp == "search")
+				W.name = "No location given"
+				W.notes = "No reason given"
+				W.authorization = "Unauthorized"
+				W.wtype = "search"
+			active_warrant = W
 
 	if(href_list["savewarrant"])
-		. = 1
-		if(!active)
-			return
-		broadcast_security_hud_message("[active.get_broadcast_summary()] has been [(active in GLOB.all_warrants) ? "edited" : "uploaded"].", nano_host())
-		LAZYDISTINCTADD(GLOB.all_warrants, active)
-		active = null
+		. = TRUE
+		SSrecords.update_record(active_warrant)
+		active_warrant = null
 
 	if(href_list["deletewarrant"])
-		. = 1
-		if(!active)
-			for(var/datum/computer_file/report/warrant/W in GLOB.all_warrants)
-				if(W.uid == text2num(href_list["deletewarrant"]))
-					active = W
-					break
-		LAZYREMOVE(GLOB.all_warrants, active)
-		active = null
+		. = TRUE
+		SSrecords.remove_record(active_warrant)
+		active_warrant = null
+
+	if(href_list["editwarrantname"])
+		. = TRUE
+		var/namelist = list()
+		for(var/datum/record/general/t in SSrecords.records)
+			namelist += t.name
+		var/new_name = sanitize(input(usr, "Please input name") as null|anything in namelist)
+		if(CanInteract(user, default_state))
+			if (!new_name)
+				return
+			active_warrant.name = new_name
+
+	if(href_list["editwarrantnamecustom"])
+		. = TRUE
+		var/new_name = sanitize(input("Please input name") as null|text)
+		if(CanInteract(user, default_state))
+			if (!new_name)
+				return
+			active_warrant.name = new_name
+
+	if(href_list["editwarrantcharges"])
+		. = TRUE
+		var/new_charges = sanitize(input("Please input charges", "Charges", active_warrant.notes) as null|text)
+		if(CanInteract(user, default_state))
+			if (!new_charges)
+				return
+			active_warrant.notes = new_charges
+
+	if(href_list["editwarrantauth"])
+		. = TRUE
+
+		active_warrant.authorization = "[I.registered_name] - [I.assignment ? I.assignment : "(Unknown)"]"
 
 	if(href_list["back"])
-		. = 1
-		active = null
-
-	if(href_list["edit_field"])
-		if(!active)
-			return
-		var/datum/report_field/F = active.field_from_ID(text2num(href_list["edit_field"]))
-		if(!F)
-			return
-		if(!F.verify_access_edit(using_access))
-			to_chat(usr, SPAN_WARNING("\The [nano_host()] flashes an \"Access Denied\" warning."))
-			return
-		F.ask_value(usr)
-		return 1
+		. = TRUE
+		active_warrant = null

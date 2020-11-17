@@ -1,12 +1,9 @@
-
-
-/var/all_ui_styles = list(
+var/all_ui_styles = list(
 	"Midnight"     = 'icons/mob/screen/midnight.dmi',
 	"Orange"       = 'icons/mob/screen/orange.dmi',
-	"Old"          = 'icons/mob/screen/old.dmi',
+	"old"          = 'icons/mob/screen/old.dmi',
 	"White"        = 'icons/mob/screen/white.dmi',
-	"Old-noborder" = 'icons/mob/screen/old-noborder.dmi',
-	"Minimalist"   = 'icons/mob/screen/minimalist.dmi'
+	"old-noborder" = 'icons/mob/screen/old-noborder.dmi'
 	)
 
 var/all_tooltip_styles = list(
@@ -23,10 +20,9 @@ var/all_tooltip_styles = list(
 		return all_ui_styles[ui_style]
 	return all_ui_styles["White"]
 
-
 /client/verb/change_ui()
 	set name = "Change UI"
-	set category = "OOC"
+	set category = "Preferences"
 	set desc = "Configure your user interface"
 
 	if(!ishuman(usr))
@@ -63,5 +59,5 @@ var/all_tooltip_styles = list(
 		prefs.UI_style = UI_style_new
 		prefs.UI_style_alpha = UI_style_alpha_new
 		prefs.UI_style_color = UI_style_color_new
-		SScharacter_setup.queue_preferences_save(prefs)
+		prefs.save_preferences()
 		to_chat(usr, "UI was saved")

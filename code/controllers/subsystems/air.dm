@@ -1,3 +1,5 @@
+/var/datum/controller/subsystem/air/SSair
+
 /*
 
 Overview:
@@ -61,7 +63,7 @@ Class Procs:
 
 */
 
-SUBSYSTEM_DEF(air)
+/datum/controller/subsystem/air
 	name = "Air"
 	priority = SS_PRIORITY_AIR
 	init_order = SS_INIT_AIR
@@ -88,14 +90,15 @@ SUBSYSTEM_DEF(air)
 	var/next_id = 1
 
 /datum/controller/subsystem/air/proc/reboot()
+	set waitfor = FALSE
+
 	// Stop processing while we rebuild.
 	can_fire = FALSE
 
 	// Make sure we don't rebuild mid-tick.
 	if (state != SS_IDLE)
-		report_progress("ZAS Rebuild initiated. Waiting for current air tick to complete before continuing.")
-		while (state != SS_IDLE)
-			stoplag()
+		admin_notice(SPAN_DANGER("ZAS Rebuild initiated. Waiting for current air tick to complete before continuing."), R_DEBUG)
+		UNTIL(state == SS_IDLE)
 
 	while (zones.len)
 		var/zone/zone = zones[zones.len]
@@ -118,43 +121,45 @@ SUBSYSTEM_DEF(air)
 	can_fire = TRUE
 
 /datum/controller/subsystem/air/stat_entry()
-	var/list/out = list(
-		"TtU:[tiles_to_update.len] ",
-		"ZtU:[zones_to_update.len] ",
-		"AFZ:[active_fire_zones.len] ",
-		"AH:[active_hotspots.len] ",
-		"AE:[active_edges.len]"
-	)
-	..(out.Join())
+	var/out = "TtU:[tiles_to_update.len] "
+	out += "ZtU:[zones_to_update.len] "
+	out += "AFZ:[active_fire_zones.len] "
+	out += "AH:[active_hotspots.len] "
+	out += "AE:[active_edges.len]"
+	..(out)
+
+/datum/controller/subsystem/air/New()
+	NEW_SS_GLOBAL(SSair)
 
 /datum/controller/subsystem/air/Initialize(timeofday, simulate = TRUE)
 
 	var/starttime = REALTIMEOFDAY
-	report_progress("Processing Geometry...")
+	admin_notice(SPAN_DANGER("Processing Geometry..."), R_DEBUG)
 
 	var/simulated_turf_count = 0
-	for(var/turf/simulated/S)
+	for(var/turf/simulated/S in turfs)
 		simulated_turf_count++
 		S.update_air_properties()
 
 		CHECK_TICK
 
-	report_progress({"Total Simulated Turfs: [simulated_turf_count]
+	admin_notice({"<span class='info'>
+Total Simulated Turfs: [simulated_turf_count]
 Total Zones: [zones.len]
 Total Edges: [edges.len]
 Total Active Edges: [active_edges.len ? "<span class='danger'>[active_edges.len]</span>" : "None"]
 Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_count]
-"})
+</span>"}, R_DEBUG)
 
-	report_progress("Geometry processing completed in [(REALTIMEOFDAY - starttime)/10] seconds!")
+	admin_notice(SPAN_DANGER("Geometry processing completed in [(REALTIMEOFDAY - starttime)/10] seconds!"), R_DEBUG)
 
 	if (simulate)
-		report_progress("Settling air...")
+		admin_notice(SPAN_DANGER("Settling air..."), R_DEBUG)
 
 		starttime = REALTIMEOFDAY
 		fire(FALSE, TRUE)
 
-		report_progress("Air settling completed in [(REALTIMEOFDAY - starttime)/10] seconds!")
+		admin_notice(SPAN_DANGER("Air settling completed in [(REALTIMEOFDAY - starttime)/10] seconds!"), R_DEBUG)
 
 	..(timeofday)
 
@@ -198,7 +203,7 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 		T.post_update_air_properties()
 		T.needs_air_update = 0
 		#ifdef ZASDBG
-		T.cut_overlay(mark, TRUE)
+		T.cut_overlay(mark)
 		updated++
 		#endif
 
@@ -215,7 +220,7 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 		T.post_update_air_properties()
 		T.needs_air_update = 0
 		#ifdef ZASDBG
-		T.cut_overlay(mark, TRUE)
+		T.cut_overlay(mark)
 		updated++
 		#endif
 
@@ -257,7 +262,7 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 		var/obj/fire/F = curr_hotspot[curr_hotspot.len]
 		curr_hotspot.len--
 
-		F.Process()
+		F.process()
 
 		if (no_mc_tick)
 			CHECK_TICK
@@ -364,7 +369,7 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 		return
 	tiles_to_update += T
 	#ifdef ZASDBG
-	T.add_overlay(mark, TRUE)
+	T.add_overlay(mark)
 	#endif
 	T.needs_air_update = 1
 
@@ -417,18 +422,14 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 		return edge
 
 /datum/controller/subsystem/air/proc/has_same_air(turf/A, turf/B)
-	if(A.initial_gas)
-		if(!B.initial_gas)
-			return 0
-		for(var/g in A.initial_gas)
-			if(A.initial_gas[g] != B.initial_gas[g])
-				return 0
-	if(B.initial_gas)
-		if(!A.initial_gas)
-			return 0
-		for(var/g in B.initial_gas)
-			if(A.initial_gas[g] != B.initial_gas[g])
-				return 0
+	if(A.oxygen != B.oxygen)
+		return 0
+	if(A.nitrogen != B.nitrogen)
+		return 0
+	if(A.phoron != B.phoron)
+		return 0
+	if(A.carbon_dioxide != B.carbon_dioxide)
+		return 0
 	if(A.temperature != B.temperature)
 		return 0
 	return 1
@@ -437,5 +438,9 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 	edges -= E
 	if(!E.sleeping)
 		active_edges -= E
-	if(processing_edges)
-		processing_edges -= E
+
+/datum/controller/subsystem/air/ExplosionStart()
+	suspend()
+
+/datum/controller/subsystem/air/ExplosionEnd()
+	wake()

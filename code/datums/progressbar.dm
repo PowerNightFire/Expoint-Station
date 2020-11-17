@@ -10,25 +10,22 @@
 	var/client/client
 	var/listindex
 
-/datum/progressbar/New(mob/user, goal_number, atom/target)
+/datum/progressbar/New(mob/User, goal_number, atom/target)
 	. = ..()
-	if(!target) target = user
 	if (!istype(target))
 		EXCEPTION("Invalid target given")
 	if (goal_number)
 		goal = goal_number
-	bar = image('icons/effects/progressbar.dmi', target, "prog_bar_0")
-	bar.appearance_flags = APPEARANCE_UI_IGNORE_ALPHA
-	bar.plane = HUD_PLANE
-	bar.layer = HUD_ABOVE_ITEM_LAYER
-	src.user = user
+	bar = image('icons/effects/progressbar.dmi', target, "prog_bar_0", 21)
+	bar.appearance_flags = RESET_COLOR|RESET_TRANSFORM|NO_CLIENT_COLOR|RESET_ALPHA
+	user = User
 	if(user)
 		client = user.client
 
 	LAZYINITLIST(user.progressbars)
 	LAZYINITLIST(user.progressbars[bar.loc])
 	var/list/bars = user.progressbars[bar.loc]
-	bars.Add(src)
+	bars += src
 	listindex = bars.len
 	bar.pixel_y = 0
 	bar.alpha = 0
@@ -39,14 +36,15 @@
 		shown = FALSE
 		return
 	if (user.client != client)
-		client.images.Remove(bar)
-		shown = FALSE
-	client = user.client
+		if (client)
+			client.images -= bar
+		if (user.client)
+			user.client.images += bar
 
 	progress = Clamp(progress, 0, goal)
 	bar.icon_state = "prog_bar_[round(((progress / goal) * 100), 5)]"
-	if (!shown && user.get_preference_value(/datum/client_preference/show_progress_bar) == GLOB.PREF_SHOW)
-		user.client.images.Add(bar)
+	if (!shown)
+		user.client.images += bar
 		shown = TRUE
 
 /datum/progressbar/proc/shiftDown()
@@ -64,7 +62,7 @@
 			P.shiftDown()
 
 	var/list/bars = user.progressbars[bar.loc]
-	bars.Remove(src)
+	bars -= src
 	if(!bars.len)
 		LAZYREMOVE(user.progressbars, bar.loc)
 
@@ -75,7 +73,7 @@
 
 /datum/progressbar/proc/remove_from_client()
 	if(client)
-		client.images.Remove(bar)
+		client.images -= bar
 		client = null
 
 #undef PROGRESSBAR_ANIMATION_TIME

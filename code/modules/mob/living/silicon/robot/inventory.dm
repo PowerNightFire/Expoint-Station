@@ -3,7 +3,20 @@
 
 //Returns the thing in our active hand (whatever is in our active module-slot, in this case)
 /mob/living/silicon/robot/get_active_hand()
+	// TODO: see if refactoring this to return the gripped object (should one exist) works - would make a lot of edge cases a lot simpler
 	return module_active
+
+/mob/living/silicon/robot/proc/return_wirecutter()
+	for(var/obj/I in list(module_state_1, module_state_2, module_state_3))
+		if(I.iswirecutter())
+			return I
+	return
+
+/mob/living/silicon/robot/proc/return_multitool()
+	for(var/obj/I in list(module_state_1, module_state_2, module_state_3))
+		if(I.ismultitool())
+			return I
+	return
 
 /*-------TODOOOOOOOOOO--------*/
 
@@ -11,7 +24,7 @@
 /mob/living/silicon/robot/verb/cmd_unequip_module()
 	set name = "unequip-module"
 	set hidden = 1
-	uneq_active()
+	drop_item()
 
 /mob/living/silicon/robot/verb/cmd_toggle_module(module as num)
 	set name = "toggle-module"
@@ -21,67 +34,46 @@
 /mob/living/silicon/robot/proc/uneq_active()
 	if(isnull(module_active))
 		return
+
 	if(module_state_1 == module_active)
-		if(istype(module_state_1,/obj/item/borg/sight))
-			sight_mode &= ~module_state_1:sight_mode
-		if (client)
-			client.screen -= module_state_1
-		module_state_1.forceMove(module)
-		module_active = null
+		store_module(module_state_1)
+		set_module_active(null)
 		module_state_1 = null
 		inv1.icon_state = "inv1"
 	else if(module_state_2 == module_active)
-		if(istype(module_state_2,/obj/item/borg/sight))
-			sight_mode &= ~module_state_2:sight_mode
-		if (client)
-			client.screen -= module_state_2
-		module_state_2.forceMove(module)
-		module_active = null
+		store_module(module_state_2)
+		set_module_active(null)
 		module_state_2 = null
 		inv2.icon_state = "inv2"
 	else if(module_state_3 == module_active)
-		if(istype(module_state_3,/obj/item/borg/sight))
-			sight_mode &= ~module_state_3:sight_mode
-		if (client)
-			client.screen -= module_state_3
-		module_state_3.forceMove(module)
-		module_active = null
+		store_module(module_state_3)
+		set_module_active(null)
 		module_state_3 = null
 		inv3.icon_state = "inv3"
-	update_icon()
+
 	hud_used.update_robot_modules_display()
 
 /mob/living/silicon/robot/proc/uneq_all()
-	module_active = null
+	set_module_active(null)
 
 	if(module_state_1)
-		if(istype(module_state_1,/obj/item/borg/sight))
-			sight_mode &= ~module_state_1:sight_mode
-		if (client)
-			client.screen -= module_state_1
-		module_state_1.forceMove(module)
+		store_module(module_state_1)
 		module_state_1 = null
 		inv1.icon_state = "inv1"
 	if(module_state_2)
-		if(istype(module_state_2,/obj/item/borg/sight))
-			sight_mode &= ~module_state_2:sight_mode
-		if (client)
-			client.screen -= module_state_2
-		module_state_2.forceMove(module)
+		store_module(module_state_2)
 		module_state_2 = null
 		inv2.icon_state = "inv2"
 	if(module_state_3)
-		if(istype(module_state_3,/obj/item/borg/sight))
-			sight_mode &= ~module_state_3:sight_mode
-		if (client)
-			client.screen -= module_state_3
-		module_state_3.forceMove(module)
+		store_module(module_state_3)
 		module_state_3 = null
 		inv3.icon_state = "inv3"
 	update_icon()
 	hud_used.update_robot_modules_display()
 
 /mob/living/silicon/robot/proc/activated(obj/item/O)
+	update_icon()
+
 	if(module_state_1 == O)
 		return 1
 	else if(module_state_2 == O)
@@ -137,21 +129,21 @@
 				inv1.icon_state = "inv1 +a"
 				inv2.icon_state = "inv2"
 				inv3.icon_state = "inv3"
-				module_active = module_state_1
+				set_module_active(module_state_1)
 				return
 		if(2)
 			if(module_active != module_state_2)
 				inv1.icon_state = "inv1"
 				inv2.icon_state = "inv2 +a"
 				inv3.icon_state = "inv3"
-				module_active = module_state_2
+				set_module_active(module_state_2)
 				return
 		if(3)
 			if(module_active != module_state_3)
 				inv1.icon_state = "inv1"
 				inv2.icon_state = "inv2"
 				inv3.icon_state = "inv3 +a"
-				module_active = module_state_3
+				set_module_active(module_state_3)
 				return
 	return
 
@@ -163,17 +155,17 @@
 		if(1)
 			if(module_active == module_state_1)
 				inv1.icon_state = "inv1"
-				module_active = null
+				set_module_active(null)
 				return
 		if(2)
 			if(module_active == module_state_2)
 				inv2.icon_state = "inv2"
-				module_active = null
+				set_module_active(null)
 				return
 		if(3)
 			if(module_active == module_state_3)
 				inv3.icon_state = "inv3"
-				module_active = null
+				set_module_active(null)
 				return
 	return
 
@@ -212,43 +204,95 @@
 	return
 
 /mob/living/silicon/robot/proc/activate_module(var/obj/item/O)
-	if(!(locate(O) in module.equipment) && O != src.module.emag)
+	if(!(locate(O) in src.module.modules) && O != src.module.emag)
 		return
 	if(activated(O))
 		to_chat(src, "<span class='notice'>Already activated</span>")
 		return
 	if(!module_state_1)
 		module_state_1 = O
-		O.hud_layerise()
+		O.layer = SCREEN_LAYER
 		O.screen_loc = inv1.screen_loc
-		O.forceMove(src)
-		if(istype(module_state_1,/obj/item/borg/sight))
-			sight_mode |= module_state_1:sight_mode
+		contents += O
+		O.on_module_hotbar(src)
 	else if(!module_state_2)
 		module_state_2 = O
-		O.hud_layerise()
+		O.layer = SCREEN_LAYER
 		O.screen_loc = inv2.screen_loc
-		O.forceMove(src)
-		if(istype(module_state_2,/obj/item/borg/sight))
-			sight_mode |= module_state_2:sight_mode
+		contents += O
+		O.on_module_hotbar(src)
 	else if(!module_state_3)
 		module_state_3 = O
-		O.hud_layerise()
+		O.layer = SCREEN_LAYER
 		O.screen_loc = inv3.screen_loc
-		O.forceMove(src)
-		if(istype(module_state_3,/obj/item/borg/sight))
-			sight_mode |= module_state_3:sight_mode
+		contents += O
+		O.on_module_hotbar(src)
 	else
 		to_chat(src, "<span class='notice'>You need to disable a module first!</span>")
 
-/mob/living/silicon/robot/put_in_hands(var/obj/item/W) // No hands.
-	W.forceMove(get_turf(src))
-	return 1
+/mob/living/silicon/robot/put_in_hands(var/obj/item/W) // Maybe hands.
+	var/obj/item/gripper/G = null
+	if (istype(module_state_1, /obj/item/gripper))
 
-//Robots don't use inventory slots, so we need to override this.
+		G = module_state_1
+		if (!G.wrapped && G.grip_item(W, src, 1))
+			return 1
+	else if (istype(module_state_2, /obj/item/gripper))
+		G = module_state_2
+		if (!G.wrapped && G.grip_item(W, src, 0))
+			return 1
+	else if (istype(module_state_3, /obj/item/gripper))
+		G = module_state_3
+		if (!G.wrapped && G.grip_item(W, src, 0))
+			return 1
+
+
+	W.forceMove(get_turf(src))
+	return 0
+
+
+/mob/living/silicon/robot/drop_item()
+	if (istype(module_active, /obj/item/gripper))
+		var/obj/item/gripper/G = module_active
+		if (G.wrapped)
+			G.drop_item()
+			return
+
+	uneq_active()
+
+
+
+/mob/living/silicon/robot/drop_from_inventory(var/obj/item/W, var/atom/target = null)
+	if(W)
+		if(!target)
+			target = loc
+		if (istype(W.loc, /obj/item/gripper))
+			var/obj/item/gripper/G = W.loc
+			G.drop(target)
+			return 1
+	return 0
+
+
 /mob/living/silicon/robot/canUnEquip(obj/item/I)
-	if(!I)
+	if(!I) //If there's nothing to drop, the drop is automatically successful.
 		return 1
-	if((I in module) || (I in src)) //Includes all modules and installed components.
-		return I.canremove          //Will be 0 for modules, but items held by grippers will also be checked here.
-	return 1
+	if (I.loc != src)
+		return 1//Allows objects inside grippers
+	return 0//don't allow dropping our modules
+
+
+/mob/living/silicon/robot/proc/describe_module(var/slot)
+	var/list/index_module = list(module_state_1,module_state_2,module_state_3)
+	var/result = "   Hardpoint [slot] holds "
+	result += (index_module[slot]) ? "[icon2html(index_module[slot], viewers(get_turf(src)))] [index_module[slot]]." : "nothing."
+	result += "\n"
+	return result
+
+/mob/living/silicon/robot/proc/describe_all_modules()
+	var/result="It has three tool hardpoints.\n"
+	for (var/x = 1; x <=3; x++)
+		result += describe_module(x)
+	var/selected = get_selected_module()
+	if (selected)
+		result += "\nThe activity light on hardpoint [selected] is on.\n"
+	return result

@@ -8,7 +8,16 @@ Used In File(s): \code\game\machinery\cryo.dm
 	{{if !data.hasOccupant}}
 		<div class="line">Cell Unoccupied</div>
 	{{else}}
-		{{:data.occupant}}
+		<div class="line">
+			{{:data.occupant.name}}&nbsp;=>&nbsp;
+			{{if data.occupant.stat == 0}}
+				<span class="good">Conscious</span>
+			{{else data.occupant.stat == 1}}
+				<span class="average">Unconscious</span>
+			{{else}}
+				<span class="bad">DEAD</span>
+			{{/if}}
+		</div>
 	{{/if}}
 	<hr>
 	<div class="line">

@@ -1,44 +1,41 @@
 /mob/living/silicon/pai
 	name = "pAI"
-	icon = 'icons/mob/pai.dmi'
+	icon = 'icons/mob/npc/pai.dmi'
 	icon_state = "repairbot"
+	holder_type = /obj/item/holder/pai/drone
 
 	emote_type = 2		// pAIs emotes are heard, not seen, so they can be seen through a container (eg. person)
-	pass_flags = PASS_FLAG_TABLE
-	mob_size = MOB_SIZE_SMALL
+	pass_flags = PASSTABLE | PASSDOORHATCH
+	density = 0
+	mob_size = 1//As a holographic projection, a pAI is massless except for its card device
+	can_pull_size = 2 //max size for an object the pAI can pull
 
-	can_pull_size = ITEM_SIZE_SMALL
-	can_pull_mobs = MOB_PULL_SMALLER
-
-	holder_type = /obj/item/holder
-	idcard = /obj/item/card/id
-	silicon_radio = null // pAIs get their radio from the card they belong to.
-
-	ntos_type =	/datum/extension/interactive/ntos/silicon/small
-	starting_stock_parts = list(
-		/obj/item/stock_parts/computer/processor_unit/small,
-		/obj/item/stock_parts/computer/hard_drive/silicon,
-		/obj/item/stock_parts/computer/network_card
-	)
 
 	var/network = "SS13"
 	var/obj/machinery/camera/current = null
-
 	var/ram = 100	// Used as currency to purchase different abilities
 	var/list/software = list()
 	var/userDNA		// The DNA string of our assigned user
-	var/obj/item/paicard/card	// The card we inhabit
+	var/obj/item/device/paicard/card	// The card we inhabit
+	var/obj/item/device/radio/radio		// Our primary radio
+
 
 	var/chassis = "repairbot"   // A record of your chosen chassis.
 	var/global/list/possible_chassis = list(
 		"Drone" = "repairbot",
 		"Cat" = "cat",
-		"Mouse" = "mouse",
+		"Rat" = "rat",
 		"Monkey" = "monkey",
-		"Rabbit" = "rabbit",
-		"Mushroom" = "mushroom",
-		"Corgi" = "corgi",
-		"Crow" = "crow"
+		"Rabbit" = "rabbit"
+
+		)
+
+	var/global/list/pai_holder_types = list(
+		"Drone" = /obj/item/holder/pai/drone,
+		"Cat" = /obj/item/holder/pai/cat,
+		"Rat" = /obj/item/holder/pai/rat,
+		"Monkey" = /obj/item/holder/pai/monkey,
+		"Rabbit" = /obj/item/holder/pai/rabbit
 		)
 
 	var/global/list/possible_say_verbs = list(
@@ -47,11 +44,29 @@
 		"Beep" = list("beeps","beeps loudly","boops"),
 		"Chirp" = list("chirps","chirrups","cheeps"),
 		"Feline" = list("purrs","yowls","meows"),
-		"Canine" = list("yaps", "barks", "woofs"),
-		"Corvid" = list("caws", "caws loudly", "whistles")
+		"Rodent" = list("squeaks","squeals","squeeks")
 		)
 
+	var/list/pai_emotions = list(
+		"Happy" = 1,
+		"Cat" = 2,
+		"Extremely Happy" = 3,
+		"Face" = 4,
+		"Laugh" = 5,
+		"Off" = 6,
+		"Sad" = 7,
+		"Angry" = 8,
+		"What" = 9,
+		"Neutral" = 10,
+		"Silly" = 11,
+		"Nose" = 12,
+		"Smirk" = 13,
+		"Exclamation Points" = 14,
+		"Question Mark" = 15
+	)
+
 	var/obj/item/pai_cable/cable		// The cable we produce and use when door or camera jacking
+	id_card_type = /obj/item/card/id	//Internal ID used to store copied owner access, and to check access for airlocks
 
 	var/master				// Name of the one who commands us
 	var/master_dna			// DNA string for owner verification
@@ -67,45 +82,135 @@
 	var/screen				// Which screen our main window displays
 	var/subscreen			// Which specific function of the main screen is being displayed
 
+	var/obj/item/modular_computer/parent_computer
+
 	var/secHUD = 0			// Toggles whether the Security HUD is active or not
 	var/medHUD = 0			// Toggles whether the Medical  HUD is active or not
 
-	var/medical_cannotfind = 0
-	var/datum/data/record/medicalActive1		// Datacore record declarations for record software
-	var/datum/data/record/medicalActive2
-
-	var/security_cannotfind = 0
-	var/datum/data/record/securityActive1		// Could probably just combine all these into one
-	var/datum/data/record/securityActive2
-
-	var/obj/machinery/door/hackdoor		// The airlock being hacked
+	var/obj/machinery/door/airlock/hackdoor		// The airlock being hacked
 	var/hackprogress = 0				// Possible values: 0 - 1000, >= 1000 means the hack is complete and will be reset upon next check
 	var/hack_aborted = 0
 
+	var/obj/item/radio/integrated/signal/sradio // AI's signaller
+
 	var/translator_on = 0 // keeps track of the translator module
 
-/mob/living/silicon/pai/Initialize()
-	status_flags |= NO_ANTAG
-	card = loc
+	var/greeted = 0
+	var/current_pda_messaging = null
 
-	//As a human made device, we'll understand sol common without the need of the translator
-	add_language(/decl/language/human/common, 1)
+		//Interaction
+	var/response_help   = "pets"
+	var/response_disarm = "shoves"
+	var/response_harm   = "kicks"
+	var/harm_intent_damage = 15//based on 100 health, which is probably too much for a pai to have
+
+	var/flashlight_active = FALSE
+	light_power = 0
+	light_range = 4
+	light_color = COLOR_BRIGHT_GREEN
+	light_wedge = 45
+
+	can_have_vision_cone = FALSE
+
+/mob/living/silicon/pai/movement_delay()
+	return 0.8
+
+/mob/living/silicon/pai/attack_hand(mob/living/carbon/human/M)
+	..()
+
+	switch(M.a_intent)
+		if(I_HELP)
+			M.visible_message(SPAN_NOTICE("[M] [response_help] \the [src]"))
+			computer.toggle_service("flashlight", src)
+
+		if(I_DISARM)
+			M.visible_message(SPAN_NOTICE("[M] [response_disarm] \the [src]"))
+			M.do_attack_animation(src)
+			close_up()
+
+		if(I_HURT)
+			apply_damage(harm_intent_damage, BRUTE, used_weapon = "Attack by [M.name]")
+			M.visible_message(SPAN_DANGER("[M] [response_harm] \the [src]"))
+			M.do_attack_animation(src)
+			updatehealth()
+
+/mob/living/silicon/pai/proc/toggle_flashlight()
+	flashlight_active = !flashlight_active
+	if(flashlight_active)
+		set_light(4, 1, COLOR_BRIGHT_GREEN, angle = 45)
+	else
+		set_light(0)
+
+/mob/living/silicon/pai/set_light(l_range, l_power, l_color, uv, angle, no_update)
+	..()
+	if(istype(loc, /obj/item/holder/pai))
+		var/obj/item/holder/pai/P = loc
+		P.set_light(l_range, l_power, l_color, uv, angle, no_update)
+
+/mob/living/silicon/pai/post_scoop()
+	..()
+	if(istype(loc, /obj/item/holder/pai))
+		var/obj/item/holder/pai/P = loc
+		P.set_light(light_range, light_power, light_color, uv_intensity, light_wedge)
+
+/mob/living/silicon/pai/Initialize(mapload)
+	var/obj/item/device/paicard/paicard = loc
+	if (!istype(paicard))
+		//If we get here, then we must have been created by adminspawning.
+		//so lets assist with debugging by creating our own card and adding ourself to it
+		paicard = new /obj/item/device/paicard(loc)
+		paicard.pai = src
+
+	canmove = 0
+	loc = paicard
+	card = paicard
+	sradio = new(src)
+	if(card)
+		if(!card.radio)
+			card.radio = new /obj/item/device/radio(src.card)
+		radio = card.radio
+
+	//Default languages without universal translator software
+
+	add_language(LANGUAGE_SOL_COMMON, 1)
+	add_language(LANGUAGE_TRADEBAND, 1)
+	add_language(LANGUAGE_GUTTER, 1)
+	add_language(LANGUAGE_EAL, 1)
+	add_language(LANGUAGE_SIGN, 0)
+	set_custom_sprite()
 
 	verbs += /mob/living/silicon/pai/proc/choose_chassis
 	verbs += /mob/living/silicon/pai/proc/choose_verbs
-	verbs -= /mob/living/verb/ghost
+	verbs += /mob/living/silicon/proc/computer_interact
+	verbs += /mob/living/silicon/proc/silicon_mimic_accent
 
 	. = ..()
 
-	if(card)
-		if(!card.radio)
-			card.radio = new /obj/item/radio(card)
-		silicon_radio = card.radio
 
-/mob/living/silicon/pai/Destroy()
-	card = null
-	silicon_radio = null // Because this radio actually belongs to another instance we simply null
+/mob/living/silicon/pai/proc/set_custom_sprite()
+	var/datum/custom_synth/sprite = robot_custom_icons[name]
+	if(istype(sprite) && sprite.synthckey == ckey)
+		possible_chassis["Custom"] = "[sprite.paiicon]"
+		pai_holder_types["Custom"] = /obj/item/holder/pai/custom
+		icon = CUSTOM_ITEM_SYNTH
+	else
+		return
+/mob/living/silicon/pai/init_id()
 	. = ..()
+	id_card.registered_name = ""
+
+
+/mob/living/silicon/pai/LateLogin()
+	greet()
+	..()
+
+/mob/living/silicon/pai/proc/greet()
+
+	if (!greeted)
+		// Basic intro text.
+		to_chat(src, "<span class='danger'><font size=3>You are a Personal AI!</font></span>")
+		to_chat(src, "<span class='notice'>You are a small artificial intelligence contained inside a portable tablet, and you are bound to a master. Your primary directive is to serve them and follow their instructions, follow this prime directive above all others. Check your Software interface to spend ram on programs that can help, and unfold your chassis to take a holographic form and move around the world.</span>")
+		greeted = 1
 
 // this function shows the information about being silenced as a pAI in the Status panel
 /mob/living/silicon/pai/proc/show_silenced()
@@ -115,18 +220,18 @@
 
 
 /mob/living/silicon/pai/Stat()
-	. = ..()
+	..()
 	statpanel("Status")
 	if (src.client.statpanel == "Status")
 		show_silenced()
 
-/mob/living/silicon/pai/check_eye(var/mob/user)
+/mob/living/silicon/pai/check_eye(var/mob/user as mob)
 	if (!src.current)
 		return -1
 	return 0
 
 /mob/living/silicon/pai/restrained()
-	return !istype(loc, /obj/item/paicard) && ..()
+	return !istype(loc, /obj/item/device/paicard) && ..()
 
 /mob/living/silicon/pai/emp_act(severity)
 	// Silence for 2 minutes
@@ -180,9 +285,19 @@
 	src.unset_machine()
 	src.cameraFollow = null
 
+/*
+// Debug command - Maybe should be added to admin verbs later
+/mob/verb/makePAI(var/turf/t in view())
+	var/obj/item/device/paicard/card = new(t)
+	var/mob/living/silicon/pai/pai = new(card)
+	pai.key = src.key
+	card.setPersonality(pai)
+
+*/
+
 // Procs/code after this point is used to convert the stationary pai item into a
 // mobile pai mob. This also includes handling some of the general shit that can occur
-// to it. Really this deserves its own file.
+// to it. Really this deserves its own file, but for the moment it can sit here. ~ Z
 
 /mob/living/silicon/pai/verb/fold_out()
 	set category = "pAI Commands"
@@ -197,34 +312,49 @@
 	if(world.time <= last_special)
 		return
 
-	last_special = world.time + 100
+	last_special = world.time + 20
+	open_up()
+
+/mob/living/silicon/pai/proc/open_up(var/loud = TRUE)
+	if(istype(card.loc, /mob/living/bot))
+		to_chat(src, SPAN_WARNING("You cannot unfold while inside the bot!"))
+		return FALSE
 
 	//I'm not sure how much of this is necessary, but I would rather avoid issues.
-	if(istype(card.loc,/obj/item/rig_module) || istype(card.loc,/obj/item/integrated_circuit/manipulation/ai/))
-		to_chat(src, "There is no room to unfold inside \the [card.loc]. You're good and stuck.")
-		return 0
+	if(istype(card.loc,/obj/item/rig_module))
+		to_chat(src, SPAN_WARNING("There is no room to unfold inside this rig module. You're good and stuck."))
+		return FALSE
+	else if(istype(card.loc, /obj/item/modular_computer))
+		to_chat(src, SPAN_WARNING("You are unable to unfold while housed within a computer."))
+		return FALSE
 	else if(istype(card.loc,/mob))
 		var/mob/holder = card.loc
 		if(ishuman(holder))
 			var/mob/living/carbon/human/H = holder
 			for(var/obj/item/organ/external/affecting in H.organs)
 				if(card in affecting.implants)
-					affecting.take_external_damage(rand(30,50))
+					affecting.take_damage(rand(30,50))
 					affecting.implants -= card
-					H.visible_message("<span class='danger'>\The [src] explodes out of \the [H]'s [affecting.name] in a shower of gore!</span>")
+					if(loud)
+						H.visible_message(SPAN_DANGER("\The [src] explodes out of \the [H]'s [affecting.name] in shower of gore!"))
 					break
 		holder.drop_from_inventory(card)
 
-	if(client)
-		client.perspective = EYE_PERSPECTIVE
-		client.eye = src
-	dropInto(card.loc)
+	src.client.perspective = EYE_PERSPECTIVE
+	src.client.eye = src
+	src.forceMove(get_turf(card))
 
 	card.forceMove(src)
 	card.screen_loc = null
 
 	var/turf/T = get_turf(src)
-	if(istype(T)) T.visible_message("<b>[src]</b> folds outwards, expanding into a mobile form.")
+	if(loud && istype(T))
+		T.visible_message(SPAN_NOTICE("<b>[src]</b> folds outwards, expanding into a mobile form."))
+	canmove = TRUE
+	resting = FALSE
+
+	can_have_vision_cone = TRUE
+	check_fov()
 
 /mob/living/silicon/pai/verb/fold_up()
 	set category = "pAI Commands"
@@ -248,16 +378,28 @@
 	var/choice
 	var/finalized = "No"
 	while(finalized == "No" && src.client)
-
+		set_custom_sprite()
 		choice = input(usr,"What would you like to use for your mobile chassis icon? This decision can only be made once.") as null|anything in possible_chassis
 		if(!choice) return
 
 		icon_state = possible_chassis[choice]
+		holder_type = pai_holder_types[choice]
 		finalized = alert("Look at your sprite. Is this what you wish to use?",,"No","Yes")
 
 	chassis = possible_chassis[choice]
 	verbs -= /mob/living/silicon/pai/proc/choose_chassis
 	verbs += /mob/living/proc/hide
+
+/mob/living/silicon/pai/verb/get_onmob_location()
+	set category = "pAI Commands"
+	set name = "Check location"
+	set desc = "Find out where on their person, someone is holding you."
+
+	if(!get_holding_mob())
+		to_chat(src, SPAN_WARNING("Nobody is holding you!"))
+		return
+
+	card.report_onmob_location(0, card.get_equip_slot(), src)
 
 /mob/living/silicon/pai/proc/choose_verbs()
 	set category = "pAI Commands"
@@ -278,7 +420,7 @@
 	set category = "IC"
 
 	// Pass lying down or getting up to our pet human, if we're in a rig.
-	if(istype(src.loc,/obj/item/paicard))
+	if(istype(src.loc,/obj/item/device/paicard))
 		resting = 0
 		var/obj/item/rig/rig = src.get_rig()
 		if(istype(rig))
@@ -286,66 +428,66 @@
 	else
 		resting = !resting
 		icon_state = resting ? "[chassis]_rest" : "[chassis]"
-		to_chat(src, "<span class='notice'>You are now [resting ? "resting" : "getting up"]</span>")
+		to_chat(src, "<span class='notice'>You are now [resting ? "resting" : "getting up"].</span>")
+
+	canmove = !resting
 
 //Overriding this will stop a number of headaches down the track.
-/mob/living/silicon/pai/attackby(obj/item/W, mob/user)
-	var/obj/item/card/id/card = W.GetIdCard()
-	if(card && user.a_intent == I_HELP)
-		var/list/new_access = card.GetAccess()
-		src.idcard.access = new_access
-		visible_message("<span class='notice'>[user] slides [W] across [src].</span>")
-		to_chat(src, SPAN_NOTICE("Your access has been updated!"))
-		return FALSE // don't continue processing click callstack.
-	if(try_stock_parts_install(W, user))
-		return
-	if(try_stock_parts_removal(W, user))
-		return
+/mob/living/silicon/pai/attackby(obj/item/W as obj, mob/user as mob)
 	if(W.force)
-		visible_message("<span class='danger'>[user] attacks [src] with [W]!</span>")
+		visible_message("<span class='danger'>[user.name] attacks [src] with [W]!</span>")
 		src.adjustBruteLoss(W.force)
 		src.updatehealth()
 	else
-		visible_message("<span class='warning'>[user] bonks [src] harmlessly with [W].</span>")
-	spawn(1)
-		if(stat != 2) close_up()
+		visible_message("<span class='warning'>[user.name] bonks [src] harmlessly with [W].</span>")
+
 	return
 
-/mob/living/silicon/pai/attack_hand(mob/user)
-	visible_message("<span class='danger'>[user] boops [src] on the head.</span>")
+/mob/living/silicon/pai/AltClick(mob/user as mob)
+	if(!user || user.stat || user.lying || user.restrained() || !Adjacent(user))	return
+	visible_message("<span class='danger'>[user.name] boops [src] on the head.</span>")
 	close_up()
 
 //I'm not sure how much of this is necessary, but I would rather avoid issues.
 /mob/living/silicon/pai/proc/close_up()
 
-	last_special = world.time + 100
+	last_special = world.time + 20
 
-	if(loc == card)
+	if(src.loc == card)
 		return
 
 	var/turf/T = get_turf(src)
 	if(istype(T)) T.visible_message("<b>[src]</b> neatly folds inwards, compacting down to a rectangular card.")
 
-	if(client)
+	src.stop_pulling()
+	if (client)
 		client.perspective = EYE_PERSPECTIVE
-		client.eye = card
+		client.eye = src
+//Changed the client eye to follow the mob itself instead of the card that contains it. This makes examining work, and the camera still follows wherever the card goes
 
 	//stop resting
 	resting = 0
+
+	hide_cone()
+	can_have_vision_cone = initial(can_have_vision_cone)
 
 	// If we are being held, handle removing our holder from their inv.
 	var/obj/item/holder/H = loc
 	if(istype(H))
 		var/mob/living/M = H.loc
 		if(istype(M))
-			M.drop_from_inventory(H, get_turf(src))
-		H.dropInto(get_turf(M))
+			M.drop_from_inventory(H,get_turf(src))
+		else
+			H.forceMove(get_turf(src))
+		src.forceMove(get_turf(H))
 
 	// Move us into the card and move the card to the ground.
-	card.dropInto(get_turf(card))
+
+	card.forceMove(get_turf(card))
+	canmove = 1
 	resting = 0
 	icon_state = "[chassis]"
-	forceMove(card)
+	src.forceMove(card)
 
 // No binary for pAIs.
 /mob/living/silicon/pai/binarycheck()
@@ -353,25 +495,39 @@
 
 // Handle being picked up.
 /mob/living/silicon/pai/get_scooped(var/mob/living/carbon/grabber, var/self_drop)
-	. = ..()
-	if(.)
-		var/obj/item/holder/H = .
-		if(istype(H))
-			H.icon_state = "pai-[icon_state]"
-			grabber.update_inv_hands()
+	var/obj/item/holder/H = ..(grabber, self_drop)
+	if(!istype(H))
+		return
+	H.icon_state = "pai-[icon_state]"
+	grabber.update_inv_l_hand()
+	grabber.update_inv_r_hand()
+	post_scoop()
+	return H
 
-/mob/living/silicon/pai/verb/wipe_software()
-	set name = "Wipe Software"
-	set category = "OOC"
-	set desc = "Wipe your software. This is functionally equivalent to cryo or robotic storage, freeing up your job slot."
+/mob/living/silicon/pai/MouseDrop(atom/over_object)
+	var/mob/living/carbon/H = over_object
+	if(!istype(H) || !Adjacent(H)) return ..()
+	get_scooped(H, usr)
 
-	// Make sure people don't kill themselves accidentally
-	if(alert("WARNING: This will immediately wipe your software and ghost you, removing your character from the round permanently (similar to cryo and robotic storage). Are you entirely sure you want to do this?",
-					"Wipe Software", "No", "No", "Yes") != "Yes")
+/mob/living/silicon/pai/start_pulling(var/atom/movable/AM)
+	if(istype(AM,/obj/item))
+		var/obj/item/O = AM
+		if(O.w_class > can_pull_size)
+			to_chat(src, "<span class='warning'>You are too small to pull that.</span>")
+			return
+		else
+			..()
+	else
+		to_chat(src, "<span class='warning'>You are too small to pull that.</span>")
 		return
 
-	close_up()
-	visible_message("<b>[src]</b> fades away from the screen, the pAI device goes silent.")
-	card.removePersonality()
-	clear_client()
 
+/mob/living/silicon/pai/verb/select_card_icon()
+	set category = "pAI Commands"
+	set name = "Select card icon"
+
+	if(stat || sleeping || paralysis || weakened)
+		return
+
+	var/selection = input(src, "Choose an icon for you card.") in pai_emotions
+	card.setEmotion(pai_emotions[selection])

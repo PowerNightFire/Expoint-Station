@@ -5,7 +5,6 @@
  *
  *  Human suffocation in Space.
  *  Mob damage Template
- *  Species sprite options
  *
  */
 
@@ -16,78 +15,137 @@
 // Tests Life() and mob breathing in space.
 //
 
-/datum/unit_test/human_breath
-	name = "MOB: Breathing Species Suffocate in Space"
-	var/list/test_subjects = list()
+/mob/living/test
+	var/heard = FALSE
+
+/mob/living/test/on_hear_say(var/message)
+	. = ..(message)
+	if(message)
+		heard = TRUE
+	return .
+
+datum/unit_test/mob_hear
+	name = "MOB: Living mobs test for mob's speech"
+	var/mob_type = /mob/living/test
+
+
+datum/unit_test/mob_hear/start_test()
+	var/mobloc = pick(tdome1)
+	if(!mobloc)
+		fail("Unable to find a location to create test mob")
+		return 0
+	for(var/mob/M in get_turf(mobloc))
+		QDEL_NULL(M)
+	var/list/test_speaker = create_test_mob_with_mind(mobloc, mob_type, TRUE)
+	var/list/test_listener = create_test_mob_with_mind(mobloc, mob_type, TRUE)
+
+	if(isnull(test_speaker) || isnull(test_listener))
+		fail("Check Runtimed in Mob creation")
+		return 0
+
+	if(test_speaker["result"] == FAILURE )
+		fail(test_speaker["msg"])
+		return 0
+	else if(test_listener ["result"] == FAILURE)
+		fail(test_listener["msg"])
+		return 0
+
+	var/mob/living/test/test_speaker_mob = locate(test_speaker["mobref"])
+	var/mob/living/test/test_listener_mob = locate(test_listener["mobref"])
+
+	if(isnull(test_speaker_mob) || isnull(test_listener_mob))
+		fail("Test unable to set test mob from reference")
+		return 0
+
+	if(test_speaker_mob.stat)
+		fail("Test needs to be re-written, mob has a stat = [test_speaker_mob.stat]")
+		return 0
+	else if(test_listener_mob.stat)
+		fail("Test needs to be re-written, mob has a stat = [test_speaker_mob.stat]")
+		return 0
+
+	if(test_speaker_mob.sleeping || test_listener_mob.sleeping)
+		fail("Test needs to be re-written, mob is sleeping for some unknown reason")
+		return 0
+
+	var/message = "Test, can you hear me?"
+	var/said = test_speaker_mob.say(message)
+
+	if(said && test_listener_mob.heard)
+		pass("speech test complete, speaker said \"[message]\" and listener received it.")
+		return 1
+	else if(said)
+		fail("speaker said the words, but listener did not hear it. The message was \"[message]\", the difference were X: [test_listener_mob.loc.x - test_speaker_mob.loc.x], Y: [test_listener_mob.loc.y - test_speaker_mob.loc.y]")
+		return 0
+	else
+		fail("speaker did not say the words \"[message]\"")
+		return 0
+
+datum/unit_test/human_breath
+	name = "MOB: Human Suffocates in Space"
+	var/starting_oxyloss = null
+	var/ending_oxyloss = null
+	var/mob/living/carbon/human/H
 	async = 1
 
-/datum/unit_test/human_breath/start_test()
-	var/turf/T = get_space_turf()
+
+datum/unit_test/human_breath/start_test()
+	var/turf/T = locate(20,20,1) //TODO:  Find better way.
 
 	if(!istype(T, /turf/space))	//If the above isn't a space turf then we force it to find one will most likely pick 1,1,1
 		T = locate(/turf/space)
-	for(var/species_name in get_all_species())
-		var/datum/species/S = get_species_by_key(species_name)
-		var/mob/living/carbon/human/H = new(T, S.name)
-		if(H.need_breathe())
-			var/species_organ = H.species.breathing_organ
-			var/obj/item/organ/internal/lungs/L
-			H.apply_effect(20, STUN, 0)
-			L = H.internal_organs_by_name[species_organ]
-			L.last_successful_breath = -INFINITY
-			test_subjects[S.name] = list(H, damage_check(H, OXY))
+
+	H = new(T)
+
+	starting_oxyloss = damage_check(H, OXY)
+
 	return 1
 
-/datum/unit_test/human_breath/check_result()
-	for(var/i in test_subjects)
-		var/mob/living/carbon/human/H = test_subjects[i][1]
-		if(H.life_tick < 10) 	// Finish Condition
-			return 0	// Return 0 to try again later.
+datum/unit_test/human_breath/check_result()
 
-	var/failcount = 0
-	for(var/i in test_subjects)
-		var/mob/living/carbon/human/H = test_subjects[i][1]
-		var/ending_oxyloss = damage_check(H, OXY)
-		var/starting_oxyloss = test_subjects[i][2]
-		if(starting_oxyloss >= ending_oxyloss)
-			failcount++
-			log_debug("[H.species.name] is not taking oxygen damage, started with [starting_oxyloss] and ended with [ending_oxyloss] at place [log_info_line(H.loc)].")
+	if(H.life_tick < 10) 	// Finish Condition
+		return 0	// Return 0 to try again later.
 
-	if(failcount)
-		fail("[failcount] breathing species mobs didn't suffocate in space.")
+	ending_oxyloss = damage_check(H, OXY)
+
+	if(starting_oxyloss < ending_oxyloss)
+		pass("Oxyloss = [ending_oxyloss]")
 	else
-		pass("All breathing species mobs suffocated in space.")
+		fail("Mob is not taking oxygen damage.  Damange is [ending_oxyloss]")
 
 	return 1	// return 1 to show we're done and don't want to recheck the result.
 
 // ============================================================================
 
-/var/default_mobloc = null
+//#define BRUTE     "brute"
+//#define BURN      "fire"
+//#define TOX       "tox"
+//#define OXY       "oxy"
+//#define CLONE     "clone"
+//#define PAIN   "halloss"
 
-proc/create_test_mob_with_mind(var/turf/mobloc = null, var/mobtype = /mob/living/carbon/human)
+
+proc/create_test_mob_with_mind(var/turf/mobloc = null, var/mobtype = /mob/living/carbon/human, var/add_to_playerlist = FALSE)
 	var/list/test_result = list("result" = FAILURE, "msg"    = "", "mobref" = null)
 
 	if(isnull(mobloc))
-		if(!default_mobloc)
-			for(var/turf/simulated/floor/tiled/T in world)
-				if(!T.zone || !T.zone.air)
-					continue
-				var/pressure = T.zone.air.return_pressure()
-				if(90 < pressure && pressure < 120) // Find a turf between 90 and 120
-					default_mobloc = T
-					break
-		mobloc = default_mobloc
+		mobloc = pick(tdome1)
 	if(!mobloc)
 		test_result["msg"] = "Unable to find a location to create test mob"
 		return test_result
 
-	var/mob/living/carbon/human/H = new mobtype(mobloc)
+	var/mob/living/L = new mobtype(mobloc)
 
-	H.mind_initialize("TestKey[rand(0,10000)]")
+	L.mind_initialize("TestKey[rand(0,10000)]")
 
 	test_result["result"] = SUCCESS
 	test_result["msg"] = "Mob created"
-	test_result["mobref"] = "\ref[H]"
+	test_result["mobref"] = "\ref[L]"
+
+	if(add_to_playerlist)
+		player_list |= L
+		testing("Adding test subject to the player list")
+		world << "Adding test subject to the player list"
 
 	return test_result
 
@@ -116,10 +174,11 @@ proc/damage_check(var/mob/living/M, var/damage_type)
 		if(PAIN)
 			loss = M.getHalLoss()
 
-	if(!loss && istype(M, /mob/living/carbon/human))
-		var/mob/living/carbon/human/H = M            // Synthetics have robot limbs which don't report damage to getXXXLoss()
-		if(H.isSynthetic())                          // So we have to hard code this check or create a different one for them.
-			return H.species.total_health - H.health
+	if(!loss && istype(M, /mob/living/carbon/human))          // Revert IPC's when?
+		var/mob/living/carbon/human/H = M                 // IPC's have robot limbs which don't report damage to getXXXLoss()
+		if(istype(H.species, /datum/species/machine))     // So we have ot hard code this check or create a different one for them.
+			return H.species.total_health - H.health                     // TODO: Find better way to do this then hardcoding this formula
+
 	return loss
 
 // ==============================================================================================================
@@ -136,9 +195,8 @@ proc/damage_check(var/mob/living/M, var/damage_type)
 //==============================================================================================================
 
 
-/datum/unit_test/mob_damage
+datum/unit_test/mob_damage
 	name = "MOB: Template for mob damage"
-	template = /datum/unit_test/mob_damage
 	var/mob/living/carbon/human/testmob = null
 	var/damagetype = BRUTE
 	var/mob_type = /mob/living/carbon/human
@@ -146,13 +204,14 @@ proc/damage_check(var/mob/living/M, var/damage_type)
 	var/check_health = 0
 	var/damage_location = BP_CHEST
 
-/datum/unit_test/mob_damage/start_test()
-	var/list/test = create_test_mob_with_mind(get_safe_turf(), mob_type)
-	var/damage_amount = 4	// Do not raise, if damage >= 5 there is a % chance to reduce damage by half in /obj/item/organ/external/take_damage()
-							// Which makes checks impossible.
+datum/unit_test/mob_damage/start_test()
+	var/list/test = create_test_mob_with_mind(null, mob_type)
+	var/damage_amount = 5	// Do not raise, if damage >= 10 there is a % chance to reduce damage by half in /obj/item/organ/external/take_damage()
+                                // Which makes checks impossible.
 
 	if(isnull(test))
 		fail("Check Runtimed in Mob creation")
+		return 0
 
 	if(test["result"] == FAILURE)
 		fail(test["msg"])
@@ -177,15 +236,10 @@ proc/damage_check(var/mob/living/M, var/damage_type)
 
 	var/initial_health = H.health
 
-	if(damagetype == OXY && H.need_breathe())
-		var/species_organ = H.species.breathing_organ
-		var/obj/item/organ/internal/lungs/L
-		if(species_organ)
-			L = H.internal_organs_by_name[species_organ]
-		if(L)
-			L.last_successful_breath = -INFINITY
-
 	H.apply_damage(damage_amount, damagetype, damage_location)
+
+	H.updatehealth() // Just in case, though at this time apply_damage does this for us.
+                         // We operate with the assumption that someone might mess with that proc one day.
 
 	var/ending_damage = damage_check(H, damagetype)
 
@@ -224,7 +278,7 @@ proc/damage_check(var/mob/living/M, var/damage_type)
 			expected_msg = "To take no damage"
 
 
-	var/msg = "Damage taken: [ending_damage] out of [damage_amount] || expected: [expected_msg] \[Overall Health:[ending_health] (Initial: [initial_health]\]"
+	var/msg = "Damage taken: [ending_damage] out of [damage_amount] || expected: [expected_msg] \[Overall Health:[ending_health] (Initial: [initial_health])\]"
 
 	if(failure)
 		fail(msg)
@@ -261,13 +315,221 @@ datum/unit_test/mob_damage/halloss
 	name = "MOB: Human Halloss damage check"
 	damagetype = PAIN
 
+// =================================================================
+// Unathi
+// =================================================================
+
+datum/unit_test/mob_damage/unathi
+	name = "MOB: Unathi damage check template"
+	mob_type = /mob/living/carbon/human/unathi
+
+datum/unit_test/mob_damage/unathi/brute
+	name = "MOB: Unathi Brute Damage Check"
+	damagetype = BRUTE
+	expected_vulnerability = ARMORED
+
+datum/unit_test/mob_damage/unathi/fire
+	name = "MOB: Unathi Fire Damage Check"
+	damagetype = BURN
+
+datum/unit_test/mob_damage/unathi/tox
+	name = "MOB: Unathi Toxins Damage Check"
+	damagetype = TOX
+
+datum/unit_test/mob_damage/unathi/oxy
+	name = "MOB: Unathi Oxygen Damage Check"
+	damagetype = OXY
+
+datum/unit_test/mob_damage/unathi/clone
+	name = "MOB: Unathi Clone Damage Check"
+	damagetype = CLONE
+
+datum/unit_test/mob_damage/unathi/halloss
+	name = "MOB: Unathi Halloss Damage Check"
+	damagetype = PAIN
+
+// =================================================================
+// SpessKahjit aka Tajaran
+// =================================================================
+
+datum/unit_test/mob_damage/tajaran
+	name = "MOB: Tajaran damage check template"
+	mob_type = /mob/living/carbon/human/tajaran
+
+datum/unit_test/mob_damage/tajaran/brute
+	name = "MOB: Tajaran Brute Damage Check"
+	damagetype = BRUTE
+	expected_vulnerability = EXTRA_VULNERABLE
+
+datum/unit_test/mob_damage/tajaran/fire
+	name = "MOB: Tajaran Fire Damage Check"
+	damagetype = BURN
+
+datum/unit_test/mob_damage/tajaran/tox
+	name = "MOB: Tajaran Toxins Damage Check"
+	damagetype = TOX
+
+datum/unit_test/mob_damage/tajaran/oxy
+	name = "MOB: Tajaran Oxygen Damage Check"
+	damagetype = OXY
+
+datum/unit_test/mob_damage/tajaran/clone
+	name = "MOB: Tajaran Clone Damage Check"
+	damagetype = CLONE
+
+datum/unit_test/mob_damage/tajaran/halloss
+	name = "MOB: Tajaran Halloss Damage Check"
+	damagetype = PAIN
+
+// =================================================================
+// Skrell
+// =================================================================
+
+datum/unit_test/mob_damage/skrell
+	name = "MOB: Skrell damage check template"
+	mob_type = /mob/living/carbon/human/skrell
+
+datum/unit_test/mob_damage/skrell/brute
+	name = "MOB: Skrell Brute Damage Check"
+	damagetype = BRUTE
+
+datum/unit_test/mob_damage/skrell/fire
+	name = "MOB: Skrell Fire Damage Check"
+	damagetype = BURN
+
+datum/unit_test/mob_damage/skrell/tox
+	name = "MOB: Skrell Toxins Damage Check"
+	damagetype = TOX
+
+datum/unit_test/mob_damage/skrell/oxy
+	name = "MOB: Skrell Oxygen Damage Check"
+	damagetype = OXY
+
+datum/unit_test/mob_damage/skrell/clone
+	name = "MOB: Skrell Clone Damage Check"
+	damagetype = CLONE
+
+datum/unit_test/mob_damage/skrell/halloss
+	name = "MOB: Skrell Halloss Damage Check"
+	damagetype = PAIN
+
+// =================================================================
+// Diona
+// =================================================================
+
+datum/unit_test/mob_damage/diona
+	name = "MOB: Diona damage check template"
+	mob_type = /mob/living/carbon/human/diona
+
+datum/unit_test/mob_damage/diona/brute
+	name = "MOB: Diona Brute Damage Check"
+	damagetype = BRUTE
+
+datum/unit_test/mob_damage/diona/fire
+	name = "MOB: Diona Fire Damage Check"
+	damagetype = BURN
+
+datum/unit_test/mob_damage/diona/tox
+	name = "MOB: Diona Toxins Damage Check"
+	damagetype = TOX
+
+datum/unit_test/mob_damage/diona/oxy
+	name = "MOB: Diona Oxygen Damage Check"
+	damagetype = OXY
+	expected_vulnerability = IMMUNE
+
+datum/unit_test/mob_damage/diona/clone
+	name = "MOB: Diona Clone Damage Check"
+	damagetype = CLONE
+	expected_vulnerability = IMMUNE
+
+datum/unit_test/mob_damage/diona/halloss
+	name = "MOB: Diona Halloss Damage Check"
+	damagetype = PAIN
+	expected_vulnerability = ARMORED
+
+// =================================================================
+// SPECIAL WHITTLE SNOWFLAKES aka IPC
+// =================================================================
+
+datum/unit_test/mob_damage/machine
+	name = "MOB: IPC damage check template"
+	mob_type = /mob/living/carbon/human/machine
+
+datum/unit_test/mob_damage/machine/brute
+	name = "MOB: IPC Brute Damage Check"
+	damagetype = BRUTE
+	expected_vulnerability = ARMORED
+
+datum/unit_test/mob_damage/machine/fire
+	name = "MOB: IPC Fire Damage Check"
+	damagetype = BURN
+	expected_vulnerability = EXTRA_VULNERABLE
+
+datum/unit_test/mob_damage/machine/tox
+	name = "MOB: IPC Toxins Damage Check"
+	damagetype = TOX
+	expected_vulnerability = IMMUNE
+
+datum/unit_test/mob_damage/machine/oxy
+	name = "MOB: IPC Oxygen Damage Check"
+	damagetype = OXY
+	expected_vulnerability = IMMUNE
+
+datum/unit_test/mob_damage/machine/clone
+	name = "MOB: IPC Clone Damage Check"
+	damagetype = CLONE
+	expected_vulnerability = IMMUNE
+
+datum/unit_test/mob_damage/machine/halloss
+	name = "MOB: IPC Halloss Damage Check"
+	damagetype = PAIN
+	expected_vulnerability = IMMUNE
+
+// =================================================================
+// Vaurca Worker
+// =================================================================
+
+datum/unit_test/mob_damage/vaurca
+	name = "MOB: Vaurca damage check template"
+	mob_type = /mob/living/carbon/human/type_a
+
+datum/unit_test/mob_damage/vaurca/brute
+	name = "MOB: Vaurca Brute Damage Check"
+	damagetype = BRUTE
+	expected_vulnerability = ARMORED
+
+datum/unit_test/mob_damage/vaurca/fire
+	name = "MOB: Vaurca Fire Damage Check"
+	damagetype = BURN
+	expected_vulnerability = EXTRA_VULNERABLE
+
+datum/unit_test/mob_damage/vaurca/tox
+	name = "MOB: Vaurca Toxins Damage Check"
+	damagetype = TOX
+	expected_vulnerability = EXTRA_VULNERABLE
+
+datum/unit_test/mob_damage/vaurca/oxy
+	name = "MOB: Vaurca Oxygen Damage Check"
+	damagetype = OXY
+	expected_vulnerability = ARMORED
+
+datum/unit_test/mob_damage/vaurca/clone
+	name = "MOB: Vaurca Clone Damage Check"
+	damagetype = CLONE
+
+datum/unit_test/mob_damage/vaurca/halloss
+	name = "MOB: Vaurca Halloss Damage Check"
+	damagetype = PAIN
+
 // ==============================================================================
 
-/datum/unit_test/robot_module_icons
-	name = "MOB: Robot module icon check"
-	var/icon_file = 'icons/mob/screen1_robot.dmi'
 
-/datum/unit_test/robot_module_icons/start_test()
+datum/unit_test/robot_module_icons
+	name = "MOB: Robot module icon check"
+	var/icon_file = 'icons/mob/screen/robot.dmi'
+
+datum/unit_test/robot_module_icons/start_test()
 	var/failed = 0
 	if(!isicon(icon_file))
 		fail("[icon_file] is not a valid icon file.")
@@ -278,10 +540,9 @@ datum/unit_test/mob_damage/halloss
 	if(!valid_states.len)
 		return 1
 
-	for(var/i=1, i<=SSrobots.all_module_names.len, i++)
-		var/modname = lowertext(SSrobots.all_module_names[i])
-		var/bad_msg = "[ascii_red]--------------- [modname]"
-		if(!(modname in valid_states))
+	for(var/i=1, i<=robot_modules.len, i++)
+		var/bad_msg = "[ascii_red]--------------- [robot_modules[i]]"
+		if(!(lowertext(robot_modules[i]) in valid_states))
 			log_unit_test("[bad_msg] does not contain a valid icon state in [icon_file][ascii_reset]")
 			failed=1
 
@@ -295,180 +556,3 @@ datum/unit_test/mob_damage/halloss
 #undef IMMUNE
 #undef SUCCESS
 #undef FAILURE
-
-/datum/unit_test/species_base_skin
-	name = "MOB: Species base skin presence"
-//	async = 1
-	var/failcount = 0
-
-/datum/unit_test/species_base_skin/start_test()
-	for(var/species_name in get_all_species())
-		var/datum/species/S = get_species_by_key(species_name)
-		if(S.base_skin_colours)
-			if(!(S.appearance_flags & HAS_BASE_SKIN_COLOURS))
-				log_unit_test("[S.name] has a skin colour list but no HAS_BASE_SKIN_COLOURS flag.")
-				failcount++
-				continue
-			if(!(S.base_skin_colours.len >= 2))
-				log_unit_test("[S.name] needs at least two items in the base_skin_colour list.")
-				failcount++
-				continue
-			var/to_fail = FALSE
-			for(var/tag in S.has_limbs)
-				var/list/paths = S.has_limbs[tag]
-				var/obj/item/organ/external/E = paths["path"]
-				var/list/gender_test = list("")
-				if(initial(E.limb_flags) & ORGAN_FLAG_GENDERED_ICON)
-					gender_test = list("_m", "_f")
-				var/icon_name = initial(E.icon_name)
-
-				for(var/base in S.base_skin_colours)
-					for(var/gen in gender_test)
-						if(!("[icon_name][gen][S.base_skin_colours[base]]" in icon_states(S.icobase)))
-							to_fail = TRUE
-							log_debug("[S.name] has missing icon: [icon_name][gen][S.base_skin_colours[base]] for base [base] and limb tag [tag].")
-			if(to_fail)
-				log_unit_test("[S.name] is missing one or more base icons.")
-				failcount++
-				continue
-
-		else if(S.appearance_flags & HAS_BASE_SKIN_COLOURS)
-			log_unit_test("[S.name] has a HAS_BASE_SKIN_COLOURS flag but no skin colour list.")
-			failcount++
-			continue
-
-	if(failcount)
-		fail("[failcount] species had bad base skin colour.")
-	else
-		pass("All species had correct skin colour setups.")
-
-	return 1	// return 1 to show we're done and don't want to recheck the result.
-
-
-/datum/unit_test/mob_nullspace
-	name = "MOB: Mob in nullspace shall not cause runtimes"
-	var/list/test_subjects = list()
-	async = 1
-
-/datum/unit_test/mob_nullspace/start_test()
-	// Simply create one of each species type in nullspace
-	for(var/species_name in get_all_species())
-		var/test_subject = new/mob/living/carbon/human(null, species_name)
-		test_subjects += test_subject
-	return TRUE
-
-/datum/unit_test/mob_nullspace/check_result()
-	for(var/ts in test_subjects)
-		var/mob/living/carbon/human/H = ts
-		if(H.life_tick < 10)
-			return FALSE
-
-	QDEL_NULL_LIST(test_subjects)
-
-	// No failure state, we just rely on the general runtime check to fail the entire build for us
-	pass("Mob nullspace test concluded.")
-	return TRUE
-/datum/unit_test/mob_organ_size
-	name = "MOB: Internal organs fit inside external organs."
-
-/datum/unit_test/mob_organ_size/start_test()
-	var/failed = FALSE
-	for(var/species_name in get_all_species())
-		var/mob/living/carbon/human/H = new(null, species_name)
-		for(var/obj/item/organ/external/E in H.organs)
-			for(var/obj/item/organ/internal/I in E.internal_organs)
-				if(I.w_class > E.cavity_max_w_class)
-					failed = TRUE
-					log_bad("Internal organ [I] inside external organ [E] on species [species_name] was too large to fit.")
-	if(failed)
-		fail("A mob had an internal organ too large for its external organ.")
-	else
-		pass("All mob organs fit.")
-	return TRUE
-
-// ============================================================================
-
-//
-// Tests butchery products.
-//
-
-/datum/unit_test/mob_butchery
-	name = "MOB: All Living Mobs Shall Have Valid Products When Butchery Values Are Set"
-	async = 1
-	var/list/failed =      list()
-	var/list/check_meat =  list()
-	var/list/check_skin =  list()
-	var/list/check_bones = list()
-
-/datum/unit_test/mob_butchery/start_test()
-
-	for(var/mobtype in subtypesof(/mob/living))
-
-		// Humans use species for their products and are 
-		// difficult to properly unit test because of this.
-		if(ispath(mobtype, /mob/living/carbon/human))
-			continue
-
-		var/mob/living/animal = mobtype
-
-		var/mtype = ispath(initial(animal.meat_type))
-		var/mcount = initial(animal.meat_amount) > 0
-		if(mtype && mcount)
-			check_meat += mobtype
-		else if(mtype && !mcount)
-			failed[mobtype] = "valid meat_type but meat_amount ([mcount]) is below or equal to zero"
-		else if(!mtype && mcount)
-			failed[mobtype] = "invalid meat_type ([mtype]) but meat_amount above zero"
-
-		var/smat =   initial(animal.skin_material)
-		var/stype =  (smat && istype(decls_repository.get_decl(smat), /decl/material))
-		var/scount = initial(animal.skin_amount) > 0
-		if(stype && scount)
-			check_skin += mobtype
-		else if(stype && !scount)
-			failed[mobtype] = "valid skin_material but skin_amount is below or equal to zero"
-		else if(!stype && scount)
-			failed[mobtype] = "invalid skin_material ([smat]) but skin_amount above zero"
-
-		var/bmat =   initial(animal.bone_material)
-		var/btype =  (bmat && istype(decls_repository.get_decl(bmat), /decl/material))
-		var/bcount = initial(animal.bone_amount) > 0
-		if(btype && bcount)
-			check_bones += mobtype
-		else if(btype && !bcount)
-			failed += "[mobtype] - valid bone_material but bone_amount is below or equal to zero"
-		else if(!btype && bcount)
-			failed += "[mobtype] - invalid bone_material ([bmat]) but bone_amount above zero"
-
-	var/list/spawned_mobs = list()
-	for(var/mobtype in check_skin)
-		var/mob/living/M = spawned_mobs[mobtype] || new mobtype
-		spawned_mobs[mobtype] = M
-		if(!length(M.harvest_skin()))
-			failed += "[mobtype] - invalid skin products"
-	for(var/mobtype in check_bones)
-		var/mob/living/M = spawned_mobs[mobtype] || new mobtype
-		spawned_mobs[mobtype] = M
-		if(!length(M.harvest_bones()))
-			failed += "[mobtype] - invalid bone products"
-	for(var/mobtype in check_meat)
-		var/mob/living/M = spawned_mobs[mobtype] || new mobtype
-		spawned_mobs[mobtype] = M
-		if(!length(M.harvest_meat()))
-			failed += "[mobtype] - invalid meat products"
-	for(var/thing in spawned_mobs)
-		var/mob/living/M = spawned_mobs[thing]
-		if(!QDELETED(M))
-			qdel(M)
-	spawned_mobs.Cut()
-
-	return TRUE
-
-/datum/unit_test/mob_butchery/check_result()
-	if(length(failed))
-		fail("Some living mobs with butchery values have invalid values or do not produce valid products:\n[jointext(failed, "\n")]")
-	else
-		pass("All living mobs with butchery values produce valid products.")
-	return TRUE
-
-// ============================================================================

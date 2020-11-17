@@ -14,12 +14,12 @@
 	var/category = /datum/shuttle
 	var/multiz = 0	//how many multiz levels, starts at 0
 
-	var/ceiling_type = /turf/unsimulated/floor/shuttle_ceiling
+	var/ceiling_type = /turf/simulated/floor/airless/ceiling
 
 	var/sound_takeoff = 'sound/effects/shuttle_takeoff.ogg'
 	var/sound_landing = 'sound/effects/shuttle_landing.ogg'
 
-	var/knockdown = 1 //whether shuttle downs non-buckled people when it moves
+	var/knockdown = TRUE //whether shuttle downs non-buckled people when it moves
 
 	var/defer_initialisation = FALSE //this shuttle will/won't be initialised automatically. If set to true, you are responsible for initialzing the shuttle manually.
 	                                 //Useful for shuttles that are initialed by map_template loading, or shuttles that are created in-game or not used.
@@ -28,6 +28,8 @@
 
 	var/mothershuttle //tag of mothershuttle
 	var/motherdock    //tag of mothershuttle landmark, defaults to starting location
+
+	var/squishes = TRUE //decides whether or not things get squished when it moves.
 
 /datum/shuttle/New(_name, var/obj/effect/shuttle_landmark/initial_location)
 	..()
@@ -54,34 +56,34 @@
 	if(src.name in SSshuttle.shuttles)
 		CRASH("A shuttle with the name '[name]' is already defined.")
 	SSshuttle.shuttles[src.name] = src
-	if(logging_home_tag)
-		new /datum/shuttle_log(src)
 	if(flags & SHUTTLE_FLAGS_PROCESS)
 		SSshuttle.process_shuttles += src
 	if(flags & SHUTTLE_FLAGS_SUPPLY)
-		if(SSsupply.shuttle)
+		if(SScargo.shuttle)
 			CRASH("A supply shuttle is already defined.")
-		SSsupply.shuttle = src
+		SScargo.shuttle = src
 
 /datum/shuttle/Destroy()
 	current_location = null
 
 	SSshuttle.shuttles -= src.name
 	SSshuttle.process_shuttles -= src
-	SSshuttle.shuttle_logs -= src
-	if(SSsupply.shuttle == src)
-		SSsupply.shuttle = null
+	if(SScargo.shuttle == src)
+		SScargo.shuttle = null
 
 	. = ..()
 
 /datum/shuttle/proc/short_jump(var/obj/effect/shuttle_landmark/destination)
 	if(moving_status != SHUTTLE_IDLE) return
 
+	var/obj/effect/shuttle_landmark/start_location = current_location
+
 	moving_status = SHUTTLE_WARMUP
+	callHook("shuttle_moved", list(start_location,destination))
 	if(sound_takeoff)
-		playsound(current_location, sound_takeoff, 100, 20, 0.2)
+		playsound(current_location, sound_takeoff, 50, 20, is_global = TRUE)
 	spawn(warmup_time*10)
-		if (moving_status == SHUTTLE_IDLE)
+		if(moving_status == SHUTTLE_IDLE)
 			return FALSE	//someone cancelled the launch
 
 		if(!fuel_check()) //fuel error (probably out of fuel) occured, so cancel the launch
@@ -95,13 +97,15 @@
 		moving_status = SHUTTLE_IDLE
 
 /datum/shuttle/proc/long_jump(var/obj/effect/shuttle_landmark/destination, var/obj/effect/shuttle_landmark/interim, var/travel_time)
-	if(moving_status != SHUTTLE_IDLE) return
+	if(moving_status != SHUTTLE_IDLE)
+		return
 
 	var/obj/effect/shuttle_landmark/start_location = current_location
 
 	moving_status = SHUTTLE_WARMUP
+	callHook("shuttle_moved", list(start_location, destination))
 	if(sound_takeoff)
-		playsound(current_location, sound_takeoff, 100, 20, 0.2)
+		playsound(current_location, sound_takeoff, 100, 20, is_global = TRUE)
 	spawn(warmup_time*10)
 		if(moving_status == SHUTTLE_IDLE)
 			return	//someone cancelled the launch
@@ -119,7 +123,7 @@
 			while (world.time < arrive_time)
 				if(!fwooshed && (arrive_time - world.time) < 100)
 					fwooshed = 1
-					playsound(destination, sound_landing, 100, 0, 7)
+					playsound(destination, sound_landing, 100, 20, is_global = TRUE)
 				sleep(5)
 			if(!attempt_move(destination))
 				attempt_move(start_location) //try to go back to where we started. If that fails, I guess we're stuck in the interim location
@@ -147,38 +151,7 @@
 	for(var/area/A in shuttle_area)
 		testing("Moving [A]")
 		translation += get_turf_translation(get_turf(current_location), get_turf(destination), A.contents)
-	var/obj/effect/shuttle_landmark/old_location = current_location
-	GLOB.shuttle_pre_move_event.raise_event(src, old_location, destination)
 	shuttle_moved(destination, translation)
-	GLOB.shuttle_moved_event.raise_event(src, old_location, destination)
-	if(istype(old_location))
-		old_location.shuttle_departed(src)
-	destination.shuttle_arrived(src)
-	return TRUE
-
-// Attempts to force move the shuttle with minimal checks.
-// In ideal use, none of the checks fail and this is a standard move to location while overriding any movement time or fuel checks.
-// Anything in the arrival area will be destroyed with no warning. Use sparingly.
-/datum/shuttle/proc/attempt_force_move(var/obj/effect/shuttle_landmark/destination)
-	if(current_location == destination)
-		log_error("Error when attempting to force move a shuttle: Attempted to move [src] to its current location [destination].")
-		return FALSE
-	if(destination.shuttle_restricted != name)
-		log_error("Error when attempting to force move a shuttle: Destination location not restricted for [src]'s use.")
-		return FALSE
-	
-	testing("Force moving [src] to [destination]. Areas are [english_list(shuttle_area)]")
-	var/list/translation = list()
-
-	for(var/area/A in shuttle_area)
-		testing("Moving [A]")
-		translation += get_turf_translation(get_turf(current_location), get_turf(destination), A.contents)
-	var/obj/effect/shuttle_landmark/old_location = current_location
-	GLOB.shuttle_pre_move_event.raise_event(src, old_location, destination)
-	shuttle_moved(destination, translation)
-	GLOB.shuttle_moved_event.raise_event(src, old_location, destination)
-	if(istype(old_location))
-		old_location.shuttle_departed(src)
 	destination.shuttle_arrived(src)
 	return TRUE
 
@@ -188,11 +161,11 @@
 /datum/shuttle/proc/shuttle_moved(var/obj/effect/shuttle_landmark/destination, var/list/turf_translation)
 
 //	log_debug("move_shuttle() called for [shuttle_tag] leaving [origin] en route to [destination].")
-//	log_degug("area_coming_from: [origin]")
+//	log_debug("area_coming_from: [origin]")
 //	log_debug("destination: [destination]")
 	if((flags & SHUTTLE_FLAGS_ZERO_G))
 		var/new_grav = 1
-		if(destination.flags & SLANDMARK_FLAG_ZERO_G)
+		if(destination.landmark_flags & SLANDMARK_FLAG_ZERO_G)
 			var/area/new_area = get_area(destination)
 			new_grav = new_area.has_gravity
 		for(var/area/our_area in shuttle_area)
@@ -201,11 +174,8 @@
 
 	for(var/turf/src_turf in turf_translation)
 		var/turf/dst_turf = turf_translation[src_turf]
-		if(src_turf.is_solid_structure()) //in case someone put a hole in the shuttle and you were lucky enough to be under it
+		if(squishes && src_turf.is_solid_structure()) //in case someone put a hole in the shuttle and you were lucky enough to be under it
 			for(var/atom/movable/AM in dst_turf)
-				if(AM.movable_flags & MOVABLE_FLAG_DEL_SHUTTLE)
-					qdel(AM)
-					continue
 				if(!AM.simulated)
 					continue
 				if(isliving(AM))
@@ -222,13 +192,21 @@
 				if(istype(TA, ceiling_type))
 					TA.ChangeTurf(get_base_turf_by_area(TA), 1, 1)
 		if(knockdown)
-			A.throw_unbuckled_occupants(4, 1)
+			for(var/mob/M in A)
+				spawn(0)
+					if(istype(M, /mob/living/carbon))
+						if(M.buckled)
+							to_chat(M, "<span class='warning'>Sudden acceleration presses you into your chair!</span>")
+							shake_camera(M, 3, 1)
+						else
+							to_chat(M, "<span class='warning'>The floor lurches beneath you!</span>")
+							shake_camera(M, 10, 1)
+							M.visible_message("<span class='warning'>[M.name] is tossed around by the sudden acceleration!</span>")
+							M.throw_at_random(FALSE, 4, 1)
+							M.Weaken(3)
 
 		for(var/obj/structure/cable/C in A)
 			powernets |= C.powernet
-	if(logging_home_tag)
-		var/datum/shuttle_log/s_log = SSshuttle.shuttle_logs[src]
-		s_log.handle_move(current_location, destination)
 
 	translate_turfs(turf_translation, current_location.base_area, current_location.base_turf)
 	current_location = destination
@@ -237,11 +215,25 @@
 	if(HasAbove(current_location.z))
 		for(var/area/A in shuttle_area)
 			for(var/turf/TD in A.contents)
+				TD.update_above()
+				TD.update_icon()
 				var/turf/TA = GetAbove(TD)
 				if(istype(TA, get_base_turf_by_area(TA)) || istype(TA, /turf/simulated/open))
 					if(get_area(TA) in shuttle_area)
 						continue
 					TA.ChangeTurf(ceiling_type, TRUE, TRUE, TRUE)
+
+	for(var/area/sub_area in shuttle_area)
+		for(var/obj/structure/shuttle_part/part in sub_area)
+			var/turf/target_turf = get_turf(part)
+			if(part.outside_part)
+				target_turf.ChangeTurf(destination.base_turf)
+		for(var/obj/structure/window/shuttle/unique/SW in sub_area)
+			if(SW.outside_window)
+				var/turf/target_turf = get_turf(SW)
+				target_turf.ChangeTurf(destination.base_turf)
+		for(var/obj/effect/energy_field/ef in sub_area)
+			qdel(ef)
 
 	// Remove all powernets that were affected, and rebuild them.
 	var/list/cables = list()

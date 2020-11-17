@@ -1,101 +1,112 @@
-/obj/item/stock_parts/computer/network_card
-	name = "basic network card"
-	desc = "A basic network card for usage with standard network protocols."
-	power_usage = 50
-	origin_tech = "{'programming':2,'engineering':1}"
-	critical = 0
+var/global/ntnet_card_uid = 1
+
+/obj/item/computer_hardware/network_card
+	name = "basic NTNet network card"
+	desc = "A basic network card for usage with standard NTNet frequencies."
+	power_usage = 25
+	origin_tech = list(TECH_DATA = 2, TECH_ENGINEERING = 1)
+	critical = FALSE
 	icon_state = "netcard_basic"
 	hardware_size = 1
-	material = /decl/material/solid/glass
+	var/identification_id			// Identification ID. Technically MAC address of this device. Can't be changed by user.
+	var/identification_string = ""	// Identification string, technically nickname seen in the network. Can be set by user.
+	var/long_range = FALSE
+	var/ethernet = FALSE // Hard-wired, therefore always on, ignores NTNet wireless checks.
+	var/obj/item/radio/integrated/signal/sradio = FALSE // integrated signaler - not present on basic model.
+	malfunction_probability = 1
 
-	var/long_range = 0
-	var/ethernet = 0 // Hard-wired, therefore always on, ignores wireless checks.
-	var/proxy_id     // If set, uses the value to funnel connections through another network card.
-
-/obj/item/stock_parts/computer/network_card/diagnostics()
-	. = ..()
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	. += "NIX Unique ID: [D.address]"
-	. += "NIX User Tag: [D.network_tag]"
-	. += "Network ID: [D.network_id]"
-	. += "Supported protocols:"
-	. += "511.m SFS (Subspace) - Standard Frequency Spread"
+/obj/item/computer_hardware/network_card/diagnostics(mob/user)
+	..()
+	to_chat(user, SPAN_NOTICE("NIX Unique ID: [identification_id]"))
+	to_chat(user, SPAN_NOTICE("NIX User Tag: [identification_string]"))
+	to_chat(user, SPAN_NOTICE("Supported protocols:"))
+	to_chat(user, SPAN_NOTICE("511.m SFS (Subspace) - Standard Frequency Spread"))
+	if(sradio)
+		to_chat(user, SPAN_NOTICE("511.s WFS (Subspace) - Wide Frequency Spread / Signaling"))
 	if(long_range)
-		. += "511.n WFS/HB (Subspace) - Wide Frequency Spread/High Bandiwdth"
+		to_chat(user, SPAN_NOTICE("511.n HB (Subspace) - High Bandwidth / Long Range"))
 	if(ethernet)
-		. += "OpenEth (Physical Connection) - Physical network connection port"
+		to_chat(user, SPAN_NOTICE("OpenEth (Physical Connection) - Physical Network Connection Port"))
 
-/obj/item/stock_parts/computer/network_card/Initialize()
-	set_extension(src, /datum/extension/network_device)
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	if(long_range)
-		D.connection_type = NETWORK_CONNECTION_STRONG_WIRELESS
-	if(ethernet)
-		D.connection_type = NETWORK_CONNECTION_WIRED
+/obj/item/computer_hardware/network_card/Initialize()
 	. = ..()
+	identification_id = ntnet_card_uid
+	ntnet_card_uid++
 
-/obj/item/stock_parts/computer/network_card/advanced
-	name = "advanced network card"
-	desc = "An advanced network card for usage with standard network protocols. It's transmitter is strong enough to connect even when far away."
-	long_range = 1
-	origin_tech = "{'programming':4,'engineering':2}"
-	power_usage = 100 // Better range but higher power usage.
+/obj/item/computer_hardware/network_card/signaler
+	name = "NTNet signaler network card"
+	desc = "An upgraded version of the basic network card, capable of transmitting and receiving over NTNet as well as custom frequencies."
+	power_usage = 75
+	origin_tech = list(TECH_DATA = 3, TECH_ENGINEERING = 1)
+
+/obj/item/computer_hardware/network_card/signaler/Initialize()
+	. = ..()
+	sradio = new /obj/item/radio/integrated/signal(src)
+
+/obj/item/computer_hardware/network_card/advanced
+	name = "advanced NTNet network card"
+	desc = "An advanced network card for usage with standard NTNet frequencies. Its transmitter is strong enough to connect even off-station."
+	long_range = TRUE
+	origin_tech = list(TECH_DATA = 4, TECH_ENGINEERING = 2)
+	power_usage = 150 // Better range but higher power usage.
 	icon_state = "netcard_advanced"
-	hardware_size = 1
-	material = /decl/material/solid/glass
+	hardware_size = 2
 
-/obj/item/stock_parts/computer/network_card/wired
-	name = "wired network card"
-	desc = "An advanced network card for usage with standard network protocols. This one also supports wired connection."
-	ethernet = 1
-	origin_tech = "{'programming':5,'engineering':3}"
-	power_usage = 100 // Better range but higher power usage.
+/obj/item/computer_hardware/network_card/advanced/Initialize()
+	. = ..()
+	sradio = new /obj/item/radio/integrated/signal(src)
+
+/obj/item/computer_hardware/network_card/wired
+	name = "wired NTNet network card"
+	desc = "An advanced network card for usage with standard NTNet frequencies. This one also supports wired connection."
+	ethernet = TRUE
+	origin_tech = list(TECH_DATA = 5, TECH_ENGINEERING = 3)
+	power_usage = 150 // Better range but higher power usage.
 	icon_state = "netcard_ethernet"
 	hardware_size = 3
-	material = /decl/material/solid/glass
 
+/obj/item/computer_hardware/network_card/wired/Initialize()
+	. = ..()
+	sradio = new /obj/item/radio/integrated/signal(src)
 
 // Returns a string identifier of this network card
-/obj/item/stock_parts/computer/network_card/proc/get_network_tag()
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	return D.network_tag
-
-/obj/item/stock_parts/computer/network_card/proc/get_nid()
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	return D.address
-
-/obj/item/stock_parts/computer/network_card/proc/is_banned()
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	return D.is_banned()
+/obj/item/computer_hardware/network_card/proc/get_network_tag()
+	return "[identification_string] (NID [identification_id])"
 
 // 0 - No signal, 1 - Low signal, 2 - High signal. 3 - Wired Connection
-/obj/item/stock_parts/computer/network_card/proc/get_signal(var/specific_action = 0)
-	. = 0
+/obj/item/computer_hardware/network_card/proc/get_signal(var/specific_action = 0)
+	if(!parent_computer) // Hardware is not installed in anything. No signal. How did this even get called?
+		return 0
 	if(!enabled)
-		return
+		return 0
+	if(!check_functionality())
+		return 0
+	if(!ntnet_global || !ntnet_global.check_function(specific_action))
+		return 0
 
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	return D.check_connection(specific_action)
+	if(parent_computer)
+		var/turf/T = get_turf(parent_computer)
+		if((T && istype(T)) && isStationLevel(T.z))
+			// Computer is on station. Low/High signal depending on what type of network card you have
+			if(ethernet)
+				return 3
+			else if(long_range)
+				return 2
+			else
+				return 1
+		var/area/A = get_area(parent_computer)
+		if(A.centcomm_area && ethernet)
+			return 3
 
-/obj/item/stock_parts/computer/network_card/on_disable()
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	if(D)
-		D.disconnect()
+	if(long_range) // Computer is not on station, but it has upgraded network card. Low signal.
+		return 1
 
-/obj/item/stock_parts/computer/network_card/on_enable(var/datum/extension/interactive/ntos/os)
-	var/datum/extension/network_device/D = get_extension(src, /datum/extension/network_device)
-	if(D)
-		D.connect()
+	return 0 // Computer is not on station and does not have upgraded network card. No signal.
 
-/obj/item/stock_parts/computer/network_card/on_install(var/obj/machinery/machine)
-	..()
-	var/datum/extension/interactive/ntos/os = get_extension(machine, /datum/extension/interactive/ntos)
-	if(os)
-		on_enable(os)
-
-/obj/item/stock_parts/computer/network_card/on_uninstall(var/obj/machinery/machine, var/temporary = FALSE)
-	..()
-	on_disable()
-
-/obj/item/stock_parts/computer/network_card/nano_host()
-	return loc ? loc.nano_host() : ..()
+/obj/item/computer_hardware/network_card/Destroy()
+	if(sradio)
+		QDEL_NULL(sradio)
+	if(parent_computer?.network_card == src)
+		parent_computer.network_card = null
+	parent_computer = null
+	return ..()
