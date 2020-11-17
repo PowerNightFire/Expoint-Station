@@ -1,6 +1,6 @@
 /obj/vehicle/train
 	name = "train"
-	dir = 4
+	dir = EAST
 
 	move_delay = 1
 
@@ -17,8 +17,6 @@
 	var/obj/vehicle/train/lead
 	var/obj/vehicle/train/tow
 
-	can_hold_mob = TRUE
-
 
 //-------------------------------------------
 // Standard procs
@@ -27,13 +25,6 @@
 	. = ..()
 	for(var/obj/vehicle/train/T in orange(1, src))
 		latch(T)
-
-/obj/vehicle/train/examine(mob/user)
-	. = ..()
-	if(lead)
-		to_chat(user, SPAN_NOTICE("It is being towed by \the [lead] in the [dir2text(get_dir(src, lead))]."))
-	if(tow)
-		to_chat(user, SPAN_NOTICE("It towing \the [tow] in the [dir2text(get_dir(src, tow))]."))
 
 /obj/vehicle/train/Move()
 	var/old_loc = get_turf(src)
@@ -46,8 +37,7 @@
 			unattach()
 		return 0
 
-/obj/vehicle/train/Collide(atom/Obstacle)
-	. = ..()
+/obj/vehicle/train/Bump(atom/Obstacle)
 	if(!istype(Obstacle, /atom/movable))
 		return
 	var/atom/movable/A = Obstacle
@@ -63,11 +53,11 @@
 			visible_message("<span class='warning'>[src] knocks over [M]!</span>")
 			var/def_zone = ran_zone()
 			M.apply_effects(5, 5)				//knock people down if you hit them
-			M.apply_damage(22 / move_delay, BRUTE, def_zone, M.run_armor_check(def_zone, "melee"))	// and do damage according to how fast the train is going
+			M.apply_damage(22 / move_delay, BRUTE, def_zone)	// and do damage according to how fast the train is going
 			if(istype(load, /mob/living/carbon/human))
 				var/mob/living/D = load
 				to_chat(D, "<span class='warning'>You hit [M]!</span>")
-				msg_admin_attack("[D.name] ([D.ckey]) hit [M.name] ([M.ckey]) with [src]. (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[src.x];Y=[src.y];Z=[src.z]'>JMP</a>)",ckey=key_name(D),ckey_target=key_name(M))
+				msg_admin_attack("[D.name] ([D.ckey]) hit [M.name] ([M.ckey]) with [src]. (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[src.x];Y=[src.y];Z=[src.z]'>JMP</a>)")
 
 
 //-------------------------------------------
@@ -84,6 +74,9 @@
 // Interaction procs
 //-------------------------------------------
 /obj/vehicle/train/relaymove(mob/user, direction)
+	if(user.incapacitated())
+		return 0
+
 	var/turf/T = get_step_to(src, get_step(src, direction))
 	if(!T)
 		to_chat(user, "You can't find a clear area to step onto.")
@@ -101,16 +94,16 @@
 
 	return 1
 
-/obj/vehicle/train/MouseDrop_T(var/atom/movable/C, mob/user as mob)
-	if(user.buckled || user.stat || user.restrained() || !Adjacent(user) || !user.Adjacent(C) || !istype(C) || (user == C && !user.canmove))
+/obj/vehicle/train/MouseDrop_T(var/atom/movable/C, mob/user)
+	if(!CanPhysicallyInteract(user) || !user.Adjacent(C) || !istype(C) || (user == C))
 		return
-	if(istype(C, /obj/vehicle/train))
-		attach_to(C, user)
+	if(istype(C,/obj/vehicle/train))
+		latch(C, user)
 	else
 		if(!load(C))
 			to_chat(user, "<span class='warning'>You were unable to load [C] on [src].</span>")
 
-/obj/vehicle/train/attack_hand(mob/user as mob)
+/obj/vehicle/train/attack_hand(mob/user)
 	if(user.stat || user.restrained() || !Adjacent(user))
 		return 0
 
@@ -126,17 +119,16 @@
 /obj/vehicle/train/verb/unlatch_v()
 	set name = "Unlatch"
 	set desc = "Unhitches this train from the one in front of it."
-	set category = "Vehicle"
+	set category = "Object"
 	set src in view(1)
 
 	if(!istype(usr, /mob/living/carbon/human))
 		return
 
-	if(!usr.canmove || usr.stat || usr.restrained() || !Adjacent(usr))
+	if(!CanPhysicallyInteract(usr))
 		return
 
 	unattach(usr)
-
 
 //-------------------------------------------
 // Latching/unlatching procs
@@ -150,11 +142,11 @@
 		return
 
 	if (lead)
-		to_chat(user, "<span class='warning'>[src] is already hitched to something.</span>")
+		to_chat(user, "<span class='warning'>\The [src] is already hitched to something.</span>")
 		return
 
 	if (T.tow)
-		to_chat(user, "<span class='warning'>[T] is already towing something.</span>")
+		to_chat(user, "<span class='warning'>\The [T] is already towing something.</span>")
 		return
 
 	//check for cycles.
@@ -171,7 +163,7 @@
 	set_dir(lead.dir)
 
 	if(user)
-		to_chat(user, "<span class='notice'>You hitch [src] to [T].</span>")
+		to_chat(user, "<span class='notice'>You hitch \the [src] to \the [T].</span>")
 
 	update_stats()
 
@@ -179,13 +171,13 @@
 //detaches the train from whatever is towing it
 /obj/vehicle/train/proc/unattach(mob/user)
 	if (!lead)
-		to_chat(user, "<span class='warning'>[src] is not hitched to anything.</span>")
+		to_chat(user, "<span class='warning'>\The [src] is not hitched to anything.</span>")
 		return
 
 	lead.tow = null
 	lead.update_stats()
 
-	to_chat(user, "<span class='notice'>You unhitch [src] from [lead].</span>")
+	to_chat(user, "<span class='notice'>You unhitch \the [src] from \the [lead].</span>")
 	lead = null
 
 	update_stats()
@@ -198,7 +190,7 @@
 
 	if(dir == T_dir) 	//if car is ahead
 		src.attach_to(T, user)
-	else if(reverse_direction(dir) == T_dir)	//else if car is behind
+	else if(GLOB.reverse_dir[dir] == T_dir)	//else if car is behind
 		T.attach_to(src, user)
 
 //returns 1 if this is the lead car of the train

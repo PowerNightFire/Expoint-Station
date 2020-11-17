@@ -1,85 +1,41 @@
-//Unathi clothing.
+//Primitive clothing.
 
-/obj/item/clothing/suit/unathi/robe
+/obj/item/clothing/suit/robe
 	name = "roughspun robes"
-	desc = "A traditional Unathi garment."
-	icon = 'icons/obj/unathi_items.dmi'
-	icon_state = "roughspun_robe"
-	item_state = "roughspun_robe"
-	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS
-	contained_sprite = TRUE
+	desc = "A simple garment."
+	icon = 'icons/clothing/suit/rough_robe.dmi'
+	body_parts_covered = SLOT_UPPER_BODY|SLOT_LOWER_BODY|SLOT_LEGS
 
-/obj/item/clothing/suit/unathi/robe/beige
-	color = "#DBC684"
+//Misc Xeno clothing.
 
-/obj/item/clothing/suit/unathi/robe/kilt
-	name = "wasteland kilt"
-	desc = "A long tunic made of old material that acts as a kilt for the poorest of unathi, who aren't afraid to let the sand and sun strike their scales."
-	icon_state = "wasteland_kilt"
-	item_state = "wasteland_kilt"
+/obj/item/clothing/head/xeno/scarf
+	name = "headscarf"
+	desc = "A scarf of coarse fabric. Seems to have ear-holes."
+	icon = 'icons/clothing/head/headscarf.dmi'
+	body_parts_covered = SLOT_HEAD|SLOT_FACE
 
-/obj/item/clothing/suit/unathi/robe/robe_coat //I was at a loss for names under-the-hood.
-	name = "tzirzi robes"
-	desc = "A casual Moghes-native garment typically worn by Unathi while planet-side."
-	icon = 'icons/obj/unathi_items.dmi'
-	icon_state = "robe_coat"
-	item_state = "robe_coat"
-	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS
-	contained_sprite = 1
+/obj/item/clothing/accessory/shouldercape
+	name = "shoulder cape"
+	desc = "A simple shoulder cape."
+	icon_state = "gruntcape"
+	slot = ACCESSORY_SLOT_INSIGNIA // Adding again in case we want to change it in the future.
 
-/obj/item/clothing/suit/unathi/mantle
-	name = "hide mantle"
-	desc = "A rather grisly selection of cured hides and skin, sewn together to form a ragged mantle."
-	icon_state = "mantle-unathi"
-	item_state = "mantle-unathi"
-	body_parts_covered = UPPER_TORSO
+/obj/item/clothing/accessory/shouldercape/grunt
+	name = "cape"
+	desc = "A simple looking cape with a couple of runes woven into the fabric."
+	icon_state = "gruntcape" // Again, just in case it is changed.
 
-//Vaurca clothing
+/obj/item/clothing/accessory/shouldercape/officer
+	name = "officer's cape"
+	desc = "A decorated cape. Runed patterns have been woven into the fabric."
+	icon_state = "officercape"
 
-/obj/item/clothing/suit/vaurca
-	name = "hive cloak"
-	desc = "A fashionable robe tailored for nonhuman proportions, this one is red and golden."
-	icon = 'icons/obj/vaurca_items.dmi'
-	icon_state = "robegold"
-	item_state = "robegold"
-	contained_sprite = TRUE
-	body_parts_covered = UPPER_TORSO|LOWER_TORSO|LEGS|ARMS
+/obj/item/clothing/accessory/shouldercape/command
+	name = "command cape"
+	desc = "A heavily decorated cape with rank emblems on the shoulders signifying prestige. An ornate runed design has been woven into the fabric of it"
+	icon_state = "commandcape"
 
-/obj/item/clothing/suit/vaurca/silver
-	desc = "A fashionable robe tailored for nonhuman proportions, this one is red and silver."
-	icon_state = "robesilver"
-	item_state = "robesilver"
-
-/obj/item/clothing/suit/vaurca/brown
-	desc = "A fashionable robe tailored for nonhuman proportions, this one is brown and silver."
-	icon_state = "robebrown"
-	item_state = "robebrown"
-
-/obj/item/clothing/suit/vaurca/blue
-	desc = "A fashionable robe tailored for nonhuman proportions, this one is blue and golden."
-	icon_state = "robeblue"
-	item_state = "robeblue"
-
-/obj/item/clothing/suit/vaurca/shaper
-	name = "shaper robes"
-	desc = "Commonly worn by Preimmients, these robes are meant to catch pheromones, obfuscating hive affiliation."
-	icon_state = "shaper_robes"
-	item_state = "shaper_robes"
-	species_restricted = list(BODYTYPE_VAURCA)
-
-/obj/item/clothing/suit/vaurca/mantle
-	name = "vaurcan mantle"
-	desc = "This mantle is commonly worn in dusty underground areas, its wide upper covering acting as a kind of dust umbrella."
-	icon_state = "vacmantle"
-	item_state = "vacmantle"
-	body_parts_covered = UPPER_TORSO
-
-/obj/item/clothing/suit/vaurca/breeder
-	name = "zo'ra representative clothes"
-	desc = "A large piece of clothing used by Zo'ra representatives."
-	icon = 'icons/mob/species/breeder/inventory.dmi'
-	item_state = "representative_clothes"
-	icon_state = "representative_clothes"
-	contained_sprite = FALSE
-	species_restricted = list(BODYTYPE_VAURCA_BREEDER)
-	sprite_sheets = list(BODYTYPE_VAURCA_BREEDER = 'icons/mob/species/breeder/suit.dmi')
+/obj/item/clothing/accessory/shouldercape/general
+	name = "general's cape"
+	desc = "An extremely decorated cape with an intricately runed design has been woven into the fabric of this cape with great care."
+	icon_state = "leadercape"

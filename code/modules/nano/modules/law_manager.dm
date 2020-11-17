@@ -21,7 +21,7 @@
 		player_laws = new()
 
 		init_subtypes(/datum/ai_laws, admin_laws)
-		sortTim(admin_laws, /proc/cmp_name_asc)
+		admin_laws = dd_sortedObjectList(admin_laws)
 
 		for(var/datum/ai_laws/laws in admin_laws)
 			if(laws.selectable)
@@ -37,7 +37,7 @@
 
 	if(href_list["law_channel"])
 		if(href_list["law_channel"] in owner.law_channels())
-			owner.law_channel = href_list["law_channel"]
+			owner.lawchannel = href_list["law_channel"]
 		return 1
 
 	if(href_list["state_law"])
@@ -53,17 +53,17 @@
 		return 1
 
 	if(href_list["add_ion_law"])
-		if(ion_law && is_malf(usr))
+		if(ion_law && is_traitor(usr))
 			owner.add_ion_law(ion_law)
 		return 1
 
 	if(href_list["add_inherent_law"])
-		if(inherent_law && is_malf(usr))
+		if(inherent_law && is_traitor(usr))
 			owner.add_inherent_law(inherent_law)
 		return 1
 
 	if(href_list["add_supplied_law"])
-		if(supplied_law && supplied_law_position >= 1 && MIN_SUPPLIED_LAW_NUMBER <= MAX_SUPPLIED_LAW_NUMBER && is_malf(usr))
+		if(supplied_law && supplied_law_position >= 1 && MIN_SUPPLIED_LAW_NUMBER <= MAX_SUPPLIED_LAW_NUMBER && is_traitor(usr))
 			owner.add_supplied_law(supplied_law_position, supplied_law)
 		return 1
 
@@ -98,19 +98,19 @@
 		return 1
 
 	if(href_list["edit_law"])
-		if(is_malf(usr))
+		if(is_traitor(usr))
 			var/datum/ai_law/AL = locate(href_list["edit_law"]) in owner.laws.all_laws()
 			if(AL)
 				var/new_law = sanitize(input(usr, "Enter new law. Leaving the field blank will cancel the edit.", "Edit Law", AL.law))
-				if(new_law && new_law != AL.law && is_malf(usr) && can_still_topic())
+				if(new_law && new_law != AL.law && is_traitor(usr) && can_still_topic())
 					log_and_message_admins("has changed a law of [owner] from '[AL.law]' to '[new_law]'")
 					AL.law = new_law
 			return 1
 
 	if(href_list["delete_law"])
-		if(is_malf(usr))
+		if(is_traitor(usr))
 			var/datum/ai_law/AL = locate(href_list["delete_law"]) in owner.laws.all_laws()
-			if(AL && is_malf(usr))
+			if(AL && is_traitor(usr))
 				owner.delete_law(AL)
 		return 1
 
@@ -125,7 +125,7 @@
 		return 1
 
 	if(href_list["transfer_laws"])
-		if(is_malf(usr))
+		if(is_traitor(usr))
 			var/datum/ai_laws/ALs = locate(href_list["transfer_laws"]) in (is_admin(usr) ? admin_laws : player_laws)
 			if(ALs)
 				log_and_message_admins("has transfered the [ALs.name] laws to [owner].")
@@ -147,7 +147,7 @@
 
 	return 0
 
-/datum/nano_module/law_manager/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = default_state)
+/datum/nano_module/law_manager/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = GLOB.default_state)
 	var/data[0]
 	owner.lawsync()
 
@@ -164,7 +164,7 @@
 	package_laws(data, "supplied_laws", owner.laws.supplied_laws)
 
 	data["isAI"] = isAI(owner)
-	data["isMalf"] = is_malf(user)
+	data["isMalf"] = is_traitor(user)
 	data["isSlaved"] = owner.is_slaved()
 	data["isAdmin"] = is_admin(user)
 	data["view"] = current_view
@@ -172,13 +172,13 @@
 	var/channels[0]
 	for (var/ch_name in owner.law_channels())
 		channels[++channels.len] = list("channel" = ch_name)
-	data["channel"] = owner.law_channel
+	data["channel"] = owner.lawchannel
 	data["channels"] = channels
 	data["law_sets"] = package_multiple_laws(data["isAdmin"] ? admin_laws : player_laws)
 
-	ui = SSnanoui.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
-		ui = new(user, src, ui_key, "law_manager.tmpl", sanitize("[src] - [owner]"), 800, is_malf(user) ? 600 : 400, state = state)
+		ui = new(user, src, ui_key, "law_manager.tmpl", sanitize("[src] - [owner]"), 800, is_traitor(user) ? 600 : 400, state = state)
 		ui.set_initial_data(data)
 		ui.open()
 		ui.set_auto_update(1)
@@ -202,14 +202,14 @@
 
 	return law_sets
 
-/datum/nano_module/law_manager/proc/is_malf(var/mob/user)
-	return (is_admin(user) && !owner.is_slaved()) || owner.is_malf_or_traitor()
+/datum/nano_module/law_manager/proc/is_traitor(var/mob/user)
+	return (is_admin(user) && !owner.is_slaved()) || owner.is_traitor()
 
 /mob/living/silicon/proc/is_slaved()
 	return 0
 
 /mob/living/silicon/robot/is_slaved()
-	return law_update && connected_ai ? sanitize(connected_ai.name) : null
+	return lawupdate && connected_ai ? sanitize(connected_ai.name) : null
 
 /datum/nano_module/law_manager/proc/sync_laws(var/mob/living/silicon/ai/AI)
 	if(!AI)

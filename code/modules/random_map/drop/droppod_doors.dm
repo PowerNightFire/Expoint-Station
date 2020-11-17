@@ -1,30 +1,28 @@
 /obj/structure/droppod_door
 	name = "pod door"
 	desc = "A drop pod door. Opens rapidly using explosive bolts."
-	icon = 'icons/obj/structures.dmi'
+	icon = 'icons/obj/structures/droppod_door.dmi'
 	icon_state = "droppod_door_closed"
 	anchored = 1
 	density = 1
 	opacity = 1
-	layer = TURF_LAYER + 0.1
+	layer = ABOVE_DOOR_LAYER
 	var/deploying
 	var/deployed
 
 /obj/structure/droppod_door/Initialize(mapload, var/autoopen)
 	. = ..(mapload)
 	if(autoopen)
-		addtimer(CALLBACK(src, .proc/deploy), 100)
+		spawn(10 SECONDS)
+			deploy()
 
 /obj/structure/droppod_door/attack_ai(var/mob/user)
 	if(!user.Adjacent(src))
 		return
 	attack_hand(user)
 
-/obj/structure/droppod_door/attack_generic(var/mob/user)
-	attack_hand(user)
-
 /obj/structure/droppod_door/attack_hand(var/mob/user)
-	if(deploying || deployed) return
+	if(deploying) return
 	to_chat(user, "<span class='danger'>You prime the explosive bolts. Better get clear!</span>")
 	sleep(30)
 	deploy()
@@ -46,10 +44,10 @@
 	// Overwrite turfs.
 	var/turf/origin = get_turf(src)
 	origin.ChangeTurf(/turf/simulated/floor/reinforced)
-	origin.reconsider_lights() // Forcing updates
+	origin.set_light(0) // Forcing updates
 	var/turf/T = get_step(origin, src.dir)
 	T.ChangeTurf(/turf/simulated/floor/reinforced)
-	T.reconsider_lights() // Forcing updates
+	T.set_light(0) // Forcing updates
 
 	// Destroy turf contents.
 	for(var/obj/O in origin)
@@ -68,12 +66,12 @@
 		M.throw_at(get_edge_target_turf(origin,src.dir),rand(0,3),50)
 
 	// Create a decorative ramp bottom and flatten out our current ramp.
-	density = 0
-	opacity = 0
+	set_density(0)
+	set_opacity(0)
 	icon_state = "ramptop"
 	var/obj/structure/droppod_door/door_bottom = new(T)
 	door_bottom.deployed = 1
-	door_bottom.density = 0
-	door_bottom.opacity = 0
-	door_bottom.dir = src.dir
+	door_bottom.set_density(0)
+	door_bottom.set_opacity(0)
+	door_bottom.set_dir(src.dir)
 	door_bottom.icon_state = "rampbottom"

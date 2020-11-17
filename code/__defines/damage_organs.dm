@@ -1,21 +1,18 @@
 // Damage things. TODO: Merge these down to reduce on defines.
 // Way to waste perfectly good damage-type names (BRUTE) on this... If you were really worried about case sensitivity, you could have just used lowertext(damagetype) in the proc.
-#define BRUTE     "brute"
-#define BURN      "fire"
-#define TOX       "tox"
-#define OXY       "oxy"
-#define CLONE     "clone"
-#define PAIN      "pain"
+#define BRUTE       "brute"
+#define BURN        "fire"
+#define TOX         "tox"
+#define OXY         "oxy"
+#define CLONE       "clone"
+#define PAIN        "pain"
+#define ELECTROCUTE "electrocute"
 
 #define CUT       "cut"
 #define BRUISE    "bruise"
 #define PIERCE    "pierce"
 #define LASER     "laser"
-
-#define DAM_EDGE    1
-#define DAM_SHARP   2
-#define DAM_LASER   4
-#define DAM_BULLET  8
+#define SHATTER   "shatter"
 
 #define STUN      "stun"
 #define WEAKEN    "weaken"
@@ -25,55 +22,53 @@
 #define STUTTER   "stutter"
 #define EYE_BLUR  "eye_blur"
 #define DROWSY    "drowsy"
-#define INCINERATE "incinerate"
+
+// Damage flags
+#define DAM_SHARP     1
+#define DAM_EDGE      2
+#define DAM_LASER     4
+#define DAM_BULLET    8
+#define DAM_EXPLODE   16
+#define DAM_DISPERSED 32 // Makes apply_damage calls without specified zone distribute damage rather than randomly choose organ (for humans)
+#define DAM_BIO       64 // Toxin damage that should be mitigated by biological (i.e. sterile) armor
 
 #define FIRE_DAMAGE_MODIFIER 0.0215 // Higher values result in more external fire damage to the skin. (default 0.0215)
 #define  AIR_DAMAGE_MODIFIER 2.025  // More means less damage from hot air scalding lungs, less = more damage. (default 2.025)
 
-// Organ status defines.
-#define ORGAN_CUT_AWAY   (1<<0)
-#define ORGAN_BLEEDING   (1<<1)
-#define ORGAN_BROKEN     (1<<2)
-#define ORGAN_DESTROYED  (1<<3)
-#define ORGAN_ROBOT      (1<<4)
-#define ORGAN_SPLINTED   (1<<5)
-#define ORGAN_DEAD       (1<<6)
-#define ORGAN_MUTATED    (1<<7)
-#define ORGAN_ASSISTED   (1<<8)
-#define ORGAN_ADV_ROBOT  (1<<9)
-#define ORGAN_PLANT      (1<<10)
-#define ORGAN_ARTERY_CUT (1<<11)
-#define ORGAN_TENDON_CUT (1<<12)
-#define ORGAN_LIFELIKE   (1<<13)   // Robotic, made to appear organic.
+// Organ defines.
+#define ORGAN_CUT_AWAY   BITFLAG(0)  // The organ is in the process of being surgically removed.
+#define ORGAN_BLEEDING   BITFLAG(1)  // The organ is currently bleeding.
+#define ORGAN_BROKEN     BITFLAG(2)  // The organ is broken.
+#define ORGAN_DEAD       BITFLAG(3)  // The organ is necrotic.
+#define ORGAN_MUTATED    BITFLAG(4)  // The organ is unusable due to genetic damage.
+#define ORGAN_ARTERY_CUT BITFLAG(6)  // The organ has had its artery cut.
+#define ORGAN_TENDON_CUT BITFLAG(7)  // The organ has had its tendon cut.
+#define ORGAN_DISFIGURED BITFLAG(8)  // The organ is scarred/disfigured. Alters whether or not the face can be recognised.
+#define ORGAN_SABOTAGED  BITFLAG(9)  // The organ will explode if exposed to EMP, if prosthetic.
+#define ORGAN_ASSISTED   BITFLAG(10) // The organ is partially prosthetic. No mechanical effect.
+#define ORGAN_PROSTHETIC BITFLAG(11) // The organ is prosthetic. Changes numerous behaviors, search BP_IS_PROSTHETIC for checks.
+#define ORGAN_BRITTLE    BITFLAG(12) // The organ takes additional blunt damage. If robotic, cannot be repaired through normal means.
+#define ORGAN_CRYSTAL    BITFLAG(13) // The organ does not suffer laser damage, but shatters on droplimb.
 
-// Limb behaviour defines.
-#define ORGAN_CAN_AMPUTATE (1<<0) //Can this organ be amputated?
-#define ORGAN_CAN_BREAK    (1<<1) //Can this organ break?
-#define ORGAN_CAN_GRASP    (1<<2) //Can this organ grasp things?
-#define ORGAN_CAN_STAND    (1<<3) //Can this organ allow you to stand?
-#define ORGAN_CAN_MAIM     (1<<4) //Can this organ be maimed?
-#define ORGAN_HAS_TENDON   (1<<5) //Does this organ have tendons?
+// Organ flag defines.
+#define ORGAN_FLAG_CAN_AMPUTATE   BITFLAG(0) // The organ can be amputated.
+#define ORGAN_FLAG_CAN_BREAK      BITFLAG(1) // The organ can be broken.
+#define ORGAN_FLAG_CAN_STAND      BITFLAG(2) // The organ contributes to standing.
+#define ORGAN_FLAG_HAS_TENDON     BITFLAG(3) // The organ can have its tendon cut.
+#define ORGAN_FLAG_FINGERPRINT    BITFLAG(4) // The organ has a fingerprint.
+#define ORGAN_FLAG_GENDERED_ICON  BITFLAG(5) // The icon state for this organ appends _m/_f.
+#define ORGAN_FLAG_HEALS_OVERKILL BITFLAG(6) // The organ heals from overkill damage.
+#define ORGAN_FLAG_DEFORMED       BITFLAG(7) // The organ is permanently disfigured.
 
+// Droplimb types.
 #define DROPLIMB_EDGE 0
 #define DROPLIMB_BLUNT 1
 #define DROPLIMB_BURN 2
 
-// Damage above this value must be repaired with surgery.
-#define ROBOLIMB_SELF_REPAIR_CAP 30
-
-//Germs and infections.
-#define GERM_LEVEL_AMBIENT  110 // Maximum germ level you can reach by standing still.
-#define GERM_LEVEL_MOVE_CAP 200 // Maximum germ level you can reach by running around.
-
-#define INFECTION_LEVEL_ONE   100
-#define INFECTION_LEVEL_TWO   500
-#define INFECTION_LEVEL_THREE 1000
-
-//Blood levels. These are percentages based on the species blood_volume var.
-#define BLOOD_VOLUME_SAFE    85
-#define BLOOD_VOLUME_OKAY    70
-#define BLOOD_VOLUME_BAD     60
-#define BLOOD_VOLUME_SURVIVE 30
+// Robotics hatch_state defines.
+#define HATCH_CLOSED 0
+#define HATCH_UNSCREWED 1
+#define HATCH_OPENED 2
 
 // These control the amount of blood lost from burns. The loss is calculated so
 // that dealing just enough burn damage to kill the player will cause the given
@@ -81,3 +76,21 @@
 // (e.g. 0.6 == 60% lost if 200 burn damage is taken).
 #define FLUIDLOSS_WIDE_BURN 0.6 //for burns from heat applied over a wider area, like from fire
 #define FLUIDLOSS_CONC_BURN 0.4 //for concentrated burns, like from lasers
+
+// Damage above this value must be repaired with surgery.
+#define ROBOLIMB_SELF_REPAIR_CAP 30
+
+//Germs and infections.
+#define GERM_LEVEL_AMBIENT  275 // Maximum germ level you can reach by standing still.
+#define GERM_LEVEL_MOVE_CAP 300 // Maximum germ level you can reach by running around.
+
+#define INFECTION_LEVEL_ONE   250
+#define INFECTION_LEVEL_TWO   500  // infections grow from ambient to two in ~5 minutes
+#define INFECTION_LEVEL_THREE 1000 // infections grow from two to three in ~10 minutes
+
+//Blood levels. These are percentages based on the species blood_volume far.
+#define BLOOD_VOLUME_SAFE    85
+#define BLOOD_VOLUME_OKAY    70
+#define BLOOD_VOLUME_BAD     60
+#define BLOOD_VOLUME_SURVIVE 30
+

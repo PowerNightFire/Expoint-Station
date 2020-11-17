@@ -6,6 +6,7 @@
 	var/trade_flags = TRADER_MONEY                              //Flags
 	var/name_language                                                //If this is set to a language name this will generate a name from the language
 	var/icon/portrait                                           //The icon that shows up in the menu @TODO
+	var/trader_currency
 
 	var/list/wanted_items = list()                              //What items they enjoy trading for. Structure is (type = known/unknown)
 	var/list/possible_wanted_items                              //List of all possible wanted items. Structure is (type = mode)
@@ -33,6 +34,8 @@
 
 	*/
 	var/want_multiplier = 2                                     //How much wanted items are multiplied by when traded for
+	var/margin = 1.2											//Multiplier to price when selling to player
+	var/price_rng = 10                                          //Percentage max variance in sell prices.
 	var/insult_drop = 5                                         //How far disposition drops on insult
 	var/compliment_increase = 5                                 //How far compliments increase disposition
 	var/refuse_comms = 0                                        //Whether they refuse further communication
@@ -41,30 +44,28 @@
 
 /datum/trader/New()
 	..()
+	if(!ispath(trader_currency, /decl/currency))
+		trader_currency = GLOB.using_map.default_currency
 	if(name_language)
 		if(name_language == TRADER_DEFAULT_NAME)
-			name = capitalize(pick(first_names_female + first_names_male)) + " " + capitalize(pick(last_names))
+			name = capitalize(pick(GLOB.first_names_female + GLOB.first_names_male)) + " " + capitalize(pick(GLOB.last_names))
 		else
-			var/datum/language/L = all_languages[name_language]
-			if(L)
+			var/decl/language/L = decls_repository.get_decl(name_language)
+			if(istype(L))
 				name = L.get_random_name(pick(MALE,FEMALE))
 	if(possible_origins && possible_origins.len)
 		origin = pick(possible_origins)
 
-	for(var/i in 5 to 8)
+	for(var/i in 3 to 6)
 		add_to_pool(trading_items, possible_trading_items, force = 1)
 		add_to_pool(wanted_items, possible_wanted_items, force = 1)
 
 //If this hits 0 then they decide to up and leave.
 /datum/trader/proc/tick()
-	addtimer(CALLBACK(src, .proc/do_after_tick), 1)
-	return 1
-
-/datum/trader/proc/do_after_tick()
 	add_to_pool(trading_items, possible_trading_items, 200)
 	add_to_pool(wanted_items, possible_wanted_items, 50)
 	remove_from_pool(possible_trading_items, 9) //We want the stock to change every so often, so we make it so that they have roughly 10~11 ish items max
-	return
+	return 1
 
 /datum/trader/proc/remove_from_pool(var/list/pool, var/chance_per_item)
 	if(pool && prob(chance_per_item * pool.len))
@@ -104,13 +105,16 @@
 		return picked
 
 /datum/trader/proc/get_response(var/key, var/default)
-	var/text
 	if(speech && speech[key])
-		text = speech[key]
+		. = speech[key]
 	else
-		text = default
-	text = replacetext(text, "MERCHANT", name)
-	return replacetext(text, "ORIGIN", origin)
+		. = default
+	. = replacetext(., "MERCHANT", name)
+	. = replacetext(., "ORIGIN", origin)
+
+	var/decl/currency/cur = decls_repository.get_decl(trader_currency)
+	. = replacetext(.,"CURRENCY_SINGULAR", cur.name_singular)
+	. = replacetext(.,"CURRENCY", cur.name)
 
 /datum/trader/proc/print_trading_items(var/num)
 	num = Clamp(num,1,trading_items.len)
@@ -118,24 +122,45 @@
 		var/atom/movable/M = trading_items[num]
 		return "<b>[initial(M.name)]</b>"
 
-/datum/trader/proc/get_item_value(var/trading_num)
-	if(!trading_items[trading_items[trading_num]])
-		var/type = trading_items[trading_num]
-		var/value = get_value(type)
-		value = round(rand(80,100)/100 * value) //For some reason rand doesn't like decimals.
-		trading_items[type] = value
-	return trading_items[trading_items[trading_num]]
+/datum/trader/proc/skill_curve(skill)
+	switch(skill)
+		if(SKILL_EXPERT)
+			. = 1
+		if(SKILL_EXPERT to SKILL_MAX)
+			. = 1 + (SKILL_EXPERT - skill) * 0.2
+		else
+			. = 1 + (SKILL_EXPERT - skill) ** 2
+	//This condition ensures that the buy price is higher than the sell price on generic goods, i.e. the merchant can't be exploited
+	. = max(., price_rng/((margin - 1)*(200 - price_rng)))
 
-/datum/trader/proc/offer_money_for_trade(var/trade_num, var/money_amount)
+/datum/trader/proc/get_item_value(var/trading_num, skill = SKILL_MAX)
+	if(!trading_items[trading_items[trading_num]])
+		var/item_type = trading_items[trading_num]
+		var/value = atom_info_repository.get_combined_worth_for(item_type)
+		value = round(rand(100 - price_rng,100 + price_rng)/100 * value) //For some reason rand doesn't like decimals.
+		trading_items[item_type] = value
+	. = trading_items[trading_items[trading_num]]
+	. *= 1 + (margin - 1) * skill_curve(skill) //Trader will overcharge at lower skill.
+
+/datum/trader/proc/get_buy_price(var/atom/movable/item, is_wanted, skill = SKILL_MAX)
+	if(ispath(item, /atom/movable))
+		. = atom_info_repository.get_combined_worth_for(item)
+	else if(istype(item))
+		. = item.get_combined_monetary_worth()
+	if(is_wanted)
+		. *= want_multiplier
+	. *= max(1 - (margin - 1) * skill_curve(skill), 0.1) //Trader will underpay at lower skill.
+
+/datum/trader/proc/offer_money_for_trade(var/trade_num, var/money_amount, skill = SKILL_MAX)
 	if(!(trade_flags & TRADER_MONEY))
 		return TRADER_NO_MONEY
-	var/value = get_item_value(trade_num)
+	var/value = get_item_value(trade_num, skill)
 	if(money_amount < value)
 		return TRADER_NOT_ENOUGH
 
 	return value
 
-/datum/trader/proc/offer_items_for_trade(var/list/offers, var/num, var/turf/location)
+/datum/trader/proc/offer_items_for_trade(var/list/offers, var/num, var/turf/location, skill = SKILL_MAX)
 	if(!offers || !offers.len)
 		return TRADER_NOT_ENOUGH
 	num = Clamp(num, 1, trading_items.len)
@@ -143,29 +168,26 @@
 	for(var/item in offers)
 		var/atom/movable/offer = item
 		var/is_wanted = 0
-		if(is_type_in_list(offer,wanted_items))
+		if((trade_flags & TRADER_WANTED_ONLY) && is_type_in_list(offer,wanted_items))
+			is_wanted = 2
+		if((trade_flags & TRADER_WANTED_ALL) && is_type_in_list(offer,possible_wanted_items))
 			is_wanted = 1
-		if(blacklisted_trade_items && blacklisted_trade_items.len)
-			if(ishuman(offer))
-				var/mob/living/carbon/human/A = offer
-				if(is_type_in_list(A.species, blacklisted_trade_items))
-					return 0
-			else if(is_type_in_list(offer,blacklisted_trade_items))
-				return 0
+		if(blacklisted_trade_items && blacklisted_trade_items.len && is_type_in_list(offer,blacklisted_trade_items))
+			return 0
 
-		if(istype(offer,/obj/item/spacecash))
+		if(istype(offer,/obj/item/cash))
 			if(!(trade_flags & TRADER_MONEY))
 				return TRADER_NO_MONEY
 		else
 			if(!(trade_flags & TRADER_GOODS))
 				return TRADER_NO_GOODS
-			else if((trade_flags & TRADER_WANTED_ONLY) && !is_wanted)
+			else if((trade_flags & TRADER_WANTED_ONLY|TRADER_WANTED_ALL) && !is_wanted)
 				return TRADER_FOUND_UNWANTED
 
-		offer_worth += get_value(offer) * (is_wanted ? want_multiplier : 1)
+		offer_worth += get_buy_price(offer, is_wanted - 1, skill)
 	if(!offer_worth)
 		return TRADER_NOT_ENOUGH
-	var/trading_worth = get_item_value(num)
+	var/trading_worth = get_item_value(num, skill)
 	if(!trading_worth)
 		return TRADER_NOT_ENOUGH
 	var/percent = offer_worth/trading_worth
@@ -224,10 +246,10 @@
 
 	return M
 
-/datum/trader/proc/how_much_do_you_want(var/num)
+/datum/trader/proc/how_much_do_you_want(var/num, skill = SKILL_MAX)
 	var/atom/movable/M = trading_items[num]
-	. = get_response("how_much", "Hmm.... how about VALUE credits?")
-	. = replacetext(.,"VALUE",get_item_value(num))
+	. = get_response("how_much", "Hmm.... how about VALUE CURRENCY?")
+	. = replacetext(.,"VALUE",get_item_value(num, skill))
 	. = replacetext(.,"ITEM", initial(M.name))
 
 /datum/trader/proc/what_do_you_want()
@@ -241,20 +263,25 @@
 		want_english += initial(a.name)
 	. += " [english_list(want_english)]"
 
-/datum/trader/proc/sell_items(var/list/offers)
+/datum/trader/proc/sell_items(var/list/offers, skill = SKILL_MAX)
 	if(!(trade_flags & TRADER_GOODS))
 		return TRADER_NO_GOODS
 	if(!offers || !offers.len)
 		return TRADER_NOT_ENOUGH
 
-	for(var/offer in offers)
-		if(!is_type_in_list(offer,wanted_items))
-			return TRADER_FOUND_UNWANTED
-
-	playsound(get_turf(offers[1]), 'sound/effects/teleport.ogg', 50, 1)
+	var/wanted
 	. = 0
 	for(var/offer in offers)
-		. += get_value(offer) * want_multiplier
+		if((trade_flags & TRADER_WANTED_ONLY) && is_type_in_list(offer,wanted_items))
+			wanted = 1
+		else if((trade_flags & TRADER_WANTED_ALL) && is_type_in_list(offer,possible_wanted_items))
+			wanted = 0
+		else
+			return TRADER_FOUND_UNWANTED
+		. += get_buy_price(offer, wanted, skill)
+
+	playsound(get_turf(offers[1]), 'sound/effects/teleport.ogg', 50, 1)
+	for(var/offer in offers)
 		qdel(offer)
 
 /datum/trader/proc/bribe_to_stay_longer(var/amt)

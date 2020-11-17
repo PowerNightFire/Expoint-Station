@@ -1,7 +1,7 @@
 /obj/machinery/floorlayer
 
 	name = "automatic floor layer"
-	icon = 'icons/obj/stationobjs.dmi'
+	icon = 'icons/obj/machines/pipe_dispenser.dmi'
 	icon_state = "pipe_d"
 	density = 1
 	var/turf/old_turf
@@ -10,7 +10,7 @@
 	var/list/mode = list("dismantle"=0,"laying"=0,"collect"=0)
 
 /obj/machinery/floorlayer/Initialize()
-	. = ..()
+	. = ..()	
 	T = new/obj/item/stack/tile/floor(src)
 
 /obj/machinery/floorlayer/Move(new_turf,M_Dir)
@@ -29,14 +29,14 @@
 
 	old_turf = new_turf
 
-/obj/machinery/floorlayer/attack_hand(mob/user as mob)
+/obj/machinery/floorlayer/physical_attack_hand(mob/user)
 	on=!on
 	user.visible_message("<span class='notice'>[user] has [!on?"de":""]activated \the [src].</span>", "<span class='notice'>You [!on?"de":""]activate \the [src].</span>")
-	return
+	return TRUE
 
-/obj/machinery/floorlayer/attackby(var/obj/item/W as obj, var/mob/user as mob)
+/obj/machinery/floorlayer/attackby(var/obj/item/W, var/mob/user)
 
-	if (W.iswrench())
+	if(isWrench(W))
 		var/m = input("Choose work mode", "Mode") as null|anything in mode
 		mode[m] = !mode[m]
 		var/O = mode[m]
@@ -44,50 +44,45 @@
 		return
 
 	if(istype(W, /obj/item/stack/tile))
+		if(!user.unEquip(W, T))
+			return
 		to_chat(user, "<span class='notice'>\The [W] successfully loaded.</span>")
-		user.drop_item(T)
 		TakeTile(T)
 		return
 
-	if(W.iscrowbar())
+	if(isCrowbar(W))
 		if(!length(contents))
 			to_chat(user, "<span class='notice'>\The [src] is empty.</span>")
 		else
 			var/obj/item/stack/tile/E = input("Choose remove tile type.", "Tiles") as null|anything in contents
 			if(E)
-				to_chat(user,  "<span class='notice'>You remove the [E] from /the [src].</span>")
-				E.forceMove(src.loc)
+				to_chat(user, "<span class='notice'>You remove the [E] from /the [src].</span>")
+				E.dropInto(loc)
 				T = null
 		return
 
-	if(W.isscrewdriver())
+	if(isScrewdriver(W))
 		T = input("Choose tile type.", "Tiles") as null|anything in contents
 		return
 	..()
 
 /obj/machinery/floorlayer/examine(mob/user)
-	..()
+	. = ..()
 	var/dismantle = mode["dismantle"]
 	var/laying = mode["laying"]
 	var/collect = mode["collect"]
-	var/number = 0
-	if (T)
-		number = T.get_amount()
-	to_chat(user, "<span class='notice'>\The [src] has [number] tile\s, dismantle is [dismantle?"on":"off"], laying is [laying?"on":"off"], collect is [collect?"on":"off"].</span>")
+	var/message = "<span class='notice'>\The [src] [!T?"don't ":""]has [!T?"":"[T.get_amount()] [T] "]tile\s, dismantle is [dismantle?"on":"off"], laying is [laying?"on":"off"], collect is [collect?"on":"off"].</span>"
+	to_chat(user, message)
 
 /obj/machinery/floorlayer/proc/reset()
-	on=0
-	return
+	on = 0
 
 /obj/machinery/floorlayer/proc/dismantleFloor(var/turf/new_turf)
 	if(istype(new_turf, /turf/simulated/floor))
 		var/turf/simulated/floor/T = new_turf
 		if(!T.is_plating())
-			if(!T.broken && !T.burnt)
-				new T.flooring.build_type()
-			T.make_plating()
-		return T.is_plating()
-	return 0
+			T.make_plating(!(T.broken || T.burnt))
+	return new_turf.is_plating()
 
 /obj/machinery/floorlayer/proc/TakeNewStack()
 	for(var/obj/item/stack/tile/tile in contents)
@@ -97,13 +92,8 @@
 
 /obj/machinery/floorlayer/proc/SortStacks()
 	for(var/obj/item/stack/tile/tile1 in contents)
-		if (tile1 && tile1.get_amount() > 0)
-			if (!T || T.type == tile1.type)
-				T = tile1
-			if (tile1.get_amount() < tile1.max_amount)
-				for(var/obj/item/stack/tile/tile2 in contents)
-					if (tile2 != tile1 && tile2.type == tile1.type)
-						tile2.transfer_to(tile1)
+		for(var/obj/item/stack/tile/tile2 in contents)
+			tile2.transfer_to(tile1)
 
 /obj/machinery/floorlayer/proc/layFloor(var/turf/w_turf)
 	if(!T)

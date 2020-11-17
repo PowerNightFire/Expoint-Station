@@ -1,99 +1,57 @@
 /obj/item/clothing/suit/storage
-	var/obj/item/storage/internal/pockets
+	action_button_name = "Open Storage"
+	var/obj/item/storage/internal/pockets/pockets
+	var/slots = 2
 
 /obj/item/clothing/suit/storage/Initialize()
 	. = ..()
-	pockets = new/obj/item/storage/internal(src)
-	pockets.storage_slots = 2	//two slots
-	pockets.max_w_class = ITEMSIZE_SMALL		//fit only pocket sized items
-	pockets.max_storage_space = 4
+	pockets = new/obj/item/storage/internal/pockets(src, slots, ITEM_SIZE_SMALL) //fit only pocket sized items
 
 /obj/item/clothing/suit/storage/Destroy()
-	qdel(pockets)
-	pockets = null
-	return ..()
+	QDEL_NULL(pockets)
+	. = ..()
 
-/obj/item/clothing/suit/storage/attack_hand(mob/user as mob)
+/obj/item/clothing/suit/storage/attack_hand(mob/user)
 	if (pockets.handle_attack_hand(user))
 		..(user)
 
-/obj/item/clothing/suit/storage/MouseDrop(obj/over_object as obj)
+/obj/item/clothing/suit/storage/MouseDrop(obj/over_object)
 	if (pockets.handle_mousedrop(usr, over_object))
 		..(over_object)
 
-/obj/item/clothing/suit/storage/attackby(obj/item/W as obj, mob/user as mob)
+/obj/item/clothing/suit/storage/attackby(obj/item/W, mob/user)
 	..()
-	if(istype(W, /obj/item/clothing/accessory))
-		return
-	pockets.attackby(W, user)
+	if(!(W in accessories))		//Make sure that an accessory wasn't successfully attached to suit.
+		pockets.attackby(W, user)
 
 /obj/item/clothing/suit/storage/emp_act(severity)
 	pockets.emp_act(severity)
 	..()
 
-/obj/item/clothing/suit/storage/hear_talk(mob/M, var/msg, verb, datum/language/speaking)
-	pockets.hear_talk(M, msg, verb, speaking)
-	..()
-
-//Jackets with buttons
+//Jackets with buttons, used for labcoats, IA jackets, First Responder jackets, and brown jackets.
 /obj/item/clothing/suit/storage/toggle
-	var/opened = FALSE
+	var/open = 0
 
 /obj/item/clothing/suit/storage/toggle/verb/toggle()
 	set name = "Toggle Coat Buttons"
 	set category = "Object"
 	set src in usr
-
-	if(use_check_and_message(usr))
+	if(!CanPhysicallyInteract(usr))
 		return 0
+	open = !open
+	if(!open)
+		to_chat(usr, "You [open ? "un" : ""]button up the coat.")
+	update_clothing_icon()	//so our overlays update
 
-	toggle_open()
-
-/obj/item/clothing/suit/storage/toggle/proc/toggle_open()
-	opened = !opened
-	to_chat(usr, SPAN_NOTICE("You [opened ? "unbutton" : "button up"] \the [src]."))
-	playsound(src, /decl/sound_category/rustle_sound, EQUIP_SOUND_VOLUME, TRUE)
-	icon_state = "[initial(icon_state)][opened ? "_open" : ""]"
-	item_state = icon_state
-	update_clothing_icon()
-
-/obj/item/clothing/suit/storage/toggle/Initialize()
+/obj/item/clothing/suit/storage/toggle/on_update_icon()
 	. = ..()
-	if(opened) // for stuff that's supposed to spawn opened, like labcoats.
-		icon_state = "[initial(icon_state)][opened ? "_open" : ""]"
-		item_state = icon_state
+	if(open && check_state_in_icon("[get_world_inventory_state()]_open", icon))
+		icon_state = "[get_world_inventory_state()]_open"
+	else
+		icon_state = get_world_inventory_state()
 
-/obj/item/clothing/suit/storage/vest/merc/Initialize()
-	. = ..()
-	pockets = new/obj/item/storage/internal(src)
-	pockets.storage_slots = 4
-	pockets.max_w_class = ITEMSIZE_SMALL
-	pockets.max_storage_space = 8
-
-/obj/item/clothing/suit/storage/vest/hos/Initialize()
-	. = ..()
-	pockets = new/obj/item/storage/internal(src)
-	pockets.storage_slots = 4
-	pockets.max_w_class = ITEMSIZE_SMALL
-	pockets.max_storage_space = 8
-
-/obj/item/clothing/suit/storage/vest
-	var/icon_badge
-	var/icon_nobadge
-	verb/toggle()
-		set name ="Adjust Badge"
-		set category = "Object"
-		set src in usr
-		if(!usr.canmove || usr.stat || usr.restrained())
-			return 0
-
-		if(icon_state == icon_badge)
-			icon_state = icon_nobadge
-			to_chat(usr, "You conceal \the [src]'s badge.")
-		else if(icon_state == icon_nobadge)
-			icon_state = icon_badge
-			to_chat(usr, "You reveal \the [src]'s badge.")
-		else
-			to_chat(usr, "\The [src] does not have a vest badge.")
-			return
-		update_clothing_icon()
+/obj/item/clothing/suit/storage/toggle/experimental_mob_overlay(mob/user_mob, slot)
+	var/image/ret = ..()
+	if(open && check_state_in_icon("[ret.icon_state]_open", icon))
+		ret.icon_state = "[ret.icon_state]_open"
+	return ret

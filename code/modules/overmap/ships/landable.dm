@@ -10,13 +10,17 @@
 	icon_state = "shuttle"
 	moving_state = "shuttle_moving"
 
+/obj/effect/overmap/visitable/ship/landable/Destroy()
+	GLOB.shuttle_moved_event.unregister(SSshuttle.shuttles[shuttle], src)
+	return ..()
+
 /obj/effect/overmap/visitable/ship/landable/can_burn()
-	if(status != SHIP_STATUS_OVERMAP)
+	if(status != SHIP_STATUS_OVERMAP && status != SHIP_STATUS_ENCOUNTER)
 		return 0
 	return ..()
 
 /obj/effect/overmap/visitable/ship/landable/burn()
-	if(status != SHIP_STATUS_OVERMAP)
+	if(status != SHIP_STATUS_OVERMAP && status !=  SHIP_STATUS_ENCOUNTER) 
 		return 0
 	return ..()
 
@@ -28,10 +32,19 @@
 	if(get_area(object) in areas)
 		return 1
 
+/obj/effect/overmap/visitable/ship/landable/Process()
+	. = ..()
+	var/datum/shuttle/autodock/overmap/child_shuttle = SSshuttle.shuttles[shuttle]
+	if(!child_shuttle || !istype(child_shuttle))
+		return
+	if(child_shuttle.current_location.flags & SLANDMARK_FLAG_DISCONNECTED) // Keep an eye on the distance between the shuttle and the sector if we aren't fully docked.
+		if(get_dist(src, map_sectors["[child_shuttle.current_location.z]"]) > min(child_shuttle.range, 1)) // Some leeway so 0 range shuttles are still able to chase.
+			child_shuttle.attempt_force_move(landmark)
+
 // We autobuild our z levels.
 /obj/effect/overmap/visitable/ship/landable/find_z_levels()
 	for(var/i = 0 to multiz)
-		world.maxz++
+		INCREMENT_WORLD_Z_SIZE
 		map_z += world.maxz
 
 	var/turf/center_loc = locate(round(world.maxx/2), round(world.maxy/2), world.maxz)
@@ -57,6 +70,7 @@
 /obj/effect/overmap/visitable/ship/landable/populate_sector_objects()
 	..()
 	var/datum/shuttle/shuttle_datum = SSshuttle.shuttles[shuttle]
+	GLOB.shuttle_moved_event.register(shuttle_datum, src, .proc/on_shuttle_jump)
 	on_landing(landmark, shuttle_datum.current_location) // We "land" at round start to properly place ourselves on the overmap.
 
 /obj/effect/shuttle_landmark/ship
@@ -79,21 +93,21 @@
 
 /obj/effect/shuttle_landmark/ship/cannot_depart(datum/shuttle/shuttle)
 	if(LAZYLEN(visitors))
-		return "Grappled by other shuttle; cannot manouver."
+		return "Cannot maneuver with other shuttles nearby."
 
 /obj/effect/shuttle_landmark/visiting_shuttle
-	flags = SLANDMARK_FLAG_AUTOSET | SLANDMARK_FLAG_ZERO_G
+	flags = SLANDMARK_FLAG_AUTOSET | SLANDMARK_FLAG_ZERO_G | SLANDMARK_FLAG_DISCONNECTED
 	var/obj/effect/shuttle_landmark/ship/core_landmark
 
 /obj/effect/shuttle_landmark/visiting_shuttle/Initialize(mapload, obj/effect/shuttle_landmark/ship/master, _name)
 	core_landmark = master
-	name = _name
+	SetName(_name)
 	landmark_tag = master.shuttle_name + _name
-	destroyed_event.register(master, src, /proc/qdel)
+	GLOB.destroyed_event.register(master, src, /datum/proc/qdel_self)
 	. = ..()
 
 /obj/effect/shuttle_landmark/visiting_shuttle/Destroy()
-	destroyed_event.unregister(core_landmark, src)
+	GLOB.destroyed_event.unregister(core_landmark, src)
 	LAZYREMOVE(core_landmark.visitors, src)
 	core_landmark = null
 	. = ..()
@@ -110,10 +124,8 @@
 
 /obj/effect/shuttle_landmark/visiting_shuttle/shuttle_arrived(datum/shuttle/shuttle)
 	LAZYSET(core_landmark.visitors, src, shuttle)
-
-/obj/effect/shuttle_landmark/visiting_shuttle/proc/shuttle_left(datum/shuttle/shuttle, obj/effect/shuttle_landmark/old_landmark, obj/effect/shuttle_landmark/new_landmark)
-	if(old_landmark == src)
-		LAZYREMOVE(core_landmark.visitors, src)
+/obj/effect/shuttle_landmark/visiting_shuttle/shuttle_departed(datum/shuttle/shuttle, obj/effect/shuttle_landmark/old_landmark, obj/effect/shuttle_landmark/new_landmark)
+	LAZYREMOVE(core_landmark.visitors, src)
 
 /obj/effect/overmap/visitable/ship/landable/proc/on_shuttle_jump(datum/shuttle/given_shuttle, obj/effect/shuttle_landmark/from, obj/effect/shuttle_landmark/into)
 	if(given_shuttle != SSshuttle.shuttles[shuttle])
@@ -125,6 +137,10 @@
 		return
 	if(into == landmark)
 		status = SHIP_STATUS_OVERMAP
+		on_takeoff(from, into)
+		return
+	if(into.flags & SLANDMARK_FLAG_DISCONNECTED)
+		status = SHIP_STATUS_ENCOUNTER
 		on_takeoff(from, into)
 		return
 	status = SHIP_STATUS_LANDED
@@ -157,6 +173,10 @@
 			if(istype(loc, /obj/effect/overmap/visitable/ship))
 				return "Docked with \the [location.name]. Use secondary thrust to get clear before activating primary engines."
 			return "Docked with an unknown object."
+		if(SHIP_STATUS_ENCOUNTER)
+			var/datum/shuttle/autodock/overmap/child_shuttle = SSshuttle.shuttles[shuttle]
+			var/obj/effect/overmap/visitable/location = map_sectors["[child_shuttle.current_location.z]"]
+			return "Maneuvering nearby \the [location.name]."
 		if(SHIP_STATUS_TRANSIT)
 			return "Maneuvering under secondary thrust."
 		if(SHIP_STATUS_OVERMAP)

@@ -55,7 +55,6 @@
 	T.actions.Remove(src)
 	T.update_action_buttons()
 	owner = null
-	return
 
 /datum/action/proc/Trigger()
 	if(!Checks())
@@ -85,7 +84,7 @@
 /datum/action/proc/Deactivate()
 	return
 
-/datum/action/proc/Process()
+/datum/action/proc/ProcessAction()
 	return
 
 /datum/action/proc/CheckRemoval(mob/living/user) // 1 if action is no longer valid for this mob and should be removed
@@ -119,7 +118,7 @@
 
 /obj/screen/movable/action_button
 	var/datum/action/owner
-	screen_loc = "WEST,NORTH"
+	screen_loc = "LEFT,TOP"
 
 /obj/screen/movable/action_button/Click(location,control,params)
 	var/list/modifiers = params2list(params)
@@ -131,13 +130,13 @@
 	owner.Trigger()
 	return 1
 
-/obj/screen/movable/action_button/update_icon()
+/obj/screen/movable/action_button/proc/UpdateIcon()
 	if(!owner)
 		return
 	icon = owner.button_icon
 	icon_state = owner.background_icon_state
 
-	cut_overlays()
+	overlays.Cut()
 	var/image/img
 	if(owner.action_type == AB_ITEM && owner.target)
 		var/obj/item/I = owner.target
@@ -146,7 +145,7 @@
 		img = image(owner.button_icon,src,owner.button_icon_state)
 	img.pixel_x = 0
 	img.pixel_y = 0
-	add_overlay(img)
+	overlays += img
 
 	if(!owner.IsAvailable())
 		color = rgb(128,0,0,128)
@@ -168,7 +167,7 @@
 		name = "Show Buttons"
 	else
 		name = "Hide Buttons"
-	update_icon()
+	UpdateIcon()
 	usr.update_action_buttons()
 
 
@@ -177,12 +176,14 @@
 		icon_state = "bg_alien"
 	else
 		icon_state = "bg_default"
-	update_icon()
+	UpdateIcon()
 	return
 
-/obj/screen/movable/action_button/hide_toggle/update_icon()
-	cut_overlays()
-	add_overlay(hidden ? "show" : "hide")
+/obj/screen/movable/action_button/hide_toggle/UpdateIcon()
+	overlays.Cut()
+	var/image/img = image(icon,src,hidden?"show":"hide")
+	overlays += img
+	return
 
 //This is the proc used to update all the action buttons. Properly defined in /mob/living/
 /mob/proc/update_action_buttons()
@@ -199,7 +200,7 @@
 	var/coord_col_offset = AB_WEST_OFFSET+2*col
 	var/coord_row = "[-1 - row]"
 	var/coord_row_offset = AB_NORTH_OFFSET
-	return "WEST[coord_col]:[coord_col_offset],NORTH[coord_row]:[coord_row_offset]"
+	return "LEFT[coord_col]:[coord_col_offset],TOP[coord_row]:[coord_row_offset]"
 
 /datum/hud/proc/SetButtonCoords(var/obj/screen/button,var/number)
 	var/row = round((number-1)/AB_MAX_COLUMNS)
@@ -230,6 +231,9 @@
 	var/obj/item/organ/O = target
 	if(istype(O))
 		O.refresh_action_button()
+
+/datum/action/item_action/organ/augment
+	button_icon = 'icons/obj/augment.dmi'
 
 #undef AB_WEST_OFFSET
 #undef AB_NORTH_OFFSET

@@ -6,26 +6,23 @@
 
 /datum/uplink_item/item/implants/imp_freedom
 	name = "Freedom Implant"
-	item_cost = 6
+	desc = "An implant with an emotive trigger that can break you free of restraints. Show Security who has the real upperhand!"
+	item_cost = 24
 	path = /obj/item/storage/box/syndie_kit/imp_freedom
 
 /datum/uplink_item/item/implants/imp_compress
 	name = "Compressed Matter Implant"
-	desc = "A box containing a single implanter and matter cartridge. To remove an unintended target, use the implanter in-hand then open the cartridge with a screwdriver."
-	item_cost = 8
+	desc = "An implant with an emotive trigger used to hide a handheld item in your body. \
+	Activating it materializes the item in your hand."
+	item_cost = 32
 	path = /obj/item/storage/box/syndie_kit/imp_compress
 
 /datum/uplink_item/item/implants/imp_explosive
 	name = "Explosive Implant (DANGER!)"
-	item_cost = 10
-	desc = "A box containing an explosive implant and implanter. Use the implant in-hand to set the explosion size and trigger phrase."
+	desc = "An explosive impant activated with a vocal trigger or radio signal. \
+	Use the included pad to adjust the settings before implanting."
+	item_cost = 40
 	path = /obj/item/storage/box/syndie_kit/imp_explosive
-
-/datum/uplink_item/item/implants/imp_deadman
-	name = "Deadman Implant (DANGER!)"
-	item_cost = 8
-	desc = "A box containing an explosive implant and implanter. The implant monitors vitals and will detonate when the subject dies."
-	path = /obj/item/storage/box/syndie_kit/imp_deadman
 
 /datum/uplink_item/item/implants/imp_uplink
 	name = "Uplink Implant"
@@ -34,4 +31,12 @@
 /datum/uplink_item/item/implants/imp_uplink/New()
 	..()
 	item_cost = round(DEFAULT_TELECRYSTAL_AMOUNT / 2)
-	desc = "Contains [round((DEFAULT_TELECRYSTAL_AMOUNT / 2) * 0.8)] Telecrystal\s"
+	desc = "This implant holds an uplink containing [IMPLANT_TELECRYSTAL_AMOUNT(DEFAULT_TELECRYSTAL_AMOUNT)] telecrystals, \
+	activatable with an emotive trigger. You will have access to it, as long as it is still inside of you."
+
+/datum/uplink_item/item/implants/imp_imprinting
+	name = "Neural Imprinting Implant"
+	desc = "An implant able to be used on someone who is under the influence of hallucinogenics to give them a \
+	set of law-like instructions to follow. This kit contains a dose of hallucinogenics."
+	item_cost = 20
+	path = /obj/item/storage/box/syndie_kit/imp_imprinting

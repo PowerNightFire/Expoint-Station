@@ -3,22 +3,21 @@
 	desc = "An energy shield used to contain hull breaches."
 	icon = 'icons/effects/effects.dmi'
 	icon_state = "shield-old"
-	density = TRUE
-	opacity = FALSE
-	anchored = TRUE
-	unacidable = TRUE
-	atmos_canpass = CANPASS_NEVER
+	density = 1
+	opacity = 0
+	anchored = 1
+	unacidable = 1
 	var/const/max_health = 200
 	var/health = max_health //The shield can only take so much beating (prevents perma-prisons)
-	var/shield_generate_power = 2500	//how much power we use when regenerating
-	var/shield_idle_power = 500		//how much power we use when just being sustained.
+	var/shield_generate_power = 7500	//how much power we use when regenerating
+	var/shield_idle_power = 1500		//how much power we use when just being sustained.
 
 /obj/machinery/shield/malfai
 	name = "emergency forcefield"
-	desc = "A weak forcefield which seems to be projected by the station's emergency atmosphere containment field"
+	desc = "A weak forcefield which seems to be projected by the emergency atmosphere containment field."
 	health = max_health/2 // Half health, it's not suposed to resist much.
 
-/obj/machinery/shield/malfai/machinery_process()
+/obj/machinery/shield/malfai/Process()
 	health -= 0.5 // Slowly lose integrity over time
 	check_failure()
 
@@ -28,22 +27,22 @@
 		qdel(src)
 		return
 
-/obj/machinery/shield/New()
+/obj/machinery/shield/Initialize()
+	. = ..()
 	src.set_dir(pick(1,2,3,4))
-	..()
 	update_nearby_tiles(need_rebuild=1)
 
 /obj/machinery/shield/Destroy()
-	opacity = FALSE
-	density = FALSE
+	set_opacity(0)
+	set_density(0)
 	update_nearby_tiles()
-	return ..()
+	. = ..()
 
 /obj/machinery/shield/CanPass(atom/movable/mover, turf/target, height, air_group)
-	if(!height || air_group) return FALSE
+	if(!height || air_group) return 0
 	else return ..()
 
-/obj/machinery/shield/attackby(obj/item/W as obj, mob/user as mob)
+/obj/machinery/shield/attackby(obj/item/W, mob/user)
 	if(!istype(W)) return
 
 	//Calculate damage
@@ -55,6 +54,8 @@
 	playsound(src.loc, 'sound/effects/EMPulse.ogg', 75, 1)
 
 	check_failure()
+	set_opacity(1)
+	spawn(20) if(!QDELETED(src)) set_opacity(0)
 	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 
 	..()
@@ -63,21 +64,13 @@
 	health -= Proj.get_structure_damage()
 	..()
 	check_failure()
-	opacity = 1
-	spawn(20) if(src) opacity = FALSE
+	set_opacity(1)
+	spawn(20) if(!QDELETED(src)) set_opacity(0)
 
-/obj/machinery/shield/ex_act(severity)
-	switch(severity)
-		if(1.0)
-			if (prob(75))
-				qdel(src)
-		if(2.0)
-			if (prob(50))
-				qdel(src)
-		if(3.0)
-			if (prob(25))
-				qdel(src)
-	return
+/obj/machinery/shield/explosion_act(severity)
+	. = ..()
+	if(. && ((severity == 1 && prob(75)) || (severity == 2 && prob(50)) || (severity == 3 && prob(25))))
+		physically_destroyed()
 
 /obj/machinery/shield/emp_act(severity)
 	switch(severity)
@@ -87,101 +80,105 @@
 			if(prob(50))
 				qdel(src)
 
-
-/obj/machinery/shield/hitby(AM as mob|obj)
+/obj/machinery/shield/hitby(AM, var/datum/thrownthing/TT)
+	..()
 	//Let everyone know we've been hit!
-	visible_message("<span class='notice'><B>\[src] was hit by [AM].</B></span>")
-
+	visible_message(SPAN_DANGER("\The [src] was hit by \the [AM]."))
 	//Super realistic, resource-intensive, real-time damage calculations.
 	var/tforce = 0
-	if(ismob(AM))
-		tforce = 40
+	if(ismob(AM)) // All mobs have a multiplier and a size according to mob_defines.dm
+		var/mob/I = AM
+		tforce = I.mob_size * (TT.speed/THROWFORCE_SPEED_DIVISOR)
 	else
-		tforce = AM:throwforce
-
+		var/obj/O = AM
+		tforce = O.throwforce * (TT.speed/THROWFORCE_SPEED_DIVISOR)
 	src.health -= tforce
-
 	//This seemed to be the best sound for hitting a force field.
 	playsound(src.loc, 'sound/effects/EMPulse.ogg', 100, 1)
-
 	check_failure()
-
 	//The shield becomes dense to absorb the blow.. purely asthetic.
-	opacity = TRUE
-	spawn(20) if(src) opacity = FALSE
+	set_opacity(1)
+	spawn(20)
+		if(!QDELETED(src))
+			set_opacity(0)
 
-	..()
-	return
 /obj/machinery/shieldgen
 	name = "Emergency shield projector"
 	desc = "Used to seal minor hull breaches."
-	icon = 'icons/obj/machines/shielding.dmi'
+	icon = 'icons/obj/objects.dmi'
 	icon_state = "shieldoff"
-	density = TRUE
-	opacity = FALSE
-	anchored = FALSE
-	req_access = list(access_engine)
+	density = 1
+	opacity = 0
+	anchored = 0
+	initial_access = list(access_engine)
 	var/const/max_health = 100
 	var/health = max_health
-	var/active = FALSE
-	var/malfunction = FALSE //Malfunction causes parts of the shield to slowly dissapate
+	var/active = 0
+	var/malfunction = 0 //Malfunction causes parts of the shield to slowly dissapate
 	var/list/deployed_shields = list()
 	var/list/regenerating = list()
-	var/is_open = FALSE //Whether or not the wires are exposed
-	var/locked = FALSE
+	var/is_open = 0 //Whether or not the wires are exposed
+	var/locked = 0
 	var/check_delay = 60	//periodically recheck if we need to rebuild a shield
-	use_power = 0
+	use_power = POWER_USE_OFF
 	idle_power_usage = 0
 
 /obj/machinery/shieldgen/Destroy()
 	collapse_shields()
-	return ..()
+	. = ..()
 
 /obj/machinery/shieldgen/proc/shields_up()
-	if(active) return FALSE //If it's already turned on, how did this get called?
+	if(active) return 0 //If it's already turned on, how did this get called?
 
 	src.active = 1
 	update_icon()
 
 	create_shields()
 
-	idle_power_usage = 0
+	var/new_idle_power_usage = 0
 	for(var/obj/machinery/shield/shield_tile in deployed_shields)
-		idle_power_usage += shield_tile.shield_idle_power
-	update_use_power(TRUE)
+		new_idle_power_usage += shield_tile.shield_idle_power
+	change_power_consumption(new_idle_power_usage, POWER_USE_IDLE)
+	update_use_power(POWER_USE_IDLE)
 
 /obj/machinery/shieldgen/proc/shields_down()
-	if(!active) return FALSE //If it's already off, how did this get called?
+	if(!active) return 0 //If it's already off, how did this get called?
 
-	src.active = FALSE
+	src.active = 0
 	update_icon()
 
 	collapse_shields()
 
-	update_use_power(FALSE)
+	update_use_power(POWER_USE_OFF)
 
 /obj/machinery/shieldgen/proc/create_shields()
-	for(var/turf/target_tile in range(2, src))
-		if (istype(target_tile,/turf/space) || istype(target_tile,/turf/simulated/open) || istype(target_tile,/turf/unsimulated/floor/asteroid/ash) || istype(target_tile,/turf/simulated/floor/airless) && !(locate(/obj/machinery/shield) in target_tile))
+	for(var/turf/target_tile in range(8, src))
+		if ((istype(target_tile,/turf/space)|| istype(target_tile, /turf/simulated/open)) && !(locate(/obj/machinery/shield) in target_tile))
 			if (malfunction && prob(33) || !malfunction)
-				var/obj/machinery/shield/S = new /obj/machinery/shield(target_tile)
+				var/obj/machinery/shield/S = new/obj/machinery/shield(target_tile)
 				deployed_shields += S
-				use_power(S.shield_generate_power)
+				use_power_oneoff(S.shield_generate_power)
+
+	for(var/turf/above in range(8, GetAbove(src)))//Probably a better way to do this.
+		if ((istype(above,/turf/space)|| istype(above, /turf/simulated/open)) && !(locate(/obj/machinery/shield) in above))
+			if (malfunction && prob(33) || !malfunction)
+				var/obj/machinery/shield/A = new/obj/machinery/shield(above)
+				deployed_shields += A
+				use_power_oneoff(A.shield_generate_power)
 
 /obj/machinery/shieldgen/proc/collapse_shields()
 	for(var/obj/machinery/shield/shield_tile in deployed_shields)
 		qdel(shield_tile)
 
 /obj/machinery/shieldgen/power_change()
-	..()
-	if(!active) return
+	. = ..()
+	if(!. || !active) return
 	if (stat & NOPOWER)
 		collapse_shields()
 	else
 		create_shields()
-	update_icon()
 
-/obj/machinery/shieldgen/machinery_process()
+/obj/machinery/shieldgen/Process()
 	if (!active || (stat & NOPOWER))
 		return
 
@@ -197,8 +194,7 @@
 				new_power_usage += shield_tile.shield_idle_power
 
 			if (new_power_usage != idle_power_usage)
-				idle_power_usage = new_power_usage
-				use_power(0)
+				change_power_consumption(new_power_usage, POWER_USE_IDLE)
 
 			check_delay = 60
 		else
@@ -214,113 +210,112 @@
 	update_icon()
 	return
 
-/obj/machinery/shieldgen/ex_act(severity)
-	switch(severity)
-		if(1.0)
-			src.health -= 75
-			src.checkhp()
-		if(2.0)
-			src.health -= 30
-			if (prob(15))
-				src.malfunction = 1
-			src.checkhp()
-		if(3.0)
-			src.health -= 10
-			src.checkhp()
-	return
+/obj/machinery/shieldgen/explosion_act(severity)
+	. = ..()
+	if(.)
+		if(severity == 1)
+			health -= 75
+		else if(severity == 2)
+			health -= 30
+			if(prob(15))
+				malfunction = 1
+		else if(severity == 3)
+			health -= 10
+		checkhp()
 
 /obj/machinery/shieldgen/emp_act(severity)
 	switch(severity)
 		if(1)
 			src.health /= 2 //cut health in half
-			malfunction = TRUE
+			malfunction = 1
 			locked = pick(0,1)
 		if(2)
 			if(prob(50))
 				src.health *= 0.3 //chop off a third of the health
-				malfunction = TRUE
+				malfunction = 1
 	checkhp()
 
-/obj/machinery/shieldgen/attack_hand(mob/user)
+/obj/machinery/shieldgen/interface_interact(mob/user)
+	if(!CanInteract(user, DefaultTopicState()))
+		return FALSE
 	if(locked)
-		to_chat(user, SPAN_WARNING("The machine is locked!"))
-		return
+		to_chat(user, "The machine is locked, you are unable to use it.")
+		return TRUE
 	if(is_open)
-		to_chat(user, SPAN_WARNING("The panel must be closed before operating this machine."))
-		return
+		to_chat(user, "The panel must be closed before operating this machine.")
+		return TRUE
 
 	if (src.active)
-		user.visible_message("<span class='notice'>[icon2html(src, viewers(get_turf(src)))] [user] deactivates the shield generator.</span>", \
-			"<span class='notice'>[icon2html(src, viewers(get_turf(src)))] You deactivate the shield generator.</span>", \
+		user.visible_message("<span class='notice'>[html_icon(src)] [user] deactivated the shield generator.</span>", \
+			"<span class='notice'>[html_icon(src)] You deactivate the shield generator.</span>", \
 			"You hear heavy droning fade out.")
 		src.shields_down()
 	else
 		if(anchored)
-			user.visible_message("<span class='notice'>[icon2html(src, viewers(get_turf(src)))] [user] activate the shield generator.</span>", \
-				"<span class='notice'>[icon2html(src, viewers(get_turf(src)))] You activate the shield generator.</span>", \
+			user.visible_message("<span class='notice'>[html_icon(src)] [user] activated the shield generator.</span>", \
+				"<span class='notice'>[html_icon(src)] You activate the shield generator.</span>", \
 				"You hear heavy droning.")
 			src.shields_up()
 		else
-			to_chat(user, SPAN_WARNING("The device must first be secured to the floor."))
-	return
+			to_chat(user, "The device must first be secured to the floor.")
+	return TRUE
 
 /obj/machinery/shieldgen/emag_act(var/remaining_charges, var/mob/user)
 	if(!malfunction)
-		malfunction = TRUE
+		malfunction = 1
 		update_icon()
 		return 1
 
-/obj/machinery/shieldgen/attackby(obj/item/W as obj, mob/user as mob)
-	if(W.isscrewdriver())
-		playsound(src.loc, W.usesound, 100, 1)
+/obj/machinery/shieldgen/attackby(obj/item/W, mob/user)
+	if(isScrewdriver(W))
+		playsound(src.loc, 'sound/items/Screwdriver.ogg', 100, 1)
 		if(is_open)
 			to_chat(user, "<span class='notice'>You close the panel.</span>")
-			is_open = FALSE
+			is_open = 0
 		else
 			to_chat(user, "<span class='notice'>You open the panel and expose the wiring.</span>")
-			is_open = TRUE
+			is_open = 1
 
-	else if(W.iscoil() && malfunction && is_open)
+	else if(isCoil(W) && malfunction && is_open)
 		var/obj/item/stack/cable_coil/coil = W
 		to_chat(user, "<span class='notice'>You begin to replace the wires.</span>")
 		//if(do_after(user, min(60, round( ((maxhealth/health)*10)+(malfunction*10) ))) //Take longer to repair heavier damage
-		if(do_after(user, 30))
+		if(do_after(user, 30,src))
 			if (coil.use(1))
 				health = max_health
-				malfunction = FALSE
+				malfunction = 0
 				to_chat(user, "<span class='notice'>You repair the [src]!</span>")
 				update_icon()
 
-	else if(W.iswrench())
+	else if(istype(W, /obj/item/wrench))
 		if(locked)
 			to_chat(user, "The bolts are covered, unlocking this would retract the covers.")
 			return
 		if(anchored)
-			playsound(src.loc, W.usesound, 100, 1)
-			to_chat(user, "<span class='notice'>You unsecure the [src] from the floor!</span>")
+			playsound(src.loc, 'sound/items/Ratchet.ogg', 100, 1)
+			to_chat(user, "<span class='notice'>'You unsecure the [src] from the floor!</span>")
 			if(active)
 				to_chat(user, "<span class='notice'>The [src] shuts off!</span>")
 				src.shields_down()
-			anchored = FALSE
+			anchored = 0
 		else
 			if(istype(get_turf(src), /turf/space)) return //No wrenching these in space!
-			playsound(src.loc, W.usesound, 100, 1)
+			playsound(src.loc, 'sound/items/Ratchet.ogg', 100, 1)
 			to_chat(user, "<span class='notice'>You secure the [src] to the floor!</span>")
-			anchored = TRUE
+			anchored = 1
 
 
-	else if(W.GetID())
+	else if(istype(W, /obj/item/card/id) || istype(W, /obj/item/modular_computer/pda))
 		if(src.allowed(user))
 			src.locked = !src.locked
 			to_chat(user, "The controls are now [src.locked ? "locked." : "unlocked."]")
 		else
 			to_chat(user, "<span class='warning'>Access denied.</span>")
-
 	else
 		..()
 
 
-/obj/machinery/shieldgen/update_icon()
+/obj/machinery/shieldgen/on_update_icon()
 	if(active && !(stat & NOPOWER))
 		src.icon_state = malfunction ? "shieldonbr":"shieldon"
 	else

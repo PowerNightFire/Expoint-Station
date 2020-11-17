@@ -6,8 +6,7 @@
 /client/proc/SDQL_query(query_text as message)
 	set category = "Admin"
 	if(!check_rights(R_DEBUG))  //Shouldn't happen... but just to be safe.
-		message_admins("<span class='warning'>ERROR: Non-admin [usr.key] attempted to execute a SDQL query!</span>")
-		log_admin("Non-admin [usr.key] attempted to execute a SDQL query!",level=2,ckey=key_name(usr))
+		log_and_message_admins(" - Non-admin attempted to execute a SDQL query!")
 
 	var/list/query_list = SDQL_tokenize(query_text)
 
@@ -267,13 +266,10 @@
 /*
 	for(var/t in types)
 		to_chat(usr, "Type: [t]")
-
 	for(var/t in from)
 		to_chat(usr, "From: [t]")
-
 	for(var/t in set_vars)
 		to_chat(usr, "Set: [t] = [set_vars[t]]")
-
 	if(where.len)
 		var/where_str = ""
 		for(var/t in where)
@@ -292,7 +288,12 @@
 	switch(lowertext(query_list[1]))
 		if("delete")
 			for(var/datum/t in objs)
-				qdel(t)
+				// turfs are special snowflakes that explode if qdeleted
+				if (isturf(t))
+					var/turf/T = t
+					T.ChangeTurf(world.turf)
+				else
+					qdel(t)
 
 		if("update")
 			for(var/datum/t in objs)
@@ -324,15 +325,7 @@
 					text += "<a href='?src=\ref[t];SDQL_select=\ref[t]'>\ref[t]</a>: [t]<br>"
 
 				//text += "[t]<br>"
-			usr << browse(text, "window=sdql_result")
-
-
-/client/Topic(href,href_list[],hsrc)
-	if(href_list["SDQL_select"])
-		debug_variables(locate(href_list["SDQL_select"]))
-
-	..()
-
+			show_browser(usr, text, "window=sdql_result")
 
 /proc/SDQL_evaluate(datum/object, list/equation)
 	if(equation.len == 0)
@@ -434,7 +427,7 @@
 
 		else if(char == "'")
 			if(word != "")
-				to_chat(usr, "<span class='warning'>SDQL: You have an error in your SDQL syntax, unexpected ' in query: \"<font color=gray>[query_text]</font>\" following \"<font color=gray>[word]</font>\". Please check your syntax, and try again.</span>")
+				to_chat(usr, "<span class=*'warning'>SDQL: You have an error in your SDQL syntax, unexpected ' in query: \"<font color=gray>[query_text]</font>\" following \"<font color=gray>[word]</font>\". Please check your syntax, and try again.</span>")
 				return null
 
 			word = "'"
@@ -482,7 +475,7 @@
 					word += char
 
 			if(i > len)
-				to_chat(usr, "<span class='danger'>SDQL: You have an error in your SDQL syntax, unmatched \" in query: \"<font color=gray>[query_text]</font>\". Please check your syntax, and try again.</span>")
+				to_chat(usr, "<span class='warning'>SDQL: You have an error in your SDQL syntax, unmatched \" in query: \"<font color=gray>[query_text]</font>\". Please check your syntax, and try again.</span>")
 				return null
 
 			query_list += "[word]\""

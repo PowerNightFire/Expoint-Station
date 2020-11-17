@@ -14,10 +14,10 @@
 	handle_regular_hud_updates()
 
 	if(src.secHUD == 1)
-		process_sec_hud(src, 1)
+		process_sec_hud(src, 1, network = get_computer_network())
 
 	if(src.medHUD == 1)
-		process_med_hud(src, 1)
+		process_med_hud(src, 1, network = get_computer_network())
 
 	if(silence_time)
 		if(world.timeofday >= silence_time)
@@ -31,22 +31,7 @@
 
 /mob/living/silicon/pai/updatehealth()
 	if(status_flags & GODMODE)
-		health = maxHealth
-		stat = CONSCIOUS
+		health = 100
+		set_stat(CONSCIOUS)
 	else
-		health = maxHealth - getBruteLoss() - getFireLoss()
-
-/mob/living/silicon/pai/Stat()
-	..()
-
-	if(istype(card.loc, /mob/living/bot))
-		var/mob/living/bot/B = card.loc
-		stat(null, "Piloting: [B.name]")
-		stat(null, "Bot Status: [B.on ? "Active" : "Inactive"]")
-		stat(null, "Maintenance Hatch: [B.open ? "Open" : "Closed"]")
-		stat(null, "Maintenance Lock: [B.locked ? "Locked" : "Unlocked"]")
-		if(B.emagged)
-			stat(null, "Bot M#$FUN90: MALFUNC--")
-	if(istype(card.loc, /mob/living/bot/floorbot))
-		var/mob/living/bot/floorbot/F = card.loc
-		stat(null, "Metal Count: [F.amount]/[F.maxAmount]")
+		health = 100 - getBruteLoss() - getFireLoss()

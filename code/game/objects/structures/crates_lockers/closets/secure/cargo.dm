@@ -1,53 +1,36 @@
 /obj/structure/closet/secure_closet/cargotech
 	name = "cargo technician's locker"
 	req_access = list(access_cargo)
-	icon_state = "securecargo1"
-	icon_closed = "securecargo"
-	icon_locked = "securecargo1"
-	icon_opened = "securecargoopen"
-	icon_broken = "securecargobroken"
-	icon_off = "securecargooff"
+	closet_appearance = /decl/closet_appearance/secure_closet/cargo
 
-/obj/structure/closet/secure_closet/cargotech/fill()
-	..()
-	new /obj/item/clothing/under/rank/cargo(src)
-	new /obj/item/clothing/under/rank/cargo/alt(src)
-	new /obj/item/clothing/shoes/black(src)
-	new /obj/item/device/radio/headset/headset_cargo(src)
-	new /obj/item/device/radio/headset/headset_cargo/alt(src)
-	new /obj/item/clothing/gloves/black(src)
-	new /obj/item/clothing/head/softcap/cargo(src)
-	new /obj/item/clothing/head/bandana/cargo(src)
-	new /obj/item/clothing/head/beret/cargo(src)
-	new /obj/item/modular_computer/handheld/custom_loadout/advanced/cargo_delivery(src)
-	new /obj/item/export_scanner(src)
+/obj/structure/closet/secure_closet/cargotech/WillContain()
+	return list(
+		new/datum/atom_creator/weighted(list(/obj/item/storage/backpack = 75,  /obj/item/storage/backpack/satchel/grey = 25)),
+		new/datum/atom_creator/simple(/obj/item/storage/backpack/dufflebag, 25),
+		/obj/item/clothing/under/rank/cargotech,
+		/obj/item/clothing/shoes/color/black,
+		/obj/item/radio/headset/headset_cargo,
+		/obj/item/clothing/gloves/thick,
+		/obj/item/storage/belt/general,
+		/obj/item/clothing/head/soft
+	)
 
 /obj/structure/closet/secure_closet/quartermaster
 	name = "quartermaster's locker"
 	req_access = list(access_qm)
-	icon_state = "secureqm1"
-	icon_closed = "secureqm"
-	icon_locked = "secureqm1"
-	icon_opened = "secureqmopen"
-	icon_broken = "secureqmbroken"
-	icon_off = "secureqmoff"
+	closet_appearance = /decl/closet_appearance/secure_closet/cargo/qm
 
-/obj/structure/closet/secure_closet/quartermaster/fill()
-	new /obj/item/clothing/under/rank/quartermaster(src)
-	new /obj/item/clothing/shoes/brown(src)
-	new /obj/item/device/radio/headset/qm(src)
-	new /obj/item/device/radio/headset/qm/alt(src)
-	new /obj/item/clothing/gloves/black(src)
-	new /obj/item/clothing/suit/fire/firefighter(src)
-	new /obj/item/tank/emergency_oxygen(src)
-	new /obj/item/clothing/mask/gas(src)
-	new /obj/item/clothing/head/softcap/cargo(src)
-	new /obj/item/clothing/head/bandana/cargo(src)
-	new /obj/item/clothing/head/beret/cargo(src)
-	new /obj/item/modular_computer/handheld/custom_loadout/advanced/cargo_delivery(src)
-	new /obj/item/export_scanner(src)
-	new /obj/item/device/orbital_dropper/drill(src)
-
-/obj/structure/closet/secure_closet/merchant
-	name = "merchant locker"
-	req_access = list(access_merchant)
+/obj/structure/closet/secure_closet/quartermaster/WillContain()
+	return list(
+		new/datum/atom_creator/weighted(list(/obj/item/storage/backpack = 75,  /obj/item/storage/backpack/satchel/grey = 25)),
+		new/datum/atom_creator/simple(/obj/item/storage/backpack/dufflebag, 25),
+		/obj/item/clothing/under/rank/cargotech,
+		/obj/item/clothing/shoes/color/brown,
+		/obj/item/radio/headset/headset_cargo,
+		/obj/item/clothing/gloves/thick,
+		/obj/item/clothing/suit/fire,
+		/obj/item/tank/emergency/oxygen,
+		/obj/item/clothing/mask/gas,
+		/obj/item/clothing/glasses/meson,
+		/obj/item/clothing/head/soft,
+	)

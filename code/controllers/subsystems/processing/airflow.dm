@@ -1,5 +1,3 @@
-/var/datum/controller/subsystem/processing/airflow/SSairflow
-
 #define CLEAR_OBJECT(TARGET)                \
 	processing -= TARGET;                   \
 	TARGET.airflow_dest = null;             \
@@ -10,24 +8,31 @@
 		TARGET.density = 0;                 \
 	}
 
-/datum/controller/subsystem/processing/airflow
+PROCESSING_SUBSYSTEM_DEF(airflow)
 	name = "Airflow"
 	wait = 1
 	flags = SS_NO_INIT
 	priority = SS_PRIORITY_AIRFLOW
 
-/datum/controller/subsystem/processing/airflow/New()
-	NEW_SS_GLOBAL(SSairflow)
 
 /datum/controller/subsystem/processing/airflow/fire(resumed = FALSE)
 	if (!resumed)
-		currentrun = processing.Copy()	// Defined in parent.
+		current_run = processing.Copy()	// Defined in parent.
 
-	var/list/curr = currentrun	// Defined in parent.
+	var/list/curr = current_run	// Defined in parent.
 
 	while (curr.len)
 		var/atom/movable/target = curr[curr.len]
 		curr.len--
+
+		if(QDELETED(target))
+			if (target)
+				CLEAR_OBJECT(target)
+			else
+				processing -= target
+			if (MC_TICK_CHECK)
+				return
+			continue
 
 		if (target.airflow_speed <= 0)
 			CLEAR_OBJECT(target)
@@ -86,8 +91,9 @@
 			continue
 
 		step_towards(target, target.airflow_dest)
-		if (ismob(target) && target:client)
-			target:setMoveCooldown(vsc.airflow_mob_slowdown)
+		if (ismob(target))
+			var/mob/M = target
+			M.SetMoveCooldown(vsc.airflow_mob_slowdown)
 
 		if (MC_TICK_CHECK)
 			return
@@ -115,7 +121,7 @@
 		return FALSE
 
 	if (ismob(src))
-		to_chat(src, SPAN_DANGER("You are pushed away by airflow!"))
+		to_chat(src,"<span class='danger'>You are pushed away by airflow!</span>")
 
 	last_airflow = world.time
 	var/airflow_falloff = 9 - sqrt((x - airflow_dest.x) ** 2 + (y - airflow_dest.y) ** 2)

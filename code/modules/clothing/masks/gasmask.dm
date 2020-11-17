@@ -1,18 +1,48 @@
 /obj/item/clothing/mask/gas
 	name = "gas mask"
 	desc = "A face-covering mask that can be connected to an air supply. Filters harmful gases from the air."
-	icon_state = "gas_alt"
-	item_flags = BLOCK_GAS_SMOKE_EFFECT | AIRTIGHT
+	icon_state = "fullgas"
+	item_state = "fullgas"
+	item_flags = ITEM_FLAG_BLOCK_GAS_SMOKE_EFFECT | ITEM_FLAG_AIRTIGHT
 	flags_inv = HIDEEARS|HIDEEYES|HIDEFACE
-	body_parts_covered = FACE|EYES
-	w_class = ITEMSIZE_NORMAL
-	item_state = "gas_alt"
+	body_parts_covered = SLOT_FACE|SLOT_EYES
+	w_class = ITEM_SIZE_NORMAL
 	gas_transfer_coefficient = 0.01
 	permeability_coefficient = 0.01
 	siemens_coefficient = 0.9
+	armor = list(
+		melee = ARMOR_MELEE_MINOR,
+		bio = ARMOR_BIO_STRONG
+		)
+	filtered_gases = list(
+		/decl/material/gas/nitrous_oxide,
+		/decl/material/gas/chlorine,
+		/decl/material/gas/ammonia,
+		/decl/material/gas/carbon_monoxide,
+		/decl/material/gas/methyl_bromide,
+		/decl/material/gas/methane
+	)
+	var/clogged
+	var/filter_water
 	var/gas_filter_strength = 1			//For gas mask filters
-	var/list/filtered_gases = list(GAS_PHORON, GAS_N2O)
-	armor = list(melee = 0, bullet = 0, laser = 0, energy = 0, bomb = 0, bio = 75, rad = 0)
+
+
+/obj/item/clothing/mask/gas/examine(mob/user)
+	. = ..()
+	if(clogged)
+		to_chat(user, "<span class='warning'>The intakes are clogged with [clogged]!</span>")
+
+/obj/item/clothing/mask/gas/filters_water()
+	return (filter_water && !clogged)
+
+/obj/item/clothing/mask/gas/attack_self(var/mob/user)
+	if(clogged)
+		user.visible_message("<span class='notice'>\The [user] begins unclogging the intakes of \the [src].</span>")
+		if(do_after(user, 100, progress = 1) && clogged)
+			user.visible_message("<span class='notice'>\The [user] has unclogged \the [src].</span>")
+			clogged = FALSE
+		return
+	. = ..()
 
 /obj/item/clothing/mask/gas/filter_air(datum/gas_mixture/air)
 	var/datum/gas_mixture/filtered = new
@@ -27,26 +57,45 @@
 
 	return filtered
 
-/obj/item/clothing/mask/gas/alt
-	desc = "A face-covering mask that can be connected to an air supply. Filters harmful gases from the air. Doesn't seem to mask the face as much as older designs."
-	flags_inv = HIDEEARS
-	item_state = "gas_alt_alt"
-	icon_state = "gas_alt_alt"
+/obj/item/clothing/mask/gas/half
+	name = "face mask"
+	desc = "A compact, durable gas mask that can be connected to an air supply."
+	icon_state = "halfgas"
+	item_state = "halfgas"
+	siemens_coefficient = 0.7
+	body_parts_covered = SLOT_FACE
+	w_class = ITEM_SIZE_SMALL
+	armor = list(
+		melee = ARMOR_MELEE_SMALL,
+		bullet = ARMOR_BALLISTIC_MINOR,
+		laser = ARMOR_LASER_MINOR,
+		bio = ARMOR_BIO_RESISTANT
+		)
 
-/obj/item/clothing/mask/gas/old
-	desc = "A face-covering mask that can be connected to an air supply. Seems to be an old, outdated design."
-	filtered_gases = list(GAS_N2O)
-	item_state = "gas_mask"
+//In scaling order of utility and seriousness
+
+/obj/item/clothing/mask/gas/radical
+	name = "gas mask"
+	desc = "A face-covering mask that can be connected to an air supply. Filters harmful gases from the air. This one has additional filters to remove radioactive particles."
 	icon_state = "gas_mask"
+	item_state = "gas_mask"
+	body_parts_covered = SLOT_FACE|SLOT_EYES
+	armor = list(
+		melee = ARMOR_MELEE_MINOR,
+		bio = ARMOR_BIO_STRONG,
+		rad = ARMOR_RAD_SMALL
+		)
 
-//Plague Dr suit can be found in clothing/suits/bio.dm
-/obj/item/clothing/mask/gas/plaguedoctor
-	name = "plague doctor mask"
-	desc = "A modernised version of the classic design, this mask will not only filter out phoron but it can also be connected to an air supply."
-	icon_state = "plaguedoctor"
-	item_state = "plaguedoctor"
-	armor = list(melee = 0, bullet = 0, laser = 2,energy = 2, bomb = 0, bio = 90, rad = 0)
-	body_parts_covered = HEAD|FACE|EYES
+/obj/item/clothing/mask/gas/budget
+	name = "gas mask"
+	desc = "A face-covering mask that can be connected to an air supply. Filters harmful gases from the air. This one looks pretty dodgy. Are you sure it works?"
+	icon_state = "gas_alt"
+	item_state = "gas_alt"
+	body_parts_covered = SLOT_FACE|SLOT_EYES
+	armor = list(
+		melee = ARMOR_MELEE_MINOR,
+		bio = ARMOR_BIO_SMALL
+		)
 
 /obj/item/clothing/mask/gas/swat
 	name = "\improper SWAT mask"
@@ -54,7 +103,13 @@
 	icon_state = "swat"
 	item_state = "swat"
 	siemens_coefficient = 0.7
-	body_parts_covered = FACE|EYES
+	body_parts_covered = SLOT_FACE|SLOT_EYES
+	armor = list(
+		melee = ARMOR_MELEE_SMALL,
+		bullet = ARMOR_BALLISTIC_MINOR,
+		laser = ARMOR_LASER_MINOR,
+		bio = ARMOR_BIO_STRONG
+		)
 
 /obj/item/clothing/mask/gas/syndicate
 	name = "tactical mask"
@@ -62,6 +117,36 @@
 	icon_state = "swat"
 	item_state = "swat"
 	siemens_coefficient = 0.7
+	armor = list(
+		melee = ARMOR_MELEE_SMALL,
+		bullet = ARMOR_BALLISTIC_SMALL,
+		laser = ARMOR_LASER_MINOR,
+		bio = ARMOR_BIO_STRONG
+		)
+
+/obj/item/clothing/mask/gas/death_commando
+	name = "\improper Death Commando Mask"
+	desc = "A grim tactical mask worn by the fictional Death Commandos, elites of the also fictional Space Syndicate. Saturdays at 10!"
+	icon_state = "death"
+	item_state = "death"
+	siemens_coefficient = 0.2
+
+/obj/item/clothing/mask/gas/cyborg
+	name = "cyborg visor"
+	desc = "Beep boop!"
+	icon_state = "death"
+	item_state = "death"
+
+//Plague Dr suit can be found in clothing/suits/bio.dm
+/obj/item/clothing/mask/gas/plaguedoctor
+	name = "plague doctor mask"
+	desc = "A modernised version of the classic design, this mask will not only filter out toxins, but it can also be connected to an air supply."
+	icon_state = "plaguedoctor"
+	item_state = "plaguedoctor"
+	armor = list(
+		bio = ARMOR_BIO_SHIELDED
+		)
+	body_parts_covered = SLOT_HEAD|SLOT_FACE|SLOT_EYES
 
 /obj/item/clothing/mask/gas/clown_hat
 	name = "clown wig and mask"
@@ -86,7 +171,7 @@
 	desc = "A mask used when acting as a monkey."
 	icon_state = "monkeymask"
 	item_state = "monkeymask"
-	body_parts_covered = HEAD|FACE|EYES
+	body_parts_covered = SLOT_HEAD|SLOT_FACE|SLOT_EYES
 
 /obj/item/clothing/mask/gas/sexymime
 	name = "sexy mime mask"
@@ -94,22 +179,45 @@
 	icon_state = "sexymime"
 	item_state = "sexymime"
 
-/obj/item/clothing/mask/gas/cyborg
-	name = "cyborg visor"
-	desc = "Beep boop"
-	icon_state = "death"
-
 /obj/item/clothing/mask/gas/owl_mask
 	name = "owl mask"
 	desc = "Twoooo!"
 	icon_state = "owl"
 	item_state = "owl"
-	body_parts_covered = HEAD|FACE|EYES
+	body_parts_covered = SLOT_HEAD|SLOT_FACE|SLOT_EYES
 
-/obj/item/clothing/mask/gas/tactical
-	name = "tactical mask"
-	desc = "A compact carbon-fiber respirator covering the mouth and nose to protect against the inhalation of smoke and other harmful gasses. "
-	icon_state = "fullgas"
-	item_state = "fullgas"
-	w_class = ITEMSIZE_SMALL
-	armor = list(melee = 25, bullet = 10, laser = 25, energy = 25, bomb = 0, bio = 50, rad = 15)
+//Vox Unique Masks
+
+/obj/item/clothing/mask/gas/vox
+	name = "vox breathing mask"
+	desc = "A small oxygen filter for use by Vox"
+	icon_state = "respirator"
+	item_state = "respirator"
+	flags_inv = 0
+	body_parts_covered = 0
+	filtered_gases = list(/decl/material/gas/oxygen)
+
+
+/obj/item/clothing/mask/gas/swat/vox
+	name = "alien mask"
+	desc = "Clearly not designed for a human face."
+	icon_state = "voxswat"
+	item_state = "voxswat"
+	body_parts_covered = SLOT_EYES
+	filtered_gases = list(
+		/decl/material/gas/oxygen,
+		/decl/material/gas/nitrous_oxide,
+		/decl/material/gas/chlorine,
+		/decl/material/gas/ammonia,
+		/decl/material/gas/carbon_monoxide,
+		/decl/material/gas/methyl_bromide,
+		/decl/material/gas/methane
+		)
+
+/obj/item/clothing/mask/gas/aquabreather
+	name = "aquabreather"
+	desc = "A compact CO2 scrubber and breathing apparatus that draws oxygen from water."
+	icon_state = "halfgas"
+	filter_water = TRUE
+	body_parts_covered = SLOT_FACE
+	w_class = ITEM_SIZE_SMALL

@@ -9,15 +9,17 @@
 
 /obj/machinery/power/sensor
 	name = "Powernet Sensor"
-	desc = "Small machine which transmits data about specific powernet"
+	desc = "Small machine which transmits data about specific powernet."
 	anchored = 1
 	density = 0
 	level = 1
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "floor_beacon" // If anyone wants to make better sprite, feel free to do so without asking me.
 
-	var/name_tag = "#UNKN#" // ID tag displayed in list of powernet sensors. Each sensor should have it's own tag!
-	var/long_range = 0		// If 1, sensor reading will show on all computers, regardless of Zlevel
+	uncreated_component_parts = null
+	stat_immune = NOINPUT | NOSCREEN | NOPOWER
+	construct_state = /decl/machine_construction/pipe
+	frame_type = /obj/item/machine_chassis/power_sensor
 
 // Proc: New()
 // Parameters: None
@@ -25,17 +27,17 @@
 /obj/machinery/power/sensor/Initialize()
 	. = ..()
 	auto_set_name()
-	SSpower.all_sensors += src
-
-/obj/machinery/power/sensor/Destroy()
-	. = ..()
-	SSpower.all_sensors -= src
 
 // Proc: auto_set_name()
 // Parameters: None
 // Description: Sets name of this sensor according to the ID tag.
 /obj/machinery/power/sensor/proc/auto_set_name()
-	name = "[name_tag] - Powernet Sensor"
+	if(!id_tag)
+		var/area/A = get_area(src)
+		if(!A)
+			return // in nullspace
+		id_tag = "[A.name] #[sequential_id(A.name + "power/sensor")]"
+	name = "[id_tag] - Powernet Sensor"
 
 // Proc: check_grid_warning()
 // Parameters: None
@@ -77,8 +79,8 @@
 
 	var/list/L = list()
 	for(var/obj/machinery/power/terminal/term in powernet.nodes)
-		if(istype(term.master, /obj/machinery/power/apc))
-			var/obj/machinery/power/apc/A = term.master
+		var/obj/machinery/power/apc/A = term.master_machine()
+		if(istype(A))
 			L += A
 
 	return L
@@ -113,8 +115,9 @@
 		for(var/obj/machinery/power/apc/A in L)
 			out += "<tr><td>\The [A.area]" 															// Add area name
 			out += "<td>[S[A.equipment+1]]<td>[S[A.lighting+1]]<td>[S[A.environ+1]]" 				// Show status of channels
-			if(A.cell)
-				out += "<td>[round(A.cell.percent())]% - [chg[A.charging+1]]"
+			var/obj/item/cell/cell = A.get_cell()
+			if(cell)
+				out += "<td>[round(cell.percent())]% - [chg[A.charging+1]]"
 			else
 				out += "<td>NO CELL"
 			var/load = A.lastused_total // Load.
@@ -139,7 +142,7 @@
 	if(!powernet)
 		connect_to_network()
 	var/list/data = list()
-	data["name"] = name_tag
+	data["name"] = id_tag
 	if(!powernet)
 		data["error"] = "# SYSTEM ERROR - NO POWERNET #"
 		data["alarm"] = 0 // Runtime Prevention
@@ -150,7 +153,7 @@
 	var/list/APC_data = list()
 	if(L.len > 0)
 		// These lists are used as replacement for number based APC settings
-		var/list/S = list("M-OFF","A-OFF","M-ON", "A-ON")
+		var/list/S = list("M-OFF", "DC-OFF","A-OFF","M-ON", "A-ON")
 		var/list/chg = list("N","C","F")
 
 		for(var/obj/machinery/power/apc/A in L)
@@ -160,15 +163,12 @@
 			APC_entry["s_lighting"] = S[A.lighting+1]
 			APC_entry["s_environment"] = S[A.environ+1]
 			// Cell Status
-			APC_entry["cell_charge"] = A.cell ? round(A.cell.percent()) : "NO CELL"
-			APC_entry["cell_status"] = A.cell ? chg[A.charging+1] : "N"
+			var/obj/item/cell/cell = A.get_cell()
+			APC_entry["cell_charge"] = cell ? round(cell.percent()) : "NO CELL"
+			APC_entry["cell_status"] = cell ? chg[A.charging+1] : "N"
 			// Other info
 			APC_entry["total_load"] = reading_to_text(A.lastused_total)
-			// Hopefully removes those goddamn \improper s which are screwing up the UI
-			var/N = A.area.name
-			if(findtext(N, "�"))
-				N = copytext(N, 3)
-			APC_entry["name"] = N
+			APC_entry["name"] = A.area.name
 			// Add data into main list of APC data.
 			APC_data += list(APC_entry)
 			// Add load of this APC to total APC load calculation

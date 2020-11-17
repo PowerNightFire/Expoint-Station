@@ -2,32 +2,26 @@
 	var/winner_name = "John Smith"
 	var/winner_sum = 0
 	var/deposit_success = 0
+	var/datum/money_account/winner_account
 
 /datum/event/money_lotto/start()
-	winner_sum = pick(1, 50, 100, 500, 1000, 2000, 5000)
-	if(SSeconomy.all_money_accounts.len)
-		var/datum/money_account/D = SSeconomy.get_account(pick(SSeconomy.all_money_accounts))
-		winner_name = D.owner_name
-		if(!D.suspended)
-			D.money += winner_sum
-
-			var/datum/transaction/T = new()
-			T.target_name = "Tau Ceti Daily Grand Slam -Stellar- Lottery"
-			T.purpose = "Winner!"
-			T.amount = winner_sum
-			T.date = worlddate2text()
-			T.time = worldtime2text()
-			T.source_terminal = "Biesel TCD Terminal #[rand(111,333)]"
-			SSeconomy.add_transaction_log(D,T)
-
-			deposit_success = 1
+	winner_sum = pick(5000, 10000, 50000, 100000, 500000, 1000000, 1500000)
+	if(prob(50))
+		if(all_money_accounts.len)
+			winner_account = pick(all_money_accounts)
+			winner_name = winner_account.owner_name
+			deposit_success = winner_account.deposit(winner_sum, "Nyx Daily Loan Lottery winner!", "Biesel TCD Terminal #[rand(111,333)]")
+	else
+		winner_name = random_name(pick(MALE,FEMALE), species = GLOB.using_map.default_species)
+		deposit_success = prob(50)
 
 /datum/event/money_lotto/announce()
-	var/author = "[current_map.company_name] Editor"
-	var/channel = "Tau Ceti Daily"
+	var/author = "[GLOB.using_map.company_name] Editor"
+	var/channel = "Nyx Daily"
 
-	var/body = "Tau Ceti Daily wishes to congratulate <b>[winner_name]</b> for recieving the Tau Ceti Stellar Slam Lottery, and receiving the out of this world sum of [winner_sum] credits!"
+	var/decl/currency/cur = decls_repository.get_decl(winner_account?.currency || GLOB.using_map.default_currency)
+	var/body = "Nyx Daily wishes to congratulate <b>[winner_name]</b> for recieving the Nyx Stellar Slam Lottery, and receiving the out of this world sum of [cur.format_value(winner_sum)]!"
 	if(!deposit_success)
-		body += "<br>Unfortunately, we were unable to verify the account details provided, so we were unable to transfer the money. Send a cheque containing the sum of 5000 credits to ND 'Stellar Slam' office on the Tau Ceti gateway containing updated details, and your winnings'll be re-sent within the month."
-	var/datum/feed_channel/ch =  SSnews.GetFeedChannel(channel)
-	SSnews.SubmitArticle(body, author, ch, null, 1)
+		body += "<br>Unfortunately, we were unable to verify the account details provided, so we were unable to transfer the money. In order to have your winnings re-sent, send a cheque containing a processing fee of [cur.format_value(5000)] to the ND 'Stellar Slam' office on the Nyx gateway with your updated details."
+	winner_account = null
+	news_network.SubmitArticle(body, author, channel, null, 1)

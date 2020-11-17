@@ -1,6 +1,13 @@
 /datum/wires/smes
 	holder_type = /obj/machinery/power/smes/buildable
 	wire_count = 5
+	descriptions = list(
+		new /datum/wire_description(SMES_WIRE_RCON, "This wire runs to a remote signaling mechanism."),
+		new /datum/wire_description(SMES_WIRE_INPUT, "This seems to be the primary input.", SKILL_EXPERT),
+		new /datum/wire_description(SMES_WIRE_OUTPUT, "This seems to be the primary output.", SKILL_EXPERT),
+		new /datum/wire_description(SMES_WIRE_GROUNDING, "This wire appeas to connect directly to the floor.", SKILL_EXPERT),
+		new /datum/wire_description(SMES_WIRE_FAILSAFES, "This wire appears to connect to a failsafe mechanism.")
+	)
 
 var/const/SMES_WIRE_RCON = 1		// Remote control (AI and consoles), cut to disable
 var/const/SMES_WIRE_INPUT = 2		// Input wire, cut to disable input, pulse to disable for 60s
@@ -11,12 +18,14 @@ var/const/SMES_WIRE_FAILSAFES = 16	// Cut to disable failsafes, mend to reenable
 
 /datum/wires/smes/CanUse(var/mob/living/L)
 	var/obj/machinery/power/smes/buildable/S = holder
-	if(S.open_hatch)
+	if(!S.grounding && S.powernet && S.powernet.avail)
+		electrocute_mob(L, S.powernet, S, S.safeties_enabled? 0.1 : 1)
+	if(S.panel_open)
 		return 1
 	return 0
 
 
-/datum/wires/smes/GetInteractWindow()
+/datum/wires/smes/GetInteractWindow(mob/user)
 	var/obj/machinery/power/smes/buildable/S = holder
 	. += ..()
 	. += "The green light is [(S.input_cut || S.input_pulsed || S.output_cut || S.output_pulsed) ? "off" : "on"]<br>"
@@ -45,7 +54,8 @@ var/const/SMES_WIRE_FAILSAFES = 16	// Cut to disable failsafes, mend to reenable
 		if(SMES_WIRE_RCON)
 			if(S.RCon)
 				S.RCon = 0
-				addtimer(CALLBACK(S, /obj/machinery/power/smes/buildable/.proc/reset_rcon), 10)
+				spawn(10)
+					S.RCon = 1
 		if(SMES_WIRE_INPUT)
 			S.toggle_input()
 		if(SMES_WIRE_OUTPUT)
@@ -55,10 +65,5 @@ var/const/SMES_WIRE_FAILSAFES = 16	// Cut to disable failsafes, mend to reenable
 		if(SMES_WIRE_FAILSAFES)
 			if(S.safeties_enabled)
 				S.safeties_enabled = 0
-				addtimer(CALLBACK(S, /obj/machinery/power/smes/buildable/.proc/reset_safeties), 10)
-
-/obj/machinery/power/smes/buildable/proc/reset_safeties()
-	safeties_enabled = TRUE
-
-/obj/machinery/power/smes/buildable/proc/reset_rcon()
-	RCon = TRUE
+				spawn(10)
+					S.safeties_enabled = 1

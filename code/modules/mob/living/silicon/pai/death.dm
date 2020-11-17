@@ -1,19 +1,13 @@
-/mob/living/silicon/pai/Destroy()
-	if(parent_computer?.personal_ai == src)
-		parent_computer.personal_ai = null
-	parent_computer = null
-	return ..()
-
-/mob/living/silicon/pai/death(gibbed)
+/mob/living/silicon/pai/death(gibbed, deathmessage, show_dead_message)
 	if(card)
 		card.removePersonality()
 		if(gibbed)
-			src.forceMove(get_turf(card))
+			dropInto(loc.loc)
 			qdel(card)
 		else
 			close_up()
 	if(mind)
 		qdel(mind)
-	..(gibbed)
+	..(gibbed, deathmessage, "You have suffered a critical system failure, and are dead.")
 	ghostize()
 	qdel(src)

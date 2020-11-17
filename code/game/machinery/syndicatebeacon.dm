@@ -9,7 +9,7 @@
 /obj/machinery/syndicate_beacon
 	name = "ominous beacon"
 	desc = "This looks suspicious..."
-	icon = 'icons/obj/device.dmi'
+	icon = 'icons/obj/items/syndibeacon.dmi'
 	icon_state = "syndbeacon"
 
 	anchored = 1
@@ -19,8 +19,12 @@
 	var/selfdestructing = 0
 	var/charges = 1
 
-/obj/machinery/syndicate_beacon/attack_hand(var/mob/user as mob)
-	usr.set_machine(src)
+/obj/machinery/syndicate_beacon/interface_interact(var/mob/user)
+	interact(user)
+	return TRUE
+
+/obj/machinery/syndicate_beacon/interact(var/mob/user)
+	user.set_machine(src)
 	var/dat = "<font color=#005500><i>Scanning [pick("retina pattern", "voice print", "fingerprints", "dna sequence")]...<br>Identity confirmed,<br></i></font>"
 	if(istype(user, /mob/living/carbon/human) || istype(user, /mob/living/silicon/ai))
 		if(is_special_character(user))
@@ -35,7 +39,7 @@
 			if(!selfdestructing)
 				dat += "<br><br><A href='?src=\ref[src];betraitor=1;traitormob=\ref[user]'>\"[pick("I want to switch teams.", "I want to work for you.", "Let me join you.", "I can be of use to you.", "You want me working for you, and here's why...", "Give me an objective.", "How's the 401k over at the Syndicate?")]\"</A><BR>"
 	dat += temptext
-	user << browse(dat, "window=syndbeacon")
+	show_browser(user, dat, "window=syndbeacon")
 	onclose(user, "syndbeacon")
 
 /obj/machinery/syndicate_beacon/Topic(href, href_list)
@@ -46,7 +50,7 @@
 			src.updateUsrDialog()
 			return
 		var/mob/M = locate(href_list["traitormob"])
-		if(M.mind.special_role || jobban_isbanned(M, "Antagonist"))
+		if(M.mind.special_role || jobban_isbanned(M, MODE_TRAITOR))
 			temptext = "<i>We have no need for you at this time. Have a pleasant day.</i><br>"
 			src.updateUsrDialog()
 			return
@@ -60,9 +64,9 @@
 		if(istype(M, /mob/living/carbon/human))
 			var/mob/living/carbon/human/N = M
 			to_chat(M, "<B>You have joined the ranks of the Syndicate and become a traitor to the station!</B>")
-			traitors.add_antagonist(N.mind)
-			traitors.equip(N)
-			message_admins("[N]/([N.ckey]) has accepted a traitor objective from a syndicate beacon.")
+			GLOB.traitors.add_antagonist(N.mind)
+			GLOB.traitors.equip(N)
+			log_and_message_admins("has accepted a traitor objective from a syndicate beacon.", M)
 
 
 	src.updateUsrDialog()
@@ -80,35 +84,33 @@
 	name = "ominous beacon"
 	desc = "This looks suspicious..."
 	icon = 'icons/obj/singularity.dmi'
-	icon_state = "beacon0"
+	icon_state = "beacon"
 
 	anchored = 0
 	density = 1
-	layer = MOB_LAYER - 0.1 //so people can't hide it and it's REALLY OBVIOUS
+	layer = BASE_ABOVE_OBJ_LAYER //so people can't hide it and it's REALLY OBVIOUS
 	stat = 0
 
 	var/active = 0
 	var/icontype = "beacon"
 
-
 /obj/machinery/power/singularity_beacon/proc/Activate(mob/user = null)
 	if(surplus() < 1500)
 		if(user) to_chat(user, "<span class='notice'>The connected wire doesn't have enough current.</span>")
 		return
-	for(var/A in SScalamity.singularities)
-		var/obj/singularity/singulo = A
+	for(var/obj/singularity/singulo in world)
 		if(singulo.z == z)
 			singulo.target = src
 	icon_state = "[icontype]1"
 	active = 1
-	SSmachinery.processing_machines |= src
+
+	START_PROCESSING_MACHINE(src, MACHINERY_PROCESS_SELF)
 	if(user)
 		to_chat(user, "<span class='notice'>You activate the beacon.</span>")
 
 
 /obj/machinery/power/singularity_beacon/proc/Deactivate(mob/user = null)
-	for(var/A in SScalamity.singularities)
-		var/obj/singularity/singulo = A
+	for(var/obj/singularity/singulo in world)
 		if(singulo.target == src)
 			singulo.target = null
 	icon_state = "[icontype]0"
@@ -117,20 +119,18 @@
 		to_chat(user, "<span class='notice'>You deactivate the beacon.</span>")
 
 
-/obj/machinery/power/singularity_beacon/attack_ai(mob/user as mob)
-	return
-
-
-/obj/machinery/power/singularity_beacon/attack_hand(var/mob/user as mob)
+/obj/machinery/power/singularity_beacon/physical_attack_hand(var/mob/user)
+	. = TRUE
 	if(anchored)
-		return active ? Deactivate(user) : Activate(user)
+		if(active)
+			Deactivate(user)
+		else
+			Activate(user)
 	else
 		to_chat(user, "<span class='danger'>You need to screw the beacon to the floor first!</span>")
-		return
 
-
-/obj/machinery/power/singularity_beacon/attackby(obj/item/W as obj, mob/user as mob)
-	if(W.isscrewdriver())
+/obj/machinery/power/singularity_beacon/attackby(obj/item/W, mob/user)
+	if(isScrewdriver(W))
 		if(active)
 			to_chat(user, "<span class='danger'>You need to deactivate the beacon first!</span>")
 			return
@@ -154,21 +154,15 @@
 /obj/machinery/power/singularity_beacon/Destroy()
 	if(active)
 		Deactivate()
-	return ..()
+	..()
 
 //stealth direct power usage
-/obj/machinery/power/singularity_beacon/machinery_process()
+/obj/machinery/power/singularity_beacon/Process()
 	if(!active)
 		return PROCESS_KILL
-	else
-		if(draw_power(1500) < 1500)
-			Deactivate()
-
+	if(draw_power(1500) < 1500)
+		Deactivate()
 
 /obj/machinery/power/singularity_beacon/syndicate
 	icontype = "beaconsynd"
 	icon_state = "beaconsynd0"
-
-/obj/machinery/power/singularity_beacon/emergency
-	name = "emergency singularity beacon"
-	desc = "A beacon that is designed to be used as last resort to contain Singularity or Tesla Engine. A one time use device."

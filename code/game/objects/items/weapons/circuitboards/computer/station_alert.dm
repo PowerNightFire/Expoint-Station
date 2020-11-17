@@ -1,13 +1,14 @@
-/obj/item/circuitboard/stationalert
-	name = T_BOARD("station alert console")
+/obj/item/stock_parts/circuitboard/stationalert
+	name = T_BOARD("alert console")
 	build_path = /obj/machinery/computer/station_alert
 	var/list/alarm_handlers
 
-/obj/item/circuitboard/stationalert/New()
+/obj/item/stock_parts/circuitboard/stationalert/Initialize()
+	. = ..()
 	alarm_handlers = new()
-	..()
+	set_extension(src, /datum/extension/interactive/multitool/circuitboards/stationalert)
 
-/obj/item/circuitboard/stationalert/construct(var/obj/machinery/computer/station_alert/SA)
+/obj/item/stock_parts/circuitboard/stationalert/construct(var/obj/machinery/computer/station_alert/SA)
 	if(..(SA))
 		SA.unregister_monitor()
 
@@ -19,7 +20,7 @@
 		SA.register_monitor(monitor)
 		return 1
 
-/obj/item/circuitboard/stationalert/deconstruct(var/obj/machinery/computer/station_alert/SA)
+/obj/item/stock_parts/circuitboard/stationalert/deconstruct(var/obj/machinery/computer/station_alert/SA)
 	if(..(SA))
 		alarm_handlers.Cut()
 		if(SA.alarm_monitor)

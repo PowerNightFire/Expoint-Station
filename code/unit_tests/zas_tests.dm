@@ -9,30 +9,31 @@
 #define UT_NORMAL 1                   // Standard one atmosphere 20celsius
 #define UT_VACUUM 2                   // Vacume on simulated turfs
 #define UT_NORMAL_COLD 3              // Cold but standard atmosphere.
-#define UT_NORMAL_COOL 4              // Cool (5C) but standard atmosphere.
 
 #define FAILURE 0
 #define SUCCESS 1
+#define SKIP 2
 
 //
 // Generic check for an area.
 //
 
-datum/unit_test/zas_area_test
+/datum/unit_test/zas_area_test
 	name = "ZAS: Area Test Template"
+	template = /datum/unit_test/zas_area_test
 	var/area_path = null                    // Put the area you are testing here.
 	var/expectation = UT_NORMAL             // See defines above.
 
-datum/unit_test/zas_area_test/start_test()
+/datum/unit_test/zas_area_test/start_test()
 	var/list/test = test_air_in_area(area_path, expectation)
 
 	if(isnull(test))
 		fail("Check Runtimed")
 
-	if(test["result"] == SUCCESS)
-		pass(test["msg"])
-	else
-		fail(test["msg"])
+	switch(test["result"])
+		if(SUCCESS) pass(test["msg"])
+		if(SKIP)    skip(test["msg"])
+		else        fail(test["msg"])
 	return 1
 
 // ==================================================================================================
@@ -40,13 +41,15 @@ datum/unit_test/zas_area_test/start_test()
 //
 //	The primary helper proc.
 //
-proc/test_air_in_area(var/test_area, var/expectation = UT_NORMAL)
+/proc/test_air_in_area(var/test_area, var/expectation = UT_NORMAL)
 	var/test_result = list("result" = FAILURE, "msg"    = "")
 
 	var/area/A = locate(test_area)
 
-	if(!istype(A, test_area))
+	// BYOND creates an instance of every area, so this can't be !A or !istype(A, test_area)
+	if(!(A.x || A.y || A.z))
 		test_result["msg"] = "Unable to get [test_area]"
+		test_result["result"] = FAILURE
 		return test_result
 
 	var/list/GM_checked = list()
@@ -72,23 +75,20 @@ proc/test_air_in_area(var/test_area, var/expectation = UT_NORMAL)
 					return test_result
 
 
-			if(UT_NORMAL || UT_NORMAL_COLD || UT_NORMAL_COOL)
+			if(UT_NORMAL || UT_NORMAL_COLD)
 				if(abs(pressure - ONE_ATMOSPHERE) > 10)
 					test_result["msg"] = "Pressure out of bounds: [pressure] | [t_msg]"
 					return test_result
 
 				if(expectation == UT_NORMAL)
+
 					if(abs(temp - T20C) > 10)
 						test_result["msg"] = "Temperature out of bounds: [temp] | [t_msg]"
 						return test_result
 
 				if(expectation == UT_NORMAL_COLD)
-					if(temp > 120)
-						test_result["msg"] = "Temperature out of bounds: [temp] | [t_msg]"
-						return test_result
 
-				if(expectation == UT_NORMAL_COOL)
-					if(temp > 283)
+					if(temp > 120)
 						test_result["msg"] = "Temperature out of bounds: [temp] | [t_msg]"
 						return test_result
 
@@ -105,83 +105,41 @@ proc/test_air_in_area(var/test_area, var/expectation = UT_NORMAL)
 
 // ==================================================================================================
 
-datum/unit_test/zas_area_test/supply_centcomm
-	name = "ZAS: Supply Shuttle (CentComm)"
-	area_path = /area/supply/dock
-
-datum/unit_test/zas_area_test/emergency_shuttle
-	name = "ZAS: Emergency Shuttle"
-	area_path = /area/shuttle/escape
-
-datum/unit_test/zas_area_test/ai_chamber
-	name = "ZAS: AI Chamber"
-	area_path = /area/turret_protected/ai
-	expectation = UT_NORMAL_COOL
-
-datum/unit_test/zas_area_test/arrival_maint
-	name = "ZAS: Arrival Maintenance"
-	area_path = /area/maintenance/arrivals
-
-datum/unit_test/zas_area_test/
-	name = "ZAS: Cargo Maintenance"
-	area_path = /area/maintenance/cargo
-
-datum/unit_test/zas_area_test/xenobio
-	name = "ZAS: Xenobiology"
-	area_path = /area/rnd/xenobiology
-
-/*
-datum/unit_test/zas_area_test/mining_area
-	name = "ZAS: Mining Area (Vacuum)"
-	area_path = /area/mine/explored
-	expectation = UT_VACUUM
-	disabled = 1
-	why_disabled = "Asteroid Generation disabled"
- */
-datum/unit_test/zas_area_test/
-	name = "ZAS: Cargo Bay"
-	area_path = /area/quartermaster/storage
-
-
-// ==================================================================================================
-
 
 // Here we move a shuttle then test it's area once the shuttle has arrived.
 
 /datum/unit_test/zas_supply_shuttle_moved
 	name = "ZAS: Supply Shuttle (When Moved)"
-	async = TRUE				// We're moving the shuttle using built in procs.
+	async=1				// We're moving the shuttle using built in procs.
 
 	var/datum/shuttle/autodock/ferry/supply/shuttle = null
 
 	var/testtime = 0	//Used as a timer.
 
 /datum/unit_test/zas_supply_shuttle_moved/start_test()
+
 	if(!SSshuttle)
-		fail("The shuttle controller is not setup at time of test.")
+		fail("Shuttle Controller not setup at time of test.")
 		return 1
 	if(!SSshuttle.shuttles.len)
-		if(length(current_map.map_shuttles))
-			fail("This map should have shuttles, but it doesn't!")
-			return 1
-		else
-			pass("This map is not supposed to have any shuttles.")
-			return 1
+		skip("No shuttles have been setup for this map.")
+		return 1
 
-	shuttle = SScargo.shuttle
+	shuttle = SSsupply.shuttle
 	if(isnull(shuttle))
 		return 1
 
 	// Initiate the Move.
-	SScargo.movetime = 5 // Speed up the shuttle movement.
-	shuttle.short_jump(shuttle.get_location_waypoint(!shuttle.location))
+	SSsupply.movetime = 5 // Speed up the shuttle movement.
+	shuttle.short_jump(shuttle.get_location_waypoint(!shuttle.location)) //TODO
 
 	return 1
 
 /datum/unit_test/zas_supply_shuttle_moved/check_result()
 	if(!shuttle)
-		pass("This map has no supply shuttle.")
+		skip("This map has no supply shuttle.")
 		return 1
+
 	if(shuttle.moving_status == SHUTTLE_IDLE && !shuttle.at_station())
 		fail("Shuttle Did not Move")
 		return 1
@@ -194,8 +152,6 @@ datum/unit_test/zas_area_test/
 
 	if(world.time < testtime)
 		return 0
-
-
 	for(var/area/A in shuttle.shuttle_area)
 		var/list/test = test_air_in_area(A.type)
 		if(isnull(test))
@@ -204,12 +160,12 @@ datum/unit_test/zas_area_test/
 
 		switch(test["result"])
 			if(SUCCESS) pass(test["msg"])
+			if(SKIP)    skip(test["msg"])
 			else        fail(test["msg"])
 	return 1
 
 #undef UT_NORMAL
 #undef UT_VACUUM
 #undef UT_NORMAL_COLD
-#undef UT_NORMAL_COOL
 #undef SUCCESS
 #undef FAILURE

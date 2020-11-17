@@ -14,48 +14,27 @@
 */
 
 
-//This proc allows Game Masters to grant a client access to the .getruntimelog verb
+//This proc allows Game Masters to grant a client access to the .getserverlog verb
 //Permissions expire at the end of each round.
 //Runtimes can be used to meta or spot game-crashing exploits so it's advised to only grant coders that
 //you trust access. Also, it may be wise to ensure that they are not going to play in the current round.
-/client/proc/giveruntimelog()
-	set name = ".giveruntimelog"
+/client/proc/giveserverlog()
+	set name = ".giveserverlog"
 	set desc = "Give somebody access to any session logfiles saved to the /log/runtime/ folder."
 	set category = null
 
 	if(!src.holder)
-		to_chat(src, "<span class='warning'>Only Admins may use this command.</span>")
+		to_chat(src, "<font color='red'>Only Admins may use this command.</font>")
 		return
 
-	var/client/target = input(src,"Choose somebody to grant access to the server's runtime logs (permissions expire at the end of each round):","Grant Permissions",null) as null|anything in clients
+	var/client/target = input(src,"Choose somebody to grant access to the server's runtime logs (permissions expire at the end of each round):","Grant Permissions",null) as null|anything in GLOB.clients
 	if(!istype(target,/client))
-		to_chat(src, "<span class='warning'>Error: giveruntimelog(): Client not found.</span>")
+		to_chat(src, "<font color='red'>Error: giveserverlog(): Client not found.</font>")
 		return
 
-	target.verbs |= /client/proc/getruntimelog
-	to_chat(target, "<span class='warning'>You have been granted access to runtime logs. Please use them responsibly or risk being banned.</span>")
+	target.verbs |= /client/proc/getserverlog
+	to_chat(target, "<font color='red'>You have been granted access to runtime logs. Please use them responsibly or risk being banned.</font>")
 	return
-
-
-//This proc allows download of runtime logs saved within the data/logs/ folder by dreamdeamon.
-//It works similarly to show-server-log.
-/client/proc/getruntimelog()
-	set name = ".getruntimelog"
-	set desc = "Retrieve any session logfiles saved by dreamdeamon."
-	set category = null
-
-	var/path = browse_files("data/logs/_runtime/")
-	if(!path)
-		return
-
-	if(file_spam_check())
-		return
-
-	message_admins("[key_name_admin(src)] accessed file: [path]")
-	src << run( file(path) )
-	to_chat(src, "Attempting to send file, this may take a fair few minutes if the file is very large.")
-	return
-
 
 //This proc allows download of past server logs saved within the data/logs/ folder.
 //It works similarly to show-server-log.
@@ -72,9 +51,19 @@
 		return
 
 	message_admins("[key_name_admin(src)] accessed file: [path]")
-	src << run( file(path) )
+	src << run(file(path))
 	to_chat(src, "Attempting to send file, this may take a fair few minutes if the file is very large.")
 	return
 
 
 //Other log stuff put here for the sake of organisation
+
+//Shows today's server log
+/datum/admins/proc/view_txt_log()
+	set category = "Admin"
+	set name = "Show Server Log"
+	set desc = "Shows today's server log."
+
+	usr << run(diary)
+	SSstatistics.add_field_details("admin_verb","VTL") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
+	return

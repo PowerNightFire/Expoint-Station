@@ -1,13 +1,17 @@
 /obj/machinery/door/airlock/lift
 	name = "Elevator Door"
 	desc = "Ding."
-	req_access = list(access_maint_tunnels)
-	autoclose = FALSE
-	icon = 'icons/obj/doors/doorlift.dmi'
-	assembly_type = /obj/structure/door_assembly/door_assembly_lift
-	hashatch = FALSE
-	panel_visible_while_open = TRUE
-	insecure = FALSE
+	opacity = 0
+	autoclose = 0
+	glass = 1
+	icon = 'icons/obj/doors/elevator/door.dmi'
+	fill_file = 'icons/obj/doors/elevator/fill_steel.dmi'
+	glass_file = 'icons/obj/doors/elevator/fill_glass.dmi'
+	bolts_file = 'icons/obj/doors/elevator/lights_bolts.dmi'
+	deny_file = 'icons/obj/doors/elevator/lights_deny.dmi'
+	lights_file = 'icons/obj/doors/elevator/lights_green.dmi'
+
+	paintable = 0
 
 	var/datum/turbolift/lift
 	var/datum/turbolift_floor/floor
@@ -28,9 +32,9 @@
 /obj/machinery/door/airlock/lift/close(var/forced=0)
 	for(var/turf/turf in locs)
 		for(var/mob/living/LM in turf)
-			if(LM.mob_size <= MOB_TINY)
+			if(LM.mob_size <= MOB_SIZE_TINY)
 				var/moved = 0
-				for(dir in shuffle(cardinal.Copy()))
+				for(dir in shuffle(GLOB.cardinal.Copy()))
 					var/dest = get_step(LM,dir)
 					if(!(locate(/obj/machinery/door/airlock/lift) in dest))
 						if(LM.Move(dest))
@@ -41,6 +45,5 @@
 					LM.gib()
 			else // the mob is too big to just move, so we need to give up what we're doing
 				audible_message("\The [src]'s motors grind as they quickly reverse direction, unable to safely close.")
-				cur_command = null // the door will just keep trying otherwise
 				return 0
 	return ..()

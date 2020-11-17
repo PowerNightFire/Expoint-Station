@@ -5,10 +5,16 @@ import dmm
 from mapmerge import merge_map
 
 def main(repo):
-
     if repo.index.conflicts:
         print("You need to resolve merge conflicts first.")
         return 1
+
+    try:
+        repo.lookup_reference('MERGE_HEAD')
+        print("Not running mapmerge for merge commit.")
+        return 0
+    except KeyError:
+        pass
 
     changed = 0
     for path, status in repo.status().items():
@@ -21,12 +27,12 @@ def main(repo):
                 head_blob = repo[repo[repo.head.target].tree[path].id]
             except KeyError:
                 # New map, no entry in HEAD
-                print("Converting new map: {}".format(path))
+                print(f"Converting new map: {path}", flush=True)
                 assert (status & pygit2.GIT_STATUS_INDEX_NEW)
                 merged_map = index_map
             else:
                 # Entry in HEAD, merge the index over it
-                print("Merging map: {}".format(path))
+                print(f"Merging map: {path}", flush=True)
                 assert not (status & pygit2.GIT_STATUS_INDEX_NEW)
                 head_map = dmm.DMM.from_bytes(head_blob.read_raw())
                 merged_map = merge_map(index_map, head_map)
@@ -38,13 +44,13 @@ def main(repo):
 
             # write to the working directory if that's clean
             if status & (pygit2.GIT_STATUS_WT_DELETED | pygit2.GIT_STATUS_WT_MODIFIED):
-                print("Warning: {} has unindexed changes, not overwriting them".format(path))
+                print(f"Warning: {path} has unindexed changes, not overwriting them")
             else:
                 merged_map.to_file(os.path.join(repo.workdir, path))
 
     if changed:
         repo.index.write()
-        print("Merged {} maps.".format(changed))
+        print(f"Merged {changed} maps.")
     return 0
 
 if __name__ == '__main__':

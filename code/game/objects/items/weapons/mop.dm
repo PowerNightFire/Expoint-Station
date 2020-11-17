@@ -2,105 +2,111 @@
 	desc = "The world of janitalia wouldn't be complete without a mop."
 	name = "mop"
 	icon = 'icons/obj/janitor.dmi'
-	item_icons = list(
-		slot_l_hand_str = 'icons/mob/items/lefthand_janitor.dmi',
-		slot_r_hand_str = 'icons/mob/items/righthand_janitor.dmi',
-		)
 	icon_state = "mop"
-	item_state = "mop"
-	force = 3.0
+	force = 5
 	throwforce = 10.0
-	throw_speed = 3
-	throw_range = 7
-	w_class = ITEMSIZE_NORMAL
+	throw_speed = 5
+	throw_range = 10
+	w_class = ITEM_SIZE_NORMAL
 	attack_verb = list("mopped", "bashed", "bludgeoned", "whacked")
-	drop_sound = 'sound/items/drop/woodweapon.ogg'
-	pickup_sound = 'sound/items/pickup/woodweapon.ogg'
 	var/mopping = 0
 	var/mopcount = 0
-	var/cleantime = 25
-	var/last_clean
-	var/clean_msg = FALSE
+	var/mopspeed = 40
+	var/list/moppable_types = list(
+		/obj/effect/decal/cleanable,
+		/obj/effect/rune,
+		/obj/structure/catwalk
+		)
 
 /obj/item/mop/Initialize()
 	. = ..()
 	create_reagents(30)
-	janitorial_supplies |= src
-
-/obj/item/mop/Destroy()
-	janitorial_supplies -= src
-	return ..()
 
 /obj/item/mop/afterattack(atom/A, mob/user, proximity)
-	if(!proximity) return
-	if(istype(A, /turf) || istype(A, /obj/effect/decal/cleanable) || istype(A, /obj/effect/overlay) || istype(A, /obj/effect/rune))
-		if(reagents.total_volume < 1)
-			if(clean_msg)
-				to_chat(user, SPAN_NOTICE("Your mop is dry!"))
+	if(!proximity)
+		return
+
+	var/moppable
+	if(istype(A, /turf))
+		var/turf/T = A
+		var/obj/effect/fluid/F = locate() in T
+		if(F && F.reagents.total_volume > 0)
+			if(F.reagents.total_volume > FLUID_SHALLOW)
+				to_chat(user, SPAN_WARNING("There is too much water here to be mopped up."))
+			else
+				user.visible_message("<span class='notice'>\The [user] begins to mop up \the [T].</span>")
+				if(do_after(user, 40, T) && F && !QDELETED(F))
+					if(F.reagents.total_volume > FLUID_SHALLOW)
+						to_chat(user, SPAN_WARNING("There is too much water here to be mopped up."))
+					else
+						qdel(F)
+						to_chat(user, "<span class='notice'>You have finished mopping!</span>")
 			return
-		if(!(last_clean && world.time < last_clean + 120)) //spam is bad
-			user.visible_message(SPAN_WARNING("[user] begins to mop \the [get_turf(A)]."))
-			clean_msg = TRUE
-			last_clean = world.time
-		else
-			clean_msg = FALSE
-		playsound(loc, 'sound/effects/mop.ogg', 25, 1)
-		if(do_after(user, cleantime))
-			var/turf/T = get_turf(A)
+		moppable = TRUE
+
+	else if(is_type_in_list(A,moppable_types))
+		moppable = TRUE
+
+	if(moppable)
+		if(reagents.total_volume < 1)
+			to_chat(user, "<span class='notice'>Your mop is dry!</span>")
+			return
+		var/turf/T = get_turf(A)
+		if(!T)
+			return
+
+		user.visible_message("<span class='warning'>\The [user] begins to clean \the [T].</span>")
+
+		if(do_after(user, mopspeed, T))
 			if(T)
 				T.clean(src, user)
-			if(clean_msg)
-				to_chat(user, SPAN_NOTICE("You have finished mopping!"))
+			to_chat(user, "<span class='notice'>You have finished mopping!</span>")
+
 
 /obj/effect/attackby(obj/item/I, mob/user)
 	if(istype(I, /obj/item/mop) || istype(I, /obj/item/soap))
 		return
 	..()
 
-/obj/item/mop/update_icon()
-	icon_state = "[initial(icon_state)][reagents.total_volume > 1 ? "_wet" : null]"
-	item_state = icon_state
-	update_held_icon()
-
-/obj/item/mop/on_reagent_change()
-	update_icon()
-
 /obj/item/mop/advanced
+	desc = "The most advanced tool in a custodian's arsenal, with a cleaner synthesizer to boot! Just think of all the viscera you will clean up with this!"
 	name = "advanced mop"
-	desc = "The most advanced tool in a custodian's arsenal, complete with a condenser for self-wetting! Just think of all the viscera you will clean up with this!"
-	icon = 'icons/obj/janitor.dmi'
 	icon_state = "advmop"
-	item_state = "advmop"
-	force = 6.0
-	throwforce = 14
-	throw_range = 8
-	cleantime = 15
+	item_state = "mop"
+	force = 6
+	throwforce = 11
+	mopspeed = 20
+	material = /decl/material/solid/metal/aluminium
+	matter = list(
+		/decl/material/solid/metal/steel = MATTER_AMOUNT_REINFORCEMENT,
+		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE
+	)
 	var/refill_enabled = TRUE //Self-refill toggle for when a janitor decides to mop with something other than water.
-	var/refill_rate = 0.5 //Rate per process() tick mop refills itself
-	var/refill_reagent = /datum/reagent/water //Determins what reagent to use for refilling, just in case someone wanted to make a HOLY MOP OF PURGING
+	var/refill_rate = 1 //Rate per process() tick mop refills itself
+	var/refill_reagent = /decl/material/liquid/cleaner //Determins what reagent to use for refilling, just in case someone wanted to make a HOLY MOP OF PURGING
 
-/obj/item/mop/advanced/New()
-	..()
-	START_PROCESSING(SSprocessing, src)
+/obj/item/mop/advanced/Initialize()
+	. = ..()
+	START_PROCESSING(SSobj, src)
 
 /obj/item/mop/advanced/attack_self(mob/user)
 	refill_enabled = !refill_enabled
 	if(refill_enabled)
-		START_PROCESSING(SSprocessing, src)
+		START_PROCESSING(SSobj, src)
 	else
-		STOP_PROCESSING(SSprocessing,src)
-	to_chat(user, SPAN_NOTICE("You set the condenser switch to the <b>'[refill_enabled ? "ON" : "OFF"]'</b> position."))
-	playsound(user, 'sound/machines/click.ogg', 25, 1)
+		STOP_PROCESSING(SSobj,src)
+	to_chat(user, "<span class='notice'>You set the condenser switch to the '[refill_enabled ? "ON" : "OFF"]' position.</span>")
+	playsound(user, 'sound/machines/click.ogg', 30, 1)
 
-/obj/item/mop/advanced/process()
+/obj/item/mop/advanced/Process()
 	if(reagents.total_volume < 30)
 		reagents.add_reagent(refill_reagent, refill_rate)
 
 /obj/item/mop/advanced/examine(mob/user)
-	..()
-	to_chat(user, SPAN_NOTICE("\The condenser switch is set to <b>[refill_enabled ? "ON" : "OFF"]</b>."))
+	. = ..()
+	to_chat(user, "<span class='notice'>The condenser switch is set to <b>[refill_enabled ? "ON" : "OFF"]</b>.</span>")
 
 /obj/item/mop/advanced/Destroy()
 	if(refill_enabled)
-		STOP_PROCESSING(SSprocessing, src)
+		STOP_PROCESSING(SSobj, src)
 	return ..()

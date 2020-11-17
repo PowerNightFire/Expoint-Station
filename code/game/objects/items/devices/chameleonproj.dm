@@ -1,36 +1,35 @@
-/obj/item/device/chameleon
+/obj/item/chameleon
 	name = "chameleon projector"
-	desc_antag = "This device can let you disguise as common objects. Click on an object with this in your active hand to scan it, then activate it to use it in your hand."
+	icon = 'icons/obj/items/device/chameleon_proj.dmi'
 	icon_state = "shield0"
-	flags = CONDUCT
-	slot_flags = SLOT_BELT
+	obj_flags = OBJ_FLAG_CONDUCTIBLE
+	slot_flags = SLOT_LOWER_BODY
 	item_state = "electronic"
-	throwforce = 5
+	throwforce = 5.0
 	throw_speed = 1
 	throw_range = 5
-	w_class = ITEMSIZE_SMALL
-	origin_tech = list(TECH_ILLEGAL = 4, TECH_MAGNET = 4)
-	var/can_use = TRUE
+	w_class = ITEM_SIZE_SMALL
+	origin_tech = "{'esoteric':4,'magnets':4}"
+	var/can_use = 1
 	var/obj/effect/dummy/chameleon/active_dummy = null
 	var/saved_item = /obj/item/trash/cigbutt
-	var/saved_icon = 'icons/obj/clothing/masks.dmi'
+	var/saved_icon = 'icons/obj/clothing/obj_mask.dmi'
 	var/saved_icon_state = "cigbutt"
 	var/saved_overlays
 
-/obj/item/device/chameleon/dropped()
+/obj/item/chameleon/dropped()
 	disrupt()
 	..()
 
-/obj/item/device/chameleon/equipped()
+/obj/item/chameleon/equipped()
 	disrupt()
 	..()
 
-/obj/item/device/chameleon/attack_self()
+/obj/item/chameleon/attack_self()
 	toggle()
 
-/obj/item/device/chameleon/afterattack(atom/target, mob/user , proximity)
-	if(!proximity)
-		return
+/obj/item/chameleon/afterattack(atom/target, mob/user , proximity)
+	if(!proximity) return
 	if(!active_dummy)
 		if(istype(target,/obj/item) && !istype(target, /obj/item/disk/nuclear))
 			playsound(get_turf(src), 'sound/weapons/flash.ogg', 100, 1, -6)
@@ -40,15 +39,14 @@
 			saved_icon_state = target.icon_state
 			saved_overlays = target.overlays
 
-/obj/item/device/chameleon/proc/toggle()
-	if(!can_use || !saved_item)
-		return
+/obj/item/chameleon/proc/toggle()
+	if(!can_use || !saved_item) return
 	if(active_dummy)
 		eject_all()
 		playsound(get_turf(src), 'sound/effects/pop.ogg', 100, 1, -6)
 		qdel(active_dummy)
 		active_dummy = null
-		to_chat(usr, "<span class='notice'>You deactivate \the [src].</span>")
+		to_chat(usr, "<span class='notice'>You deactivate the [src].</span>")
 		var/obj/effect/overlay/T = new /obj/effect/overlay(get_turf(src))
 		T.icon = 'icons/effects/effects.dmi'
 		flick("emppulse",T)
@@ -56,20 +54,22 @@
 	else
 		playsound(get_turf(src), 'sound/effects/pop.ogg', 100, 1, -6)
 		var/obj/O = new saved_item(src)
-		if(!O)
-			return
+		if(!O) return
 		var/obj/effect/dummy/chameleon/C = new /obj/effect/dummy/chameleon(usr.loc)
 		C.activate(O, usr, saved_icon, saved_icon_state, saved_overlays, src)
 		qdel(O)
-		to_chat(usr, "<span class='notice'>You activate \the [src].</span>")
+		to_chat(usr, "<span class='notice'>You activate the [src].</span>")
 		var/obj/effect/overlay/T = new/obj/effect/overlay(get_turf(src))
 		T.icon = 'icons/effects/effects.dmi'
 		flick("emppulse",T)
 		QDEL_IN(T, 8)
 
-/obj/item/device/chameleon/proc/disrupt(var/delete_dummy = 1)
+/obj/item/chameleon/proc/disrupt(var/delete_dummy = 1)
 	if(active_dummy)
-		spark(src, 5)
+		var/datum/effect/effect/system/spark_spread/spark_system = new /datum/effect/effect/system/spark_spread
+		spark_system.set_up(5, 0, src)
+		spark_system.attach(src)
+		spark_system.start()
 		eject_all()
 		if(delete_dummy)
 			qdel(active_dummy)
@@ -77,7 +77,7 @@
 		can_use = 0
 		spawn(50) can_use = 1
 
-/obj/item/device/chameleon/proc/eject_all()
+/obj/item/chameleon/proc/eject_all()
 	for(var/atom/movable/A in active_dummy)
 		A.forceMove(active_dummy.loc)
 		if(ismob(A))
@@ -87,12 +87,12 @@
 /obj/effect/dummy/chameleon
 	name = ""
 	desc = ""
-	density = FALSE
-	anchored = TRUE
-	var/can_move = TRUE
-	var/obj/item/device/chameleon/master = null
+	density = 0
+	anchored = 1
+	var/can_move = 1
+	var/obj/item/chameleon/master = null
 
-/obj/effect/dummy/chameleon/proc/activate(var/obj/O, var/mob/M, new_icon, new_iconstate, new_overlays, var/obj/item/device/chameleon/C)
+/obj/effect/dummy/chameleon/proc/activate(var/obj/O, var/mob/M, new_icon, new_iconstate, new_overlays, var/obj/item/chameleon/C)
 	name = O.name
 	desc = O.desc
 	icon = new_icon
@@ -113,9 +113,10 @@
 		to_chat(M, "<span class='warning'>Your chameleon-projector deactivates.</span>")
 	master.disrupt()
 
-/obj/effect/dummy/chameleon/ex_act(var/severity = 2.0)
+/obj/effect/dummy/chameleon/explosion_act()
+	SHOULD_CALL_PARENT(FALSE)
 	for(var/mob/M in src)
-		to_chat(M, "<span class='warning'>Your chameleon-projector deactivates.</span>")
+		to_chat(M, SPAN_DANGER("Your chameleon-projector deactivates."))
 	master.disrupt()
 
 /obj/effect/dummy/chameleon/bullet_act()
@@ -125,7 +126,8 @@
 	master.disrupt()
 
 /obj/effect/dummy/chameleon/relaymove(var/mob/user, direction)
-	if(istype(loc, /turf/space)) return //No magical space movement!
+	if(!has_gravity())
+		return //No magical space movement!
 
 	if(can_move)
 		can_move = 0
@@ -140,9 +142,10 @@
 				spawn(20) can_move = 1
 			else
 				spawn(25) can_move = 1
-		step(src, direction)
+		if(isturf(loc))
+			step(src, direction)
 	return
 
 /obj/effect/dummy/chameleon/Destroy()
 	master.disrupt(0)
-	return ..()
+	. = ..()

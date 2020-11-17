@@ -1,75 +1,38 @@
-/obj/item/device/personal_shield
+/obj/item/personal_shield
 	name = "personal shield"
 	desc = "Truely a life-saver: this device protects its user from being hit by objects moving very, very fast, though only for a few shots."
-	icon = 'icons/obj/personal_shield.dmi'
-	icon_state = "personal_shield"
-	item_state = "personal_shield"
-	contained_sprite = TRUE
-	slot_flags = SLOT_BELT
-	w_class = ITEMSIZE_LARGE
-	action_button_name = "Toggle Shield"
-	var/next_recharge
+	icon = 'icons/obj/items/weapon/batterer.dmi'
+	icon_state = "batterer"
 	var/uses = 5
 	var/obj/aura/personal_shield/device/shield
 
-/obj/item/device/personal_shield/examine(mob/user, distance)
-	..()
-	if(Adjacent(user))
-		to_chat(user, SPAN_NOTICE("\The [src] can absorb [uses] more shot\s."))
-
-/obj/item/device/personal_shield/Initialize()
-	. = ..()
-	START_PROCESSING(SSprocessing, src)
-
-/obj/item/device/personal_shield/process()
-	if(next_recharge < world.time)
-		uses = min(5, uses + 1)
-		if(uses == 1)
-			update_icon()
-		next_recharge = world.time + 1 MINUTE
-
-/obj/item/device/personal_shield/attack_self(mob/living/user)
+/obj/item/personal_shield/attack_self(var/mob/living/user)
 	if(uses && !shield)
-		shield = new /obj/aura/personal_shield/device(user)
-		shield.added_to(user)
-		shield.set_shield(src)
-		user.update_inv_belt()
+		shield = new(user,src)
 	else
-		dissipate()
-		user.update_inv_belt()
-	update_icon()
-
-/obj/item/device/personal_shield/Move()
-	dissipate()
-	return ..()
-
-/obj/item/device/personal_shield/forceMove()
-	dissipate()
-	return ..()
-
-/obj/item/device/personal_shield/proc/take_charge()
-	uses--
-	if(!uses)
-		to_chat(shield.user, FONT_LARGE(SPAN_WARNING("\The [src] begins to spark as it breaks!")))
 		QDEL_NULL(shield)
+
+/obj/item/personal_shield/Move()
+	QDEL_NULL(shield)
+	return ..()
+
+/obj/item/personal_shield/forceMove()
+	QDEL_NULL(shield)
+	return ..()
+
+/obj/item/personal_shield/proc/take_charge()
+	if(!--uses)
+		QDEL_NULL(shield)
+		to_chat(loc,"<span class='danger'>\The [src] begins to spark as it breaks!</span>")
 		update_icon()
 		return
 
-/obj/item/device/personal_shield/update_icon()
-	if(uses && shield)
-		icon_state = "[initial(icon_state)]_on"
-		item_state = "[initial(item_state)]_on"
+/obj/item/personal_shield/on_update_icon()
+	if(uses)
+		icon_state = "batterer"
 	else
-		icon_state = "[initial(icon_state)]"
-		item_state = "[initial(item_state)]"
+		icon_state = "battererburnt"
 
-/obj/item/device/personal_shield/Destroy()
-	dissipate()
-	STOP_PROCESSING(SSprocessing, src)
-	return ..()
-
-/obj/item/device/personal_shield/proc/dissipate()
-	if(shield?.user)
-		to_chat(shield.user, FONT_LARGE(SPAN_WARNING("\The [src] fades around you, dissipating.")))
+/obj/item/personal_shield/Destroy()
 	QDEL_NULL(shield)
-	update_icon()
+	return ..()

@@ -2,8 +2,8 @@
 	set category = "Debug"
 	set name = "Show Air Report"
 
-	if(!Master || !SSair)
-		alert(usr,"Master_controller or SSair not found.","Air Report")
+	if(!SSair)
+		alert(usr,"SSair not found.","Air Report")
 		return
 
 	var/active_groups = SSair.active_zones
@@ -17,7 +17,7 @@
 	var/inactive_on_main_station = 0
 	for(var/zone/zone in SSair.zones)
 		var/turf/simulated/turf = locate() in zone.contents
-		if(turf && isStationLevel(turf.z))
+		if(turf && (turf.z in GLOB.using_map.station_levels))
 			if(zone.needs_update)
 				active_on_main_station++
 			else
@@ -39,7 +39,7 @@
 	Tile Update: [SSair.tiles_to_update.len]<BR>
 "}
 
-	usr << browse(output,"window=airreport")
+	show_browser(usr, output, "window=airreport")
 
 /client/proc/fix_next_move()
 	set category = "Debug"
@@ -48,7 +48,7 @@
 	var/largest_click_time = 0
 	var/mob/largest_move_mob = null
 	var/mob/largest_click_mob = null
-	for(var/mob/M in mob_list)
+	for(var/mob/M in world)
 		if(!M.client)
 			continue
 		if(M.next_move >= largest_move_time)
@@ -69,7 +69,7 @@
 	message_admins("[key_name_admin(largest_move_mob)] had the largest move delay with [largest_move_time] frames / [largest_move_time/10] seconds!", 1)
 	message_admins("[key_name_admin(largest_click_mob)] had the largest click delay with [largest_click_time] frames / [largest_click_time/10] seconds!", 1)
 	message_admins("world.time = [world.time]", 1)
-	feedback_add_details("admin_verb","UFE") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
+	SSstatistics.add_field_details("admin_verb","UFE") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 	return
 
 /client/proc/radio_report()
@@ -77,9 +77,9 @@
 	set name = "Radio report"
 
 	var/output = "<b>Radio Report</b><hr>"
-	for (var/fq in SSradio.frequencies)
+	for (var/fq in radio_controller.frequencies)
 		output += "<b>Freq: [fq]</b><br>"
-		var/datum/radio_frequency/fqs = SSradio.frequencies[fq]
+		var/datum/radio_frequency/fqs = radio_controller.frequencies[fq]
 		if (!fqs)
 			output += "&nbsp;&nbsp;<b>ERROR</b><br>"
 			continue
@@ -91,71 +91,22 @@
 			output += "&nbsp;&nbsp;[filter]: [f.len]<br>"
 			for (var/device in f)
 				if (isobj(device))
-					output += "&nbsp;&nbsp;&nbsp;&nbsp;[device] ([device:x],[device:y],[device:z] in area [get_area(device:loc)])<br>"
+					output += "&nbsp;&nbsp;&nbsp;&nbsp;[device] ([device:x],[device:y],[device:z] in area [get_area(device)])<br>"
 				else
 					output += "&nbsp;&nbsp;&nbsp;&nbsp;[device]<br>"
 
-	usr << browse(output,"window=radioreport")
-	feedback_add_details("admin_verb","RR") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
+	show_browser(usr, output, "window=radioreport")
+	SSstatistics.add_field_details("admin_verb","RR") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
 /client/proc/reload_admins()
 	set name = "Reload Admins"
 	set category = "Debug"
 
-	if(!check_rights(R_SERVER|R_DEV))
-		return
+	if(!check_rights(R_SERVER))	return
 
-	if (config.use_forumuser_api)
-		update_admins_from_api(FALSE)
-
-	log_and_message_admins("manually reloaded admins.")
+	message_admins("[usr] manually reloaded admins")
 	load_admins()
-	feedback_add_details("admin_verb","RLDA") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
-
-//todo:
-/client/proc/jump_to_dead_group()
-	set name = "Jump to dead group"
-	set category = "Debug"
-		/*
-	if(!holder)
-		to_chat(src, "Only administrators may use this command.")
-		return
-
-	if(!SSair)
-		to_chat(usr, "Cannot find air_system")
-		return
-	var/datum/air_group/dead_groups = list()
-	for(var/datum/air_group/group in SSair.air_groups)
-		if (!group.group_processing)
-			dead_groups += group
-	var/datum/air_group/dest_group = pick(dead_groups)
-	usr.forceMove(pick(dest_group.members))
-	feedback_add_details("admin_verb","JDAG") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
-	return
-	*/
-
-/client/proc/kill_airgroup()
-	set name = "Kill Local Airgroup"
-	set desc = "Use this to allow manual manupliation of atmospherics."
-	set category = "Debug"
-	/*
-	if(!holder)
-		to_chat(src, "Only administrators may use this command.")
-		return
-
-	if(!SSair)
-		to_chat(usr, "Cannot find air_system")
-		return
-
-	var/turf/T = get_turf(usr)
-	if(istype(T, /turf/simulated))
-		var/datum/air_group/AG = T:parent
-		AG.next_check = 30
-		AG.group_processing = 0
-	else
-		to_chat(usr, "Local airgroup is unsimulated!")
-	feedback_add_details("admin_verb","KLAG") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
-	*/
+	SSstatistics.add_field_details("admin_verb","RLDA") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
 
 /client/proc/print_jobban_old()
 	set name = "Print Jobban Log"
@@ -171,11 +122,11 @@
 	set desc = "This searches all the active jobban entries for the current round and outputs the results to standard output."
 	set category = "Debug"
 
-	var/filter = input("Contains what?","Filter") as text|null
-	if(!filter)
+	var/job_filter = input("Contains what?","Filter") as text|null
+	if(!job_filter)
 		return
 
 	to_chat(usr, "<b>Jobbans active in this round.</b>")
 	for(var/t in jobban_keylist)
-		if(findtext(t, filter))
+		if(findtext(t, job_filter))
 			to_chat(usr, "[t]")

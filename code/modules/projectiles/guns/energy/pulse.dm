@@ -1,43 +1,20 @@
-/obj/item/gun/energy/pulse
-	name = "pulse carbine"
-	desc = "A weapon that uses advanced pulse-based beam generation technology to emit powerful laser blasts. Because of its complexity and cost, it is rarely seen in use except by specialists."
-	icon = 'icons/obj/guns/pulse_carbine.dmi'
-	icon_state = "pulse_carbine"
-	item_state = "pulse_carbine"
-	slot_flags = SLOT_BELT
-	force = 5
-	fire_sound='sound/weapons/laser1.ogg'
-	projectile_type = /obj/item/projectile/beam
-	sel_mode = 2
-	accuracy = 1
-	max_shots = 10
-	can_turret = 1
-	secondary_projectile_type = /obj/item/projectile/beam/pulse
-	secondary_fire_sound = 'sound/weapons/pulse.ogg'
-	can_switch_modes = 0
-	turret_sprite_set = "pulse"
-	turret_is_lethal = 1
-
-	firemodes = list(
-		list(mode_name="stun", projectile_type=/obj/item/projectile/beam/stun, fire_sound='sound/weapons/Taser.ogg'),
-		list(mode_name="lethal", projectile_type=/obj/item/projectile/beam, fire_sound='sound/weapons/laser1.ogg'),
-		list(mode_name="DESTROY", projectile_type=/obj/item/projectile/beam/pulse, fire_sound='sound/weapons/pulse.ogg', fire_delay=25)
-		)
-
-/obj/item/gun/energy/pulse/mounted
-	name = "mounted pulse carbine"
-	charge_cost = 400
-	self_recharge = 1
-	use_external_power = 1
-	recharge_time = 10
-	can_turret = 0
-
-/obj/item/gun/energy/pulse/pistol
+//Fires bursts of weaker projs
+/obj/item/gun/energy/pulse_pistol
 	name = "pulse pistol"
-	desc = "A weapon that uses advanced pulse-based beam generation technology to emit powerful laser blasts. This one is a really compact model."
-	slot_flags = SLOT_BELT|SLOT_HOLSTER
+	desc = "A weapon that uses advanced pulse-based beam generation technology to emit powerful laser blasts. Even smaller than the carbine."
 	icon = 'icons/obj/guns/pulse_pistol.dmi'
-	icon_state = "pulse_pistol"
-	item_state = "pulse_pistol"
-	offhand_accuracy = 1
-	max_shots = 5
+	icon_state = ICON_STATE_WORLD
+	indicator_color = COLOR_LUMINOL
+	slot_flags = SLOT_LOWER_BODY|SLOT_HOLSTER
+	force = 6
+	projectile_type = /obj/item/projectile/beam/pulse
+	max_shots = 21
+	w_class = ITEM_SIZE_NORMAL
+	one_hand_penalty=1 //a bit heavy
+	burst_delay = 1
+	multi_aim = 1
+	burst_delay = 3
+	burst = 3
+	accuracy = -1
+	wielded_item_state = null
+	bulk = 0

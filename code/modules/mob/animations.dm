@@ -43,64 +43,47 @@ note dizziness decrements automatically in the mob's Life() proc.
 		client.pixel_y = 0
 
 // jitteriness - copy+paste of dizziness
-/mob/var/is_jittery = 0
+/mob/var/is_jittery = FALSE
 /mob/var/jitteriness = 0//Carbon
-/mob/proc/make_jittery(var/amount)
-	if(!istype(src, /mob/living/carbon/human)) // for the moment, only humans get dizzy
-		return
 
-	jitteriness = min(1000, jitteriness + amount)	// store what will be new value
-													// clamped to max 1000
-	if(jitteriness > 100 && !is_jittery)
-		spawn(0)
+/mob/proc/make_jittery(var/amount)
+	return //Only for living/carbon/human/
+
+/mob/living/carbon/human/make_jittery(var/amount)
+	if(jittery_damage())
+		jitteriness = Clamp(jitteriness + amount, 0, 1000)
+		if(jitteriness > 100)
 			jittery_process()
 
-
-// Typo from the oriignal coder here, below lies the jitteriness process. So make of his code what you will, the previous comment here was just a copypaste of the above.
+// Typo from the original coder here, below lies the jitteriness process. So make of his code what you will, the previous comment here was just a copypaste of the above.
 /mob/proc/jittery_process()
-	//var/old_x = pixel_x
-	//var/old_y = pixel_y
-	is_jittery = 1
+	set waitfor = 0
+	if(is_jittery)
+		return
+	is_jittery = TRUE
 	while(jitteriness > 100)
-//		var/amplitude = jitteriness*(sin(jitteriness * 0.044 * world.time) + 1) / 70
-//		pixel_x = amplitude * sin(0.008 * jitteriness * world.time)
-//		pixel_y = amplitude * cos(0.008 * jitteriness * world.time)
-
 		var/amplitude = min(4, jitteriness / 100)
-		pixel_x = old_x + rand(-amplitude, amplitude)
-		pixel_y = old_y + rand(-amplitude/3, amplitude/3)
-
+		do_jitter(amplitude)
 		sleep(1)
 	//endwhile - reset the pixel offsets to zero
-	is_jittery = 0
-	pixel_x = old_x
-	pixel_y = old_y
+	is_jittery = FALSE
+	do_jitter(0)
 
+/mob/proc/do_jitter(amplitude)
+	pixel_x = default_pixel_x + rand(-amplitude, amplitude)
+	pixel_y = default_pixel_y + rand(-amplitude/3, amplitude/3)
 
 //handles up-down floaty effect in space and zero-gravity
 /mob/var/is_floating = 0
 /mob/var/floatiness = 0
 
-/mob/proc/update_floating(var/dense_object=0)
+/mob/proc/update_floating()
 
-	if(anchored||buckled)
+	if(anchored || buckled || has_gravity())
 		make_floating(0)
 		return
 
-	var/turf/turf = get_turf(src)
-	if(!istype(turf,/turf/space))
-		var/area/A = turf.loc
-		if(istype(A) && A.has_gravity())
-			make_floating(0)
-			return
-		else if (Check_Shoegrip())
-			make_floating(0)
-			return
-		else
-			make_floating(1)
-			return
-
-	if(dense_object && Check_Shoegrip())
+	if(check_space_footing())
 		make_floating(0)
 		return
 
@@ -108,10 +91,6 @@ note dizziness decrements automatically in the mob's Life() proc.
 	return
 
 /mob/proc/make_floating(var/n)
-	if(buckled)
-		if(is_floating)
-			stop_floating()
-		return
 	floatiness = n
 
 	if(floatiness && !is_floating)
@@ -126,47 +105,27 @@ note dizziness decrements automatically in the mob's Life() proc.
 	var/amplitude = 2 //maximum displacement from original position
 	var/period = 36 //time taken for the mob to go up >> down >> original position, in deciseconds. Should be multiple of 4
 
-	var/top = old_y + amplitude
-	var/bottom = old_y - amplitude
+	var/top = default_pixel_z + amplitude
+	var/bottom = default_pixel_z - amplitude
 	var/half_period = period / 2
 	var/quarter_period = period / 4
 
-	animate(src, pixel_y = top, time = quarter_period, easing = SINE_EASING | EASE_OUT, loop = -1)		//up
-	animate(pixel_y = bottom, time = half_period, easing = SINE_EASING, loop = -1)						//down
-	animate(pixel_y = old_y, time = quarter_period, easing = SINE_EASING | EASE_IN, loop = -1)			//back
+	animate(src, pixel_z = top, time = quarter_period, easing = SINE_EASING | EASE_OUT, loop = -1)		//up
+	animate(pixel_z = bottom, time = half_period, easing = SINE_EASING, loop = -1)						//down
+	animate(pixel_z = default_pixel_z, time = quarter_period, easing = SINE_EASING | EASE_IN, loop = -1)			//back
 
 /mob/proc/stop_floating()
-	animate(src, pixel_y = 0, time = 5, easing = SINE_EASING | EASE_IN) //halt animation
+	animate(src, pixel_z = default_pixel_z, time = 5, easing = SINE_EASING | EASE_IN) //halt animation
 	//reset the pixel offsets to zero
 	is_floating = 0
 
 /atom/movable/proc/do_attack_animation(atom/A, atom/movable/weapon)
+
 	var/pixel_x_diff = 0
 	var/pixel_y_diff = 0
 	var/turn_dir = 1
 
 	var/direction = get_dir(src, A)
-	switch(direction)
-		if(NORTH)
-			pixel_y_diff = 8
-		if(SOUTH)
-			pixel_y_diff = -8
-		if(EAST)
-			pixel_x_diff = 8
-		if(WEST)
-			pixel_x_diff = -8
-		if(NORTHEAST)
-			pixel_x_diff = 8
-			pixel_y_diff = 8
-		if(NORTHWEST)
-			pixel_x_diff = -8
-			pixel_y_diff = 8
-		if(SOUTHEAST)
-			pixel_x_diff = 8
-			pixel_y_diff = -8
-		if(SOUTHWEST)
-			pixel_x_diff = -8
-			pixel_y_diff = -8
 	if(direction & NORTH)
 		pixel_y_diff = 8
 		turn_dir = rand(50) ? -1 : 1
@@ -182,37 +141,42 @@ note dizziness decrements automatically in the mob's Life() proc.
 
 	var/default_pixel_x = initial(pixel_x)
 	var/default_pixel_y = initial(pixel_y)
+	var/mob/mob = src
+	if(istype(mob))
+		default_pixel_x = mob.default_pixel_x
+		default_pixel_y = mob.default_pixel_y
 
-	animate(src, pixel_x = pixel_x + pixel_x_diff, pixel_y = pixel_y + pixel_y_diff, time = 2)
-	animate(pixel_x = default_pixel_x, pixel_y = default_pixel_y, time = 2)
 	var/matrix/initial_transform = matrix(transform)
 	var/matrix/rotated_transform = transform.Turn(15 * turn_dir)
 
 	animate(src, pixel_x = pixel_x + pixel_x_diff, pixel_y = pixel_y + pixel_y_diff, transform = rotated_transform, time = 2, easing = BACK_EASING | EASE_IN)
 	animate(pixel_x = default_pixel_x, pixel_y = default_pixel_y, transform = initial_transform, time = 2, easing = SINE_EASING)
 
-/mob/do_attack_animation(atom/A, var/atom/attack_item)
+/mob/do_attack_animation(atom/A, atom/movable/weapon)
 	..()
 	is_floating = 0 // If we were without gravity, the bouncing animation got stopped, so we make sure we restart the bouncing after the next movement.
 
-	if(attack_item == FIST_ATTACK_ANIMATION) // only play the physical movement
-		return
-	// What icon do we use for the attack?
-	var/image/I
-	if(attack_item)
-		I = image(attack_item.icon, A, attack_item.icon_state, A.layer + 1)
-	else
-		if(hand && l_hand) // Attacked with item in left hand.
-			I = image(l_hand.icon, A, l_hand.icon_state, A.layer + 1)
-		else if (!hand && r_hand) // Attacked with item in right hand.
-			I = image(r_hand.icon, A, r_hand.icon_state, A.layer + 1)
-		else // Attacked with a fist?
+	// What are we attacking with?
+	if(!weapon)
+		weapon = get_active_hand()
+		if(!weapon)
 			return
+
+	// Create an image to show to viewers.
+	// Reset plane and layer so that it doesn't inherit the UI settings from equipped items.
+	var/image/I = new(loc = A)
+	I.appearance = weapon
+	I.plane = DEFAULT_PLANE
+	I.layer = A.layer + 0.1
+	I.pixel_x = 0
+	I.pixel_y = 0
+	I.pixel_z = 0
+	I.pixel_w = 0
 
 	// Who can see the attack?
 	var/list/viewing = list()
-	for (var/mob/M in viewers(A))
-		if (M.client)
+	for(var/mob/M in viewers(A))
+		if(M.client)
 			viewing |= M.client
 	flick_overlay(I, viewing, 5) // 5 ticks/half a second
 
@@ -233,16 +197,8 @@ note dizziness decrements automatically in the mob's Life() proc.
 	if(!direction) // Attacked self?!
 		I.pixel_z = 16
 
-	var/matrix/M = new
-	M.Turn(pick(-20, 20))
 	// And animate the attack!
-	animate(I, alpha = 175, pixel_x = 0, pixel_y = 0, pixel_z = 0, time = 2, easing = CUBIC_EASING)
-	sleep(2)
-	animate(I, transform = M, time = 1) // apply the fancy matrix
-	sleep(1)
-	animate(I, transform = matrix(), time = 1) // back to a default matrix
-	sleep(1)
-	animate(I, alpha = 0, time = 1)
+	animate(I, alpha = 175, pixel_x = 0, pixel_y = 0, pixel_z = 0, time = 3)
 
 /mob/proc/spin(spintime, speed)
 	spawn()
@@ -261,3 +217,44 @@ note dizziness decrements automatically in the mob's Life() proc.
 			set_dir(D)
 			spintime -= speed
 	return
+
+/mob/proc/phase_in(var/turf/T)
+	if(!T)
+		return
+
+	playsound(T, 'sound/effects/phasein.ogg', 25, 1)
+	playsound(T, 'sound/effects/sparks2.ogg', 50, 1)
+	anim(src,'icons/mob/mob.dmi',,"phasein",,dir)
+
+/mob/proc/phase_out(var/turf/T)
+	if(!T)
+		return
+	playsound(T, "sparks", 50, 1)
+	anim(src,'icons/mob/mob.dmi',,"phaseout",,dir)
+
+/mob/living/proc/on_structure_offset(var/offset = 0)
+
+	var/next_x = default_pixel_x
+	var/next_y = default_pixel_y
+	var/next_z = default_pixel_z
+
+	if(offset)
+		next_z += offset
+	else if(pixel_z != default_pixel_z)
+		var/turf/T = get_turf(src)
+		for(var/obj/structure/S in T.contents)
+			if(S && S.mob_offset)
+				return
+
+	if(buckled && buckled.buckle_pixel_shift)
+		var/list/pixel_shift = cached_json_decode(buckled.buckle_pixel_shift)
+		next_x = default_pixel_x + pixel_shift["x"]
+		next_y = default_pixel_y + pixel_shift["y"]
+		next_z = default_pixel_z + pixel_shift["z"]
+
+	if(pixel_x != next_x || pixel_y != next_y || pixel_z != next_z)
+		animate(src, pixel_x = next_x, pixel_y = next_y, pixel_z = next_z, 2, 1, SINE_EASING)
+
+/mob/living/Move()
+	. = ..()
+	on_structure_offset(0)

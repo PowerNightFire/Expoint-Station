@@ -1,75 +1,52 @@
 /obj/item/gun/energy/taser
-	name = "taser gun"
-	desc = "The NT Mk30 NL is a small, low capacity gun used for non-lethal takedowns."
+	name = "electrolaser"
+	desc = "The Mk30 NL is a small, low capacity gun used for non-lethal takedowns. It can switch between high and low intensity stun shots."
 	icon = 'icons/obj/guns/taser.dmi'
-	icon_state = "taser"
-	item_state = "taser"
-	fire_sound = 'sound/weapons/Taser.ogg'
+	icon_state = ICON_STATE_WORLD
+	safety_icon = "safety"
+	item_state = null	//so the human update icon uses the icon_state instead.
 	max_shots = 5
-	accuracy = 1 // More of a buff to secborgs and mounted taser users.
-	projectile_type = /obj/item/projectile/energy/electrode
-	can_turret = 1
-	turret_sprite_set = "carbine"
-	turret_is_lethal = 0
+	projectile_type = /obj/item/projectile/beam/stun
+	combustion = 0
+
+	firemodes = list(
+		list(mode_name="stun", projectile_type=/obj/item/projectile/beam/stun),
+		list(mode_name="shock", projectile_type=/obj/item/projectile/beam/stun/shock),
+		)
 
 /obj/item/gun/energy/taser/mounted
-	name = "mounted taser gun"
+	name = "mounted electrolaser"
 	self_recharge = 1
 	use_external_power = 1
-	can_turret = 0
+	has_safety = FALSE
 
-/obj/item/gun/energy/stunrevolver
-	name = "stun revolver"
-	desc = "A Hephaestus designed high-tech revolver that fires rechargable stun bolts."
-	desc_fluff = "The ST-30 is a highly advanced sidearm produced by Hephaestus Industries. It is designed for self-defense in a less-than-lethal manner. While the weapon design itself is not groundbreaking, it fires high velocity energy bolts with rechargable cartridges, possessing unusual high stopping power."
-	icon = 'icons/obj/guns/stunrevolver.dmi'
-	icon_state = "stunrevolver"
-	item_state = "stunrevolver"
-	has_item_ratio = FALSE
-	fire_sound = 'sound/weapons/gunshot/gunshot1.ogg'
-	origin_tech = list(TECH_COMBAT = 3, TECH_MATERIAL = 3, TECH_POWER = 2)
-	projectile_type = /obj/item/projectile/energy/electrode
-	max_shots = 8
+/obj/item/gun/energy/taser/mounted/cyborg
+	name = "electrolaser"
+	max_shots = 6
+	recharge_time = 10 //Time it takes for shots to recharge (in ticks)
 
+/obj/item/gun/energy/plasmastun
+	name = "plasma pulse projector"
+	desc = "The Mars Military Industries MA21 Selkie is a weapon that uses a laser pulse to ionise the local atmosphere, creating a disorienting pulse of plasma and deafening shockwave as the wave expands."
+	icon = 'icons/obj/guns/plasma_stun.dmi'
+	icon_state = ICON_STATE_WORLD
+	origin_tech = "{'combat':2,'materials':2,'powerstorage':3}"
+	fire_delay = 20
+	max_shots = 4
+	projectile_type = /obj/item/projectile/energy/plasmastun
+	combustion = 0
+	indicator_color = COLOR_VIOLET
 
-/obj/item/gun/energy/crossbow
-	name = "mini energy-crossbow"
-	desc = "A weapon favored by many mercenary stealth specialists."
-	desc_info = "This is an energy weapon.  To fire the weapon, ensure your intent is *not* set to 'help', have your gun mode set to 'fire', \
-	then click where you want to fire."
-	desc_antag = "This is a stealthy weapon which fires paralyzing bolts at your target.  When it hits someone, they will suffer a stun effect. \
-	The energy crossbow recharges itself slowly, and can be concealed in your pocket or bag."
-	icon = 'icons/obj/guns/crossbow.dmi'
-	icon_state = "crossbow"
-	item_state = "crossbow"
-	has_item_ratio = FALSE
-	w_class = ITEMSIZE_SMALL
-	origin_tech = list(TECH_COMBAT = 2, TECH_MAGNET = 2, TECH_ILLEGAL = 5)
-	matter = list(DEFAULT_WALL_MATERIAL = 2000)
-	slot_flags = SLOT_BELT
-	silenced = 1
-	fire_sound = 'sound/weapons/genhit.ogg'
-	projectile_type = /obj/item/projectile/energy/bolt
-	max_shots = 5
-	self_recharge = 1
-	charge_meter = 0
-	can_turret = 1
-	turret_sprite_set = "crossbow"
-	charge_failure_message = "'s charging socket was removed to make room for a minaturized reactor."
-
-/obj/item/gun/energy/crossbow/get_cell()
-	return DEVICE_NO_CELL
-
-/obj/item/gun/energy/crossbow/ninja
-	name = "energy dart thrower"
-	projectile_type = /obj/item/projectile/energy/dart
-
-/obj/item/gun/energy/crossbow/largecrossbow
-	name = "energy crossbow"
-	desc = "A weapon favored by mercenary infiltration teams."
-	w_class = ITEMSIZE_LARGE
-	force = 10
-	icon_state = "crossbowlarge"
-	item_state = "crossbow"
-	matter = list(DEFAULT_WALL_MATERIAL = 200000)
-	projectile_type = /obj/item/projectile/energy/bolt/large
+/obj/item/gun/energy/confuseray
+	name = "disorientator"
+	desc = "The W-T Mk. 4 Disorientator is a small, low capacity, and short-ranged energy projector intended for personal defense with minimal risk of permanent damage or cross-fire."
+	icon = 'icons/obj/guns/confuseray.dmi'
+	icon_state = ICON_STATE_WORLD
+	safety_icon = "safety"
+	origin_tech = "{'combat':2,'materials':2,'powerstorage':2}"
+	w_class = ITEM_SIZE_SMALL
+	max_shots = 4
+	projectile_type = /obj/item/projectile/beam/confuseray
+	combustion = 0
+	material = /decl/material/solid/metal/steel
+	matter = list(/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT)

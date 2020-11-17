@@ -1,309 +1,284 @@
-#define PROCESS_REACTION_ITER 5 //when processing a reaction, iterate this many times
+GLOBAL_DATUM_INIT(temp_reagents_holder, /obj, new)
 
 /datum/reagents
-	var/list/datum/reagent/reagent_list = list()
+	var/primary_reagent
+	var/list/reagent_volumes
+	var/list/reagent_data
 	var/total_volume = 0
-	var/maximum_volume = 100
-	var/atom/my_atom = null
+	var/maximum_volume = 120
+	var/atom/my_atom
+	var/cached_color
 
-	var/temperature = T20C
-
-/datum/reagents/New(var/max = 100, atom/A = null)
+/datum/reagents/New(var/maximum_volume = 120, var/atom/my_atom)
+	src.maximum_volume = maximum_volume
+	if(!istype(my_atom))
+#ifdef DISABLE_DEBUG_CRASH
+		return ..()
+#else
+		CRASH("Invalid reagents holder: [log_info_line(my_atom)]")
+#endif
 	..()
-	maximum_volume = max
-	my_atom = A
+	src.my_atom = my_atom
 
 /datum/reagents/Destroy()
 	. = ..()
-	if(SSchemistry)
-		SSchemistry.active_holders -= src
+	UNQUEUE_REACTIONS(src) // While marking for reactions should be avoided just before deleting if possible, the async nature means it might be impossible.
+	reagent_volumes = null
+	reagent_data = null
+	my_atom = null
 
-	for(var/datum/reagent/R in reagent_list)
-		qdel(R)
-	reagent_list.Cut()
-	reagent_list = null
-	if(my_atom && my_atom.reagents == src)
-		my_atom.reagents = null
+/datum/reagents/proc/get_primary_reagent_name() // Returns the name of the reagent with the biggest volume.
+	var/decl/material/reagent = get_primary_reagent_decl()
+	if(reagent)
+		. = reagent.name
 
-/* Internal procs */
+/datum/reagents/proc/get_primary_reagent_decl()
+	. = primary_reagent && decls_repository.get_decl(primary_reagent)
 
-/datum/reagents/proc/apply_force(var/force) // applies force to the reagents inside it
-	for (var/datum/reagent/A in reagent_list)
-		A.apply_force(force)
-
-/datum/reagents/proc/get_free_space() // Returns free space.
-	return maximum_volume - total_volume
-
-/datum/reagents/proc/get_master_reagent() // Returns reference to the reagent with the biggest volume.
-	var/the_reagent = null
-	var/the_volume = 0
-
-	for(var/datum/reagent/A in reagent_list)
-		if(A.volume > the_volume)
-			the_volume = A.volume
-			the_reagent = A
-
-	return the_reagent
-
-/datum/reagents/proc/get_reagent(var/rtype) // Returns reference to reagent matching passed type
-	for(var/datum/reagent/A in reagent_list)
-		if (A.type == rtype)
-			return A
-
-	return null
-
-/datum/reagents/proc/get_master_reagent_name() // Returns the name of the reagent with the biggest volume.
-	var/the_name = null
-	var/the_volume = 0
-	for(var/datum/reagent/A in reagent_list)
-		if(A.volume > the_volume)
-			the_volume = A.volume
-			the_name = A.name
-
-	return the_name
-
-/datum/reagents/proc/get_master_reagent_type() // Returns the type of the reagent with the biggest volume.
-	var/the_type = null
-	var/the_volume = 0
-	for(var/datum/reagent/A in reagent_list)
-		if(A.volume > the_volume)
-			the_volume = A.volume
-			the_type = A.type
-
-	return the_type
-
-/datum/reagents/proc/update_total() // Updates volume and temperature.
-
+/datum/reagents/proc/update_total() // Updates volume.
+	cached_color = null
 	total_volume = 0
-
-	for(var/datum/reagent/R in reagent_list)
-		if(R.volume < MINIMUM_CHEMICAL_VOLUME)
-			del_reagent(R.type)
+	primary_reagent = null
+	for(var/R in reagent_volumes)
+		var/vol = reagent_volumes[R]
+		if(vol < MINIMUM_CHEMICAL_VOLUME)
+			LAZYREMOVE(reagent_volumes, R)
+			LAZYREMOVE(reagent_data, R)
 		else
-			total_volume += R.volume
+			total_volume += vol
+			if(!primary_reagent || reagent_volumes[primary_reagent] < vol)
+				primary_reagent = R
+	if(total_volume > maximum_volume)
+		remove_any(maximum_volume - total_volume)
 
-	return max(total_volume,0)
-
-/datum/reagents/proc/update_holder(var/reactions = TRUE)
-	if(update_total() && reactions)
-		handle_reactions()
-
-	if(my_atom)
-		my_atom.on_reagent_change()
-
-/datum/reagents/proc/delete()
-	for(var/datum/reagent/R in reagent_list)
-		R.holder = null
-	if(my_atom)
-		my_atom.reagents = null
-
-/datum/reagents/proc/handle_reactions()
-	if(SSchemistry)
-		SSchemistry.mark_for_update(src)
-
-//returns 1 if the holder should continue reactiong, 0 otherwise.
 /datum/reagents/proc/process_reactions()
-	if(!my_atom || !my_atom.loc || my_atom.flags & NOREACT)
+
+	if(!my_atom?.loc)
 		return 0
 
-	var/reaction_occured
-	var/list/effect_reactions = list()
+	if(my_atom.atom_flags & ATOM_FLAG_NO_REACT)
+		return 0
+
+	var/reaction_occured = FALSE
 	var/list/eligible_reactions = list()
-	for(var/i in 1 to PROCESS_REACTION_ITER)
-		reaction_occured = 0
 
-		//need to rebuild this to account for chain reactions
-		for(var/datum/reagent/R in reagent_list)
-			eligible_reactions |= SSchemistry.chemical_reactions[R.type]
+	var/temperature = my_atom ? my_atom.temperature : T20C
+	for(var/thing in reagent_volumes)
+		var/decl/material/R = decls_repository.get_decl(thing)
 
-		for(var/datum/chemical_reaction/C in eligible_reactions)
-			if(C.can_happen(src) && C.process(src))
-				effect_reactions |= C
-				reaction_occured = 1
+		// Check if the reagent is decaying or not.
+		var/list/replace_self_with
+		var/replace_message
+		var/replace_sound
+	
+		if(!isnull(R.chilling_point) && R.type != R.bypass_cooling_products_for_root_type && LAZYLEN(R.chilling_products) && temperature <= R.chilling_point)
+			replace_self_with = R.chilling_products
+			if(R.chilling_message)
+				replace_message = "\The [lowertext(R.name)] [R.chilling_message]"
+			replace_sound = R.chilling_sound
 
-		eligible_reactions.Cut()
+		else if(!isnull(R.heating_point) && R.type != R.bypass_heating_products_for_root_type && LAZYLEN(R.heating_products) && temperature >= R.heating_point)
+			replace_self_with = R.heating_products
+			if(R.heating_message)
+				replace_message = "\The [lowertext(R.name)] [R.heating_message]"
+			replace_sound = R.heating_sound
 
-		if(!reaction_occured)
-			break
+		else if(!isnull(R.dissolves_in) && LAZYLEN(R.dissolves_into))
+			for(var/other in reagent_volumes)
+				if(other == thing)
+					continue
+				var/decl/material/solvent = decls_repository.get_decl(other)
+				if(solvent.solvent_power >= R.dissolves_in)
+					replace_self_with = R.dissolves_into
+					if(R.dissolve_message)
+						replace_message = "\The [lowertext(R.name)] [R.dissolve_message] \the [lowertext(solvent.name)]."
+					replace_sound = R.dissolve_sound
+					break
 
-	for(var/datum/chemical_reaction/C in effect_reactions)
+		// If it is, handle replacing it with the decay product.
+		if(replace_self_with)
+			var/replace_amount = REAGENT_VOLUME(src, R.type)
+			clear_reagent(R.type)
+			for(var/product in replace_self_with)
+				add_reagent(product, replace_self_with[product] * replace_amount)
+			reaction_occured = TRUE
+
+			if(my_atom)
+				if(replace_message)
+					my_atom.visible_message("<span class='notice'>[html_icon(my_atom)] [replace_message]</span>")
+				if(replace_sound)
+					playsound(my_atom, replace_sound, 80, 1)
+
+		else // Otherwise, collect all possible reactions.
+			eligible_reactions |= SSmaterials.chemical_reactions_by_id[R.type]
+
+	var/list/active_reactions = list()
+
+	for(var/datum/chemical_reaction/C in eligible_reactions)
+		if(C.can_happen(src))
+			active_reactions[C] = 1 // The number is going to be 1/(fraction of remaining reagents we are allowed to use), computed below
+			reaction_occured = 1
+
+	var/list/used_reagents = list()
+	// if two reactions share a reagent, each is allocated half of it, so we compute this here
+	for(var/datum/chemical_reaction/C in active_reactions)
+		var/list/adding = C.get_used_reagents()
+		for(var/R in adding)
+			LAZYADD(used_reagents[R], C)
+
+	for(var/R in used_reagents)
+		var/counter = length(used_reagents[R])
+		if(counter <= 1)
+			continue // Only used by one reaction, so nothing we need to do.
+		for(var/datum/chemical_reaction/C in used_reagents[R])
+			active_reactions[C] = max(counter, active_reactions[C])
+			counter-- //so the next reaction we execute uses more of the remaining reagents
+			// Note: this is not guaranteed to maximize the size of the reactions we do (if one reaction is limited by reagent A, we may be over-allocating reagent B to it)
+			// However, we are guaranteed to fully use up the most profligate reagent if possible.
+			// Further reactions may occur on the next tick, when this runs again.
+
+	for(var/thing in active_reactions)
+		var/datum/chemical_reaction/C = thing
+		C.process(src, active_reactions[C])
+
+	for(var/thing in active_reactions)
+		var/datum/chemical_reaction/C = thing
 		C.post_reaction(src)
 
-	var/temps_updated = equalize_temperature()
+	update_total()
 
-	update_holder(reactions = reaction_occured)
+	if(reaction_occured)
+		HANDLE_REACTIONS(src) // Check again in case the new reagents can react again
 
-	return temps_updated
+	return reaction_occured
 
 /* Holder-to-chemical */
 
-/datum/reagents/proc/add_reagent(var/rtype, var/amount, var/data = null, var/safety = 0, var/temperature = 0, var/thermal_energy = 0)
-	if(!isnum(amount) || amount <= 0)
-		return 0
+/datum/reagents/proc/add_reagent(var/reagent_type, var/amount, var/data = null, var/safety = 0)
 
-	update_total() //Does this need to be here? It's called in update_holder.
-	var/old_amount = amount
-	amount = min(amount, get_free_space())
+	if(amount <= 0)
+		return FALSE
 
-	for(var/datum/reagent/R in reagent_list)
-		if(R.type == rtype) //Existing reagent
-			R.volume += amount
-			if(thermal_energy > 0 && old_amount > 0)
-				R.add_thermal_energy(thermal_energy * (amount/old_amount) )
-			else
-				if(temperature <= 0)
-					temperature = R.default_temperature
-				R.add_thermal_energy(temperature * R.specific_heat * amount)
-			if(!isnull(data)) // For all we know, it could be zero or empty string and meaningful
-				R.mix_data(data, amount)
-			update_holder(!safety)
-			return 1
-
-	var/datum/reagent/D = SSchemistry.chemical_reagents[rtype] //New reagent
-	if(D)
-		var/datum/reagent/R = new D.type()
-		reagent_list += R
-		R.holder = src
-		R.volume = amount
-		R.specific_heat = SSchemistry.check_specific_heat(R)
-		R.thermal_energy = 0
-		if(thermal_energy > 0 && old_amount > 0)
-			R.set_thermal_energy(thermal_energy * (amount/old_amount) )
-		else
-			if(temperature <= 0)
-				temperature = R.default_temperature
-			R.set_temperature(temperature)
-		R.initialize_data(data)
-		update_holder(!safety)
-		return 1
+	amount = min(amount, REAGENTS_FREE_SPACE(src))
+	var/decl/material/newreagent = decls_repository.get_decl(reagent_type)
+	LAZYINITLIST(reagent_volumes)
+	if(!reagent_volumes[reagent_type])
+		reagent_volumes[reagent_type] = amount
+		var/tmp_data = newreagent.initialize_data(data)
+		if(tmp_data)
+			LAZYSET(reagent_data, reagent_type, tmp_data)
 	else
-		warning("[my_atom] attempted to add a reagent called '[rtype]' which doesn't exist. ([usr])")
-	return 0
+		reagent_volumes[reagent_type] += amount
+		if(!isnull(data))
+			LAZYSET(reagent_data, reagent_type, newreagent.mix_data(src, data, amount))
+	UNSETEMPTY(reagent_volumes)
 
-/datum/reagents/proc/remove_reagent(var/rtype, var/amount, var/safety = 0)
-	if(!isnum(amount))
-		return 0
+	update_total()
+	if(!safety)
+		HANDLE_REACTIONS(src)
+	if(my_atom)
+		SSmaterials.queue_reagent_change(my_atom)
 
-	for(var/datum/reagent/current in reagent_list)
-		if(current.type == rtype)
-			amount = min(amount,current.volume)
-			var/old_volume = current.volume
-			current.volume -= amount
-			current.add_thermal_energy( -(current.thermal_energy * (amount/old_volume)) )
-			update_holder(!safety)
-			return 1
-	return 0
+	return TRUE
 
-/datum/reagents/proc/del_reagent(var/rtype)
-	for(var/datum/reagent/current in reagent_list)
-		if (current.type == rtype)
-			if(ismob(my_atom))
-				current.final_effect(my_atom)
-			reagent_list -= current
-			qdel(current)
-			update_holder(FALSE)
-			return 0
+/datum/reagents/proc/remove_reagent(var/reagent_type, var/amount, var/safety = 0)
+	if(!isnum(amount) || REAGENT_VOLUME(src, reagent_type) <= 0)
+		return FALSE
+	reagent_volumes[reagent_type] -= amount
+	update_total()
+	if(!safety)
+		HANDLE_REACTIONS(src)
+	if(my_atom)
+		SSmaterials.queue_reagent_change(my_atom)
+	return TRUE
 
-/datum/reagents/proc/has_reagent(var/rtype, var/amount = 0)
-	for(var/datum/reagent/current in reagent_list)
-		if(current.type == rtype)
-			if(current.volume >= amount)
-				return 1
-			else
-				return 0
-	return 0
+/datum/reagents/proc/clear_reagent(var/reagent_type)
+	. = !!(REAGENT_VOLUME(src, reagent_type) || REAGENT_DATA(src, reagent_type))
+	if(.)
+		LAZYREMOVE(reagent_volumes, reagent_type)
+		LAZYREMOVE(reagent_data, reagent_type)
+		if(primary_reagent == reagent_type)
+			primary_reagent = null
+		update_total()
+		if(my_atom)
+			SSmaterials.queue_reagent_change(my_atom)
+
+/datum/reagents/proc/has_reagent(var/reagent_type, var/amount)
+	. = REAGENT_VOLUME(src, reagent_type)
+	if(. && amount)
+		. = (. >= amount)
 
 /datum/reagents/proc/has_any_reagent(var/list/check_reagents)
-	for(var/datum/reagent/current in reagent_list)
-		if(current.type in check_reagents)
-			if(current.volume >= check_reagents[current.type])
-				return 1
-			else
-				return 0
-	return 0
+	for(var/check in check_reagents)
+		var/vol = REAGENT_VOLUME(src, check)
+		if(vol > 0 && vol >= check_reagents[check])
+			return TRUE
+	return FALSE
 
 /datum/reagents/proc/has_all_reagents(var/list/check_reagents)
-	//this only works if check_reagents has no duplicate entries... hopefully okay since it expects an associative list
-	var/missing = check_reagents.len
-	for(var/datum/reagent/current in reagent_list)
-		if(current.type in check_reagents)
-			if(current.volume >= check_reagents[current.type])
-				missing--
-	return !missing
+	for(var/check in check_reagents)
+		if(REAGENT_VOLUME(src, check) < check_reagents[check])
+			return FALSE
+	return TRUE
 
 /datum/reagents/proc/clear_reagents()
-	for(var/datum/reagent/current in reagent_list)
-		del_reagent(current.type)
-	return
+	reagent_volumes = null
+	reagent_data = null
+	total_volume = 0
 
-/datum/reagents/proc/get_reagent_amount(var/rtype)
-	for(var/datum/reagent/current in reagent_list)
-		if(current.type == rtype)
-			return current.volume
+/datum/reagents/proc/get_overdose(var/decl/material/current)
+	if(current)
+		return initial(current.overdose)
 	return 0
 
-/datum/reagents/proc/get_data(var/rtype)
-	for(var/datum/reagent/current in reagent_list)
-		if(current.type == rtype)
-			return current.get_data()
-	return 0
-
-/datum/reagents/proc/get_reagents()
+/datum/reagents/proc/get_reagents(scannable_only = 0, precision)
 	. = list()
-	for(var/datum/reagent/current in reagent_list)
-		. += "[current.name] ([current.volume])"
+	for(var/rtype in reagent_volumes)
+		var/decl/material/current= decls_repository.get_decl(rtype)
+		if(scannable_only && !current.scannable)
+			continue
+		var/volume = REAGENT_VOLUME(src, rtype)
+		if(precision)
+			volume = round(volume, precision)
+		if(volume)
+			. += "[current.name] ([volume])"
 	return english_list(., "EMPTY", "", ", ", ", ")
-
-/datum/reagents/proc/get_ids_by_phase(var/phase) // this proc will probably need to be changed if you can have one reagent in multiple states at the same time
-	. = list()
-	for(var/datum/reagent/current in reagent_list)
-		if(phase == current.reagent_state)
-			. += current.type
 
 /* Holder-to-holder and similar procs */
 
 /datum/reagents/proc/remove_any(var/amount = 1) // Removes up to [amount] of reagents from [src]. Returns actual amount removed.
-	amount = min(amount, total_volume)
+	. = min(amount, total_volume)
+	if(.)
+		var/part = . / total_volume
+		for(var/current in reagent_volumes)
+			remove_reagent(current, REAGENT_VOLUME(src, current) * part, 1)
+		update_total()
+		HANDLE_REACTIONS(src)
 
-	if(!amount)
-		return 0
-
-	var/part = amount / total_volume
-
-	for(var/datum/reagent/current in reagent_list)
-		var/amount_to_remove = current.volume * part
-		remove_reagent(current.type, amount_to_remove, 1)
-
-	update_holder()
-	return amount
-
-/datum/reagents/proc/trans_to_holder(var/datum/reagents/target, var/amount = 1, var/multiplier = 1, var/copy = 0) // Transfers [amount] reagents from [src] to [target], multiplying them by [multiplier]. Returns actual amount removed from [src] (not amount transferred to [target]).
-
+// Transfers [amount] reagents from [src] to [target], multiplying them by [multiplier].
+// Returns actual amount removed from [src] (not amount transferred to [target]).
+// Use safety = 1 for temporary targets to avoid queuing them up for processing.
+/datum/reagents/proc/trans_to_holder(var/datum/reagents/target, var/amount = 1, var/multiplier = 1, var/copy = 0, var/safety = 0)
 	if(!target || !istype(target))
-		return 0
+		return
 
-	if (amount <= 0 || multiplier <= 0)
-		return 0
-
-	amount = max(0, min(amount, total_volume, target.get_free_space() / multiplier))
+	amount = max(0, min(amount, total_volume, REAGENTS_FREE_SPACE(target) / multiplier))
 
 	if(!amount)
-		return 0
+		return
 
 	var/part = amount / total_volume
 
-	for(var/datum/reagent/current in reagent_list)
-		var/amount_to_transfer = current.volume * part
-		var/energy_to_transfer = current.get_thermal_energy() * (amount_to_transfer / current.volume)
-		target.add_reagent(current.type, amount_to_transfer * multiplier, current.get_data(), TRUE, thermal_energy = energy_to_transfer * multiplier) // We don't react until everything is in place
+	for(var/rtype in reagent_volumes)
+		var/amount_to_transfer = REAGENT_VOLUME(src, rtype) * part
+		target.add_reagent(rtype, amount_to_transfer * multiplier, REAGENT_DATA(src, rtype), safety = 1) // We don't react until everything is in place
 		if(!copy)
-			remove_reagent(current.type, amount_to_transfer, TRUE)
+			remove_reagent(rtype, amount_to_transfer, 1)
 
 	if(!copy)
-		update_holder()
-
-	target.update_holder()
-
+		HANDLE_REACTIONS(src)
+	if(!safety)
+		HANDLE_REACTIONS(target)
 	return amount
 
 /* Holder-to-atom and similar procs */
@@ -316,10 +291,10 @@
 	touch(target) //First, handle mere touch effects
 
 	if(ismob(target))
-		return splash_mob(target, amount, multiplier, copy)
+		return splash_mob(target, amount, copy)
 	if(isturf(target))
 		return trans_to_turf(target, amount, multiplier, copy)
-	if(isobj(target))
+	if(isobj(target) && ATOM_IS_OPEN_CONTAINER(target))
 		return trans_to_obj(target, amount, multiplier, copy)
 	return 0
 
@@ -334,44 +309,21 @@
 
 	trans_to(target, amount, multiplier, copy)
 
-/datum/reagents/proc/trans_type_to(var/target, var/rtype, var/amount = 1)
-	if (!target)
+/datum/reagents/proc/trans_type_to(var/atom/target, var/type, var/amount = 1, var/multiplier = 1)
+	if (!target || !target.reagents || !target.simulated)
 		return
 
-	var/datum/reagent/transfering_reagent = get_reagent(rtype)
-
-	if (istype(target, /atom))
-		var/atom/A = target
-		if (!A.reagents || !A.simulated)
-			return
-
-	amount = min(amount, transfering_reagent.volume)
+	amount = min(amount, REAGENT_VOLUME(src, type))
 
 	if(!amount)
 		return
 
+	var/datum/reagents/F = new(amount, GLOB.temp_reagents_holder)
+	F.add_reagent(type, amount, REAGENT_DATA(src, type))
+	remove_reagent(type, amount)
+	. = F.trans_to(target, amount, multiplier) // Let this proc check the atom's type
 
-	var/datum/reagents/F = new /datum/reagents(amount)
-	var/tmpdata = get_data(rtype)
-	var/transfering_thermal_energy = transfering_reagent.get_thermal_energy() * (amount/transfering_reagent.volume)
-	F.add_reagent(rtype, amount, tmpdata, thermal_energy = transfering_thermal_energy)
-	remove_reagent(rtype, amount)
-
-
-	if (istype(target, /atom))
-		return F.trans_to(target, amount) // Let this proc check the atom's type
-	else if (istype(target, /datum/reagents))
-		return F.trans_to_holder(target, amount)
-
-/datum/reagents/proc/trans_ids_to(var/target, var/list/rtypes, var/amount = 1) // amount is distributed equally over all reagents
-	if(!target)
-		return
-	if(!LAZYLEN(rtypes)) // it's always going to be defined but, you know, good practice and all
-		return
-	var/amounteach = amount / rtypes.len
-	. = 0
-	for(var/rtype in rtypes)
-		. += src.trans_type_to(target, rtype, amounteach)
+	qdel(F)
 
 // When applying reagents to an atom externally, touch() is called to trigger any on-touch effects of the reagent.
 // This does not handle transferring reagents to things.
@@ -384,179 +336,98 @@
 		touch_turf(target)
 	if(isobj(target))
 		touch_obj(target)
-	return
 
-/datum/reagents/proc/touch_mob(var/mob/living/target)
+/datum/reagents/proc/touch_mob(var/mob/target)
 	if(!target || !istype(target) || !target.simulated)
 		return
-	var/temperature = src.get_temperature()
-	if(temperature >= REAGENTS_BURNING_TEMP_HIGH)
-		var/burn_damage = Clamp(total_volume*(temperature - REAGENTS_BURNING_TEMP_HIGH)*REAGENTS_BURNING_TEMP_HIGH_DAMAGE,0,REAGENTS_BURNING_TEMP_HIGH_DAMAGE_CAP)
-		target.adjustFireLoss(burn_damage)
-		target.visible_message(SPAN_DANGER("The hot liquid burns \the [target]!"))
-	else if(temperature <= REAGENTS_BURNING_TEMP_LOW)
-		var/burn_damage = Clamp(total_volume*(REAGENTS_BURNING_TEMP_LOW - temperature)*REAGENTS_BURNING_TEMP_LOW_DAMAGE,0,REAGENTS_BURNING_TEMP_LOW_DAMAGE_CAP)
-		target.adjustFireLoss(burn_damage)
-		target.visible_message(SPAN_DANGER("The freezing liquid burns \the [target]!"))
-
-	for(var/datum/reagent/current in reagent_list)
-		current.touch_mob(target, current.volume)
-
-	update_holder()
+	for(var/rtype in reagent_volumes)
+		var/decl/material/current = decls_repository.get_decl(rtype)
+		current.touch_mob(target, REAGENT_VOLUME(src, rtype), src)
+	update_total()
 
 /datum/reagents/proc/touch_turf(var/turf/target)
 	if(!target || !istype(target) || !target.simulated)
 		return
-
-	for(var/datum/reagent/current in reagent_list)
-		current.touch_turf(target, current.volume)
-
-	update_holder()
+	for(var/rtype in reagent_volumes)
+		var/decl/material/current = decls_repository.get_decl(rtype)
+		current.touch_turf(target, REAGENT_VOLUME(src, rtype), src)
+	update_total()
 
 /datum/reagents/proc/touch_obj(var/obj/target)
 	if(!target || !istype(target) || !target.simulated)
 		return
-
-	for(var/datum/reagent/current in reagent_list)
-		current.touch_obj(target, current.volume)
-
-	update_holder()
+	for(var/rtype in reagent_volumes)
+		var/decl/material/current = decls_repository.get_decl(rtype)
+		current.touch_obj(target, REAGENT_VOLUME(src, rtype), src)
+	update_total()
 
 // Attempts to place a reagent on the mob's skin.
 // Reagents are not guaranteed to transfer to the target.
-// DO NOT CALL THIS DIRECTLY, call trans_to() instead.
-/datum/reagents/proc/splash_mob(var/mob/target, var/amount = 1, var/multiplier = 1, var/copy = 0)
+// Do not call this directly, call trans_to() instead.
+/datum/reagents/proc/splash_mob(var/mob/target, var/amount = 1, var/copy = 0)
 	var/perm = 1
 	if(isliving(target)) //will we ever even need to tranfer reagents to non-living mobs?
 		var/mob/living/L = target
 		perm = L.reagent_permeability()
-	multiplier *= perm
+	return trans_to_mob(target, amount * perm, CHEM_TOUCH, 1, copy)
 
-	return trans_to_mob(target, amount*0.75, CHEM_TOUCH, multiplier, copy) + trans_to_mob(target, amount*0.25, CHEM_BREATHE, multiplier, copy)
-
-/datum/reagents/proc/trans_to_mob(var/mob/target, var/amount = 1, var/type = CHEM_BLOOD, var/multiplier = 1, var/copy = 0, var/bypass_checks = FALSE) // Transfer after checking into which holder...
-
+/datum/reagents/proc/trans_to_mob(var/mob/target, var/amount = 1, var/type = CHEM_INJECT, var/multiplier = 1, var/copy = 0) // Transfer after checking into which holder...
 	if(!target || !istype(target) || !target.simulated)
-		return 0
-
-	var/mob/living/carbon/C = target
-	if(istype(C))
-		if(type == CHEM_BREATHE)
-			var/datum/reagents/R = C.breathing
-			return C.inhale(src, R, amount, multiplier, copy, bypass_checks)
-		if(type == CHEM_BLOOD)
+		return
+	if(iscarbon(target))
+		var/mob/living/carbon/C = target
+		if(type == CHEM_INJECT)
 			var/datum/reagents/R = C.reagents
 			return trans_to_holder(R, amount, multiplier, copy)
 		if(type == CHEM_INGEST)
 			var/datum/reagents/R = C.get_ingested_reagents()
-			return C.ingest(src, R, amount, multiplier, copy)
+			return C.ingest(src, R, amount, multiplier, copy) //perhaps this is a bit of a hack, but currently there's no common proc for eating reagents
 		if(type == CHEM_TOUCH)
 			var/datum/reagents/R = C.touching
 			return trans_to_holder(R, amount, multiplier, copy)
 	else
-		//If the target has a reagent holder, we'll try to put it there instead. This allows feeding simple animals
-		if(target.reagents && type == CHEM_BLOOD || type == CHEM_INGEST)
-			return trans_to_holder(target.reagents, amount, multiplier, copy)
-		else
-			var/datum/reagents/R = new /datum/reagents(amount)
-			. = trans_to_holder(R, amount, multiplier, copy)
-			R.touch_mob(target)
-			return
+		var/datum/reagents/R = new /datum/reagents(amount, GLOB.temp_reagents_holder)
+		. = trans_to_holder(R, amount, multiplier, copy, 1)
+		R.touch_mob(target)
+		qdel(R)
 
 /datum/reagents/proc/trans_to_turf(var/turf/target, var/amount = 1, var/multiplier = 1, var/copy = 0) // Turfs don't have any reagents (at least, for now). Just touch it.
 	if(!target || !target.simulated)
-		return 0
+		return
+	var/datum/reagents/R = new /datum/reagents(amount * multiplier, GLOB.temp_reagents_holder)
+	. = trans_to_holder(R, amount, multiplier, copy, 1)
+	var/obj/effect/fluid/F = locate() in target
+	if(!F) F = new(target)
+	trans_to_holder(F.reagents, amount, multiplier, copy)
 
-	var/datum/reagents/R = new /datum/reagents(amount * multiplier)
-	. = trans_to_holder(R, amount, multiplier, copy)
-	R.touch_turf(target)
-
-
-/datum/reagents/proc/trans_to_obj(var/turf/target, var/amount = 1, var/multiplier = 1, var/copy = 0) // Objects may or may not; if they do, it's probably a beaker or something and we need to transfer properly; otherwise, just touch.
+/datum/reagents/proc/trans_to_obj(var/obj/target, var/amount = 1, var/multiplier = 1, var/copy = 0) // Objects may or may not; if they do, it's probably a beaker or something and we need to transfer properly; otherwise, just touch.
 	if(!target || !target.simulated)
-		return 0
+		return
 
 	if(!target.reagents)
-		var/datum/reagents/R = new /datum/reagents(amount * multiplier)
-		. = trans_to_holder(R, amount, multiplier, copy)
+		var/datum/reagents/R = new /datum/reagents(amount * multiplier, GLOB.temp_reagents_holder)
+		. = trans_to_holder(R, amount, multiplier, copy, 1)
 		R.touch_obj(target)
+		qdel(R)
 		return
 
 	return trans_to_holder(target.reagents, amount, multiplier, copy)
-
-
-//Spreads the contents of this reagent holder all over the vicinity of the target turf.
-/datum/reagents/proc/splash_area(var/turf/epicentre, var/range = 3, var/portion = 1.0, var/multiplier = 1, var/copy = 0)
-	var/list/things = list()
-	DVIEW(things, range, epicentre, INVISIBILITY_LIGHTING)
-
-	var/list/turfs = list()
-	for (var/turf/T in things)
-		turfs += T
-
-	if (!turfs.len)
-		return//Nowhere to splash to, somehow
-
-	//Create a temporary holder to hold all the amount that will be spread
-	var/datum/reagents/R = new /datum/reagents(total_volume * portion * multiplier)
-	trans_to_holder(R, total_volume * portion, multiplier, copy)
-
-	//The exact amount that will be given to each turf
-	var/turfportion = R.total_volume / turfs.len
-	for (var/turf/T in turfs)
-		var/datum/reagents/TR = new /datum/reagents(turfportion)
-		R.trans_to_holder(TR, turfportion, 1, 0)
-		TR.splash_turf(T)
-
-	qdel(R)
-
-
-//Spreads the contents of this reagent holder all over the target turf, dividing among things in it.
-//50% is divided between mobs, 20% between objects, and whatever is left on the turf itself
-/datum/reagents/proc/splash_turf(var/turf/T, var/amount = null, var/multiplier = 1, var/copy = 0)
-	if (isnull(amount))
-		amount = total_volume
-	else
-		amount = min(amount, total_volume)
-	if (amount <= 0)
-		return
-
-	var/list/mobs = list()
-	for (var/mob/M in T)
-		mobs += M
-
-	var/list/objs = list()
-	for (var/obj/O in T)
-		//Todo: Add some check here to not hit wires/pipes that are hidden under floor tiles.
-		//Maybe also not hit things under tables.
-		objs += O
-
-
-
-	if (objs.len)
-		var/objportion = (amount * 0.2) / objs.len
-		for (var/o in objs)
-			var/obj/O = o
-
-			trans_to(O, objportion, multiplier, copy)
-
-	amount = min(amount, total_volume)
-
-	if (mobs.len)
-		var/mobportion = (amount * 0.5) / mobs.len
-		for (var/m in mobs)
-			var/mob/M = m
-			trans_to(M, mobportion, multiplier, copy)
-
-	trans_to(T, total_volume, multiplier, copy)
-
-	if (total_volume <= 0)
-		qdel(src)
 
 /* Atom reagent creation - use it all the time */
 
 /atom/proc/create_reagents(var/max_vol)
 	if(reagents)
+		log_debug("Attempted to create a new reagents holder when already referencing one: [log_info_line(src)]")
 		reagents.maximum_volume = max(reagents.maximum_volume, max_vol)
 	else
 		reagents = new/datum/reagents(max_vol, src)
+	return reagents
+
+/datum/reagents/Topic(href, href_list)
+	. = ..()
+	if(!. && href_list["deconvert"])
+		var/list/data = REAGENT_DATA(src, /decl/material/liquid/water)
+		if(LAZYACCESS(data, "holy"))
+			var/mob/living/carbon/C = locate(href_list["deconvert"])
+			if(istype(C) && !QDELETED(C) && C.mind)
+				GLOB.godcult.remove_antagonist(C.mind,1)

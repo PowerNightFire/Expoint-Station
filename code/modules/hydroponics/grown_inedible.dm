@@ -4,16 +4,11 @@
 
 /obj/item/grown // Grown weapons
 	name = "grown_weapon"
-	icon = 'icons/obj/weapons.dmi'
-	item_icons = list(
-		slot_l_hand_str = 'icons/mob/items/lefthand_grown.dmi',
-		slot_r_hand_str = 'icons/mob/items/righthand_grown.dmi',
-		)
 	var/plantname
 	var/potency = 1
 
-/obj/item/grown/Initialize(newloc,planttype)
-	. = ..()
+/obj/item/grown/Initialize(mapload,planttype)
+	. = ..(mapload)
 
 	var/datum/reagents/R = new/datum/reagents(50)
 	reagents = R
@@ -41,14 +36,14 @@
 	icon = 'icons/obj/trash.dmi'
 	icon_state = "corncob"
 	item_state = "corncob"
-	w_class = ITEMSIZE_SMALL
+	w_class = ITEM_SIZE_SMALL
 	throwforce = 0
 	throw_speed = 4
 	throw_range = 20
 
-/obj/item/corncob/attackby(obj/item/W as obj, mob/user as mob)
+/obj/item/corncob/attackby(obj/item/W, mob/user)
 	..()
-	if(istype(W, /obj/item/surgery/circular_saw) || istype(W, /obj/item/material/hatchet) || istype(W, /obj/item/material/kitchen/utensil/knife) || istype(W, /obj/item/material/knife) || istype(W, /obj/item/material/knife/ritual))
+	if(istype(W, /obj/item/circular_saw) || isHatchet(W) || istype(W, /obj/item/knife))
 		to_chat(user, "<span class='notice'>You use [W] to fashion a pipe out of the corn cob!</span>")
 		new /obj/item/clothing/mask/smokable/pipe/cobpipe (user.loc)
 		qdel(src)
@@ -57,19 +52,10 @@
 /obj/item/bananapeel
 	name = "banana peel"
 	desc = "A peel from a banana."
-	icon = 'icons/obj/trash.dmi'
-	item_icons = list(
-		slot_l_hand_str = 'icons/mob/items/lefthand_grown.dmi',
-		slot_r_hand_str = 'icons/mob/items/righthand_grown.dmi'
-		)
+	icon = 'icons/obj/items/banana.dmi'
 	icon_state = "banana_peel"
 	item_state = "banana_peel"
-	w_class = ITEMSIZE_SMALL
+	w_class = ITEM_SIZE_SMALL
 	throwforce = 0
 	throw_speed = 4
 	throw_range = 20
-
-/obj/item/bananapeel/Crossed(AM as mob|obj)
-	if (istype(AM, /mob/living))
-		var/mob/living/M = AM
-		M.slip("the [src.name]",4)

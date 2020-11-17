@@ -3,8 +3,8 @@
 	name = "Nav Point"
 	icon = 'icons/effects/effects.dmi'
 	icon_state = "energynet"
-	anchored = TRUE
-	unacidable = TRUE
+	anchored = 1
+	unacidable = 1
 	simulated = 0
 	invisibility = 101
 
@@ -17,18 +17,18 @@
 	//when the shuttle leaves this landmark, it will leave behind the base area
 	//also used to determine if the shuttle can arrive here without obstruction
 	var/area/base_area
-	//Will also leave this type of turf behind if set.
+	//Will also leave this type of turf behind if set, if the turfs do not have prev_type set.
 	var/turf/base_turf
 	//Name of the shuttle, null for generic waypoint
 	var/shuttle_restricted
-	var/landmark_flags = 0
+	var/flags = 0
 
 /obj/effect/shuttle_landmark/Initialize()
 	. = ..()
 	if(docking_controller)
 		. = INITIALIZE_HINT_LATELOAD
 
-	if(landmark_flags & SLANDMARK_FLAG_AUTOSET)
+	if(flags & SLANDMARK_FLAG_AUTOSET)
 		base_area = get_area(src)
 		var/turf/T = get_turf(src)
 		if(T)
@@ -36,7 +36,7 @@
 	else
 		base_area = locate(base_area || world.area)
 
-	name = name + " ([x],[y])"
+	SetName(name + " ([x],[y])")
 	SSshuttle.register_landmark(landmark_tag, src)
 
 /obj/effect/shuttle_landmark/LateInitialize()
@@ -45,7 +45,11 @@
 	var/docking_tag = docking_controller
 	docking_controller = SSshuttle.docking_registry[docking_tag]
 	if(!istype(docking_controller))
-		log_debug("Could not find docking controller for shuttle waypoint '[name]', docking tag was '[docking_tag]'.")
+		log_error("Could not find docking controller for shuttle waypoint '[name]', docking tag was '[docking_tag]'.")
+	if(GLOB.using_map.use_overmap)
+		var/obj/effect/overmap/visitable/location = map_sectors["[z]"]
+		if(location && location.docking_codes)
+			docking_controller.docking_codes = location.docking_codes
 
 /obj/effect/shuttle_landmark/forceMove()
 	var/obj/effect/overmap/visitable/map_origin = map_sectors["[z]"]
@@ -78,7 +82,13 @@
 	return FALSE
 
 /obj/effect/shuttle_landmark/proc/shuttle_arrived(datum/shuttle/shuttle)
-	return
+
+/obj/effect/shuttle_landmark/proc/shuttle_departed(datum/shuttle/shuttle)
+
+// Used to trigger effects prior to the shuttle's actual landing
+/obj/effect/shuttle_landmark/proc/landmark_selected(datum/shuttle/shuttle)
+
+/obj/effect/shuttle_landmark/proc/landmark_deselected(datum/shuttle/shuttle)
 
 /proc/check_collision(area/target_area, list/target_turfs)
 	for(var/target_turf in target_turfs)
@@ -98,8 +108,12 @@
 	flags = SLANDMARK_FLAG_AUTOSET
 
 /obj/effect/shuttle_landmark/automatic/Initialize()
-	landmark_tag += "-[x]-[y]-[z]"
+	landmark_tag += "-[x]-[y]-[z]-[random_id("landmarks",1,9999)]"
 	return ..()
+
+/obj/effect/shuttle_landmark/automatic/sector_set(var/obj/effect/overmap/visitable/O)
+	..()
+	SetName("[O.name] - [initial(name)] ([x],[y])")
 
 //Subtype that calls explosion on init to clear space for shuttles
 /obj/effect/shuttle_landmark/automatic/clearing
@@ -109,29 +123,48 @@
 	..()
 	return INITIALIZE_HINT_LATELOAD
 
-/obj/effect/shuttle_landmark/automatic/sector_set(var/obj/effect/overmap/visitable/O)
-	..()
-	name = "[O.name] - [initial(name)] ([x],[y])"
-
 /obj/effect/shuttle_landmark/automatic/clearing/LateInitialize()
 	..()
 	for(var/turf/T in range(radius, src))
 		if(T.density)
 			T.ChangeTurf(get_base_turf_by_area(T))
+		T.turf_flags |= TURF_FLAG_NORUINS
 
-/obj/item/device/spaceflare
-	name = "bluespace flare"
+//Used for custom landing locations. Self deletes after a shuttle leaves.
+/obj/effect/shuttle_landmark/temporary
+	name = "Landing Point"
+	landmark_tag = "landing"
+	flags = SLANDMARK_FLAG_AUTOSET
+
+/obj/effect/shuttle_landmark/temporary/Initialize()
+	landmark_tag += "-[random_id("landmarks",1,9999)]"
+	. = ..()
+
+/obj/effect/shuttle_landmark/temporary/Destroy()
+	SSshuttle.unregister_landmark(landmark_tag)
+	return ..()
+
+/obj/effect/shuttle_landmark/temporary/landmark_deselected(datum/shuttle/shuttle)
+	if(shuttle.moving_status != SHUTTLE_INTRANSIT && shuttle.current_location != src)
+		qdel(src)
+
+/obj/effect/shuttle_landmark/temporary/shuttle_departed(datum/shuttle/shuttle)
+	qdel(src)
+
+/obj/item/spaceflare
+	name = "long-range flare"
 	desc = "Burst transmitter used to broadcast all needed information for shuttle navigation systems. Has a flare attached for marking the spot where you probably shouldn't be standing."
+	icon = 'icons/obj/items/device/long_range_flare.dmi'
 	icon_state = "bluflare"
 	light_color = "#3728ff"
 	var/active
 
-/obj/item/device/spaceflare/attack_self(var/mob/user)
+/obj/item/spaceflare/attack_self(var/mob/user)
 	if(!active)
-		visible_message("<span class='notice'>[user] pulls the cord, activating \the [src].</span>")
+		visible_message("<span class='notice'>[user] pulls the cord, activating the [src].</span>")
 		activate()
 
-/obj/item/device/spaceflare/proc/activate()
+/obj/item/spaceflare/proc/activate()
 	if(active)
 		return
 	var/turf/T = get_turf(src)
@@ -143,11 +176,11 @@
 	anchored = 1
 
 	var/obj/effect/shuttle_landmark/automatic/mark = new(T)
-	mark.name = "beacon signal ([T.x],[T.y])"
+	mark.SetName("Beacon signal ([T.x],[T.y])")
 	T.hotspot_expose(1500, 5)
 	update_icon()
 
-/obj/item/device/spaceflare/update_icon()
+/obj/item/spaceflare/on_update_icon()
 	if(active)
 		icon_state = "bluflare_on"
 		set_light(0.3, 0.1, 6, 2, "85d1ff")

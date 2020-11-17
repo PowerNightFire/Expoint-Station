@@ -1,17 +1,21 @@
 // At minimum every mob has a hear_say proc.
 
-/mob/proc/hear_say(var/message, var/verb = "says", var/datum/language/language = null, var/alt_name = "",var/italics = 0, var/mob/speaker = null, var/sound/speech_sound, var/sound_vol)
-	if(!istype(src, /mob/living/test) && (!client && !vr_mob))
+/mob/proc/hear_say(var/message, var/verb = "says", var/decl/language/language = null, var/alt_name = "",var/italics = 0, var/mob/speaker = null, var/sound/speech_sound, var/sound_vol)
+	if(!client)
 		return
 
-	if(speaker && !istype(speaker, /mob/living/test) && (!speaker.client && istype(src,/mob/abstract/observer) && client.prefs.toggles & CHAT_GHOSTEARS && !(speaker in view(src))))
+	if(speaker && !speaker.client && isghost(src) && get_preference_value(/datum/client_preference/ghost_ears) == GLOB.PREF_ALL_SPEECH && !(speaker in view(src)))
 			//Does the speaker have a client?  It's either random stuff that observers won't care about (Experiment 97B says, 'EHEHEHEHEHEHEHE')
 			//Or someone snoring.  So we make it where they won't hear it.
 		return
 
+	if(language && (language.flags & (NONVERBAL|SIGNLANG)))
+		sound_vol = 0
+		speech_sound = null
+
 	//make sure the air can transmit speech - hearer's side
 	var/turf/T = get_turf(src)
-	if ((T) && (!(isobserver(src)))) //Ghosts can hear even in vacuum.
+	if ((T) && (!(isghost(src)))) //Ghosts can hear even in vacuum.
 		var/datum/gas_mixture/environment = T.return_air()
 		var/pressure = (environment)? environment.return_pressure() : 0
 		if(pressure < SOUND_MINIMUM_PRESSURE && get_dist(speaker, src) > 1)
@@ -21,13 +25,13 @@
 			italics = 1
 			sound_vol *= 0.5 //muffle the sound a bit, so it's like we're actually talking through contact
 
-	if((sleeping && !vr_mob) || stat == 1)
+	if(sleeping || stat == UNCONSCIOUS)
 		hear_sleep(message)
 		return
 
 	//non-verbal languages are garbled if you can't see the speaker. Yes, this includes if they are inside a closet.
 	if (language && (language.flags & NONVERBAL))
-		if((!speaker || (src.sdisabilities & BLIND || src.blinded) || !(speaker in view(src))) && !isobserver(src))
+		if (!speaker || (src.sdisabilities & BLINDED || src.blinded) || !(speaker in view(src)))
 			message = stars(message)
 
 	if(!(language && (language.flags & INNATE))) // skip understanding checks for INNATE languages
@@ -41,9 +45,11 @@
 				else
 					message = stars(message)
 
-	var/accent_icon = speaker.get_accent_icon(language, src)
-	var/speaker_name = speaker.name
-	if(ishuman(speaker))
+	var/speaker_name = "Unknown"
+	if(speaker)
+		speaker_name = speaker.name
+
+	if(istype(speaker, /mob/living/carbon/human))
 		var/mob/living/carbon/human/H = speaker
 		speaker_name = H.GetVoice()
 
@@ -51,47 +57,55 @@
 		message = "<i>[message]</i>"
 
 	var/track = null
-	if(isobserver(src))
-		if(italics && client.prefs.toggles & CHAT_GHOSTRADIO)
-			return
+	if(isghost(src))
 		if(speaker_name != speaker.real_name && speaker.real_name)
 			speaker_name = "[speaker.real_name] ([speaker_name])"
-		track = "[ghost_follow_link(speaker, src)] "
-		if((client.prefs.toggles & CHAT_GHOSTEARS) && (speaker in view(src)))
+		track = "([ghost_follow_link(speaker, src)]) "
+		if(get_preference_value(/datum/client_preference/ghost_ears) == GLOB.PREF_ALL_SPEECH && (speaker in view(src)))
 			message = "<b>[message]</b>"
 
-	if(isdeaf(src))
+	if(is_deaf() || get_sound_volume_multiplier() < 0.2)
 		if(!language || !(language.flags & INNATE)) // INNATE is the flag for audible-emote-language, so we don't want to show an "x talks but you cannot hear them" message if it's set
 			if(speaker == src)
 				to_chat(src, "<span class='warning'>You cannot hear yourself speak!</span>")
-			else
-				to_chat(src, "<span class='name'>[speaker_name]</span>[alt_name] talks but you cannot hear them.")
+			else if(!is_blind())
+				to_chat(src, "<span class='name'>[speaker_name]</span>[alt_name] talks but you cannot hear \him.")
 	else
-		if(language)
-			on_hear_say("[track][accent_icon ? accent_icon + " " : ""]<span class='game say'><span class='name'>[speaker_name]</span>[alt_name] [language.format_message(message, verb)]</span>")
+		if (language)
+			var/nverb = verb
+			if (say_understands(speaker, language))
+				var/skip = FALSE
+				if (isliving(src))
+					var/mob/living/L = src
+					skip = L.default_language == language
+				if (!skip)
+					switch(src.get_preference_value(/datum/client_preference/language_display))
+						if(GLOB.PREF_FULL) // Full language name
+							nverb = "[verb] in [language.name]"
+						if(GLOB.PREF_SHORTHAND) //Shorthand codes
+							nverb = "[verb] ([language.shorthand])"
+						if(GLOB.PREF_OFF)//Regular output
+							nverb = verb
+			on_hear_say("<span class='game say'>[track]<span class='name'>[speaker_name]</span>[alt_name] [language.format_message(message, nverb)]</span>")
 		else
-			on_hear_say("[track]<span class='game say'><span class='name'>[speaker_name]</span>[alt_name] [verb], <span class='message'><span class='body'>\"[message]\"</span></span></span>")
+			on_hear_say("<span class='game say'>[track]<span class='name'>[speaker_name]</span>[alt_name] [verb], <span class='message'><span class='body'>\"[message]\"</span></span></span>")
 		if (speech_sound && (get_dist(speaker, src) <= world.view && src.z == speaker.z))
 			var/turf/source = speaker? get_turf(speaker) : get_turf(src)
-			playsound_simple(source, speech_sound, sound_vol, use_random_freq = TRUE)
-		return TRUE
+			src.playsound_local(source, speech_sound, sound_vol, 1)
 
 /mob/proc/on_hear_say(var/message)
 	to_chat(src, message)
-	if(vr_mob)
-		to_chat(vr_mob, message)
 
 /mob/living/silicon/on_hear_say(var/message)
 	var/time = say_timestamp()
 	to_chat(src, "[time] [message]")
-	if(vr_mob)
-		to_chat(vr_mob, "[time] [message]")
 
-/mob/proc/hear_radio(var/message, var/verb="says", var/datum/language/language=null, var/part_a, var/part_b, var/part_c, var/mob/speaker = null, var/hard_to_hear = 0, var/vname ="")
-	if(!client && !vr_mob)
+/mob/proc/hear_radio(var/message, var/verb="says", var/decl/language/language=null, var/part_a, var/part_b, var/part_c, var/mob/speaker = null, var/hard_to_hear = 0, var/vname ="")
+
+	if(!client)
 		return
 
-	if((sleeping && !vr_mob) || stat==1) //If unconscious or sleeping
+	if(sleeping || stat==1) //If unconscious or sleeping
 		hear_sleep(message)
 		return
 
@@ -99,7 +113,7 @@
 
 	//non-verbal languages are garbled if you can't see the speaker. Yes, this includes if they are inside a closet.
 	if (language && (language.flags & NONVERBAL))
-		if (!speaker || (src.sdisabilities & BLIND || src.blinded) || !(speaker in view(src)))
+		if (!speaker || (src.sdisabilities & BLINDED || src.blinded) || !(speaker in view(src)))
 			message = stars(message)
 
 	if(!(language && (language.flags & INNATE))) // skip understanding checks for INNATE languages
@@ -117,27 +131,22 @@
 					message = stars(message)
 
 		if(hard_to_hear)
-			message = stars(message)
+			if(hard_to_hear <= 5)
+				message = stars(message)
+			else // Used for compression
+				message = RadioChat(null, message, 80, 1+(hard_to_hear/10))
 
-	var/speaker_name
-	if(speaker != null)
-		speaker_name = speaker.name
-	else
-		speaker_name = "Unknown"
+	var/speaker_name = vname ? vname : speaker.name
 
 	if(istype(speaker, /mob/living/carbon/human))
 		var/mob/living/carbon/human/H = speaker
 		if(H.voice)
 			speaker_name = H.voice
 
-	if(vname)
-		speaker_name = vname
-
 	if(hard_to_hear)
-		speaker_name = "Unknown"
+		speaker_name = "unknown"
 
 	var/changed_voice
-	var/accent_icon
 
 	if(istype(src, /mob/living/silicon/ai) && !hard_to_hear)
 		var/jobname // the mob's "job"
@@ -146,12 +155,13 @@
 		if (ishuman(speaker))
 			var/mob/living/carbon/human/H = speaker
 
-			if(H.wear_mask && istype(H.wear_mask,/obj/item/clothing/mask/gas/voice))
+			if(H.wear_mask && istype(H.wear_mask,/obj/item/clothing/mask/chameleon/voice))
 				changed_voice = 1
-				var/list/impersonated = list()
+				var/list/impersonated = new()
 				var/mob/living/carbon/human/I = impersonated[speaker_name]
+
 				if(!I)
-					for(var/mob/living/carbon/human/M in mob_list)
+					for(var/mob/living/carbon/human/M in SSmobs.mob_list)
 						if(M.real_name == speaker_name)
 							I = M
 							impersonated[speaker_name] = I
@@ -172,7 +182,7 @@
 		else if (isAI(speaker))
 			jobname = "AI"
 		else if (isrobot(speaker))
-			jobname = "Cyborg"
+			jobname = "Robot"
 		else if (istype(speaker, /mob/living/silicon/pai))
 			jobname = "Personal AI"
 		else
@@ -186,56 +196,74 @@
 		else
 			track = "<a href='byond://?src=\ref[src];trackname=[html_encode(speaker_name)];track=\ref[speaker]'>[speaker_name] ([jobname])</a>"
 
-	if(istype(src, /mob/abstract/observer))
-		if(speaker != null)
+	if(isghost(src))
+		if(speaker) //speaker is null when the arrivals annoucement plays
 			if(speaker_name != speaker.real_name && !isAI(speaker)) //Announce computer and various stuff that broadcasts doesn't use it's real name but AI's can't pretend to be other mobs.
 				speaker_name = "[speaker.real_name] ([speaker_name])"
-		track = "[ghost_follow_link(speaker, src)] "
+			track = "([ghost_follow_link(speaker, src)]) [speaker_name]"
+		else
+			track = "[speaker_name]"
 
 	var/formatted
-	if(language)
-		formatted = language.format_message_radio(message, verb)
+	if (language)
+		var/nverb = verb
+		if (say_understands(speaker, language))
+			var/skip = FALSE
+			if (isliving(src))
+				var/mob/living/L = src
+				skip = L.default_language == language
+			if (!skip)
+				switch(src.get_preference_value(/datum/client_preference/language_display))
+					if (GLOB.PREF_FULL)
+						nverb = "[verb] in [language.name]"
+					if(GLOB.PREF_SHORTHAND)
+						nverb = "[verb] ([language.shorthand])"
+					if(GLOB.PREF_OFF)
+						nverb = verb
+		formatted = language.format_message_radio(message, nverb)
 	else
 		formatted = "[verb], <span class=\"body\">\"[message]\"</span>"
-	formatted += part_c
-	if(isdeaf(src))
-		if(prob(20))
-			to_chat(src, "<span class='warning'>You feel your headset vibrate but can hear nothing from it!</span>")
+	if(sdisabilities & DEAFENED || ear_deaf)
+		var/mob/living/carbon/human/H = src
+		if(istype(H) && H.has_headset_in_ears() && prob(20))
+			to_chat(src, SPAN_WARNING("You feel your headset vibrate but can hear nothing from it!"))
 	else
-		on_hear_radio(part_a, speaker_name, track, part_b, formatted, accent_icon)
+		on_hear_radio(part_a, speaker_name, track, part_b, part_c, formatted)
 
 /proc/say_timestamp()
-	return "<span class='say_quote'>\[[worldtime2text()]\]</span>"
+	return "<span class='say_quote'>\[[stationtime2text()]\]</span>"
 
-/mob/proc/on_hear_radio(part_a, speaker_name, track, part_b, formatted, accent_icon)
-	var/accent_tag
-	if(accent_icon)
-		accent_tag = "<img src=\"[accent_icon].png\">"
-	to_chat(src, "[part_a][speaker_name][part_b][formatted]")
-	if(vr_mob)
-		to_chat(vr_mob, "[part_a][accent_tag][speaker_name][part_b][formatted]")
+/mob/proc/on_hear_radio(part_a, speaker_name, track, part_b, part_c, formatted)
+	to_chat(src, "[part_a][speaker_name][part_b][formatted][part_c]")
 
-/mob/abstract/observer/on_hear_radio(part_a, speaker_name, track, part_b, formatted)
-	to_chat(src, "[track][part_a][speaker_name][part_b][formatted]")
+/mob/observer/ghost/on_hear_radio(part_a, speaker_name, track, part_b, part_c, formatted)
+	to_chat(src, "[part_a][track][part_b][formatted][part_c]")
 
-/mob/living/silicon/on_hear_radio(part_a, speaker_name, track, part_b, formatted)
+/mob/living/silicon/on_hear_radio(part_a, speaker_name, track, part_b, part_c, formatted)
 	var/time = say_timestamp()
-	to_chat(src, "[time][part_a][speaker_name][part_b][formatted]")
-	if(vr_mob)
-		to_chat(vr_mob, "[time][part_a][speaker_name][part_b][formatted]")
+	to_chat(src, "[time][part_a][speaker_name][part_b][formatted][part_c]")
 
-/mob/living/silicon/ai/on_hear_radio(part_a, speaker_name, track, part_b, formatted)
+/mob/living/silicon/ai/on_hear_radio(part_a, speaker_name, track, part_b, part_c, formatted)
 	var/time = say_timestamp()
-	to_chat(src, "[time][part_a][track][part_b][formatted]")
-	if(vr_mob)
-		to_chat(vr_mob, "[time][part_a][track][part_b][formatted]")
+	to_chat(src, "[time][part_a][track][part_b][formatted][part_c]")
 
-/mob/proc/hear_signlang(var/message, var/verb = "gestures", var/datum/language/language, var/mob/speaker = null)
-	if(!client || !speaker)
+/mob/proc/hear_signlang(var/message, var/verb = "gestures", var/decl/language/language, var/mob/speaker = null)
+	if(!client)
 		return
 
+	if(sleeping || stat == UNCONSCIOUS)
+		return 0
+
 	if(say_understands(speaker, language))
-		message = "<B>[speaker]</B> [verb], \"[message]\""
+		var/nverb = null
+		switch(src.get_preference_value(/datum/client_preference/language_display))
+			if(GLOB.PREF_FULL) // Full language name
+				nverb = "[verb] in [language.name]"
+			if(GLOB.PREF_SHORTHAND) //Shorthand codes
+				nverb = "[verb] ([language.shorthand])"
+			if(GLOB.PREF_OFF)//Regular output
+				nverb = verb
+		message = "<B>[speaker]</B> [nverb], \"[message]\""
 	else
 		var/adverb
 		var/length = length(message) * pick(0.8, 0.9, 1.0, 1.1, 1.2)	//Inserts a little fuzziness.
@@ -258,7 +286,7 @@
 	var/heard = ""
 	if(prob(15))
 		var/list/punctuation = list(",", "!", ".", ";", "?")
-		var/list/messages = text2list(message, " ")
+		var/list/messages = splittext(message, " ")
 		var/R = rand(1, messages.len)
 		var/heardword = messages[R]
 		if(copytext(heardword,1, 1) in punctuation)

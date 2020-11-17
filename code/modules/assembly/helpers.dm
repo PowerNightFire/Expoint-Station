@@ -1,25 +1,39 @@
 /proc/isassembly(O)
-	return istype(O, /obj/item/device/assembly)
+	if(istype(O, /obj/item/assembly))
+		return 1
+	return 0
 
 /proc/isigniter(O)
-	return istype(O, /obj/item/device/assembly/igniter)
-
-/proc/isinfared(O)
-	return istype(O, /obj/item/device/assembly/infra)
+	if(istype(O, /obj/item/assembly/igniter))
+		return 1
+	return 0
 
 /proc/isprox(O)
-	return istype(O, /obj/item/device/assembly/prox_sensor)
+	if(istype(O, /obj/item/assembly/prox_sensor))
+		return 1
+	return 0
 
 /proc/issignaler(O)
-	return istype(O, /obj/item/device/assembly/signaler)
+	if(istype(O, /obj/item/assembly/signaler))
+		return 1
+	return 0
 
 /proc/istimer(O)
-	return istype(O, /obj/item/device/assembly/timer)
+	if(istype(O, /obj/item/assembly/timer))
+		return 1
+	return 0
 
-// IsSpecialAssemblyIf true is an object that can be attached to an assembly holder but is a special thing like a phoron can or door
+/*
+Name:	IsSpecialAssembly
+Desc:	If true is an object that can be attached to an assembly holder but is a special thing like a gas canister or door
+*/
+
 /obj/proc/IsSpecialAssembly()
-	return FALSE
+	return 0
 
-// If true is an object that can hold an assemblyholder object
+/*
+Name:	IsAssemblyHolder
+Desc:	If true is an object that can hold an assemblyholder object
+*/
 /obj/proc/IsAssemblyHolder()
-	return FALSE
+	return 0

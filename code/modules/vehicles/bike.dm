@@ -1,136 +1,148 @@
-/obj/vehicle/bike
+/obj/vehicle/bike/
 	name = "space-bike"
 	desc = "Space wheelies! Woo!"
-	desc_info = "Drag yourself onto the bike to mount it, toggle the engine to be able to drive around. Deploy the kickstand to prevent movement by driving and dragging. Drag it onto yourself to access its mounted storage. Resist to get off. Use ctrl-click to quickly toggle the engine if you're adjacent (only when vehicle is stationary). Alt-click will similarly toggle the kickstand."
 	icon = 'icons/obj/bike.dmi'
 	icon_state = "bike_off"
 	dir = SOUTH
 
 	load_item_visible = 1
-	mob_offset_y = 5
+	buckle_pixel_shift = @"{'x':0,'y':0,'z':5}"
 	health = 100
 	maxhealth = 100
 
+	locked = 0
 	fire_dam_coeff = 0.6
 	brute_dam_coeff = 0.5
-	var/protection_percent = 60
+	var/protection_percent = 40 //0 is no protection, 100 is full protection (afforded to the pilot) from projectiles fired at this vehicle
 
-	var/land_speed = 5 //if 0 it can't go on turf
-	var/space_speed = 1
+	var/land_speed = 10 //if 0 it can't go on turf
+	var/space_speed = 2
 	var/bike_icon = "bike"
 
-	var/storage_type = /obj/item/storage/toolbox/bike_storage
-	var/obj/item/storage/storage_compartment
-	var/datum/effect_system/ion_trail/ion
-	var/kickstand = TRUE
-	var/can_hover = TRUE
+	var/datum/effect/effect/system/trail/trail
+	var/kickstand = 1
+	var/obj/item/engine/engine = null
+	var/engine_type
+	var/prefilled = 0
 
 /obj/vehicle/bike/Initialize()
 	. = ..()
-	ion = new(src)
-	turn_off()
-	add_overlay(image('icons/obj/bike.dmi', "[icon_state]_off_overlay", MOB_LAYER + 1))
-	icon_state = "[bike_icon]_off"
-	if(storage_type)
-		storage_compartment = new storage_type(src)
-
-/obj/vehicle/bike/CtrlClick(var/mob/user)
-	if(Adjacent(user) && anchored)
-		toggle()
-	else
-		return ..()
+	if(engine_type)
+		load_engine(new engine_type(src.loc))
+		if(prefilled)
+			engine.prefill()
+	update_icon()
 
 /obj/vehicle/bike/verb/toggle()
 	set name = "Toggle Engine"
-	set category = "Vehicle"
+	set category = "Object"
 	set src in view(0)
 
 	if(usr.incapacitated()) return
+	if(!engine)
+		to_chat(usr, "<span class='warning'>\The [src] does not have an engine block installed...</span>")
+		return
 
 	if(!on)
 		turn_on()
-		src.visible_message("\The [src] rumbles to life.", "You hear something rumble deeply.")
-		playsound(src, 'sound/misc/bike_start.ogg', 100, 1)
 	else
 		turn_off()
-		src.visible_message("\The [src] putters before turning off.", "You hear something putter slowly.")
-
-/obj/vehicle/bike/AltClick(var/mob/user)
-	if(Adjacent(user))
-		kickstand(user)
-	else
-		return ..()
 
 /obj/vehicle/bike/verb/kickstand()
 	set name = "Toggle Kickstand"
-	set category = "Vehicle"
+	set category = "Object"
 	set src in view(0)
 
 	if(usr.incapacitated()) return
 
 	if(kickstand)
-		usr.visible_message("\The [usr] puts up \the [src]'s kickstand.", "You put up \the [src]'s kickstand.", "You hear a thunk.")
-		playsound(src, 'sound/misc/bike_stand_up.ogg', 50, 1)
+		usr.visible_message("\The [usr] puts up \the [src]'s kickstand.")
 	else
-		if(isturf(loc))
-			var/turf/T = loc
-			if (T.is_hole)
-				to_chat(usr, "<span class='warning'>You don't think kickstands work here.</span>")
-				return
-		usr.visible_message("\The [usr] puts down \the [src]'s kickstand.", "You put down \the [src]'s kickstand.", "You hear a thunk.")
-		playsound(src, 'sound/misc/bike_stand_down.ogg', 50, 1)
-		if(pulledby)
-			pulledby.stop_pulling()
+		if(istype(src.loc,/turf/space))
+			to_chat(usr, "<span class='warning'> You don't think kickstands work in space...</span>")
+			return
+		usr.visible_message("\The [usr] puts down \the [src]'s kickstand.")
 
 	kickstand = !kickstand
 	anchored = (kickstand || on)
 
+/obj/vehicle/bike/proc/load_engine(var/obj/item/engine/E, var/mob/user)
+	if(engine)
+		return
+	if(user && !user.unEquip(E))
+		return
+	engine = E
+	engine.forceMove(src)
+	if(trail)
+		qdel(trail)
+	trail = engine.get_trail()
+	if(trail)
+		trail.set_up(src)
+
+/obj/vehicle/bike/proc/unload_engine()
+	if(!engine)
+		return
+	engine.dropInto(loc)
+	if(trail)
+		trail.stop()
+		qdel(trail)
+	trail = null
+
 /obj/vehicle/bike/load(var/atom/movable/C)
 	var/mob/living/M = C
-	if(!istype(C)) return 0
+	if(!istype(M)) return 0
 	if(M.buckled || M.restrained() || !Adjacent(M) || !M.Adjacent(src))
 		return 0
 	return ..(M)
 
-/obj/vehicle/bike/MouseDrop(atom/over)
-	if(usr == over && ishuman(over))
-		var/mob/living/carbon/human/H = over
-		storage_compartment.open(H)
+/obj/vehicle/bike/emp_act(var/severity)
+	if(engine)
+		engine.emp_act(severity)
+	..()
 
-/obj/vehicle/bike/MouseDrop_T(var/atom/movable/C, mob/user as mob)
+/obj/vehicle/bike/insert_cell(var/obj/item/cell/C, var/mob/living/carbon/human/H)
+	return
+
+/obj/vehicle/bike/attackby(obj/item/W, mob/user)
+	if(open)
+		if(istype(W, /obj/item/engine))
+			if(engine)
+				to_chat(user, "<span class='warning'>There is already an engine block in \the [src].</span>")
+				return 1
+			user.visible_message("<span class='warning'>\The [user] installs \the [W] into \the [src].</span>")
+			load_engine(W)
+			return
+		else if(engine && engine.attackby(W,user))
+			return 1
+		else if(isCrowbar(W) && engine)
+			to_chat(user, "You pop out \the [engine] from \the [src].")
+			unload_engine()
+			return 1
+	return ..()
+
+/obj/vehicle/bike/MouseDrop_T(var/atom/movable/C, mob/user)
 	if(!load(C))
-		to_chat(user, "<span class='warning'>You were unable to load \the [C] onto \the [src].</span>")
+		to_chat(user, "<span class='warning'> You were unable to load \the [C] onto \the [src].</span>")
 		return
 
-/obj/vehicle/bike/attack_hand(var/mob/user as mob)
+/obj/vehicle/bike/attack_hand(var/mob/user)
 	if(user == load)
 		unload(load)
 		to_chat(user, "You unbuckle yourself from \the [src]")
-	else if(user != load && load)
-		user.visible_message ("[user] starts to unbuckle [load] from \the [src]!")
-		if(do_after(user, 8 SECONDS, act_target = src))
-			unload(load)
-			to_chat(user, "You unbuckle [load] from \the [src]")
-			to_chat(load, "You were unbuckled from \the [src] by [user]")
 
 /obj/vehicle/bike/relaymove(mob/user, direction)
-	if(user != load || !on || user.incapacitated())
+	if(user != load || !on)
+		return
+	if(user.incapacitated())
+		unload(user)
+		visible_message("<span class='warning'>\The [user] falls off \the [src]!</span>")
 		return
 	return Move(get_step(src, direction))
 
-/obj/vehicle/bike/proc/check_destination(var/turf/destination)
-	var/static/list/types = typecacheof(list(/turf/space, /turf/simulated/open, /turf/unsimulated/floor/asteroid))
-	if(is_type_in_typecache(destination,types) || pulledby)
-		return TRUE
-	else
-		return FALSE
-
 /obj/vehicle/bike/Move(var/turf/destination)
-	if(kickstand) return
-
+	if(kickstand || (world.time <= l_move_time + move_delay)) return
 	//these things like space, not turf. Dragging shouldn't weigh you down.
-	var/is_on_space = check_destination(destination)
-	if(is_on_space)
+	if(istype(destination,/turf/space))
 		if(!space_speed)
 			return 0
 		move_delay = space_speed
@@ -138,167 +150,77 @@
 		if(!land_speed)
 			return 0
 		move_delay = land_speed
+	if(!engine || !engine.use_power())
+		turn_off()
+		return 0
 	return ..()
 
 /obj/vehicle/bike/turn_on()
-	ion.start()
+	if(!engine || on)
+		return
+	engine.rev_engine(src)
+	if(trail)
+		trail.start()
 	anchored = 1
-
-	if(can_hover)
-		flying = TRUE
-
 	update_icon()
-
-	if(pulledby)
-		pulledby.stop_pulling()
 	..()
 
 /obj/vehicle/bike/turn_off()
-	ion.stop()
-	anchored = kickstand
+	if(!on)
+		return
+	if(engine)
+		engine.putter(src)
 
-	if(can_hover)
-		flying = FALSE
+	if(trail)
+		trail.stop()
+
+	anchored = kickstand
 
 	update_icon()
 
 	..()
 
 /obj/vehicle/bike/bullet_act(var/obj/item/projectile/Proj)
-	if(buckled_mob && prob(protection_percent))
+	if(buckled_mob && prob((100-protection_percent)))
 		buckled_mob.bullet_act(Proj)
 		return
 	..()
 
-/obj/vehicle/bike/update_icon()
-	cut_overlays()
+/obj/vehicle/bike/on_update_icon()
+	overlays.Cut()
 
 	if(on)
-		add_overlay(image('icons/obj/bike.dmi', "[bike_icon]_on_overlay", MOB_LAYER + 1))
 		icon_state = "[bike_icon]_on"
 	else
-		add_overlay(image('icons/obj/bike.dmi', "[bike_icon]_off_overlay", MOB_LAYER + 1))
 		icon_state = "[bike_icon]_off"
-
+	overlays += image('icons/obj/bike.dmi', "[icon_state]_overlay", MOB_LAYER + 1)
 	..()
 
 
 /obj/vehicle/bike/Destroy()
-	QDEL_NULL(ion)
+	qdel(trail)
+	qdel(engine)
+	..()
 
-	return ..()
 
-/obj/vehicle/bike/Collide(var/atom/movable/AM)
-	. = ..()
-	if(!buckled_mob)
-		return
-	if(buckled_mob.a_intent == I_HURT)
-		if (istype(AM, /obj/vehicle))
-			buckled_mob.setMoveCooldown(10)
-			var/obj/vehicle/V = AM
-			if(prob(50))
-				if(V.buckled_mob)
-					if(ishuman(V.buckled_mob))
-						var/mob/living/carbon/human/I = V.buckled_mob
-						I.visible_message(SPAN_DANGER("\The [I] falls off from \the [V]"))
-						V.unload(I)
-						I.throw_at(get_edge_target_turf(V.loc, V.loc.dir), 5, 1)
-						I.apply_effect(2, WEAKEN)
-				if(prob(25))
-					if(ishuman(buckled_mob))
-						var/mob/living/carbon/human/C = buckled_mob
-						C.visible_message(SPAN_DANGER ("\The [C] falls off from \the [src]!"))
-						unload(C)
-						C.throw_at(get_edge_target_turf(loc, loc.dir), 5, 1)
-						C.apply_effect(2, WEAKEN)
+/obj/vehicle/bike/thermal
+	engine_type = /obj/item/engine/thermal
+	prefilled = 1
 
-		if(isliving(AM))
-			if(ishuman(AM))
-				var/mob/living/carbon/human/H = AM
-				buckled_mob.attack_log += "\[[time_stamp()]\]<font color='orange'> Was rammed by [src]</font>"
-				buckled_mob.attack_log += text("\[[time_stamp()]\] <span class='warning'>rammed[buckled_mob.name] ([buckled_mob.ckey]) rammed [H.name] ([H.ckey]) with the [src].</span>")
-				msg_admin_attack("[src] crashed into [key_name(H)] at (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[H.x];Y=[H.y];Z=[H.z]'>JMP</a>)" )
-				src.visible_message(SPAN_DANGER("\The [src] smashes into \the [H]!"))
-				playsound(src, 'sound/weapons/punch4.ogg', 50, 1)
-				H.apply_damage(20, BRUTE)
-				H.throw_at(get_edge_target_turf(loc, loc.dir), 5, 1)
-				H.apply_effect(4, WEAKEN)
-				buckled_mob.setMoveCooldown(10)
-				return TRUE
+/obj/vehicle/bike/electric
+	engine_type = /obj/item/engine/electric
+	prefilled = 1
 
-			else
-				var/mob/living/L = AM
-				src.visible_message(SPAN_DANGER("\The [src] smashes into \the [L]!"))
-				playsound(src, 'sound/weapons/punch4.ogg', 50, 1)
-				L.throw_at(get_edge_target_turf(loc, loc.dir), 5, 1)
-				L.apply_damage(20, BRUTE)
-				buckled_mob.setMoveCooldown(10)
-				return TRUE
+/obj/vehicle/bike/gyroscooter
+	name = "gyroscooter"
+	desc = "A fancy space scooter."
+	icon_state = "gyroscooter_off"
 
-/obj/vehicle/bike/speeder
-	name = "retrofitted speeder"
-	desc = "A short bike that seems to consist mostly of an engine, a hover repulsor, vents and a steering shaft."
-	icon_state = "speeder_on"
-
-	health = 150
-	maxhealth = 150
-
-	fire_dam_coeff = 0.5
-	brute_dam_coeff = 0.4
-
-	storage_type = /obj/item/storage/toolbox/bike_storage/speeder
-	bike_icon = "speeder"
-
-/obj/vehicle/bike/monowheel
-	name = "adhomian monowheel"
-	desc = "A one-wheeled vehicle, fairly popular with Little Adhomai's greasers."
-	desc_info = "Drag yourself onto the monowheel to mount it, toggle the engine to be able to drive around. Deploy the kickstand to prevent movement by driving and dragging. Drag it onto yourself to access its mounted storage. Resist to get off."
-	icon_state = "monowheel_off"
-
-	health = 250
-	maxhealth = 250
-
-	fire_dam_coeff = 0.5
-	brute_dam_coeff = 0.4
-
-	mob_offset_y = 1
-
-	storage_type = /obj/item/storage/toolbox/bike_storage/monowheel
-	bike_icon = "monowheel"
-	dir = EAST
-
-	land_speed = 1
+	land_speed = 1.5
 	space_speed = 0
+	bike_icon = "gyroscooter"
 
-	can_hover = FALSE
-
-/obj/vehicle/bike/monowheel/RunOver(var/mob/living/carbon/human/H)
-	if(!buckled_mob)
-		return
-	if(buckled_mob.a_intent == I_HURT)
-		buckled_mob.attack_log += "\[[time_stamp()]\]<font color='orange'> Was rammed by [src]</font>"
-		buckled_mob.attack_log += text("\[[time_stamp()]\] <span class='warning'>rammed[buckled_mob.name] ([buckled_mob.ckey]) rammed [H.name] ([H.ckey]) with the [src].</span>")
-		msg_admin_attack("[src] crashed into [key_name(H)] at (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[H.x];Y=[H.y];Z=[H.z]'>JMP</a>)" )
-		src.visible_message(SPAN_DANGER("\The [src] runs over \the [H]!"))
-		H.apply_damage(30, BRUTE)
-		H.apply_effect(4, WEAKEN)
-		return TRUE
-
-/obj/vehicle/bike/monowheel/check_destination(var/turf/destination)
-	var/static/list/types = typecacheof(list(/turf/space))
-	if(is_type_in_typecache(destination,types) || pulledby)
-		return TRUE
-	else
-		return FALSE
-
-/obj/item/storage/toolbox/bike_storage
-	name = "bike storage"
-	max_w_class = ITEMSIZE_LARGE
-	max_storage_space = 50
-	care_about_storage_depth = FALSE
-
-/obj/item/storage/toolbox/bike_storage/speeder
-	name = "speeder storage"
-
-/obj/item/storage/toolbox/bike_storage/monowheel
-	name = "monowheel storage"
+	trail = null
+	engine_type = /obj/item/engine/electric
+	prefilled = 1
+	protection_percent = 5

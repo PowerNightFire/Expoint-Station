@@ -1,20 +1,21 @@
 /turf
 	icon = 'icons/turf/floors.dmi'
 	level = 1
+
+	layer = TURF_LAYER
+
+	var/turf_flags
+
 	var/holy = 0
 
 	// Initial air contents (in moles)
-	var/oxygen = 0
-	var/carbon_dioxide = 0
-	var/nitrogen = 0
-	var/phoron = 0
+	var/list/initial_gas
 
 	//Properties for airtight tiles (/wall)
 	var/thermal_conductivity = 0.05
 	var/heat_capacity = 1
 
 	//Properties for both
-	var/temperature = T20C      // Initial turf temperature.
 	var/blocks_air = 0          // Does this turf contain air/let air through?
 
 	// General properties.
@@ -22,93 +23,62 @@
 	var/pathweight = 1          // How much does it cost to pathfind over this turf?
 	var/blessed = 0             // Has the turf been blessed?
 
-	var/footstep_sound = /decl/sound_category/tiles_footstep
-
 	var/list/decals
 
-	var/is_hole		// If true, turf will be treated as space or a hole
-	var/tmp/turf/baseturf
+	var/movement_delay
 
-	var/roof_type = null // The turf type we spawn as a roof.
-	var/tmp/roof_flags = 0
+	var/fluid_can_pass
+	var/obj/effect/flood/flood_object
+	var/fluid_blocked_dirs = 0
+	var/flooded // Whether or not this turf is absolutely flooded ie. a water source.
+	var/footstep_type
 
-	var/movement_cost = 0 // How much the turf slows down movement, if any.
+	var/tmp/changing_turf
 
-	// Footprint info
-	var/tracks_footprint = TRUE // Whether footprints will appear on this turf
-	var/does_footprint = FALSE // Whether stepping on this turf will dirty your shoes or feet with the below
-	var/footprint_color // The hex color produced by the turf
-	var/track_distance = 12 // How far the tracks last
+	var/prev_type // Previous type of the turf, prior to turf translation.
 
-	//Mining resources (for the large drills).
-	var/has_resources
-	var/list/resources
-
-	// Plating data.
-	var/base_name = "plating"
-	var/base_desc = "The naked hull."
-	var/base_icon = 'icons/turf/flooring/plating.dmi'
-	var/base_icon_state = "plating"
-	var/last_clean //for clean log spam.
-
-// Parent code is duplicated in here instead of ..() for performance reasons.
-// There's ALSO a copy of this in mine_turfs.dm!
 /turf/Initialize(mapload, ...)
-	if (initialized)
-		crash_with("Warning: [src]([type]) initialized multiple times!")
-
-	initialized = TRUE
-
-	for(var/atom/movable/AM as mob|obj in src)
-		Entered(AM)
-
-	turfs += src
-
+	. = ..()
 	if(dynamic_lighting)
 		luminosity = 0
 	else
 		luminosity = 1
-
-	if (smooth)
-		queue_smooth(src)
-
-	if (light_range && light_power)
-		update_light()
-
-	if (opacity)
-		has_opaque_atom = TRUE
-
+	RecalculateOpacity()
 	if (mapload && permit_ao)
 		queue_ao()
-
-	var/area/A = loc
-
-	if(!baseturf)
-		// Hard-coding this for performance reasons.
-		baseturf = A.base_turf || current_map.base_turf_by_z["[z]"] || /turf/space
-
-	if (A.flags & SPAWN_ROOF)
-		spawn_roof()
-
-	if (flags & MIMIC_BELOW)
+	if (z_flags & ZM_MIMIC_BELOW)
 		setup_zmimic(mapload)
+	update_starlight()
+	if(flooded && !density)
+		fluid_update(FALSE)
 
-	return INITIALIZE_HINT_NORMAL
+/turf/on_update_icon()
+	update_flood_overlay()
+	queue_ao(FALSE)
+
+/turf/proc/update_flood_overlay()
+	if(is_flooded(absolute = TRUE))
+		if(!flood_object)
+			flood_object = new(src)
+	else if(flood_object)
+		QDEL_NULL(flood_object)
 
 /turf/Destroy()
+
 	if (!changing_turf)
-		crash_with("Improper turf qdeletion.")
+		crash_with("Improper turf qdel. Do not qdel turfs directly.")
 
 	changing_turf = FALSE
-	turfs -= src
 
-	cleanup_roof()
+	remove_cleanables()
+	fluid_update()
+	REMOVE_ACTIVE_FLUID_SOURCE(src)
 
 	if (ao_queued)
-		SSocclusion.queue -= src
+		SSao.queue -= src
 		ao_queued = 0
 
-	if (flags & MIMIC_BELOW)
+	if (z_flags & ZM_MIMIC_BELOW)
 		cleanup_zmimic()
 
 	if (bound_overlay)
@@ -117,242 +87,153 @@
 	..()
 	return QDEL_HINT_IWILLGC
 
-/turf/proc/get_smooth_underlay_icon(mutable_appearance/underlay_appearance, turf/asking_turf, adjacency_dir)
-	underlay_appearance.appearance = src
-	underlay_appearance.dir = adjacency_dir
-	return TRUE
-
-/turf/ex_act(severity)
-	return 0
+/turf/explosion_act(severity)
+	SHOULD_CALL_PARENT(FALSE)
+	return
 
 /turf/proc/is_solid_structure()
 	return 1
 
-/turf/proc/is_space()
-	return 0
-
-/turf/proc/is_intact()
-	return 0
-
 /turf/attack_hand(mob/user)
-	if(!(user.canmove) || user.restrained() || !(user.pulling))
-		return 0
-	if(user.pulling.anchored || !isturf(user.pulling.loc))
-		return 0
-	if(user.pulling.loc != user.loc && get_dist(user, user.pulling) > 1)
-		return 0
-	if(ismob(user.pulling))
-		var/mob/M = user.pulling
-		var/atom/movable/t = M.pulling
-		M.stop_pulling()
-		step(user.pulling, get_dir(user.pulling.loc, src))
-		M.start_pulling(t)
-	else
-		step(user.pulling, get_dir(user.pulling.loc, src))
-	return 1
+	user.setClickCooldown(DEFAULT_QUICK_COOLDOWN)
 
-/turf/Enter(atom/movable/mover as mob|obj, atom/forget as mob|obj|turf|area)
-	if(movement_disabled && usr.ckey != movement_disabled_exception)
-		to_chat(usr, "<span class='warning'>Movement is admin-disabled.</span>") //This is to identify lag problems)
-		return
+	if(user.restrained())
+		return 0
+
+	. = handle_hand_interception(user)
+
+/turf/proc/handle_hand_interception(var/mob/user)
+	var/datum/extension/turf_hand/THE
+	for (var/A in src)
+		var/datum/extension/turf_hand/TH = get_extension(A, /datum/extension/turf_hand)
+		if (istype(TH) && TH.priority > THE?.priority) //Only overwrite if the new one is higher. For matching values, its first come first served
+			THE = TH
+
+	if (THE)
+		return THE.OnHandInterception(user)
+
+/turf/attack_robot(var/mob/user)
+	if(Adjacent(user))
+		attack_hand(user)
+
+/turf/attackby(obj/item/W, mob/user)
+
+	if(ATOM_IS_OPEN_CONTAINER(W) && W.reagents)
+		var/obj/effect/fluid/F = locate() in src
+		if(F && F.reagents?.total_volume)
+			var/taking = min(F.reagents?.total_volume, REAGENTS_FREE_SPACE(W.reagents))
+			if(taking > 0)
+				to_chat(user, SPAN_NOTICE("You fill \the [src] with [F.reagents.get_primary_reagent_name()] from \the [src]."))
+				F.reagents.trans_to(W, taking)
+				return TRUE
+
+	if(istype(W, /obj/item/storage))
+		var/obj/item/storage/S = W
+		if(S.use_to_pickup && S.collection_mode)
+			S.gather_all(src, user)
+		return TRUE
+
+	if(istype(W, /obj/item/grab))
+		var/obj/item/grab/G = W
+		step(G.affecting, get_dir(G.affecting.loc, src))
+		return TRUE
+
+	return ..()
+
+/turf/Enter(atom/movable/mover, atom/forget)
 
 	..()
 
-	if (!mover || !isturf(mover.loc))
+	if (!mover || !isturf(mover.loc) || isobserver(mover))
 		return 1
 
 	//First, check objects to block exit that are not on the border
 	for(var/obj/obstacle in mover.loc)
-		if(!(obstacle.flags & ON_BORDER) && (mover != obstacle) && (forget != obstacle))
+		if(!(obstacle.atom_flags & ATOM_FLAG_CHECKS_BORDER) && (mover != obstacle) && (forget != obstacle))
 			if(!obstacle.CheckExit(mover, src))
-				mover.Collide(obstacle)
+				mover.Bump(obstacle, 1)
 				return 0
 
 	//Now, check objects to block exit that are on the border
 	for(var/obj/border_obstacle in mover.loc)
-		if((border_obstacle.flags & ON_BORDER) && (mover != border_obstacle) && (forget != border_obstacle))
+		if((border_obstacle.atom_flags & ATOM_FLAG_CHECKS_BORDER) && (mover != border_obstacle) && (forget != border_obstacle))
 			if(!border_obstacle.CheckExit(mover, src))
-				mover.Collide(border_obstacle)
+				mover.Bump(border_obstacle, 1)
 				return 0
 
 	//Next, check objects to block entry that are on the border
 	for(var/obj/border_obstacle in src)
-		if(border_obstacle.flags & ON_BORDER)
+		if(border_obstacle.atom_flags & ATOM_FLAG_CHECKS_BORDER)
 			if(!border_obstacle.CanPass(mover, mover.loc, 1, 0) && (forget != border_obstacle))
-				mover.Collide(border_obstacle)
+				mover.Bump(border_obstacle, 1)
 				return 0
 
 	//Then, check the turf itself
 	if (!src.CanPass(mover, src))
-		mover.Collide(src)
+		mover.Bump(src, 1)
 		return 0
 
 	//Finally, check objects/mobs to block entry that are not on the border
 	for(var/atom/movable/obstacle in src)
-		if(!(obstacle.flags & ON_BORDER))
+		if(!(obstacle.atom_flags & ATOM_FLAG_CHECKS_BORDER))
 			if(!obstacle.CanPass(mover, mover.loc, 1, 0) && (forget != obstacle))
-				mover.Collide(obstacle)
+				mover.Bump(obstacle, 1)
 				return 0
 	return 1 //Nothing found to block so return success!
 
 var/const/enterloopsanity = 100
-
-/turf/Entered(atom/movable/AM)
-	if(movement_disabled)
-		to_chat(usr, "<span class='warning'>Movement is admin-disabled.</span>") //This is to identify lag problems)
-		return
-
-	ASSERT(istype(AM))
-
-	if(ismob(AM))
-		var/mob/M = AM
-		if(!M.lastarea)
-			M.lastarea = get_area(M.loc)
-		if(M.lastarea.has_gravity() == 0)
-			inertial_drift(M)
-
-		// Footstep SFX logic moved to human_movement.dm - Move().
-
-		else if (type != /turf/space)
-			M.inertia_dir = 0
-			M.make_floating(0)
-
-	if(does_footprint && footprint_color && ishuman(AM))
-		var/mob/living/carbon/human/H = AM
-		var/obj/item/organ/external/l_foot = H.get_organ(BP_L_FOOT)
-		var/obj/item/organ/external/r_foot = H.get_organ(BP_R_FOOT)
-		var/has_feet = TRUE
-		if((!l_foot || l_foot.is_stump()) && (!r_foot || r_foot.is_stump()))
-			has_feet = FALSE
-		if(!H.buckled && !H.lying && has_feet)
-			if(H.shoes) //Adding ash to shoes
-				var/obj/item/clothing/shoes/S = H.shoes
-				if(istype(S))
-					S.blood_color = footprint_color
-					S.track_footprint = max(track_distance, S.track_footprint)
-
-					if(!S.blood_overlay)
-						S.generate_blood_overlay()
-					if(S.blood_overlay?.color != footprint_color)
-						S.cut_overlay(S.blood_overlay, TRUE)
-
-					S.blood_overlay.color = footprint_color
-					S.add_overlay(S.blood_overlay, TRUE)
-			else
-				H.footprint_color = footprint_color
-				H.track_footprint = max(track_distance, H.track_footprint)
-
-		H.update_inv_shoes(TRUE)
-
-	if(istype(AM, /mob/living/carbon/human))
-		var/mob/living/carbon/human/H = AM
-		// Tracking blood
-		var/list/footprint_DNA = list()
-		var/footprint_color
-		var/will_track = FALSE
-		if(H.shoes)
-			var/obj/item/clothing/shoes/S = H.shoes
-			if(istype(S))
-				S.handle_movement(src, H.m_intent == "run" ? TRUE : FALSE)
-				if(S.track_footprint)
-					if(S.blood_DNA)
-						footprint_DNA = S.blood_DNA
-					footprint_color = S.blood_color
-					S.track_footprint--
-					will_track = TRUE
-		else
-			if(H.track_footprint)
-				if(H.feet_blood_DNA)
-					footprint_DNA = H.feet_blood_DNA
-				footprint_color = H.footprint_color
-				H.track_footprint--
-				will_track = TRUE
-
-		if(tracks_footprint && will_track)
-			add_tracks(H.species.get_move_trail(H), footprint_DNA, H.dir, 0, footprint_color) // Coming
-			var/turf/simulated/from = get_step(H, reverse_direction(H.dir))
-			if(istype(from) && from)
-				from.add_tracks(H.species.get_move_trail(H), footprint_DNA, 0, H.dir, footprint_color) // Going
-			footprint_DNA = null
+/turf/Entered(var/atom/atom, var/atom/old_loc)
 
 	..()
 
+	QUEUE_TEMPERATURE_ATOMS(atom)
+
+	if(!istype(atom, /atom/movable))
+		return
+
+	var/atom/movable/A = atom
+
 	var/objects = 0
-	if(AM && (AM.flags & PROXMOVE) && AM.simulated)
-		for(var/atom/movable/oAM in range(1))
-			if(objects > enterloopsanity)
-				break
+	if(A && (A.movable_flags & MOVABLE_FLAG_PROXMOVE))
+		for(var/atom/movable/thing in range(1))
+			if(objects > enterloopsanity) break
 			objects++
+			spawn(0)
+				if(A)
+					A.HasProximity(thing, 1)
+					if ((thing && A) && (thing.movable_flags & MOVABLE_FLAG_PROXMOVE))
+						thing.HasProximity(A, 1)
+	return
 
-			if (oAM.simulated)
-				AM.proximity_callback(oAM)
-
-/turf/proc/add_tracks(var/typepath, var/footprint_DNA, var/comingdir, var/goingdir, var/footprint_color="#A10808")
-	var/obj/effect/decal/cleanable/blood/tracks/tracks = locate(typepath) in src
-	if(!tracks)
-		tracks = new typepath(src)
-	tracks.add_tracks(footprint_DNA, comingdir, goingdir, footprint_color)
-
-/atom/movable/proc/proximity_callback(atom/movable/AM)
-	set waitfor = FALSE
-	sleep(0)
-	HasProximity(AM, TRUE)
-	if (!QDELETED(AM) && !QDELETED(src) && (AM.flags & PROXMOVE))
-		AM.HasProximity(src, TRUE)
-
-/turf/proc/adjacent_fire_act(turf/simulated/floor/source, temperature, volume)
+/turf/proc/adjacent_fire_act(turf/simulated/floor/source, exposed_temperature, exposed_volume)
 	return
 
 /turf/proc/is_plating()
 	return 0
 
-/turf/proc/can_have_cabling()
+/turf/proc/protects_atom(var/atom/A)
 	return FALSE
-
-/turf/proc/can_lay_cable()
-	return can_have_cabling()
-
-/turf/attackby(obj/item/C, mob/user)
-	if (can_lay_cable() && C.iscoil())
-		var/obj/item/stack/cable_coil/coil = C
-		coil.turf_place(src, user)
-	else
-		..()
-
-/turf/proc/inertial_drift(atom/movable/A as mob|obj)
-	if(!(A.last_move))	return
-	if((istype(A, /mob/) && src.x > 2 && src.x < (world.maxx - 1) && src.y > 2 && src.y < (world.maxy-1)))
-		var/mob/M = A
-		if(M.Allow_Spacemove(1))
-			M.inertia_dir  = 0
-			return
-		spawn(5)
-			if((M && !(M.anchored) && !(M.pulledby) && (M.loc == src)))
-				if(M.inertia_dir)
-					step(M, M.inertia_dir)
-					return
-				M.inertia_dir = M.last_move
-				step(M, M.inertia_dir)
-	return
 
 /turf/proc/levelupdate()
 	for(var/obj/O in src)
 		O.hide(O.hides_under_flooring() && !is_plating())
 
-/turf/proc/AdjacentTurfs()
-	var/L[] = new()
-	for(var/turf/simulated/t in oview(src,1))
-		if(!t.density)
-			if(!LinkBlocked(src, t) && !TurfBlockedNonWindow(t))
-				L.Add(t)
-	return L
+/turf/proc/AdjacentTurfs(var/check_blockage = TRUE)
+	. = list()
+	for(var/turf/t in (RANGE_TURFS(src, 1) - src))
+		if(check_blockage)
+			if(!t.density)
+				if(!LinkBlocked(src, t) && !TurfBlockedNonWindow(t))
+					. += t
+		else
+			. += t
 
-/turf/proc/CardinalTurfs()
-	var/L[] = new()
-	for(var/turf/simulated/T in AdjacentTurfs())
+/turf/proc/CardinalTurfs(var/check_blockage = TRUE)
+	. = list()
+	for(var/ad in AdjacentTurfs(check_blockage))
+		var/turf/T = ad
 		if(T.x == src.x || T.y == src.y)
-			L.Add(T)
-	return L
+			. += T
 
 /turf/proc/Distance(turf/t)
 	if(get_dist(src,t) == 1)
@@ -370,171 +251,121 @@ var/const/enterloopsanity = 100
 				L.Add(t)
 	return L
 
-/turf/process()
-	STOP_PROCESSING(SSprocessing, src)
-
 /turf/proc/contains_dense_objects()
 	if(density)
 		return 1
 	for(var/atom/A in src)
-		if(A.density && !(A.flags & ON_BORDER))
+		if(A.density && !(A.atom_flags & ATOM_FLAG_CHECKS_BORDER))
 			return 1
 	return 0
 
 //expects an atom containing the reagents used to clean the turf
-/turf/proc/clean(atom/source, mob/user)
-	if(source.reagents.has_reagent(/datum/reagent/water, 1) || source.reagents.has_reagent(/datum/reagent/spacecleaner, 1))
+/turf/proc/clean(atom/source, mob/user = null, var/time = null, var/message = null)
+	set waitfor = FALSE
+	if(source.reagents.has_reagent(/decl/material/liquid/water, 1) || source.reagents.has_reagent(/decl/material/liquid/cleaner, 1))
+		if(user && time && !do_after(user, time, src))
+			return
 		clean_blood()
-		if(istype(src, /turf/simulated))
-			var/turf/simulated/T = src
-			T.dirt = 0
-			T.color = null
-		for(var/obj/effect/O in src)
-			if(istype(O,/obj/effect/decal/cleanable) || istype(O,/obj/effect/overlay))
-				qdel(O)
-			if(istype(O,/obj/effect/rune))
-				var/obj/effect/rune/R = O
-				// Only show message for visible runes
-				if(!R.invisibility)
-					to_chat(user, SPAN_WARNING("No matter how well you wash, the bloody symbols remain!"))
+		remove_cleanables()
+		if(message)
+			to_chat(user, message)
 	else
-		if( !(last_clean && world.time < last_clean + 100) )
-			to_chat(user, SPAN_WARNING("\The [source] is too dry to wash that."))
-			last_clean = world.time
-	source.reagents.trans_to_turf(src, 1, 10)	//10 is the multiplier for the reaction effect. probably needed to wet the floor properly.
+		to_chat(user, SPAN_WARNING("\The [source] is too dry to wash that."))
+	source.reagents.touch_turf(src)
+
+/turf/proc/remove_cleanables()
+	for(var/obj/effect/O in src)
+		if(istype(O,/obj/effect/rune) || istype(O,/obj/effect/decal/cleanable))
+			qdel(O)
 
 /turf/proc/update_blood_overlays()
 	return
 
-/**
- * Will spawn a roof above the turf if it needs one.
- *
- * @param  flags The flags to assign to the turf which control roof spawning and
- * deletion by this turf. Refer to _defines/turfs.dm for a full list.
- *
- * @return TRUE if a roof has been spawned, FALSE if not.
- */
-/turf/proc/spawn_roof(flags = 0)
-	var/turf/above = GetAbove(src)
-	if (!above)
-		return FALSE
+/turf/proc/remove_decals()
+	if(decals && decals.len)
+		decals.Cut()
+		decals = null
 
-	if ((isopenturf(above) || (flags & ROOF_FORCE_SPAWN)) && get_roof_type() && above)
-		above.ChangeTurf(get_roof_type())
-		roof_flags |= flags
-		return TRUE
+// Called when turf is hit by a thrown object
+/turf/hitby(atom/movable/AM, var/datum/thrownthing/TT)
+	..()
+	if(density)
+		if(isliving(AM))
+			var/mob/living/M = AM
+			M.turf_collision(src, TT.speed)
+			if(M.pinned)
+				return
+		addtimer(CALLBACK(src, /turf/proc/bounce_off, AM, TT.init_dir), 2)
 
+/turf/proc/bounce_off(var/atom/movable/AM, var/direction)
+	step(AM, turn(direction, 180))
+
+/turf/proc/can_engrave()
 	return FALSE
 
-/**
- * Returns the roof type of the current turf
- */
-/turf/proc/get_roof_type()
-	return roof_type
+/turf/proc/try_graffiti(var/mob/vandal, var/obj/item/tool)
 
-/**
- * Cleans up the roof above a tile if there is one spawned and the ROOF_CLEANUP
- * flag is present on the source turf.
- */
-/turf/proc/cleanup_roof()
-	if (!HasAbove(z))
+	if(!tool.sharp || !can_engrave() || vandal.a_intent != I_HELP)
+		return FALSE
+
+	if(jobban_isbanned(vandal, "Graffiti"))
+		to_chat(vandal, SPAN_WARNING("You are banned from leaving persistent information across rounds."))
 		return
 
-	if (roof_flags & ROOF_CLEANUP)
-		var/turf/above = GetAbove(src)
-		if (!above || isopenturf(above))
+	var/too_much_graffiti = 0
+	for(var/obj/effect/decal/writing/W in src)
+		too_much_graffiti++
+	if(too_much_graffiti >= 5)
+		to_chat(vandal, "<span class='warning'>There's too much graffiti here to add more.</span>")
+		return FALSE
+
+	var/message = sanitize(input("Enter a message to engrave.", "Graffiti") as null|text, trim = TRUE)
+	if(!message)
+		return FALSE
+	if(!vandal || vandal.incapacitated() || !Adjacent(vandal) || !tool.loc == vandal)
+		return FALSE
+	message = vandal.handle_writing_literacy(vandal, message, TRUE)
+	if(!message)
+		return
+	vandal.visible_message("<span class='warning'>\The [vandal] begins carving something into \the [src].</span>")
+
+	if(!do_after(vandal, max(20, length(message)), src))
+		return FALSE
+
+	vandal.visible_message("<span class='danger'>\The [vandal] carves some graffiti into \the [src].</span>")
+	var/obj/effect/decal/writing/graffiti = new(src)
+	graffiti.message = message
+	graffiti.author = vandal.ckey
+	vandal.update_personal_goal(/datum/goal/achievement/graffiti, TRUE)
+
+	if(lowertext(message) == "elbereth")
+		to_chat(vandal, "<span class='notice'>You feel much safer.</span>")
+
+	return TRUE
+
+/turf/proc/is_wall()
+	return FALSE
+
+/turf/proc/is_open()
+	return FALSE
+
+/turf/proc/is_floor()
+	return FALSE
+
+/turf/proc/update_starlight()
+	if(!config.starlight)
+		return
+	var/area/A = get_area(src)
+	if(!A.show_starlight)
+		return
+	//Let's make sure not to break everything if people use a crazy setting.
+	var/turf/T = locate(/turf/simulated) in RANGE_TURFS(src,1)
+	if(T)
+		A = get_area(T)
+		if(A && A.dynamic_lighting)
+			set_light(min(0.1*config.starlight, 1), 1, 3, l_color = SSskybox.background_color)
 			return
+	set_light(0)
 
-		above.ChangeToOpenturf()
-
-/turf/proc/AdjacentTurfsRanged()
-	var/static/list/allowed = typecacheof(list(
-		/obj/structure/table,
-		/obj/structure/closet,
-		/obj/machinery/constructable_frame,
-		/obj/structure/target_stake,
-		/obj/structure/cable,
-		/obj/structure/disposalpipe,
-		/obj/machinery,
-		/mob
-	))
-
-	var/L[] = new()
-	for(var/turf/simulated/t in oview(src,1))
-		var/add = 1
-		if(t.density)
-			add = 0
-		if(add && LinkBlocked(src,t))
-			add = 0
-		if(add && TurfBlockedNonWindow(t))
-			add = 0
-			for(var/obj/O in t)
-				if(!O.density)
-					add = 1
-					break
-				if(istype(O, /obj/machinery/door))
-					//not sure why this doesn't fire on LinkBlocked()
-					add = 0
-					break
-				if(is_type_in_typecache(O, allowed))
-					add = 1
-					break
-				if(!add)
-					break
-		if(add)
-			L.Add(t)
-	return L
-
-// CRAWLING + MOVING STUFF
-/turf/MouseDrop_T(atom/movable/O as mob|obj, mob/user as mob)
-	var/turf/T = get_turf(user)
-	var/area/A = T.loc
-	if((istype(A) && !(A.has_gravity())) || (istype(T,/turf/space)))
-		return
-	if(istype(O, /obj/screen))
-		return
-	if(user.restrained() || user.stat || user.incapacitated(INCAPACITATION_KNOCKOUT) || !user.lying)
-		return
-	if((!(istype(O, /atom/movable)) || O.anchored || !Adjacent(user) || !Adjacent(O) || !user.Adjacent(O)))
-		return
-	if(!isturf(O.loc) || !isturf(user.loc))
-		return
-	if(isanimal(user) && O != user)
-		return
-
-	var/tally = 0
-
-	if(ishuman(user))
-		var/mob/living/carbon/human/H = user
-
-		var/obj/item/organ/external/rhand = H.organs_by_name[BP_R_HAND]
-		tally += limbCheck(rhand)
-
-		var/obj/item/organ/external/lhand = H.organs_by_name[BP_L_HAND]
-		tally += limbCheck(lhand)
-
-		var/obj/item/organ/external/rfoot = H.organs_by_name[BP_R_FOOT]
-		tally += limbCheck(rfoot)
-
-		var/obj/item/organ/external/lfoot = H.organs_by_name[BP_L_FOOT]
-		tally += limbCheck(lfoot)
-
-	if(tally >= 120)
-		to_chat(user, SPAN_NOTICE("You're too injured to do this!"))
-		return
-
-	var/finaltime = 25 + (5 * (user.weakened * 1.5))
-	if(tally >= 45) // If you have this much missing, you'll crawl slower.
-		finaltime += tally
-
-	if(do_after(user, finaltime) && !user.stat)
-		step_towards(O, src)
-
-// Checks status of limb, returns an amount to
-/turf/proc/limbCheck(var/obj/item/organ/external/limb)
-	if(!limb) // Limb is null, thus missing. Add 3 seconds.
-		return 30
-	else if(!limb.is_usable() || limb.is_broken()) // You can't use the limb, but it's still there to manoevre yourself
-		return 15
-	else
-		return 0
+/turf/proc/get_footstep_sound(var/mob/caller)
+	return

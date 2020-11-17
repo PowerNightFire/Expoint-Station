@@ -14,27 +14,30 @@
 	var/head_content = ""
 	var/content = ""
 	var/title_buttons = ""
+	var/written_text = FALSE
 
+/datum/browser/written
+	written_text = TRUE
 
 /datum/browser/New(nuser, nwindow_id, ntitle = 0, nwidth = 0, nheight = 0, var/atom/nref = null)
 
 	user = nuser
 	window_id = nwindow_id
 	if (ntitle)
-		title = format_text(ntitle)
+		set_title(ntitle)
 	if (nwidth)
 		width = nwidth
 	if (nheight)
 		height = nheight
 	if (nref)
 		ref = nref
+	// If a client exists, but they have disabled fancy windowing, disable it!
+	if(user && user.client && user.client.get_preference_value(/datum/client_preference/browser_style) == GLOB.PREF_PLAIN)
+		return
 	add_stylesheet("common", 'html/browser/common.css') // this CSS sheet is common to all UIs
 
-/datum/browser/proc/set_user(nuser)
-	user = nuser
-
 /datum/browser/proc/set_title(ntitle)
-	title = format_text(ntitle)
+	title = replacetext(replacetext(ntitle,"\proper ",""),"\improper ","")
 
 /datum/browser/proc/add_head_content(nhead_content)
 	head_content = nhead_content
@@ -49,12 +52,10 @@
 	//title_image = ntitle_image
 
 /datum/browser/proc/add_stylesheet(name, file)
-	stylesheets["[ckey(name)].css"] = file
-	register_asset("[ckey(name)].css", file)
+	stylesheets[name] = file
 
 /datum/browser/proc/add_script(name, file)
-	scripts["[ckey(name)].js"] = file
-	register_asset("[ckey(name)].js", file)
+	scripts[name] = file
 
 /datum/browser/proc/set_content(ncontent)
 	content = ncontent
@@ -63,12 +64,17 @@
 	content += ncontent
 
 /datum/browser/proc/get_header()
-	var/file
-	for (file in stylesheets)
-		head_content += "<link rel='stylesheet' type='text/css' href='[file]'>"
+	var/key
+	var/filename
+	for (key in stylesheets)
+		filename = "[ckey(key)].css"
+		send_rsc(user, stylesheets[key], filename)
+		head_content += "<link rel='stylesheet' type='text/css' href='[filename]'>"
 
-	for (file in scripts)
-		head_content += "<script type='text/javascript' src='[file]'></script>"
+	for (key in scripts)
+		filename = "[ckey(key)].js"
+		send_rsc(user, scripts[key], filename)
+		head_content += "<script type='text/javascript' src='[filename]'></script>"
 
 	var/title_attributes = "class='uiTitle'"
 	if (title_image)
@@ -76,9 +82,9 @@
 
 	return {"<!DOCTYPE html>
 <html>
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+	<meta charset=ISO-8859-1">
 	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		[head_content]
 	</head>
 	<body scroll=auto>
@@ -95,31 +101,21 @@
 </html>"}
 
 /datum/browser/proc/get_content()
-	return {"
+	. = {"
 	[get_header()]
 	[content]
 	[get_footer()]
 	"}
+	if(written_text)
+		. = user.handle_reading_literacy(user, .)
 
 /datum/browser/proc/open(var/use_onclose = 1)
 	var/window_size = ""
 	if (width && height)
 		window_size = "size=[width]x[height];"
-	if (stylesheets.len)
-		send_asset_list(user, stylesheets, verify = FALSE)
-	if (scripts.len)
-		send_asset_list(user, scripts, verify = FALSE)
-	user << browse(get_content(), "window=[window_id];[window_size][window_options]")
+	show_browser(user, get_content(), "window=[window_id];[window_size][window_options]")
 	if (use_onclose)
-		setup_onclose()
-
-// Fix from /tg/.
-/datum/browser/proc/setup_onclose()
-	set waitfor = 0
-	for (var/i in 1 to 10)
-		if (user && winexists(user, window_id))
-			onclose(user, window_id, ref)
-			break
+		onclose(user, window_id, ref)
 
 /datum/browser/proc/update(var/force_open = 0, var/use_onclose = 1)
 	if(force_open)
@@ -128,22 +124,22 @@
 		send_output(user, get_content(), "[window_id].browser")
 
 /datum/browser/proc/close()
-	user << browse(null, "window=[window_id]")
+	close_browser(user, "window=[window_id]")
 
 // This will allow you to show an icon in the browse window
 // This is added to mob so that it can be used without a reference to the browser object
 // There is probably a better place for this...
-/mob/proc/browse_rsc_icon(icon, icon_state, dir = -1)
+/mob/proc/browse_rsc_icon(icon, icon_state, direction = -1)
 	/*
 	var/icon/I
-	if (dir >= 0)
-		I = new /icon(icon, icon_state, dir)
+	if (direction >= 0)
+		I = new /icon(icon, icon_state, direction)
 	else
 		I = new /icon(icon, icon_state)
-		dir = "default"
+		direction = "default"
 
-	var/filename = "[ckey("[icon]_[icon_state]_[dir]")].png"
-	to_chat(src, browse_rsc(I, filename))
+	var/filename = "[ckey("[icon]_[icon_state]_[direction]")].png"
+	send_rsc(src, I, filename)
 	return filename
 	*/
 
@@ -155,7 +151,7 @@
 // e.g. canisters, timers, etc.
 //
 // windowid should be the specified window name
-// e.g. code is	: user << browse(text, "window=fred")
+// e.g. code is	: show_browser(user, text, "window=fred")
 // then use 	: onclose(user, "fred")
 //
 // Optionally, specify the "ref" parameter as the controlled atom (usually src)
@@ -168,7 +164,12 @@
 	if(ref)
 		param = "\ref[ref]"
 
-	winset(user, windowid, "on-close=\".windowclose [param]\"")
+	spawn(2)
+		if(!user.client) return
+		winset(user, windowid, "on-close=\".windowclose [param]\"")
+
+//	log_debug("OnClose [user]: [windowid] : ["on-close=\".windowclose [param]\""]")
+
 
 
 // the on-close client verb
@@ -180,9 +181,13 @@
 	set hidden = 1						// hide this verb from the user's panel
 	set name = ".windowclose"			// no autocomplete on cmd line
 
+//	log_debug("windowclose: [atomref]")
+
 	if(atomref!="null")				// if passed a real atomref
 		var/hsrc = locate(atomref)	// find the reffed atom
 		if(hsrc)
+//			log_debug("[src] Topic [href] [hsrc]")
+
 			usr = src.mob
 			src.Topic("close=1", list("close"="1"), hsrc)	// this will direct to the atom's
 			return										// Topic() proc via client.Topic()
@@ -190,5 +195,7 @@
 	// no atomref specified (or not found)
 	// so just reset the user mob's machine var
 	if(src && src.mob)
+//		log_debug("[src] was [src.mob.machine], setting to null")
+
 		src.mob.unset_machine()
 	return

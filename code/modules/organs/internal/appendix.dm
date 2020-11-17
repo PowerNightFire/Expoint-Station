@@ -3,34 +3,28 @@
 	icon_state = "appendix"
 	parent_organ = BP_GROIN
 	organ_tag = BP_APPENDIX
-	possible_modifications = list ("Normal","Removed")
 	var/inflamed = 0
 
-/obj/item/organ/internal/appendix/update_icon()
+/obj/item/organ/internal/appendix/on_update_icon()
 	..()
 	if(inflamed)
-		icon_state = "[icon_state]inflamed"
-		name = "inflamed [name]"
+		icon_state = "appendixinflamed"
+		SetName("inflamed appendix")
 
-/obj/item/organ/internal/appendix/process()
+/obj/item/organ/internal/appendix/Process()
 	..()
 	if(inflamed && owner)
 		inflamed++
 		if(prob(5))
 			if(owner.can_feel_pain())
 				owner.custom_pain("You feel a stinging pain in your abdomen!")
-				owner.visible_message("<B>\The [owner]</B> winces slightly.")
-				var/obj/item/organ/external/O = owner.get_organ(parent_organ)
-				if(O)
-					O.add_pain(10)
+				if(owner.can_feel_pain())
+					owner.visible_message("<B>\The [owner]</B> winces slightly.")
 		if(inflamed > 200)
 			if(prob(3))
 				take_internal_damage(0.1)
 				if(owner.can_feel_pain())
 					owner.visible_message("<B>\The [owner]</B> winces painfully.")
-					var/obj/item/organ/external/O = owner.get_organ(parent_organ)
-					if(O)
-						O.add_pain(25)
 				owner.adjustToxLoss(1)
 		if(inflamed > 400)
 			if(prob(1))

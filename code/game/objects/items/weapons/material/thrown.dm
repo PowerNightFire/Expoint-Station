@@ -1,29 +1,30 @@
-/obj/item/material/star
+/obj/item/star
 	name = "shuriken"
 	desc = "A sharp, perfectly weighted piece of metal."
+	icon = 'icons/obj/items/weapon/throwing_star.dmi'
 	icon_state = "star"
-	icon = 'icons/obj/weapons.dmi'
-	force_divisor = 0.1 // 6 with hardness 60 (steel)
-	thrown_force_divisor = 0.75 // 15 with weight 20 (steel)
+	randpixel = 12
+	material_force_multiplier = 0.1 // 6 with hardness 60 (steel)
+	thrown_material_force_multiplier = 0.25 // 15 with weight 60 (steel)
 	throw_speed = 10
 	throw_range = 15
 	sharp = 1
 	edge =  1
-	w_class = ITEMSIZE_SMALL
+	material = /decl/material/solid/metal/steel
+	applies_material_colour = TRUE
+	applies_material_name = TRUE
 
-/obj/item/material/star/New()
+/obj/item/star/throw_impact(atom/hit_atom)
 	..()
-	src.pixel_x = rand(-12, 12)
-	src.pixel_y = rand(-12, 12)
-
-/obj/item/material/star/throw_impact(atom/hit_atom)
-	..()
-	if (istype(hit_atom,/mob/living))
-
+	if(material.radioactivity>0 && istype(hit_atom,/mob/living))
 		var/mob/living/M = hit_atom
+		var/urgh = material.radioactivity
+		M.adjustToxLoss(rand(urgh/2,urgh))
 
-		if(material.radioactivity > 0)
-			M.adjustToxLoss(material.radioactivity*2)
+/obj/item/star/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
+	. = ..()
+	if(user.a_intent == I_HURT)
+		user.throw_item(target)
 
-		if(prob(30))
-			M.Weaken(7)
+/obj/item/star/ninja
+	material = /decl/material/solid/metal/uranium

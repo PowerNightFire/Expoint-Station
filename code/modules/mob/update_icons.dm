@@ -4,22 +4,19 @@
 /mob/proc/regenerate_icons()		//TODO: phase this out completely if possible
 	return
 
+/mob/proc/update_icons()
+	return
+
 /mob/proc/update_hud()
 	return
 
 /mob/proc/update_inv_handcuffed()
 	return
 
-/mob/proc/update_inv_legcuffed()
-	return
-
 /mob/proc/update_inv_back()
 	return
 
-/mob/proc/update_inv_l_hand()
-	return
-
-/mob/proc/update_inv_r_hand()
+/mob/proc/update_inv_hands()
 	return
 
 /mob/proc/update_inv_wear_mask()

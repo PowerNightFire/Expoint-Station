@@ -1,24 +1,22 @@
 /obj/structure/extinguisher_cabinet
 	name = "extinguisher cabinet"
 	desc = "A small wall mounted cabinet designed to hold a fire extinguisher."
-	icon = 'icons/obj/closet.dmi'
+	icon = 'icons/obj/structures/extinguisher.dmi'
 	icon_state = "extinguisher_closed"
 	anchored = 1
 	density = 0
 	var/obj/item/extinguisher/has_extinguisher
 	var/opened = 0
 
-/obj/structure/extinguisher_cabinet/New()
-	..()
+/obj/structure/extinguisher_cabinet/Initialize()
+	. = ..()
 	has_extinguisher = new/obj/item/extinguisher(src)
 
 /obj/structure/extinguisher_cabinet/attackby(obj/item/O, mob/user)
 	if(isrobot(user))
 		return
 	if(istype(O, /obj/item/extinguisher))
-		if(!has_extinguisher && opened)
-			user.remove_from_mob(O)
-			contents += O
+		if(!has_extinguisher && opened && user.unEquip(O, src))
 			has_extinguisher = O
 			to_chat(user, "<span class='notice'>You place [O] in [src].</span>")
 			playsound(src.loc, 'sound/effects/extin.ogg', 50, 0)
@@ -28,18 +26,13 @@
 		opened = !opened
 	update_icon()
 
-/obj/structure/extinguisher_cabinet/AltClick(mob/user)
-	opened = !opened
-	update_icon()
 
 /obj/structure/extinguisher_cabinet/attack_hand(mob/user)
 	if(isrobot(user))
 		return
 	if (ishuman(user))
 		var/mob/living/carbon/human/H = user
-		var/obj/item/organ/external/temp = H.organs_by_name[BP_R_HAND]
-		if (user.hand)
-			temp = H.organs_by_name[BP_L_HAND]
+		var/obj/item/organ/external/temp = H.organs_by_name[H.get_active_held_item_slot()]
 		if(temp && !temp.is_usable())
 			to_chat(user, "<span class='notice'>You try to move your [temp.name], but cannot!</span>")
 			return
@@ -53,7 +46,7 @@
 		opened = !opened
 	update_icon()
 
-/obj/structure/extinguisher_cabinet/update_icon()
+/obj/structure/extinguisher_cabinet/on_update_icon()
 	if(!opened)
 		icon_state = "extinguisher_closed"
 		return
@@ -64,6 +57,11 @@
 			icon_state = "extinguisher_full"
 	else
 		icon_state = "extinguisher_empty"
+
+/obj/structure/extinguisher_cabinet/AltClick(var/mob/user)
+	if(CanPhysicallyInteract(user))
+		opened = !opened
+		update_icon()
 
 /obj/structure/extinguisher_cabinet/do_simple_ranged_interaction(var/mob/user)
 	if(has_extinguisher)

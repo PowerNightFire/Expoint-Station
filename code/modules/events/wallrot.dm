@@ -1,32 +1,28 @@
-/datum/event/wallrot
-	var/turf/simulated/wall/origin_turf
-
-/datum/event/wallrot/setup()
+datum/event/wallrot/setup()
 	announceWhen = rand(0, 300)
 	endWhen = announceWhen + 1
 
-/datum/event/wallrot/announce()
-	command_announcement.Announce("Harmful fungi detected at coordinates ([origin_turf.x], [origin_turf.y], [origin_turf.z]). Station structures may be contaminated.", "Biohazard Alert", new_sound = pick('sound/AI/fungi.ogg', 'sound/AI/funguy.ogg', 'sound/AI/fun_guy.ogg', 'sound/AI/fun_gi.ogg'))
+datum/event/wallrot/announce()
+	command_announcement.Announce("Harmful fungi detected on [location_name()]. Structures may be contaminated.", "[location_name()] Biologic Sensor Network", zlevels = affecting_z)
 
-/datum/event/wallrot/start()
-	set waitfor = FALSE
+datum/event/wallrot/start()
+	spawn()
+		var/turf/simulated/wall/center = null
 
-	// 100 attempts
-	for(var/i = 0, i < 100, i++)
-		var/turf/candidate = locate(rand(1, world.maxx), rand(1, world.maxy), pick(current_map.station_levels))
-		if(istype(candidate, /turf/simulated/wall))
-			origin_turf = candidate
-			break
+		// 100 attempts
+		for(var/i=0, i<100, i++)
+			var/turf/candidate = locate(rand(1, world.maxx), rand(1, world.maxy), 1)
+			if(istype(candidate, /turf/simulated/wall))
+				center = candidate
 
-	if(origin_turf)
-		// Make sure at least one piece of wall rots!
-		origin_turf.rot()
+		if(center)
+			// Make sure at least one piece of wall rots!
+			center.rot()
 
-		// Have a chance to rot lots of other walls.
-		var/rotcount = 0
-		var/actual_severity = severity * rand(10, 20)
-		for(var/turf/simulated/wall/W in range(12, origin_turf)) 
-			if(prob(30))
+			// Have a chance to rot lots of other walls.
+			var/rotcount = 0
+			var/actual_severity = severity * rand(5, 10)
+			for(var/turf/simulated/wall/W in range(5, center)) if(prob(50))
 				W.rot()
 				rotcount++
 

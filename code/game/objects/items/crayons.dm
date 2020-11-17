@@ -1,85 +1,88 @@
 /obj/item/pen/crayon/red
 	icon_state = "crayonred"
-	colour = "#DA0000"
-	shadeColour = "#810C0C"
+	colour = "#da0000"
+	shadeColour = "#810c0c"
 	colourName = "red"
-	reagents_to_add = list(/datum/reagent/crayon_dust/red = 10)
+	color_description = "red crayon"
 
 /obj/item/pen/crayon/orange
 	icon_state = "crayonorange"
-	colour = "#FF9300"
-	shadeColour = "#A55403"
+	colour = "#ff9300"
+	shadeColour = "#a55403"
 	colourName = "orange"
-	reagents_to_add = list(/datum/reagent/crayon_dust/orange = 10)
+	color_description = "orange crayon"
 
 /obj/item/pen/crayon/yellow
 	icon_state = "crayonyellow"
-	colour = "#FFF200"
+	colour = "#fff200"
 	shadeColour = "#886422"
 	colourName = "yellow"
-	reagents_to_add = list(/datum/reagent/crayon_dust/yellow = 10)
+	color_description = "yellow crayon"
 
 /obj/item/pen/crayon/green
 	icon_state = "crayongreen"
-	colour = "#A8E61D"
-	shadeColour = "#61840F"
+	colour = "#a8e61d"
+	shadeColour = "#61840f"
 	colourName = "green"
-	reagents_to_add = list(/datum/reagent/crayon_dust/green = 10)
+	color_description = "green crayon"
 
 /obj/item/pen/crayon/blue
 	icon_state = "crayonblue"
-	colour = "#00B7EF"
-	shadeColour = "#0082A8"
+	colour = "#00b7ef"
+	shadeColour = "#0082a8"
 	colourName = "blue"
-	reagents_to_add = list(/datum/reagent/crayon_dust/blue = 10)
+	color_description = "blue crayon"
 
 /obj/item/pen/crayon/purple
 	icon_state = "crayonpurple"
-	colour = "#DA00FF"
-	shadeColour = "#810CFF"
+	colour = "#da00ff"
+	shadeColour = "#810cff"
 	colourName = "purple"
-	reagents_to_add = list(/datum/reagent/crayon_dust/purple = 10)
+	color_description = "purple crayon"
+
+/obj/item/pen/crayon/random/Initialize()
+	..()
+	var/crayon_type = pick(subtypesof(/obj/item/pen/crayon) - /obj/item/pen/crayon/random)
+	new crayon_type(loc)
+	return INITIALIZE_HINT_QDEL
 
 /obj/item/pen/crayon/mime
 	icon_state = "crayonmime"
 	desc = "A very sad-looking crayon."
-	colour = "#FFFFFF"
+	colour = "#ffffff"
 	shadeColour = "#000000"
 	colourName = "mime"
-	reagents_to_add = list(/datum/reagent/crayon_dust/grey = 15)
+	color_description = "white crayon"
+	uses = 0
 
-/obj/item/pen/crayon/mime/attack_self(mob/living/user as mob) //inversion
-	if(colour != "#FFFFFF" && shadeColour != "#000000")
-		colour = "#FFFFFF"
+/obj/item/pen/crayon/mime/attack_self(mob/living/user) //inversion
+	if(colour != "#ffffff" && shadeColour != "#000000")
+		colour = "#ffffff"
 		shadeColour = "#000000"
 		to_chat(user, "You will now draw in white and black with this crayon.")
 	else
 		colour = "#000000"
-		shadeColour = "#FFFFFF"
+		shadeColour = "#ffffff"
 		to_chat(user, "You will now draw in black and white with this crayon.")
 	return
 
 /obj/item/pen/crayon/rainbow
 	icon_state = "crayonrainbow"
-	colour = "#FFF000"
-	shadeColour = "#000FFF"
+	colour = "#fff000"
+	shadeColour = "#000fff"
 	colourName = "rainbow"
-	reagents_to_add = list(/datum/reagent/crayon_dust/brown = 20)
+	color_description = "rainbow crayon"
+	uses = 0
 
-/obj/item/pen/crayon/rainbow/attack_self(mob/living/user as mob)
+/obj/item/pen/crayon/rainbow/attack_self(mob/living/user)
 	colour = input(user, "Please select the main colour.", "Crayon colour") as color
 	shadeColour = input(user, "Please select the shade colour.", "Crayon colour") as color
 	return
 
-/obj/item/pen/crayon/afterattack(atom/target, mob/user as mob, proximity)
+/obj/item/pen/crayon/afterattack(atom/target, mob/user, proximity)
 	if(!proximity) return
 	if(istype(target,/turf/simulated/floor))
-		var/originaloc = user.loc
 		var/drawtype = input("Choose what you'd like to draw.", "Crayon scribbles") in list("graffiti","rune","letter","arrow")
-		if (user.loc != originaloc)
-			to_chat(user, "<span class='notice'>You moved!</span>")
-			return
-
 		switch(drawtype)
 			if("letter")
 				drawtype = input("Choose the letter.", "Crayon scribbles") in list("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z")
@@ -95,26 +98,22 @@
 			new /obj/effect/decal/cleanable/crayon(target,colour,shadeColour,drawtype)
 			to_chat(user, "You finish drawing.")
 			target.add_fingerprint(user)		// Adds their fingerprints to the floor the crayon is drawn on.
-			if(reagents && LAZYLEN(reagents_to_add))
-				for(var/datum/reagent/R in reagents_to_add)
-					reagents.remove_reagent(R,0.5/LAZYLEN(reagents_to_add)) //using crayons reduces crayon dust in it.
-				if(!reagents.has_all_reagents(reagents_to_add))
+			if(uses)
+				uses--
+				if(!uses)
 					to_chat(user, "<span class='warning'>You used up your crayon!</span>")
 					qdel(src)
 	return
 
-/obj/item/pen/crayon/attack(mob/user, var/target_zone)
-	if(ishuman(user))
-		var/mob/living/carbon/human/H = user
-		if(H.check_has_mouth())
-			user.visible_message("<span class='notice'>[user] takes a bite of their crayon and swallows it.</span>", "<span class='notice'>You take a bite of your crayon and swallow it.</span>")
-			user.adjustNutritionLoss(-1)
-			reagents.trans_to_mob(user, 2, CHEM_INGEST)
-			if(reagents.total_volume <= 0)
-				user.visible_message("<span class='notice'>[user] finished their crayon!</span>", "<span class='warning'>You ate your crayon!</span>")
+/obj/item/pen/crayon/attack(mob/living/carbon/M, mob/user)
+	if(istype(M) && M == user)
+		to_chat(M, "You take a bite of the crayon and swallow it.")
+		M.adjust_nutrition(1)
+		M.reagents.add_reagent(/decl/material/pigment,min(5,uses)/3)
+		if(uses)
+			uses -= 5
+			if(uses <= 0)
+				to_chat(M, "<span class='warning'>You ate your crayon!</span>")
 				qdel(src)
 	else
-		..(user, target_zone)
-
-/obj/item/pen/crayon/attack_self(var/mob/user)
-	return
+		..()

@@ -4,42 +4,43 @@
 	uses_charge = 1
 	charge_costs = list(1000)
 	gender = NEUTER
+	matter = null // Don't shove it in the autholathe.
 
-	// Don't shove it in the autholathe
-	recyclable = FALSE
-	matter = null
-
-/obj/item/stack/material/cyborg/New()
-	if(..())
-		name = "[material.display_name] synthesiser"
-		desc = "A device that synthesises [material.display_name]."
+/obj/item/stack/material/cyborg/Initialize()
+	. = ..()
+	if(material)
+		name = "[material.solid_name] synthesiser"
+		desc = "A device that synthesises [material.solid_name]."
 		matter = null
 
 /obj/item/stack/material/cyborg/plastic
-	icon_state = "sheet-plastic"
-	default_type = MATERIAL_PLASTIC
+	icon_state = "sheet"
+	material = /decl/material/solid/plastic
 
 /obj/item/stack/material/cyborg/steel
-	icon_state = "sheet-metal"
-	default_type = MATERIAL_STEEL
+	icon_state = "sheet"
+	material = /decl/material/solid/metal/steel
 
 /obj/item/stack/material/cyborg/plasteel
-	icon_state = "sheet-plasteel"
-	default_type = MATERIAL_PLASTEEL
+	icon_state = "sheet-reinf"
+	material = /decl/material/solid/metal/plasteel
 
 /obj/item/stack/material/cyborg/wood
 	icon_state = "sheet-wood"
-	default_type = MATERIAL_WOOD
+	material = /decl/material/solid/wood
 
 /obj/item/stack/material/cyborg/glass
-	desc_info = "Use in your hand to build a window.  Can be upgraded to reinforced glass by adding metal rods, which are made from metal sheets.<br>\
-	As a synthetic, you can acquire more sheets of glass by recharging."
-	icon_state = "sheet-glass"
-	default_type = MATERIAL_GLASS
+	icon_state = "sheet"
+	material = /decl/material/solid/glass
+	material_flags = USE_MATERIAL_COLOR|USE_MATERIAL_SINGULAR_NAME|USE_MATERIAL_PLURAL_NAME
 
 /obj/item/stack/material/cyborg/glass/reinforced
-	desc_info = "Use in your hand to build a window. Reinforced glass is much stronger against damage.<br>\
-	As a synthetic, you can gain more reinforced glass by recharging."
-	icon_state = "sheet-rglass"
-	default_type = MATERIAL_GLASS_REINFORCED
+	icon_state = "sheet-reinf"
+	material = /decl/material/solid/glass
+	reinf_material = /decl/material/solid/metal/steel
 	charge_costs = list(500, 1000)
+
+/obj/item/stack/material/cyborg/aluminium
+	icon_state = "sheet"
+	material = /decl/material/solid/metal/aluminium
+	material_flags = USE_MATERIAL_COLOR|USE_MATERIAL_SINGULAR_NAME|USE_MATERIAL_PLURAL_NAME

@@ -3,8 +3,8 @@
 	desc = "To stop that awful noise."
 	icon_state = "muzzle"
 	item_state = "muzzle"
-	body_parts_covered = FACE
-	w_class = ITEMSIZE_SMALL
+	body_parts_covered = SLOT_FACE
+	w_class = ITEM_SIZE_SMALL
 	gas_transfer_coefficient = 0.90
 	voicechange = 1
 
@@ -14,7 +14,7 @@
 	icon = 'icons/obj/bureaucracy.dmi'
 	icon_state = "tape_cross"
 	item_state = null
-	w_class = ITEMSIZE_TINY
+	w_class = ITEM_SIZE_TINY
 
 /obj/item/clothing/mask/muzzle/Initialize()
 	. = ..()
@@ -22,86 +22,45 @@
 	say_verbs = list("mumbles", "says")
 
 // Clumsy folks can't take the mask off themselves.
-/obj/item/clothing/mask/muzzle/attack_hand(mob/user as mob)
-	if(user.wear_mask == src && !user.IsAdvancedToolUser())
+/obj/item/clothing/mask/muzzle/attack_hand(mob/user)
+	if(user.wear_mask == src && !user.check_dexterity(DEXTERITY_GRIP))
 		return 0
 	..()
 
 /obj/item/clothing/mask/surgical
-	name = "surgical mask"
-	desc = "A surgical mask designed to help prevent the spread of diseases."
-	icon_state = "surgical"
-	item_state = "surgical"
-	w_class = ITEMSIZE_SMALL
-	body_parts_covered = FACE
-	item_flags = FLEXIBLEMATERIAL
+	name = "sterile mask"
+	desc = "A sterile mask designed to help prevent the spread of diseases."
+	icon_state = "sterile"
+	item_state = "sterile"
+	w_class = ITEM_SIZE_SMALL
+	body_parts_covered = SLOT_FACE
+	item_flags = ITEM_FLAG_FLEXIBLEMATERIAL
 	gas_transfer_coefficient = 0.90
 	permeability_coefficient = 0.01
-	armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 60, rad = 0)
+	armor = list(
+		bio = ARMOR_BIO_RESISTANT
+		)
 	down_gas_transfer_coefficient = 1
 	down_body_parts_covered = null
-	adjustable = TRUE
-
-/obj/item/clothing/mask/surgical/w
-	desc = "A surgical mask designed to help prevent the spread of diseases. This one's in white."
-	icon_state = "surgicalw"
-	item_state = "surgicalw"
-
-/obj/item/clothing/mask/cloth
-	name = "cloth mask"
-	desc = "A colorable cloth mask designed to protect the wearer against allergens, illnesses, and social interaction."
-	icon_state = "cloth"
-	item_state = "cloth"
-	w_class = ITEMSIZE_SMALL
-	body_parts_covered = FACE
-	item_flags = FLEXIBLEMATERIAL
-	gas_transfer_coefficient = 0.90
-	permeability_coefficient = 0.01
-	armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 15, rad = 0)
-	down_gas_transfer_coefficient = 1
-	down_body_parts_covered = null
-	adjustable = TRUE
-
-/obj/item/clothing/mask/dust
-	name = "dust mask"
-	desc = "A dust mask designed to protect the wearer against construction and/or custodial particulate."
-	icon_state = "dust"
-	item_state = "dust"
-	w_class = ITEMSIZE_SMALL
-	body_parts_covered = FACE
-	item_flags = FLEXIBLEMATERIAL
-	gas_transfer_coefficient = 0.90
-	permeability_coefficient = 0.01
-	armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 15, rad = 10)
-	down_gas_transfer_coefficient = 1
-	down_body_parts_covered = null
-	adjustable = TRUE
+	down_icon_state = "steriledown"
+	pull_mask = 1
 
 /obj/item/clothing/mask/fakemoustache
 	name = "fake moustache"
 	desc = "Warning: moustache is fake."
 	icon_state = "fake-moustache"
+	item_state = "fake-moustache"
 	flags_inv = HIDEFACE
 	body_parts_covered = 0
+	visible_name = "Scoundrel"
 
 /obj/item/clothing/mask/snorkel
-	name = "snorkel"
+	name = "Snorkel"
 	desc = "For the Swimming Savant."
 	icon_state = "snorkel"
 	item_state = "snorkel"
 	flags_inv = HIDEFACE
 	body_parts_covered = 0
-
-/obj/item/clothing/mask/trinary_mask
-	name = "trinary perfection mask"
-	desc = "A simple lace mask worn by IPCs and organics alike while within the churches of the Trinary Perfection."
-	icon_state = "trinary_mask"
-	item_state = "trinary_mask"
-	w_class = ITEMSIZE_SMALL
-	body_parts_covered = FACE
-	item_flags = FLEXIBLEMATERIAL
-	down_body_parts_covered = null
-	adjustable = TRUE
 
 /obj/item/clothing/mask/pig
 	name = "pig mask"
@@ -109,9 +68,9 @@
 	icon_state = "pig"
 	item_state = "pig"
 	flags_inv = HIDEFACE|BLOCKHAIR
-	w_class = ITEMSIZE_SMALL
+	w_class = ITEM_SIZE_SMALL
 	siemens_coefficient = 0.9
-	body_parts_covered = HEAD|FACE|EYES
+	body_parts_covered = SLOT_HEAD|SLOT_FACE|SLOT_EYES
 
 /obj/item/clothing/mask/horsehead
 	name = "horse head mask"
@@ -119,8 +78,8 @@
 	icon_state = "horsehead"
 	item_state = "horsehead"
 	flags_inv = HIDEFACE|BLOCKHAIR
-	body_parts_covered = HEAD|FACE|EYES
-	w_class = ITEMSIZE_SMALL
+	body_parts_covered = SLOT_HEAD|SLOT_FACE|SLOT_EYES
+	w_class = ITEM_SIZE_SMALL
 	siemens_coefficient = 0.9
 
 /obj/item/clothing/mask/horsehead/Initialize()
@@ -129,79 +88,161 @@
 	say_messages = list("NEEIIGGGHHHH!", "NEEEIIIIGHH!", "NEIIIGGHH!", "HAAWWWWW!", "HAAAWWW!")
 	say_verbs = list("whinnies", "neighs", "says")
 
+
 /obj/item/clothing/mask/ai
 	name = "camera MIU"
 	desc = "Allows for direct mental connection to accessible camera networks."
 	icon_state = "s-ninja"
 	item_state = "s-ninja"
 	flags_inv = HIDEFACE
-	body_parts_covered = FACE|EYES
-	action_button_name = "Toggle MIU"
-	origin_tech = list(TECH_DATA = 5, TECH_ENGINEERING = 5)
-	var/active = FALSE
-	var/mob/abstract/eye/cameranet/eye
+	body_parts_covered = SLOT_FACE|SLOT_EYES
+	action_button_name = "Toggle MUI"
+	origin_tech = "{'programming':5,'engineering':5}"
 
 /obj/item/clothing/mask/ai/Initialize()
-	eye = new(src)
-	eye.name_suffix = "camera MIU"
 	. = ..()
+	set_extension(src, /datum/extension/eye/cameranet)
 
-/obj/item/clothing/mask/ai/Destroy()
-	if(eye)
-		if(active)
-			disengage_mask(eye.owner)
-		qdel(eye)
-		eye = null
-
-	..()
-
-/obj/item/clothing/mask/ai/attack_self(mob/user)
+/obj/item/clothing/mask/ai/attack_self(var/mob/user)
 	if(user.incapacitated())
 		return
-	active = !active
-	to_chat(user, SPAN_NOTICE("You [active ? "" : "dis"]engage \the [src]."))
-	if(active)
-		engage_mask(user)
+	if(user.get_equipped_item(slot_wear_mask_str) != src)
+		to_chat(user, SPAN_WARNING("You must be wearing \the [src] to activate it!"))
+		return
+	var/datum/extension/eye/cameranet/CN = get_extension(src, /datum/extension/eye)
+	if(!CN)
+		to_chat(user, SPAN_WARNING("\The [src] doesn't respond!"))
+		return
+	if(CN.current_looker)
+		CN.unlook()
+		to_chat(user, SPAN_NOTICE("You deactivate \the [src]."))
 	else
-		disengage_mask(user)
+		CN.look(user)
+		to_chat(user, SPAN_NOTICE("You activate \the [src]."))
 
-/obj/item/clothing/mask/ai/equipped(mob/user, slot)
-	..(user, slot)
-	engage_mask(user)
+/obj/item/clothing/mask/rubber
+	name = "rubber mask"
+	desc = "A rubber mask."
+	icon_state = "balaclava"
+	flags_inv = HIDEFACE|BLOCKHAIR
+	siemens_coefficient = 0.9
+	body_parts_covered = SLOT_HEAD|SLOT_FACE|SLOT_EYES
 
-/obj/item/clothing/mask/ai/dropped(mob/user)
-	..()
-	disengage_mask(user)
+/obj/item/clothing/mask/rubber/barros
+	name = "Amaya Barros mask"
+	desc = "Current Secretary-General of Sol Cental Government. Not that the real thing would visit this pigsty."
+	icon_state = "barros"
+	visible_name = "Amaya Barros"
 
-/obj/item/clothing/mask/ai/proc/engage_mask(mob/user)
-	if(!active)
-		return
-	if(user.get_equipped_item(slot_wear_mask) != src)
-		return
+/obj/item/clothing/mask/rubber/admiral
+	name = "Admiral Diwali mask"
+	desc = "Admiral that led the infamous last stand at Helios against the Independent Navy in the Gaia conflict. For bridge officers who wish they'd achieve a fraction of that."
+	icon_state = "admiral"
+	visible_name = "Admiral Diwali"
 
-	eye.possess(user)
-	to_chat(eye.owner, SPAN_NOTICE("You feel disoriented for a moment as your mind connects to the camera network."))
+/obj/item/clothing/mask/rubber/turner
+	name = "Charles Turner mask"
+	desc = "Premier of the Gilgamesh Colonial Confederation. Probably shouldn't wear this in front of your veteran uncle."
+	icon_state = "turner"
+	visible_name = "Charles Turner"
 
-/obj/item/clothing/mask/ai/proc/disengage_mask(mob/user)
-	if(user == eye.owner)
-		to_chat(eye.owner, SPAN_NOTICE("You feel disoriented for a moment as your mind disconnects from the camera network."))
-		eye.release(eye.owner)
-		eye.forceMove(src)
+/obj/item/clothing/mask/rubber/species
+	name = "human mask"
+	desc = "A rubber human mask."
+	icon_state = "manmet"
+	var/species = SPECIES_HUMAN
 
-/obj/item/clothing/mask/offworlder
-	name = "scarab scarf"
-	desc = "Usually a treasured item, these spider-silk scarves are seen passed down by generations of Scarabs."
-	desc_fluff = "Scarves like these are passed down from family members in the Scarab fleets as a coming of age ritual, typically given to children to mark them as worthy of setting off on their own."
-	icon_state = "pioneer_scarf"
-	item_flags = FLEXIBLEMATERIAL
-	item_state = "pioneer_scarf"
-	w_class = ITEMSIZE_SMALL
-	body_parts_covered = FACE
+/obj/item/clothing/mask/rubber/species/Initialize()
+	. = ..()
+	visible_name = species
+	var/datum/species/S = get_species_by_key(species)
+	if(istype(S))
+		var/decl/cultural_info/C = SSlore.get_culture(S.default_cultural_info[TAG_CULTURE])
+		if(istype(C))
+			visible_name = C.get_random_name(pick(MALE,FEMALE))
 
-/obj/item/clothing/mask/offworlder/veil
-	name = "starveil"
-	desc = "A thin holographic veil meant to cover the face, intended to block out light."
-	icon_state = "starveil"
-	item_state = "muzzle"
-	down_body_parts_covered = null
-	adjustable = TRUE
+/obj/item/clothing/mask/rubber/species/cat
+	name = "cat mask"
+	desc = "A rubber cat mask."
+	icon_state = "catmet"
+
+/obj/item/clothing/mask/spirit
+	name = "spirit mask"
+	desc = "An eerie mask of ancient, pitted wood."
+	icon_state = "spirit_mask"
+	item_state = "spirit_mask"
+	flags_inv = HIDEFACE
+	body_parts_covered = SLOT_FACE|SLOT_EYES
+
+// Bandanas below
+/obj/item/clothing/mask/bandana
+	name = "black bandana"
+	desc = "A fine bandana with nanotech lining. Can be worn on the head or face."
+	flags_inv = HIDEFACE
+	slot_flags = SLOT_FACE|SLOT_HEAD
+	body_parts_covered = SLOT_FACE
+	icon_state = "bandblack"
+	item_state = "bandblack"
+	item_flags = ITEM_FLAG_FLEXIBLEMATERIAL
+	w_class = ITEM_SIZE_SMALL
+
+/obj/item/clothing/mask/bandana/equipped(var/mob/user, var/slot)
+	switch(slot)
+		if(slot_wear_mask_str) //Mask is the default for all the settings
+			flags_inv = initial(flags_inv)
+			body_parts_covered = initial(body_parts_covered)
+			icon_state = initial(icon_state)
+		if(slot_head_str)
+			flags_inv = 0
+			body_parts_covered = SLOT_HEAD
+			icon_state = "[initial(icon_state)]_up"
+			sprite_sheets = list()
+
+	return ..()
+
+/obj/item/clothing/mask/bandana/red
+	name = "red bandana"
+	icon_state = "bandred"
+	item_state = "bandred"
+
+/obj/item/clothing/mask/bandana/blue
+	name = "blue bandana"
+	icon_state = "bandblue"
+	item_state = "bandblue"
+
+/obj/item/clothing/mask/bandana/green
+	name = "green bandana"
+	icon_state = "bandgreen"
+	item_state = "bandgreen"
+
+/obj/item/clothing/mask/bandana/gold
+	name = "gold bandana"
+	icon_state = "bandgold"
+	item_state = "bandgold"
+
+/obj/item/clothing/mask/bandana/orange
+	name = "orange bandana"
+	icon_state = "bandorange"
+	item_state = "bandorange"
+
+/obj/item/clothing/mask/bandana/purple
+	name = "purple bandana"
+	icon_state = "bandpurple"
+	item_state = "bandpurple"
+
+/obj/item/clothing/mask/bandana/botany
+	name = "botany bandana"
+	icon_state = "bandbotany"
+	item_state = "bandbotany"
+
+/obj/item/clothing/mask/bandana/camo
+	name = "camo bandana"
+	icon_state = "bandcamo"
+	item_state = "bandcamo"
+
+/obj/item/clothing/mask/bandana/skull
+	name = "skull bandana"
+	desc = "A fine black bandana with nanotech lining and a skull emblem. Can be worn on the head or face."
+	icon_state = "bandskull"
+	item_state = "bandskull"
+

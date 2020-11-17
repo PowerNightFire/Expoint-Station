@@ -1,12 +1,9 @@
-//This file was auto-corrected by findeclaration.exe on 25.5.2012 20:42:33
+#define SAVE_RESET -1
 
-var/list/preferences_datums = list()
-
-datum/preferences
+/datum/preferences
 	//doohickeys for savefiles
 	var/path
 	var/default_slot = 1				//Holder so it doesn't default to slot 1, rather the last one used
-	var/current_character = 0			//SQL character ID.
 	var/savefile_version = 0
 
 	//non-preference stuff
@@ -14,329 +11,100 @@ datum/preferences
 	var/muted = 0
 	var/last_ip
 	var/last_id
-	var/list/notifications = list()		//A list of datums, for the dynamic server greeting window.
-	var/list/time_of_death = list()//This is a list of last times of death for various things with different respawn timers
 
 	//game-preferences
 	var/lastchangelog = ""				//Saved changlog filesize to detect if there was a change
-	var/ooccolor = "#010000"			//Whatever this is set to acts as 'reset' color and is thus unusable as an actual custom color
-	var/list/be_special_role = list()		//Special role selection
-	var/UI_style = "Midnight"
-	var/toggles = TOGGLES_DEFAULT
-	var/asfx_togs = ASFX_DEFAULT
-	var/UI_style_color = "#ffffff"
-	var/UI_style_alpha = 255
-	var/html_UI_style = "Nano"
-	//Style for popup tooltips
-	var/tooltip_style = "Midnight"
-	var/motd_hash = ""					//Hashes for the new server greeting window.
-	var/memo_hash = ""
 
-	//character preferences
-	var/real_name						//our character's name
-	var/can_edit_name = TRUE				//Whether or not a character's name can be edited. Used with SQL saving.
-	var/can_edit_ipc_tag = TRUE
-	var/gender = MALE					//gender of character (well duh)
-	var/age = 30						//age of character
-	var/spawnpoint = "Arrivals Shuttle" //where this character will spawn (0-2).
-	var/b_type = "A+"					//blood type (not-chooseable)
-	var/backbag = 2						//backpack type
-	var/backbag_style = 1
-	var/pda_choice = 2
-	var/h_style = "Bald"				//Hair type
-	var/hair_colour = "#000000"			//Hair colour hex value, for SQL loading
-	var/r_hair = 0						//Hair color
-	var/g_hair = 0						//Hair color
-	var/b_hair = 0						//Hair color
-	var/f_style = "Shaved"				//Face hair type
-	var/facial_colour = "#000000"		//Facial colour hex value, for SQL loading
-	var/r_facial = 0					//Face hair color
-	var/g_facial = 0					//Face hair color
-	var/b_facial = 0					//Face hair color
-	var/s_tone = 0						//Skin tone
-	var/skin_colour = "#000000"			//Skin colour hex value, for SQL loading
-	var/r_skin = 37						//Skin color
-	var/g_skin = 3						//Skin color
-	var/b_skin = 2						//Skin color
-	var/eyes_colour = "#000000"			//Eye colour hex value, for SQL loading
-	var/r_eyes = 0						//Eye color
-	var/g_eyes = 0						//Eye color
-	var/b_eyes = 0						//Eye color
-	var/species = SPECIES_HUMAN               //Species datum to use.
-	var/species_preview                 //Used for the species selection window.
-	var/list/alternate_languages = list() //Secondary language(s)
-	var/list/language_prefixes = list() // Language prefix keys
-	var/autohiss_setting = AUTOHISS_OFF
-	var/list/gear						// Custom/fluff item loadout.
-	var/list/gear_list = list()			//Custom/fluff item loadouts.
-	var/gear_slot = 1					//The current gear save slot
-
-	// IPC Stuff
-	var/machine_tag_status = TRUE
-	var/machine_serial_number
-	var/machine_ownership_status = IPC_OWNERSHIP_COMPANY
-
-		//Some faction information.
-	var/home_system = "Unset"           //System of birth.
-	var/citizenship = "None"            //Current home system.
-	var/faction = "None"                //Antag faction/general associated faction.
-	var/religion = "None"               //Religious association.
-	var/accent = "None"               //Character accent.
-
-	var/list/char_render_holders		//Should only be a key-value list of north/south/east/west = obj/screen.
-	var/static/list/preview_screen_locs = list(
-		"1" = "character_preview_map:1,5:-12",
-		"2" = "character_preview_map:1,3:15",
-		"4"  = "character_preview_map:1:7,2:10",
-		"8"  = "character_preview_map:1:-7,1:5",
-		"BG" = "character_preview_map:1,1 to 1,5"
-	)
-
-		//Jobs, uses bitflags
-	var/job_civilian_high = 0
-	var/job_civilian_med = 0
-	var/job_civilian_low = 0
-
-	var/job_medsci_high = 0
-	var/job_medsci_med = 0
-	var/job_medsci_low = 0
-
-	var/job_engsec_high = 0
-	var/job_engsec_med = 0
-	var/job_engsec_low = 0
-
-	// A text blob which temporarily houses data from the SQL.
-	var/unsanitized_jobs = ""
-
-	//Keeps track of preferrence for not getting any wanted jobs
-	var/alternate_option = RETURN_TO_LOBBY
-
-	var/used_skillpoints = 0
-	var/skill_specialization = null
-	var/list/skills = list() // skills can range from 0 to 3
-
-	// maps each organ to either null(intact), "cyborg" or "amputated"
-	// will probably not be able to do this for head and torso ;)
-	var/list/organ_data = list()
-	var/list/rlimb_data = list()
-	var/list/body_markings = list() // "name" = "#rgbcolor"
-	var/list/player_alt_titles = new()		// the default name of a job like "Physician"
-
-	var/list/flavor_texts = list()
-	var/list/flavour_texts_robot = list()
-
-	var/med_record = ""
-	var/sec_record = ""
-	var/list/incidents = list()
-	var/gen_record = ""
-	var/exploit_record = ""
-	var/ccia_record = ""
-	var/list/ccia_actions = list()
-	var/list/disabilities = list()
-
-	var/nanotrasen_relation = "Neutral"
-
-	var/uplinklocation = "PDA"
-
-	// OOC Metadata:
-	var/metadata = ""
-
-	// SPAAAACE
-	var/parallax_speed = 2
-	var/toggles_secondary = PARALLAX_SPACE | PARALLAX_DUST | PROGRESS_BARS | FLOATING_MESSAGES
-	var/clientfps = 0
-
-	var/list/pai = list()	// A list for holding pAI related data.
-
-	// Signature information
-	var/signature = ""
-	var/signfont = ""
+	//Mob preview
+	var/icon/preview_icon = null
 
 	var/client/client = null
+	var/client_ckey = null
 
 	var/savefile/loaded_preferences
 	var/savefile/loaded_character
 	var/datum/category_collection/player_setup_collection/player_setup
-
-	var/bgstate = "000"
-	var/list/bgstate_options = list(
-		"fffff",
-		"000",
-		"new_steel",
-		"dark2",
-		"wood",
-		"wood_light",
-		"grass_alt",
-		"new_reinforced",
-		"new_white"
-		)
-
-	var/fov_cone_alpha = 255
+	var/datum/browser/panel
 
 /datum/preferences/New(client/C)
-	new_setup()
-
 	if(istype(C))
 		client = C
-		if(!IsGuestKey(C.key))
-			load_path(C.ckey)
-			load_preferences()
-			load_and_update_character()
+		client_ckey = C.ckey
+		SScharacter_setup.preferences_datums[C.ckey] = src
+		if(SScharacter_setup.initialized)
+			setup()
+		else
+			SScharacter_setup.prefs_awaiting_setup += src
+	..()
 
-/datum/preferences/Destroy()
-	. = ..()
-	QDEL_NULL_LIST(char_render_holders)
+/datum/preferences/proc/setup()
+	if(!length(GLOB.skills))
+		decls_repository.get_decl(/decl/hierarchy/skill)
+	player_setup = new(src)
+	gender = pick(MALE, FEMALE)
+	real_name = random_name(gender,species)
+	b_type = RANDOM_BLOOD_TYPE
+
+	if(client && !IsGuestKey(client.key))
+		load_path(client.ckey)
+		load_preferences()
+		load_and_update_character()
+	sanitize_preferences()
+	if(client && istype(client.mob, /mob/new_player))
+		var/mob/new_player/np = client.mob
+		np.new_player_panel(TRUE)
 
 /datum/preferences/proc/load_and_update_character(var/slot)
 	load_character(slot)
 	if(update_setup(loaded_preferences, loaded_character))
-		save_preferences()
+		SScharacter_setup.queue_preferences_save(src)
 		save_character()
 
-/datum/preferences/proc/getMinAge()
-	var/datum/species/mob_species = all_species[species]
-	return mob_species.age_min
-
-/datum/preferences/proc/getMaxAge()
-	var/datum/species/mob_species = all_species[species]
-	return mob_species.age_max
-
-/datum/preferences/proc/ZeroSkills(var/forced = 0)
-	for(var/V in SKILLS) for(var/datum/skill/S in SKILLS[V])
-		if(!skills.Find(S.ID) || forced)
-			skills[S.ID] = SKILL_NONE
-
-/datum/preferences/proc/CalculateSkillPoints()
-	used_skillpoints = 0
-	for(var/V in SKILLS) for(var/datum/skill/S in SKILLS[V])
-		var/multiplier = 1
-		switch(skills[S.ID])
-			if(SKILL_NONE)
-				used_skillpoints += 0 * multiplier
-			if(SKILL_BASIC)
-				used_skillpoints += 1 * multiplier
-			if(SKILL_ADEPT)
-				// secondary skills cost less
-				if(S.secondary)
-					used_skillpoints += 1 * multiplier
-				else
-					used_skillpoints += 3 * multiplier
-			if(SKILL_EXPERT)
-				// secondary skills cost less
-				if(S.secondary)
-					used_skillpoints += 3 * multiplier
-				else
-					used_skillpoints += 6 * multiplier
-
-/datum/preferences/proc/GetSkillClass(points)
-	return CalculateSkillClass(points, age)
-
-/proc/CalculateSkillClass(points, age)
-	if(points <= 0) return "Unconfigured"
-	// skill classes describe how your character compares in total points
-	points -= min(round((age - 20) / 2.5), 4) // every 2.5 years after 20, one extra skillpoint
-	if(age > 30)
-		points -= round((age - 30) / 5) // every 5 years after 30, one extra skillpoint
-	switch(points)
-		if(-1000 to 3)
-			return "Terrifying"
-		if(4 to 6)
-			return "Below Average"
-		if(7 to 10)
-			return "Average"
-		if(11 to 14)
-			return "Above Average"
-		if(15 to 18)
-			return "Exceptional"
-		if(19 to 24)
-			return "Genius"
-		if(24 to 1000)
-			return "God"
-
 /datum/preferences/proc/ShowChoices(mob/user)
-	if(!user || !user.client)	return
-	var/dat = "<center>"
+	if(!SScharacter_setup.initialized)
+		return
+	if(!user || !user.client)
+		return
+
+	if(!get_mob_by_key(client_ckey))
+		to_chat(user, "<span class='danger'>No mob exists for the given client!</span>")
+		close_load_dialog(user)
+		return
+
+	var/dat = "<html><body><center>"
 
 	if(path)
+		dat += "Slot - "
 		dat += "<a href='?src=\ref[src];load=1'>Load slot</a> - "
 		dat += "<a href='?src=\ref[src];save=1'>Save slot</a> - "
+		dat += "<a href='?src=\ref[src];resetslot=1'>Reset slot</a> - "
 		dat += "<a href='?src=\ref[src];reload=1'>Reload slot</a>"
-		if (config.sql_saves)
-			dat += " - <a href='?src=\ref[src];delete=1'>Delete slot</a>"
 
 	else
 		dat += "Please create an account to save your preferences."
-
-	if(!char_render_holders)
-		update_preview_icon()
-	show_character_previews()
 
 	dat += "<br>"
 	dat += player_setup.header()
 	dat += "<br><HR></center>"
 	dat += player_setup.content(user)
-	send_theme_resources(user)
-	winshow(user, "preferences_window", TRUE)
-	var/datum/browser/popup = new(user, "preferences_browser", "Character Setup", 1000, 1000)
+
+	dat += "</html></body>"
+	var/datum/browser/popup = new(user, "Character Setup","Character Setup", 1200, 800, src)
 	popup.set_content(dat)
-	popup.open(FALSE) // Skip registering onclose on the browser pane
-	onclose(user, "preferences_window", src) // We want to register on the window itself
-
-/datum/preferences/proc/update_character_previews(mutable_appearance/MA)
-	if(!client)
-		return
-
-	var/obj/screen/BG= LAZYACCESS(char_render_holders, "BG")
-	if(!BG)
-		BG = new
-		BG.appearance_flags = TILE_BOUND|PIXEL_SCALE|NO_CLIENT_COLOR
-		BG.layer = TURF_LAYER
-		BG.icon = 'icons/turf/total_floors.dmi'
-		LAZYSET(char_render_holders, "BG", BG)
-		client.screen |= BG
-	BG.icon_state = bgstate
-	BG.screen_loc = preview_screen_locs["BG"]
-
-	for(var/D in global.cardinal)
-		var/obj/screen/O = LAZYACCESS(char_render_holders, "[D]")
-		if(!O)
-			O = new
-			LAZYSET(char_render_holders, "[D]", O)
-			client.screen |= O
-		O.appearance = MA
-		O.dir = D
-		O.screen_loc = preview_screen_locs["[D]"]
-
-/datum/preferences/proc/show_character_previews()
-	if(!client || !char_render_holders)
-		return
-	for(var/render_holder in char_render_holders)
-		client.screen |= char_render_holders[render_holder]
-
-/datum/preferences/proc/clear_character_previews()
-	for(var/index in char_render_holders)
-		var/obj/screen/S = char_render_holders[index]
-		client?.screen -= S
-		qdel(S)
-	char_render_holders = null
+	popup.open()
 
 /datum/preferences/proc/process_link(mob/user, list/href_list)
-	if(!user)
-		return
 
-	if(!istype(user, /mob/abstract/new_player))
-		return
+	if(!user)	return
+	if(isliving(user)) return
 
 	if(href_list["preference"] == "open_whitelist_forum")
 		if(config.forumurl)
-			send_link(user, config.forumurl)
+			user << link(config.forumurl)
 		else
 			to_chat(user, "<span class='danger'>The forum URL is not set in the server configuration.</span>")
 			return
-	else if(href_list["close"])
-		// User closed preferences window, cleanup anything we need to.
-		clear_character_previews()
-		return 1
+	ShowChoices(usr)
 	return 1
 
 /datum/preferences/Topic(href, list/href_list)
@@ -344,193 +112,201 @@ datum/preferences
 		return 1
 
 	if(href_list["save"])
-		save_character()
 		save_preferences()
+		save_character()
 	else if(href_list["reload"])
 		load_preferences()
 		load_character()
+		sanitize_preferences()
 	else if(href_list["load"])
 		if(!IsGuestKey(usr.key))
-			if (config.sql_saves)
-				open_load_dialog_sql(usr)
-			else
-				open_load_dialog_file(usr)
+			open_load_dialog(usr)
 			return 1
 	else if(href_list["changeslot"])
 		load_character(text2num(href_list["changeslot"]))
+		sanitize_preferences()
 		close_load_dialog(usr)
-	else if(href_list["new_character_sql"])
-		new_setup(1)
-		to_chat(usr, "<span class='notice'>Your setup has been refreshed.</span>")
-		close_load_dialog(usr)
-	else if(href_list["close_load_dialog"])
-		close_load_dialog(usr)
-	else if(href_list["delete"])
-		if (!config.sql_saves)
+	else if(href_list["resetslot"])
+		if(real_name != input("This will reset the current slot. Enter the character's full name to confirm."))
 			return 0
-		if (alert(usr, "This will permanently delete the character you have loaded. Are you sure?", "Delete Character", "No", "Yes") == "Yes")
-			delete_character_sql(usr.client)
+		load_character(SAVE_RESET)
+		sanitize_preferences()
 	else
 		return 0
 
 	ShowChoices(usr)
 	return 1
 
-/datum/preferences/proc/copy_to(mob/living/carbon/human/character, icon_updates = 1)
+/datum/preferences/proc/copy_to(mob/living/carbon/human/character, is_preview_copy = FALSE)
 	// Sanitizing rather than saving as someone might still be editing when copy_to occurs.
 	player_setup.sanitize_setup()
+	character.set_species(species)
+
+	if(be_random_name)
+		var/decl/cultural_info/culture = SSlore.get_culture(cultural_info[TAG_CULTURE])
+		if(culture) real_name = culture.get_random_name(gender)
 
 	if(config.humans_need_surnames)
 		var/firstspace = findtext(real_name, " ")
 		var/name_length = length(real_name)
 		if(!firstspace)	//we need a surname
-			real_name += " [pick(last_names)]"
+			real_name += " [pick(GLOB.last_names)]"
 		else if(firstspace == name_length)
-			real_name += "[pick(last_names)]"
+			real_name += "[pick(GLOB.last_names)]"
 
-	character.real_name = real_name
-	character.name = character.real_name
-	character.set_species(species)
-	if(character.dna)
-		character.dna.real_name = character.real_name
-
-	character.flavor_texts["general"] = flavor_texts["general"]
-	character.flavor_texts[BP_HEAD] = flavor_texts[BP_HEAD]
-	character.flavor_texts["face"] = flavor_texts["face"]
-	character.flavor_texts[BP_EYES] = flavor_texts[BP_EYES]
-	character.flavor_texts["torso"] = flavor_texts["torso"]
-	character.flavor_texts["arms"] = flavor_texts["arms"]
-	character.flavor_texts["hands"] = flavor_texts["hands"]
-	character.flavor_texts["legs"] = flavor_texts["legs"]
-	character.flavor_texts["feet"] = flavor_texts["feet"]
-	character.character_id = current_character
-
-	character.med_record = med_record
-	character.sec_record = sec_record
-	character.incidents = incidents
-	character.gen_record = gen_record
-	character.ccia_record = ccia_record
-	character.ccia_actions = ccia_actions
-	character.exploit_record = exploit_record
+	character.fully_replace_character_name(real_name)
 
 	character.gender = gender
 	character.age = age
 	character.b_type = b_type
 
-	character.r_eyes = r_eyes
-	character.g_eyes = g_eyes
-	character.b_eyes = b_eyes
+	character.eye_colour = eye_colour
 
 	character.h_style = h_style
-	character.r_hair = r_hair
-	character.g_hair = g_hair
-	character.b_hair = b_hair
+	character.hair_colour = hair_colour
 
 	character.f_style = f_style
-	character.r_facial = r_facial
-	character.g_facial = g_facial
-	character.b_facial = b_facial
+	character.facial_hair_colour = facial_hair_colour
 
-	character.r_skin = r_skin
-	character.g_skin = g_skin
-	character.b_skin = b_skin
+	character.skin_colour = skin_colour
 
-	character.s_tone = s_tone
+	character.skin_tone = skin_tone
+	character.skin_base = skin_base
 
 	character.h_style = h_style
 	character.f_style = f_style
 
-	character.citizenship = citizenship
-	character.employer_faction = faction
-	character.religion = religion
-	character.accent = accent
+	// Replace any missing limbs.
+	for(var/name in global.all_limb_tags)
+		var/obj/item/organ/external/O = character.organs_by_name[name]
+		if(!O && organ_data[name] != "amputated")
+			var/list/organ_data = character.species.has_limbs[name]
+			if(!islist(organ_data)) continue
+			var/limb_path = organ_data["path"]
+			O = new limb_path(character)
 
-	character.skills = skills
-	character.used_skillpoints = used_skillpoints
+	// Destroy/cyborgize organs and limbs. The order is important for preserving low-level choices for robolimb sprites being overridden.
+	for(var/name in global.all_limb_tags_by_depth)
+		var/status = organ_data[name]
+		var/obj/item/organ/external/O = character.organs_by_name[name]
+		if(!O)
+			continue
+		O.status = 0
+		O.model = null
+		if(status == "amputated")
+			character.organs_by_name[O.organ_tag] = null
+			character.organs -= O
+			if(O.children) // This might need to become recursive.
+				for(var/obj/item/organ/external/child in O.children)
+					character.organs_by_name[child.organ_tag] = null
+					character.organs -= child
+					qdel(child)
+			qdel(O)
+		else if(status == "cyborg")
+			if(rlimb_data[name])
+				O.robotize(rlimb_data[name])
+			else
+				O.robotize()
+		else //normal organ
+			O.force_icon = initial(O.force_icon)
+			O.SetName(initial(O.name))
+			O.desc = initial(O.desc)
 
-	// Destroy/cyborgize organs & setup body markings
-	character.sync_organ_prefs_to_mob(src)
+	//For species that don't care about your silly prefs
+	character.species.handle_limbs_setup(character)
+	if(!is_preview_copy)
+		for(var/name in list(BP_HEART,BP_EYES,BP_BRAIN,BP_LUNGS,BP_LIVER,BP_KIDNEYS,BP_STOMACH))
+			var/status = organ_data[name]
+			if(!status)
+				continue
+			var/obj/item/organ/I = character.internal_organs_by_name[name]
+			if(I)
+				if(status == "assisted")
+					I.mechassist()
+				else if(status == "mechanical")
+					I.robotize()
 
-	character.sync_trait_prefs_to_mob(src)
+	QDEL_NULL_LIST(character.worn_underwear)
+	character.worn_underwear = list()
 
-	character.all_underwear.Cut()
-	character.all_underwear_metadata.Cut()
 	for(var/underwear_category_name in all_underwear)
-		var/datum/category_group/underwear/underwear_category = global_underwear.categories_by_name[underwear_category_name]
+		var/datum/category_group/underwear/underwear_category = GLOB.underwear.categories_by_name[underwear_category_name]
 		if(underwear_category)
 			var/underwear_item_name = all_underwear[underwear_category_name]
-			character.all_underwear[underwear_category_name] = underwear_category.items_by_name[underwear_item_name]
-			if(all_underwear_metadata[underwear_category_name])
-				character.all_underwear_metadata[underwear_category_name] = all_underwear_metadata[underwear_category_name]
+			var/datum/category_item/underwear/UWD = underwear_category.items_by_name[underwear_item_name]
+			var/metadata = all_underwear_metadata[underwear_category_name]
+			var/obj/item/underwear/UW = UWD.create_underwear(character, metadata)
+			if(UW)
+				UW.ForceEquipUnderwear(character, FALSE)
 		else
 			all_underwear -= underwear_category_name
 
-	if(backbag > 6 || backbag < 1)
-		backbag = 1 //Same as above
-	character.backbag = backbag
-	character.backbag_style = backbag_style
+	character.backpack_setup = new(backpack, backpack_metadata["[backpack]"])
 
-	if(pda_choice > 8 || pda_choice < 1)
-		pda_choice = 2
+	for(var/N in character.organs_by_name)
+		var/obj/item/organ/external/O = character.organs_by_name[N]
+		O.markings.Cut()
 
-	character.pda_choice = pda_choice
+	for(var/M in body_markings)
+		var/datum/sprite_accessory/marking/mark_datum = GLOB.body_marking_styles_list[M]
+		var/mark_color = "[body_markings[M]]"
 
-	if(icon_updates)
-		character.force_update_limbs()
-		character.update_mutations(0)
-		character.update_body(0)
-		character.update_hair(0)
-		character.update_underwear(0)
-		character.update_icon()
+		for(var/BP in mark_datum.body_parts)
+			var/obj/item/organ/external/O = character.organs_by_name[BP]
+			if(O)
+				O.markings[M] = list("color" = mark_color, "datum" = mark_datum)
 
-/datum/preferences/proc/open_load_dialog_sql(mob/user)
-	var/dat = "<tt><center>"
+	character.force_update_limbs()
+	character.update_mutations(0)
+	character.update_body(0)
+	character.update_underwear(0)
+	character.update_hair(0)
+	character.update_icons()
 
-	for(var/ckey in preferences_datums)
-		var/datum/preferences/D = preferences_datums[ckey]
-		if(D == src)
-			establish_db_connection(dbcon)
-			if(!dbcon.IsConnected())
-				return open_load_dialog_file(user)
+	if(is_preview_copy)
+		return
 
-			var/DBQuery/query = dbcon.NewQuery("SELECT id, name FROM ss13_characters WHERE ckey = :ckey: AND deleted_at IS NULL ORDER BY id ASC")
-			query.Execute(list("ckey" = user.client.ckey))
+	for(var/token in cultural_info)
+		character.set_cultural_value(token, cultural_info[token], defer_language_update = TRUE)
+	character.update_languages()
+	for(var/lang in alternate_languages)
+		character.add_language(lang)
 
-			dat += "<b>Select a character slot to load</b><hr>"
-			var/name
-			var/id
+	character.flavor_texts["general"] = flavor_texts["general"]
+	character.flavor_texts["head"] = flavor_texts["head"]
+	character.flavor_texts["face"] = flavor_texts["face"]
+	character.flavor_texts["eyes"] = flavor_texts["eyes"]
+	character.flavor_texts["torso"] = flavor_texts["torso"]
+	character.flavor_texts["arms"] = flavor_texts["arms"]
+	character.flavor_texts["hands"] = flavor_texts["hands"]
+	character.flavor_texts["legs"] = flavor_texts["legs"]
+	character.flavor_texts["feet"] = flavor_texts["feet"]
 
-			while (query.NextRow())
-				id = text2num(query.item[1])
-				name = query.item[2]
-				if (id == current_character)
-					dat += "<b><a href='?src=\ref[src];changeslot=[id];'>[name]</a></b><br>"
-				else
-					dat += "<a href='?src=\ref[src];changeslot=[id];'>[name]</a><br>"
+	character.public_record = public_record
+	character.med_record = med_record
+	character.sec_record = sec_record
+	character.gen_record = gen_record
+	character.exploit_record = exploit_record
 
-			dat += "<hr>"
-			dat += "<b>[query.RowCount()]/[config.character_slots] slots used</b><br>"
-			if (query.RowCount() < config.character_slots)
-				dat += "<a href='?src=\ref[src];new_character_sql=1'>New Character</a>"
-			else
-				dat += "<strike>New Character</strike>"
+	if(LAZYLEN(character.descriptors))
+		for(var/entry in body_descriptors)
+			character.descriptors[entry] = body_descriptors[entry]
 
-	dat += "<hr>"
-	dat += "<a href='?src=\ref[src];close_load_dialog=1'>Close</a><br>"
-	dat += "</center></tt>"
-	send_theme_resources(user)
-	user << browse(enable_ui_theme(user, dat), "window=saves;size=300x390")
+	if(!character.isSynthetic())
+		character.set_nutrition(rand(140,360))
+		character.set_hydration(rand(140,360))
 
-
-/datum/preferences/proc/open_load_dialog_file(mob/user)
-	var/dat = "<tt><center>"
+/datum/preferences/proc/open_load_dialog(mob/user)
+	var/dat  = list()
+	dat += "<body>"
+	dat += "<tt><center>"
 
 	var/savefile/S = new /savefile(path)
 	if(S)
 		dat += "<b>Select a character slot to load</b><hr>"
 		var/name
 		for(var/i=1, i<= config.character_slots, i++)
-			S.cd = "/character[i]"
+			S.cd = GLOB.using_map.character_load_path(S, i)
 			S["real_name"] >> name
 			if(!name)	name = "Character[i]"
 			if(i==default_slot)
@@ -539,131 +315,21 @@ datum/preferences
 
 	dat += "<hr>"
 	dat += "</center></tt>"
-	send_theme_resources(user)
-	user << browse(enable_ui_theme(user, dat), "window=saves;size=300x390")
+	panel = new(user, "Character Slots", "Character Slots", 300, 390, src)
+	panel.set_content(jointext(dat,null))
+	panel.open()
 
 /datum/preferences/proc/close_load_dialog(mob/user)
-	user << browse(null, "window=saves")
+	if(panel)
+		panel.close()
+		panel = null
+	close_browser(user, "window=saves")
 
-// Logs a character to the database. For statistics.
-/datum/preferences/proc/log_character(var/mob/living/carbon/human/H)
-	if (!config.sql_saves || !config.sql_stats || !establish_db_connection(dbcon) || !H)
+/datum/preferences/proc/apply_post_login_preferences()
+	set waitfor = 0
+	if(!client)
 		return
-
-	if(!H.mind.assigned_role)
-		log_debug("Char-Log: Char [current_character] - [H.name] has joined with mind.assigned_role set to NULL")
-
-	var/DBQuery/query = dbcon.NewQuery("INSERT INTO ss13_characters_log (char_id, game_id, datetime, job_name, alt_title) VALUES (:char_id:, :game_id:, NOW(), :job:, :alt_title:)")
-	query.Execute(list("char_id" = current_character, "game_id" = game_id, "job" = H.mind.assigned_role, "alt_title" = H.mind.role_alt_title))
-
-// Turned into a proc so we could reuse it for SQL shenanigans.
-/datum/preferences/proc/new_setup(var/re_initialize = 0)
-	if (player_setup)
-		qdel(player_setup)
-		player_setup = null
-
-	player_setup = new(src)
-	gender = pick(MALE, FEMALE)
-	real_name = random_name(gender,species)
-	var/generated_serial = uppertext(dd_limittext(md5(real_name), 12))
-	machine_serial_number = generated_serial
-	b_type = pick(4;"O-", 36;"O+", 3;"A-", 28;"A+", 1;"B-", 20;"B+", 1;"AB-", 5;"AB+")
-	signature = "<i>[real_name]</i>"
-	signfont = "Verdana"
-
-	current_character = 0
-	can_edit_name = 1
-
-	gear = list()
-
-	//Reset the records when making a new char
-	med_record = ""
-	sec_record = ""
-	incidents = list()
-	gen_record = ""
-	exploit_record = ""
-	ccia_record = ""
-
-	ZeroSkills(1)
-
-	// Do we need to reinitialize a whole bunch more vars?
-	if (re_initialize)
-		be_special_role = list()
-		uplinklocation = initial(uplinklocation)
-
-		r_hair = 0
-		g_hair = 0
-		b_hair = 0
-		r_facial = 0
-		g_facial = 0
-		b_facial = 0
-		r_skin = 0
-		g_skin = 0
-		b_skin = 0
-		r_eyes = 0
-		g_eyes = 0
-		b_eyes = 0
-
-		species = SPECIES_HUMAN
-		home_system = "Unset"
-		citizenship = "None"
-		faction = "None"
-		religion = "None"
-		accent = "None"
-
-		species = SPECIES_HUMAN
-
-		job_civilian_high = 0
-		job_civilian_med = 0
-		job_civilian_low = 0
-
-		job_medsci_high = 0
-		job_medsci_med = 0
-		job_medsci_low = 0
-
-		job_engsec_high = 0
-		job_engsec_med = 0
-		job_engsec_low = 0
-
-		alternate_option = 0
-		metadata = ""
-
-		organ_data = list()
-		rlimb_data = list()
-		body_markings = list()
-		player_alt_titles = new()
-
-		flavor_texts = list()
-		flavour_texts_robot = list()
-
-		ccia_actions = list()
-		disabilities = list()
-
-		nanotrasen_relation = "Neutral"
-
-// Deletes a character from the database
-/datum/preferences/proc/delete_character_sql(var/client/C)
-	if (!C)
-		return
-
-	if (!current_character)
-		to_chat(C, "<span class='notice'>You do not have a character loaded.</span>")
-		return
-
-	if (!establish_db_connection(dbcon))
-		to_chat(C, "<span class='notice'>Unable to establish database connection.</span>")
-		return
-
-	var/DBQuery/query = dbcon.NewQuery("UPDATE ss13_characters SET deleted_at = NOW() WHERE id = :char_id:")
-	query.Execute(list("char_id" = current_character))
-
-	// Create a new character.
-	new_setup(1)
-
-	to_chat(C, "<span class='warning'>Character successfully deleted! Please make a new one or load an existing setup.</span>")
-
-/datum/preferences/proc/get_species_datum()
-	if (species)
-		return all_species[species]
-
-	return null
+	if(client.get_preference_value(/datum/client_preference/chat_position) == GLOB.PREF_YES)
+		client.update_chat_position(TRUE)
+	if(client.get_preference_value(/datum/client_preference/fullscreen_mode) != GLOB.PREF_OFF)
+		client.toggle_fullscreen(client.get_preference_value(/datum/client_preference/fullscreen_mode))

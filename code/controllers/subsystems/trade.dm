@@ -1,32 +1,39 @@
-/var/global/datum/controller/subsystem/trade/SStrade
-
-/datum/controller/subsystem/trade
+SUBSYSTEM_DEF(trade)
 	name = "Trade"
 	wait = 1 MINUTE
-	flags = SS_NO_TICK_CHECK
-	var/list/traders = list() //List of all nearby traders
+	priority = SS_PRIORITY_TRADE
+	//Initializes at default time
 
-/datum/controller/subsystem/trade/New()
-	NEW_SS_GLOBAL(SStrade)
+	var/list/traders = list()
+	var/tmp/list/current_traders
+	var/max_traders = 10
 
 /datum/controller/subsystem/trade/Initialize()
+	. = ..()
 	for(var/i in 1 to rand(1,3))
-		generateTrader(1)
-	..()
+		generate_trader(1)
 
-/datum/controller/subsystem/trade/Recover()
-	traders = SStrade.traders
+/datum/controller/subsystem/trade/fire(resumed = FALSE)
+	if (!resumed)
+		current_traders = traders.Copy()
 
-/datum/controller/subsystem/trade/fire()
-	for(var/a in traders)
-		var/datum/trader/T = a
+	while(current_traders.len)
+		var/datum/trader/T = current_traders[current_traders.len]
+		current_traders.len--
+
 		if(!T.tick())
 			traders -= T
 			qdel(T)
-	if(prob(100-traders.len*10))
-		generateTrader()
+		if (MC_TICK_CHECK)
+			return
 
-/datum/controller/subsystem/trade/proc/generateTrader(var/stations = 0)
+	if((traders.len <= max_traders) && prob(100 - 50 * traders.len / max_traders))
+		generate_trader()
+
+/datum/controller/subsystem/trade/stat_entry()
+	..("Traders: [traders.len]")
+
+/datum/controller/subsystem/trade/proc/generate_trader(var/stations = 0)
 	var/list/possible = list()
 	if(stations)
 		possible += subtypesof(/datum/trader) - typesof(/datum/trader/ship)

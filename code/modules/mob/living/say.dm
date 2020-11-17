@@ -4,43 +4,37 @@ var/list/department_radio_keys = list(
 	  ":i" = "intercom",	".i" = "intercom",
 	  ":h" = "department",	".h" = "department",
 	  ":+" = "special",		".+" = "special", //activate radio-specific special functions
-	  ":a" = "Common",		".a" = "Common",
 	  ":c" = "Command",		".c" = "Command",
 	  ":n" = "Science",		".n" = "Science",
 	  ":m" = "Medical",		".m" = "Medical",
 	  ":e" = "Engineering", ".e" = "Engineering",
 	  ":s" = "Security",	".s" = "Security",
-	  ":q" = "Penal",		".q" = "Penal",
 	  ":w" = "whisper",		".w" = "whisper",
 	  ":t" = "Mercenary",	".t" = "Mercenary",
 	  ":x" = "Raider",		".x" = "Raider",
-	  ":b" = "Burglar",		".b" = "Burglar",
-	  ":q" = "Ninja",		".q" = "Ninja",
 	  ":u" = "Supply",		".u" = "Supply",
 	  ":v" = "Service",		".v" = "Service",
 	  ":p" = "AI Private",	".p" = "AI Private",
 	  ":z" = "Entertainment",".z" = "Entertainment",
+	  ":y" = "Exploration",		".y" = "Exploration",
 
 	  ":R" = "right ear",	".R" = "right ear",
 	  ":L" = "left ear",	".L" = "left ear",
 	  ":I" = "intercom",	".I" = "intercom",
 	  ":H" = "department",	".H" = "department",
-	  ":A" = "Common",		".A" = "Common",
 	  ":C" = "Command",		".C" = "Command",
 	  ":N" = "Science",		".N" = "Science",
 	  ":M" = "Medical",		".M" = "Medical",
 	  ":E" = "Engineering",	".E" = "Engineering",
 	  ":S" = "Security",	".S" = "Security",
-	  ":Q" = "Penal",		".Q" = "Penal",
 	  ":W" = "whisper",		".W" = "whisper",
 	  ":T" = "Mercenary",	".T" = "Mercenary",
 	  ":X" = "Raider",		".X" = "Raider",
-	  ":B" = "Burglar",		".B" = "Burglar",
-	  ":Q" = "Ninja",		".Q" = "Ninja",
 	  ":U" = "Supply",		".U" = "Supply",
 	  ":V" = "Service",		".V" = "Service",
 	  ":P" = "AI Private",	".P" = "AI Private",
 	  ":Z" = "Entertainment",".Z" = "Entertainment",
+	  ":Y" = "Exploration",		".Y" = "Exploration",
 
 	  //kinda localization -- rastaf0
 	  //same keys as above, but on russian keyboard layout. This file uses cp1251 as encoding.
@@ -55,7 +49,7 @@ var/list/department_radio_keys = list(
 	  ":û" = "Security",	".û" = "Security",
 	  ":ö" = "whisper",		".ö" = "whisper",
 	  ":å" = "Mercenary",	".å" = "Mercenary",
-	  ":é" = "Supply",		".é" = "Supply"
+	  ":é" = "Supply",		".é" = "Supply",
 )
 
 
@@ -83,69 +77,60 @@ proc/get_radio_key_from_channel(var/channel)
 
 	var/mob/living/carbon/human/H = src
 	if (H.l_ear || H.r_ear)
-		var/obj/item/device/radio/headset/dongle
-		if(istype(H.l_ear,/obj/item/device/radio/headset))
+		var/obj/item/radio/headset/dongle
+		if(istype(H.l_ear,/obj/item/radio/headset))
 			dongle = H.l_ear
 		else
 			dongle = H.r_ear
 		if(!istype(dongle)) return
 		if(dongle.translate_binary) return 1
 
-/mob/living/proc/get_stuttered_message(message)
-	return stutter(message, stuttering)
-
 /mob/living/proc/get_default_language()
-	return default_language
+	. = ispath(default_language, /decl/language) && decls_repository.get_decl(default_language)
 
 /mob/proc/is_muzzled()
-	return istype(wear_mask, /obj/item/clothing/mask/muzzle)
+	return istype(wear_mask, /obj/item/clothing/mask/muzzle) || istype(wear_mask, /obj/item/clothing/sealant)
 
-/mob/living/proc/handle_speech_problems(var/message, var/verb, var/message_mode)
-	var/list/returns[4]
-	var/speech_problem_flag = 0
-	if((HULK in mutations) && health >= 25 && length(message))
+//Takes a list of the form list(message, verb, whispering) and modifies it as needed
+//Returns 1 if a speech problem was applied, 0 otherwise
+/mob/living/proc/handle_speech_problems(var/list/message_data)
+	var/message = message_data[1]
+	var/verb = message_data[2]
+
+	. = 0
+
+	if((MUTATION_HULK in mutations) && health >= 25 && length(message))
 		message = "[uppertext(message)]!!!"
 		verb = pick("yells","roars","hollers")
-		speech_problem_flag = 1
-	if(slurring)
-		message = slur(message,slurring)
+		message_data[3] = 0
+		. = 1
+	else if(slurring)
+		message = slur(message)
 		verb = pick("slobbers","slurs")
-		speech_problem_flag = 1
-	if(stuttering)
-		message = get_stuttered_message(message)
+		. = 1
+	else if(stuttering)
+		message = NewStutter(message)
 		verb = pick("stammers","stutters")
-		speech_problem_flag = 1
-	if(tarded)
-		message = slur(message,100)
-		verb = pick("gibbers","gabbers")
-		speech_problem_flag = 1
-	if(brokejaw)
-		message = slur(message,100)
-		verb = pick("slobbers","slurs")
-		speech_problem_flag = 1
-		if(prob(50))
-			to_chat(src, "<span class='danger'>You struggle to speak with your dislocated jaw!</span>")
-		if(prob(10))
-			to_chat(src, "<span class='danger'>You feel a sharp pain from your jaw as you speak!</span>")
-			src.Weaken(3)
-	returns[1] = message
-	returns[2] = verb
-	returns[3] = speech_problem_flag
-	returns[4] = world.view
-	return returns
+		. = 1
+	else if(has_chem_effect(CE_SQUEAKY, 1))
+		message = "<font face = 'Comic Sans MS'>[message]</font>"
+		verb = "squeaks"
+		. = 1
+
+	message_data[1] = message
+	message_data[2] = verb
 
 /mob/living/proc/handle_message_mode(message_mode, message, verb, speaking, used_radios, alt_name)
 	if(message_mode == "intercom")
-		for(var/obj/item/device/radio/intercom/I in view(1, null))
+		for(var/obj/item/radio/intercom/I in view(1, null))
 			I.talk_into(src, message, verb, speaking)
 			used_radios += I
 	return 0
 
 /mob/living/proc/handle_speech_sound()
-	var/list/returns[3]
+	var/list/returns[2]
 	returns[1] = null
 	returns[2] = null
-	returns[3] = FALSE
 	return returns
 
 /mob/living/proc/get_speech_ending(verb, var/ending)
@@ -155,87 +140,100 @@ proc/get_radio_key_from_channel(var/channel)
 		return "asks"
 	return verb
 
-/mob/living/say(var/message, var/datum/language/speaking = null, var/verb="says", var/alt_name="", var/ghost_hearing = GHOSTS_ALL_HEAR)
+/mob/living/proc/format_say_message(var/message = null)
+	if(!message)
+		return
+
+	message = html_decode(message)
+
+	var/end_char = copytext(message, length(message), length(message) + 1)
+	if(!(end_char in list(".", "?", "!", "-", "~")))
+		message += "."
+
+	return html_encode(message)
+
+/mob/living/say(var/message, var/decl/language/speaking = null, var/verb="says", var/alt_name="", whispering)
+	set waitfor = FALSE
+	if(client)
+		if(client.prefs.muted & MUTE_IC)
+			to_chat(src, "<span class='warning'>You cannot speak in IC (Muted).</span>")
+			return
+
 	if(stat)
-		if(stat == DEAD)
+		if(stat == 2)
 			return say_dead(message)
 		return
 
-	var/message_mode = parse_message_mode(message, "headset")
+	if(findlasttextEx(message, get_prefix_key(/decl/prefix/custom_emote)) == 1)
+		return emote(copytext(message,2))
 
-	var/regex/emote = regex("^(\[\\*^\])\[^*\]+$")
-
-	if(emote.Find(message))
-		if(emote.group[1] == "*") return emote(copytext(message, 2))
-		if(emote.group[1] == "^") return custom_emote(VISIBLE_MESSAGE, copytext(message,2))
+	if(findlasttextEx(message, get_prefix_key(/decl/prefix/visible_emote)) == 1)
+		return custom_emote(1, copytext(message,2))
 
 	//parse the radio code and consume it
+	var/message_mode = parse_message_mode(message, "headset")
 	if (message_mode)
 		if (message_mode == "headset")
 			message = copytext(message,2)	//it would be really nice if the parse procs could do this for us.
 		else
 			message = copytext(message,3)
 
-	message = trim(message)
-	message = formalize_text(message)
+	message = trim_left(message)
 
 	//parse the language code and consume it
 	if(!speaking)
 		speaking = parse_language(message)
-	if(speaking)
-		message = copytext(message,2+length(speaking.key))
-	else
-		speaking = get_default_language()
+		if(speaking)
+			message = copytext(message,2+length(speaking.key))
+		else
+			speaking = get_default_language()
 
 	// This is broadcast to all mobs with the language,
 	// irrespective of distance or anything else.
 	if(speaking && (speaking.flags & HIVEMIND))
-		if(speaking.name == LANGUAGE_VAURCA && within_jamming_range(src))
-			to_chat(src, SPAN_WARNING("Your head buzzes as your message is blocked with jamming signals."))
-			return
 		speaking.broadcast(src,trim(message))
 		return 1
 
-	verb = say_quote(message, speaking)
-
-	if(is_muzzled())
+	if((is_muzzled()) && !(speaking && (speaking.flags & SIGNLANG)))
 		to_chat(src, "<span class='danger'>You're muzzled and cannot speak!</span>")
 		return
 
-	message = trim_left(message)
-	var/message_range
-	if(!(speaking && (speaking.flags & NO_STUTTER)))
-		message = handle_autohiss(message, speaking)
+	if (speaking)
+		if(whispering)
+			verb = speaking.whisper_verb ? speaking.whisper_verb : speaking.speech_verb
+		else
+			verb = say_quote(message, speaking)
 
-		var/list/handle_s = handle_speech_problems(message, verb, message_mode)
-		message = handle_s[1]
-		verb = handle_s[2]
-		message_range = handle_s[4]
+	message = trim_left(message)
+	message = handle_autohiss(message, speaking)
+	message = format_say_message(message)
+
+	if(speaking && !speaking.can_be_spoken_properly_by(src))
+		message = speaking.muddle(message)
+
+	if(!(speaking && (speaking.flags & NO_STUTTER)))
+		var/list/message_data = list(message, verb, 0)
+		if(handle_speech_problems(message_data))
+			message = message_data[1]
+			verb = message_data[2]
 
 	if(!message || message == "")
 		return 0
-
-	message = process_chat_markup(message, list("~", "_"))
-
-	//handle nonverbal and sign languages here
-	if (speaking)
-		if (speaking.flags & NONVERBAL)
-			if (prob(30))
-				src.custom_emote(VISIBLE_MESSAGE, "[pick(speaking.signlang_verb)].")
-
-		if (speaking.flags & SIGNLANG)
-			return say_signlang(message, pick(speaking.signlang_verb), speaking)
 
 	var/list/obj/item/used_radios = new
 	if(handle_message_mode(message_mode, message, verb, speaking, used_radios, alt_name))
 		return 1
 
-	var/list/handle_v = handle_speech_sound()
+	var/list/handle_v = (istype(speaking) && speaking.get_spoken_sound()) || handle_speech_sound()
 	var/sound/speech_sound = handle_v[1]
 	var/sound_vol = handle_v[2]
-	var/italics = handle_v[3]
 
+	var/italics = 0
+	var/message_range = world.view
 
+	if(whispering)
+		italics = 1
+		message_range = 1
 
 	//speaking into radios
 	if(used_radios.len)
@@ -245,7 +243,7 @@ proc/get_radio_key_from_channel(var/channel)
 			message_range = speaking.get_talkinto_msg_range(message)
 		var/msg
 		if(!speaking || !(speaking.flags & NO_TALK_MSG))
-			msg = "<span class='notice'>\The [src] talks into \the [used_radios[1]]</span>."
+			msg = "<span class='notice'>\The [src] talks into \the [used_radios[1]].</span>"
 		for(var/mob/living/M in hearers(5, src))
 			if((M != src) && msg)
 				M.show_message(msg)
@@ -255,6 +253,16 @@ proc/get_radio_key_from_channel(var/channel)
 	var/list/listening = list()
 	var/list/listening_obj = list()
 	var/turf/T = get_turf(src)
+
+	//handle nonverbal and sign languages here
+	if (speaking)
+		if (speaking.flags & NONVERBAL)
+			if (prob(30))
+				src.custom_emote(1, "[pick(speaking.signlang_verb)].")
+
+		if (speaking.flags & SIGNLANG)
+			log_say("[name]/[key] : SIGN: [message]")
+			return say_signlang(message, pick(speaking.signlang_verb), speaking)
 
 	if(T)
 		//make sure the air can transmit speech - speaker's side
@@ -267,53 +275,55 @@ proc/get_radio_key_from_channel(var/channel)
 			italics = 1
 			sound_vol *= 0.5 //muffle the sound a bit, so it's like we're actually talking through contact
 
-		get_mobs_and_objs_in_view_fast(T, message_range, listening, listening_obj, ghost_hearing)
+		get_mobs_and_objs_in_view_fast(T, message_range, listening, listening_obj, /datum/client_preference/ghost_ears)
 
-
-	var/list/hear_clients = list()
-	for(var/m in listening)
-		var/mob/M = m
-		var/heard_say = M.hear_say(message, verb, speaking, alt_name, italics, src, speech_sound, sound_vol)
-		if(heard_say && M.client)
-			hear_clients += M.client
 
 	var/speech_bubble_test = say_test(message)
 	var/image/speech_bubble = image('icons/mob/talk.dmi',src,"h[speech_bubble_test]")
-	INVOKE_ASYNC(GLOBAL_PROC, /proc/animate_speechbubble, speech_bubble, hear_clients, 30)
-	do_animate_chat(message, speaking, italics, hear_clients, 30)
+	speech_bubble.layer = layer
+	speech_bubble.plane = plane
 
-	for(var/o in listening_obj)
-		var/obj/O = o
+	var/list/speech_bubble_recipients = list()
+	for(var/mob/M in listening)
+		if(M)
+			M.hear_say(message, verb, speaking, alt_name, italics, src, speech_sound, sound_vol)
+			if(M.client)
+				speech_bubble_recipients += M.client
+
+	for(var/obj/O in listening_obj)
 		spawn(0)
 			if(O) //It's possible that it could be deleted in the meantime.
 				O.hear_talk(src, message, verb, speaking)
 
-	if(mind)
-		mind.last_words = message
+	if(whispering)
+		var/eavesdroping_range = 5
+		var/list/eavesdroping = list()
+		var/list/eavesdroping_obj = list()
+		get_mobs_and_objs_in_view_fast(T, eavesdroping_range, eavesdroping, eavesdroping_obj)
+		eavesdroping -= listening
+		eavesdroping_obj -= listening_obj
+		for(var/mob/M in eavesdroping)
+			if(M)
+				M.hear_say(stars(message), verb, speaking, alt_name, italics, src, speech_sound, sound_vol)
+				if(M.client)
+					speech_bubble_recipients |= M.client
 
-	log_say("[key_name(src)] : ([get_lang_name(speaking)]) [message]",ckey=key_name(src))
+		for(var/obj/O in eavesdroping)
+			spawn(0)
+				if(O) //It's possible that it could be deleted in the meantime.
+					O.hear_talk(src, stars(message), verb, speaking)
+
+	INVOKE_ASYNC(GLOBAL_PROC, .proc/animate_speech_bubble, speech_bubble, speech_bubble_recipients, 30)
+	INVOKE_ASYNC(src, /atom/movable/proc/animate_chat, message, speaking, italics, speech_bubble_recipients, 30)
+
+	if(whispering)
+		log_whisper("[name]/[key] : [message]")
+	else
+		log_say("[name]/[key] : [message]")
 	return 1
 
-/mob/living/proc/do_animate_chat(var/message, var/datum/language/language, var/small, var/list/show_to, var/duration)
-	INVOKE_ASYNC(src, /atom/movable/proc/animate_chat, message, language, small, show_to, duration)
-
-/proc/animate_speechbubble(image/I, list/show_to, duration)
-	var/matrix/M = matrix()
-	M.Scale(0,0)
-	I.transform = M
-	I.alpha = 0
-	for(var/client/C in show_to)
-		C.images += I
-	animate(I, transform = 0, alpha = 255, time = 5, easing = ELASTIC_EASING)
-	sleep(duration-5)
-	animate(I, alpha = 0, time = 5, easing = EASE_IN)
-	sleep(5)
-	for(var/client/C in show_to)
-		C.images -= I
-
-/mob/living/proc/say_signlang(var/message, var/verb="gestures", var/datum/language/language)
-	log_say("[key_name(src)] : ([get_lang_name(language)]) [message]",ckey=key_name(src))
-
+/mob/living/proc/say_signlang(var/message, var/verb="gestures", var/decl/language/language)
+	message = filter_modify_message(message)
 	for (var/mob/O in viewers(src, null))
 		O.hear_signlang(message, verb, language, src)
 	return 1
@@ -321,5 +331,5 @@ proc/get_radio_key_from_channel(var/channel)
 /obj/effect/speech_bubble
 	var/mob/parent
 
-/mob/proc/GetVoice()
+/mob/living/proc/GetVoice()
 	return name

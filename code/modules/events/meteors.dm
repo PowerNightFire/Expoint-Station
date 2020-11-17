@@ -1,88 +1,142 @@
 /datum/event/meteor_wave
-	startWhen		= 86
-	endWhen			= 9999//safety value, will be set during ticks
+	startWhen		= 30	// About one minute early warning
+	endWhen 		= 60	// Adjusted automatically in tick()
+	has_skybox_image = TRUE
+	var/alarmWhen   = 30
+	var/next_meteor = 40
+	var/waves = 1
+	var/start_side
+	var/next_meteor_lower = 10
+	var/next_meteor_upper = 20
 
-	var/wave_delay  = 13//Note, wave delay is in procs. actual time is equal to wave_delay * 2.1
-	var/min_waves 	= 11
-	var/max_waves 	= 16
-	var/min_meteors = 1
-	var/max_meteors = 2
-	var/duration = 340//Total duration in seconds that the storm will last after it starts
-
-	var/downed_ship = FALSE
-
-	var/waves		= 8
-	var/next_wave 	= 86
-	ic_name = "a meteor storm"
+/datum/event/meteor_wave/get_skybox_image()
+	return overlay_image('icons/skybox/rockbox.dmi', "rockbox", COLOR_ASTEROID_ROCK, RESET_COLOR)
 
 /datum/event/meteor_wave/setup()
-	startWhen += rand(-15,15)//slightly randomised start time
-	waves = rand(min_waves,max_waves)
-	next_wave = startWhen
-	wave_delay = round(((duration - 10)/waves)/2.1, 1)
+	waves = 0
+	for(var/n in 1 to severity)
+		waves += rand(5,15)
+
+	start_side = pick(GLOB.cardinal)
+	endWhen = worst_case_end()
 
 /datum/event/meteor_wave/announce()
-	command_announcement.Announce("A heavy meteor storm has been detected on collision course with the station. Estimated three minutes until impact, please activate station shields, and seek shelter in the central ring.", "Meteor Alert", new_sound = 'sound/AI/meteors.ogg')
-
-/datum/event/meteor_wave/start()
-	command_announcement.Announce("Contact with meteor wave imminent, all hands brace for impact.", "Meteor Alert")
+	switch(severity)
+		if(EVENT_LEVEL_MAJOR)
+			command_announcement.Announce(replacetext(GLOB.using_map.meteor_detected_message, "%STATION_NAME%", location_name()), "[location_name()] Sensor Array", new_sound = GLOB.using_map.meteor_detected_sound, zlevels = affecting_z)
+		else
+			command_announcement.Announce("The [location_name()] is now in a meteor shower.", "[location_name()] Sensor Array", zlevels = affecting_z)
 
 /datum/event/meteor_wave/tick()
-	if(activeFor >= next_wave)
-		var/amount = rand(min_meteors,max_meteors)
+	// Begin sending the alarm signals to shield diffusers so the field is already regenerated (if it exists) by the time actual meteors start flying around.
+	if(alarmWhen < activeFor)
+		for(var/obj/machinery/shield_diffuser/SD in SSmachines.machinery)
+			if(isStationLevel(SD.z))
+				SD.meteor_alarm(10)
 
-		event_meteor_wave(amount)
-		next_wave += wave_delay
-		waves--
-		if(waves <= 0)
-			endWhen = activeFor + 1
-		else
-			endWhen = next_wave + wave_delay
+	if(waves && activeFor >= next_meteor)
+		send_wave()
+
+/datum/event/meteor_wave/proc/worst_case_end()
+	return activeFor + ((30 / severity) * waves) + 30
+
+/datum/event/meteor_wave/proc/send_wave()
+	var/pick_side = prob(80) ? start_side : (prob(50) ? turn(start_side, 90) : turn(start_side, -90))
+	spawn() spawn_meteors(get_wave_size(), get_meteors(), pick_side, pick(affecting_z))
+	next_meteor += rand(next_meteor_lower, next_meteor_upper) / severity
+	waves--
+	endWhen = worst_case_end()
+
+/datum/event/meteor_wave/proc/get_wave_size()
+	return severity * rand(2,4)
 
 /datum/event/meteor_wave/end()
-	spawn(100)//We give 10 seconds before announcing, for the last wave of meteors to hit the station
-		command_announcement.Announce("The station has survived the meteor storm, it is now safe to commence repairs.", "Meteor Alert")
+	switch(severity)
+		if(EVENT_LEVEL_MAJOR)
+			command_announcement.Announce("The [location_name()] has cleared the meteor storm.", "[location_name()] Sensor Array", zlevels = affecting_z)
+		else
+			command_announcement.Announce("The [location_name()] has cleared the meteor shower", "[location_name()] Sensor Array", zlevels = affecting_z)
 
-/datum/event/meteor_wave/shower
-	wave_delay  = 6
-	min_waves 	= 7
-	max_waves 	= 9
-	min_meteors = 0
-	max_meteors = 1
-	duration = 180 //Total duration in seconds that the storm will last after it starts
+/datum/event/meteor_wave/proc/get_meteors()
+	switch(severity)
+		if(EVENT_LEVEL_MAJOR)
+			return meteors_major
+		if(EVENT_LEVEL_MODERATE)
+			return meteors_moderate
+		else
+			return meteors_minor
 
-	waves		= 4//this is randomised
-	next_wave 	= 86
+/var/list/meteors_minor = list(
+	/obj/effect/meteor/medium     = 80,
+	/obj/effect/meteor/dust       = 30,
+	/obj/effect/meteor/irradiated = 30,
+	/obj/effect/meteor/big        = 30,
+	/obj/effect/meteor/flaming    = 10,
+	/obj/effect/meteor/golden     = 10,
+	/obj/effect/meteor/silver     = 10,
+)
 
-/datum/event/meteor_wave/shower/announce()
-	command_announcement.Announce("A meteor shower is approaching the station, estimated contact in three minutes. Crew are recommended to stay away from the outer areas of the station.", "Meteor Alert")
+/var/list/meteors_moderate = list(
+	/obj/effect/meteor/medium     = 80,
+	/obj/effect/meteor/big        = 30,
+	/obj/effect/meteor/dust       = 30,
+	/obj/effect/meteor/irradiated = 30,
+	/obj/effect/meteor/flaming    = 10,
+	/obj/effect/meteor/golden     = 10,
+	/obj/effect/meteor/silver     = 10,
+	/obj/effect/meteor/emp        = 10,
+)
 
-/datum/event/meteor_wave/shower/start()
-	command_announcement.Announce("Meteors have reached the station. Please stay away from outer areas until the shower has passed.", "Meteor Alert")
+/var/list/meteors_major = list(
+	/obj/effect/meteor/medium     = 80,
+	/obj/effect/meteor/big        = 30,
+	/obj/effect/meteor/dust       = 30,
+	/obj/effect/meteor/irradiated = 30,
+	/obj/effect/meteor/emp        = 30,
+	/obj/effect/meteor/flaming    = 10,
+	/obj/effect/meteor/golden     = 10,
+	/obj/effect/meteor/silver     = 10,
+	/obj/effect/meteor/tunguska   = 1,
+)
 
+/datum/event/meteor_wave/overmap
+	next_meteor_lower = 5
+	next_meteor_upper = 10
+	next_meteor = 0
+	var/obj/effect/overmap/visitable/ship/victim
 
-/datum/event/meteor_wave/shower/end()
-	spawn(100)
-		command_announcement.Announce("The station has cleared the meteor shower, please return to your stations.", "Meteor Alert")
+/datum/event/meteor_wave/overmap/Destroy()
+	victim = null
+	. = ..()
 
+/datum/event/meteor_wave/overmap/tick()
+	if(victim && !victim.is_still()) //Meteors mostly fly in your face
+		start_side = prob(90) ? victim.fore_dir : pick(GLOB.cardinal)
+	else //Unless you're standing
+		start_side = pick(GLOB.cardinal)
+	..()
 
-//An event specific version of the meteor wave proc, to bypass the delays
-/datum/event/meteor_wave/proc/event_meteor_wave(var/number = meteors_in_wave)
-	for(var/i = 0 to number)
-		spawn(rand(10, 80))
-			spawn_meteor(downed_ship)
-
-/datum/event/meteor_wave/downed_ship
-	downed_ship = TRUE
-	ic_name = "a downed vessel"
-	no_fake = TRUE
-
-/datum/event/meteor_wave/downed_ship/announce()
-	command_announcement.Announce("The NDV Icarus reports that it has downed an unknown vessel that was approaching your station. Prepare for debris impact - please evacuate the surface level if needed.", "Ship Debris Alert", new_sound = 'sound/AI/unknownvesseldowned.ogg')
-
-/datum/event/meteor_wave/downed_ship/start()
-	command_announcement.Announce("Ship debris colliding now, all hands brace for impact.", "Ship Debris Alert")
-
-/datum/event/meteor_wave/downed_ship/end()
-	spawn(100)//We give 10 seconds before announcing, for the last wave of meteors to hit the station
-		command_announcement.Announce("The last of the ship debris has hit or passed by the station, it is now safe to commence repairs.", "Ship Debris Alert")
+/datum/event/meteor_wave/overmap/get_wave_size()
+	. = ..()
+	if(!victim)
+		return
+	var/skill = victim.get_helm_skill()
+	var/speed = victim.get_speed()
+	if(skill >= SKILL_PROF)
+		. = round(. * 0.5)
+	if(victim.is_still()) //Standing still means less shit flies your way
+		. = round(. * 0.1)
+	if(speed < SHIP_SPEED_SLOW) //Slow and steady
+		. = round(. * 0.5)
+	if(speed > SHIP_SPEED_FAST) //Sanic stahp
+		. *= 2
+	
+	//Smol ship evasion
+	if(victim.vessel_size < SHIP_SIZE_LARGE && speed < SHIP_SPEED_FAST)
+		var/skill_needed = SKILL_PROF
+		if(speed < SHIP_SPEED_SLOW)
+			skill_needed = SKILL_ADEPT
+		if(victim.vessel_size < SHIP_SIZE_SMALL)
+			skill_needed = skill_needed - 1
+		if(skill >= max(skill_needed, victim.skill_needed))
+			return 0

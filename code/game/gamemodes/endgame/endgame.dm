@@ -54,6 +54,7 @@
 
 // Apply changes when entering state
 /datum/universal_state/proc/OnEnter()
+	set waitfor = FALSE
  	// Does nothing by default
 
 // Apply changes to a new turf.
@@ -63,11 +64,18 @@
 /datum/universal_state/proc/OverlayAndAmbientSet()
 	return
 
-/proc/SetUniversalState(var/newstate,var/on_exit=1, var/on_enter=1)
-	if(on_exit)
-		universe.OnExit()
-	universe = new newstate
-	if(on_enter)
-		universe.OnEnter()
+/datum/universal_state/proc/OnPlayerLatejoin(var/mob/living/M)
+	return
 
-/datum/universal_state/proc/convert_parallax(parallax_spacemaster)
+/datum/universal_state/proc/OnTouchMapEdge(var/atom/A)
+	return TRUE //return FALSE to cancel map edge handling
+
+/proc/SetUniversalState(var/newstate,var/on_exit=1, var/on_enter=1, list/arguments=null)
+	if(on_exit)
+		GLOB.universe.OnExit()
+	if(arguments)
+		GLOB.universe = new newstate(arglist(arguments))
+	else
+		GLOB.universe = new newstate
+	if(on_enter)
+		GLOB.universe.OnEnter()

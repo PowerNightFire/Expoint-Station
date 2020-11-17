@@ -2,7 +2,7 @@
 	var/message	//the message to give to the mob
 	var/once = 1
 
-/obj/effect/step_trigger/message/Trigger(mob/M as mob)
+/obj/effect/step_trigger/message/Trigger(mob/M)
 	if(M.client)
 		to_chat(M, "<span class='info'>[message]</span>")
 		if(once)
@@ -17,15 +17,18 @@
 	var/entersmoke = 0
 	var/exitsmoke = 0
 
-/obj/effect/step_trigger/teleport_fancy/Trigger(mob/M as mob)
+/obj/effect/step_trigger/teleport_fancy/Trigger(mob/M)
 	var/dest = locate(locationx, locationy, z)
 	M.Move(dest)
 
 	if(entersparks)
-		spark(src, 4, alldirs)
-
+		var/datum/effect/effect/system/spark_spread/s = new /datum/effect/effect/system/spark_spread
+		s.set_up(4, 1, src)
+		s.start()
 	if(exitsparks)
-		spark(dest, 4, alldirs)
+		var/datum/effect/effect/system/spark_spread/s = new /datum/effect/effect/system/spark_spread
+		s.set_up(4, 1, dest)
+		s.start()
 
 	if(entersmoke)
 		var/datum/effect/effect/system/smoke_spread/s = new /datum/effect/effect/system/smoke_spread

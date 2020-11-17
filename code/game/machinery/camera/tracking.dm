@@ -5,8 +5,8 @@
 /mob/living/silicon/ai/var/max_locations = 10
 /mob/living/silicon/ai/var/stored_locations[0]
 
-/proc/InvalidPlayerTurf(turf/T as turf)
-	return !(T && isStationLevel(T.z))
+/proc/InvalidPlayerTurf(turf/T)
+	return !(T && (T.z in GLOB.using_map.player_levels))
 
 /mob/living/silicon/ai/proc/get_camera_list()
 	if(src.stat == 2)
@@ -24,7 +24,7 @@
 
 
 /mob/living/silicon/ai/proc/ai_camera_list(var/camera in get_camera_list())
-	set category = "AI Commands"
+	set category = "Silicon Commands"
 	set name = "Show Camera List"
 
 	if(check_unable())
@@ -39,7 +39,7 @@
 	return
 
 /mob/living/silicon/ai/proc/ai_store_location(loc as text)
-	set category = "AI Commands"
+	set category = "Silicon Commands"
 	set name = "Store Camera Location"
 	set desc = "Stores your current camera location by the given name"
 
@@ -68,7 +68,7 @@
 	return sortList(stored_locations)
 
 /mob/living/silicon/ai/proc/ai_goto_location(loc in sorted_stored_locations())
-	set category = "AI Commands"
+	set category = "Silicon Commands"
 	set name = "Goto Camera Location"
 	set desc = "Returns to the selected camera location"
 
@@ -80,7 +80,7 @@
 	src.eyeobj.setLoc(L)
 
 /mob/living/silicon/ai/proc/ai_remove_location(loc in sorted_stored_locations())
-	set category = "AI Commands"
+	set category = "Silicon Commands"
 	set name = "Delete Camera Location"
 	set desc = "Deletes the selected camera location"
 
@@ -104,7 +104,7 @@
 		return list()
 
 	var/datum/trackable/TB = new()
-	for(var/mob/living/M in mob_list)
+	for(var/mob/living/M in SSmobs.mob_list)
 		if(M == usr)
 			continue
 		if(M.tracking_status() != TRACKING_POSSIBLE)
@@ -127,7 +127,7 @@
 	return targets
 
 /mob/living/silicon/ai/proc/ai_camera_track(var/target_name in trackable_mobs())
-	set category = "AI Commands"
+	set category = "Silicon Commands"
 	set name = "Follow With Camera"
 	set desc = "Select who you would like to track."
 
@@ -136,8 +136,6 @@
 		return
 	if(!target_name)
 		src.cameraFollow = null
-	if (!track)
-		trackable_mobs()
 
 	var/mob/target = (isnull(track.humans[target_name]) ? track.others[target_name] : track.humans[target_name])
 	src.track = null
@@ -151,7 +149,7 @@
 	cameraFollow.tracking_cancelled()
 	cameraFollow = null
 
-/mob/living/silicon/ai/proc/ai_actual_track(mob/living/target as mob)
+/mob/living/silicon/ai/proc/ai_actual_track(mob/living/target)
 	if(!istype(target))	return
 	var/mob/living/silicon/ai/U = usr
 
@@ -161,7 +159,7 @@
 	if(U.cameraFollow)
 		U.ai_cancel_tracking()
 	U.cameraFollow = target
-	to_chat(U, "Now tracking [target.name] on camera.")
+	to_chat(U, "Tracking target...")
 	target.tracking_initiated()
 
 	spawn (0)
@@ -185,7 +183,7 @@
 				return
 			sleep(10)
 
-/obj/machinery/camera/attack_ai(var/mob/living/silicon/ai/user as mob)
+/obj/machinery/camera/attack_ai(var/mob/living/silicon/ai/user)
 	if (!istype(user))
 		return
 	if (!src.can_use())
@@ -193,15 +191,25 @@
 	user.eyeobj.setLoc(get_turf(src))
 
 
-/mob/living/silicon/ai/attack_ai(var/mob/user as mob)
+/mob/living/silicon/ai/attack_ai(var/mob/user)
 	ai_camera_list()
 
 /proc/camera_sort(list/L)
-	if (!L)
-		return
-	var/list/target = L.Copy()
-	// sortTim sorts in-place, but returns a ref to the list anyways.
-	return sortTim(target, /proc/cmp_camera, FALSE)
+	var/obj/machinery/camera/a
+	var/obj/machinery/camera/b
+
+	for (var/i = L.len, i > 0, i--)
+		for (var/j = 1 to i - 1)
+			a = L[j]
+			b = L[j + 1]
+			if (a.c_tag_order != b.c_tag_order)
+				if (a.c_tag_order > b.c_tag_order)
+					L.Swap(j, j + 1)
+			else
+				if (sorttext(a.c_tag, b.c_tag) < 0)
+					L.Swap(j, j + 1)
+	return L
+
 
 mob/living/proc/near_camera()
 	if (!isturf(loc))
@@ -212,7 +220,6 @@ mob/living/proc/near_camera()
 
 /mob/living/proc/tracking_status()
 	// Easy checks first.
-	// Don't detect mobs on Centcom. Since the wizard den is on Centcomm, we only need this.
 	var/obj/item/card/id/id = GetIdCard()
 	if(id && id.prevent_tracking())
 		return TRACKING_TERMINATE
@@ -234,19 +241,17 @@ mob/living/proc/near_camera()
 		return camera && camera.can_use() ? TRACKING_POSSIBLE : TRACKING_NO_COVERAGE
 
 /mob/living/carbon/human/tracking_status()
-	//Cameras can't track people wearing an agent card or a ninja hood.
-	if(istype(head, /obj/item/clothing/head/helmet/space/rig))
-		var/obj/item/clothing/head/helmet/space/rig/helmet = head
-		if(helmet.prevent_track())
-			return TRACKING_TERMINATE
+	if(is_cloaked())
+		. = TRACKING_TERMINATE
+	else
+		. = ..()
 
-	. = ..()
 	if(. == TRACKING_TERMINATE)
 		return
 
 	if(. == TRACKING_NO_COVERAGE)
 		var/turf/T = get_turf(src)
-		if(T && isStationLevel(T.z) && hassensorlevel(src, SUIT_SENSOR_TRACKING))
+		if(T && (T.z in GLOB.using_map.station_levels) && hassensorlevel(src, SUIT_SENSOR_TRACKING))
 			return TRACKING_POSSIBLE
 
 mob/living/proc/tracking_initiated()
@@ -258,7 +263,7 @@ mob/living/silicon/robot/tracking_initiated()
 
 mob/living/proc/tracking_cancelled()
 
-mob/living/silicon/robot/tracking_initiated()
+mob/living/silicon/robot/tracking_cancelled()
 	tracking_entities--
 	if(!tracking_entities && has_zeroth_law())
 		to_chat(src, "<span class='notice'>Internal camera is no longer being accessed.</span>")

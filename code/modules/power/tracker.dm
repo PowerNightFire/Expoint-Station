@@ -10,20 +10,19 @@
 	icon_state = "tracker"
 	anchored = 1
 	density = 1
-	use_power = 0
 
 	var/id = 0
 	var/sun_angle = 0		// sun angle as set by sun datum
 	var/obj/machinery/power/solar_control/control = null
 
-/obj/machinery/power/tracker/Initialize(mapload, obj/item/solar_assembly/S)
-	. = ..()
+/obj/machinery/power/tracker/Initialize(mapload, var/obj/item/solar_assembly/S)
+	. = ..(mapload)
 	Make(S)
 	connect_to_network()
 
 /obj/machinery/power/tracker/Destroy()
 	unset_control() //remove from control computer
-	return ..()
+	. = ..()
 
 //set the control of the tracker to a given computer if closer than SOLAR_MAX_DIST
 /obj/machinery/power/tracker/proc/set_control(var/obj/machinery/power/solar_control/SC)
@@ -59,13 +58,13 @@
 
 /obj/machinery/power/tracker/attackby(var/obj/item/W, var/mob/user)
 
-	if(W.iscrowbar())
+	if(isCrowbar(W))
 		playsound(src.loc, 'sound/machines/click.ogg', 50, 1)
 		user.visible_message("<span class='notice'>[user] begins to take the glass off the solar tracker.</span>")
-		if(do_after(user, 50/W.toolspeed))
+		if(do_after(user, 50,src))
 			var/obj/item/solar_assembly/S = locate() in src
 			if(S)
-				S.forceMove(src.loc)
+				S.dropInto(loc)
 				S.give_glass()
 			playsound(src.loc, 'sound/items/Deconstruct.ogg', 50, 1)
 			user.visible_message("<span class='notice'>[user] takes the glass off the tracker.</span>")
@@ -80,4 +79,4 @@
 	name = "tracker electronics"
 	icon = 'icons/obj/doors/door_assembly.dmi'
 	icon_state = "door_electronics"
-	w_class = ITEMSIZE_SMALL
+	w_class = ITEM_SIZE_SMALL

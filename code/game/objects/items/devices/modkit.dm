@@ -2,28 +2,33 @@
 #define MODKIT_SUIT 2
 #define MODKIT_FULL 3
 
-/obj/item/device/modkit
-	name = "voidsuit modification kit"
-	desc = "A kit containing all the needed tools and parts to modify a voidsuit for another user."
+/obj/item/modkit
+	name = "hardsuit modification kit"
+	desc = "A kit containing all the needed tools and parts to modify a hardsuit for another user."
+	icon = 'icons/obj/items/modkit.dmi'
 	icon_state = "modkit"
 	var/parts = MODKIT_FULL
-	var/target_species = BODYTYPE_HUMAN
+	var/target_bodytype
 
 	var/list/permitted_types = list(
 		/obj/item/clothing/head/helmet/space/void,
 		/obj/item/clothing/suit/space/void
 		)
 
-/obj/item/device/modkit/afterattack(obj/O, mob/user as mob, proximity)
+/obj/item/modkit/Initialize(ml, material_key)
+	if(!target_bodytype)
+		target_bodytype = GLOB.using_map.default_species
+	. = ..()
+	
+/obj/item/modkit/afterattack(obj/O, mob/user, proximity)
 	if(!proximity)
 		return
 
-	if (!target_species)
+	if (!target_bodytype)
 		return	//it shouldn't be null, okay?
 
 	if(!parts)
 		to_chat(user, "<span class='warning'>This kit has no parts for this modification left.</span>")
-		user.drop_from_inventory(src,O)
 		qdel(src)
 		return
 
@@ -33,12 +38,12 @@
 			allowed = 1
 
 	var/obj/item/clothing/I = O
-	if (!istype(I) || !allowed || !I.refittable)
+	if (!istype(I) || !allowed)
 		to_chat(user, "<span class='notice'>[src] is unable to modify that.</span>")
 		return
 
-	var/excluding = ("exclude" in I.species_restricted)
-	var/in_list = (target_species in I.species_restricted)
+	var/excluding = ("exclude" in I.bodytype_restricted)
+	var/in_list = (target_bodytype in I.bodytype_restricted)
 	if (excluding ^ in_list)
 		to_chat(user, "<span class='notice'>[I] is already modified.</span>")
 		return
@@ -47,11 +52,11 @@
 		to_chat(user, "<span class='warning'>[O] must be safely placed on the ground for modification.</span>")
 		return
 
-	playsound(user.loc, 'sound/items/screwdriver.ogg', 100, 1)
+	playsound(user.loc, 'sound/items/Screwdriver.ogg', 100, 1)
 
 	user.visible_message("<span class='notice'>\The [user] opens \the [src] and modifies \the [O].</span>","<span class='notice'>You open \the [src] and modify \the [O].</span>")
 
-	I.refit_for_species(target_species)
+	I.refit_for_bodytype(target_bodytype)
 
 	if (istype(I, /obj/item/clothing/head/helmet))
 		parts &= ~MODKIT_HELMET
@@ -59,14 +64,8 @@
 		parts &= ~MODKIT_SUIT
 
 	if(!parts)
-		user.drop_from_inventory(src,O)
 		qdel(src)
 
-/obj/item/device/modkit/examine(mob/user)
-	..(user)
-	to_chat(user, "It looks as though it modifies hardsuits to fit [target_species] users.")
-
-/obj/item/device/modkit/tajaran
-	name = "tajaran hardsuit modification kit"
-	desc = "A kit containing all the needed tools and parts to modify a voidsuit for another user. This one looks like it's meant for Tajarans."
-	target_species = BODYTYPE_TAJARA
+/obj/item/modkit/examine(mob/user)
+	. = ..(user)
+	to_chat(user, "It looks as though it modifies hardsuits to fit [target_bodytype] users.")

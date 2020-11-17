@@ -1,3 +1,9 @@
+// Macro functions.
+#define RAND_F(LOW, HIGH) (rand()*(HIGH-LOW) + LOW)
+#define ceil(x) (-round(-(x)))
+#define CEILING(x, y) ( -round(-(x) / (y)) * (y) )
+#define MULT_BY_RANDOM_COEF(VAR,LO,HI) VAR =  round((VAR * rand(LO * 100, HI * 100))/100, 0.1)
+
 // min is inclusive, max is exclusive
 /proc/Wrap(val, min, max)
 	var/d = max - min
@@ -28,11 +34,8 @@
 /proc/Floor(x)
 	return round(x)
 
-/proc/Ceiling(x, y=1)
-	return -round(-x / y) * y
-
-/proc/Modulus(x, y)
-	return ( (x) - (y) * round((x) / (y)) )
+/proc/Ceiling(x)
+	return -round(-x)
 
 // Greatest Common Divisor: Euclid's algorithm.
 /proc/Gcd(a, b)
@@ -59,11 +62,7 @@
 
 // Returns true if val is from min to max, inclusive.
 /proc/IsInRange(val, min, max)
-	return (min <= val && val <= max)
-
-// Same as above, exclusive.
-/proc/IsInRange_Ex(val, min, max)
-	return (min < val && val < max)
+	return (val >= min) && (val <= max)
 
 /proc/IsInteger(x)
 	return Floor(x) == x
@@ -133,9 +132,5 @@
 /proc/RoundUpToPowerOfTwo(var/val)
 	return 2 ** -round(-log(2,val))
 
-//Returns the cube root of the input number
-/proc/cubert(var/num, var/iterations = 10)
-	. = num
-	for (var/i = 0, i < iterations, i++)
-		. = (1/3) * (num/(.**2)+2*.)
-
+/matrix/proc/get_angle()
+	return Atan2(b,a)

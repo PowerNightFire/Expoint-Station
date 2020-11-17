@@ -1,19 +1,22 @@
+// This appears unused except via hidden admin invocation, and the code is problematic. Suggest it be deleted.
+
 /obj/effect/bhole
 	name = "black hole"
 	icon = 'icons/obj/objects.dmi'
-	desc = "FUCK FUCK FUCK AAAHHH"
+	desc = "FUCK FUCK FUCK AAAHHH!"
 	icon_state = "bhole3"
 	opacity = 1
 	unacidable = 1
 	density = 0
 	anchored = 1
 
-/obj/effect/bhole/New()
-	spawn(4)
-		controller()
+/obj/effect/bhole/Initialize()
+	. = ..()
+	controller()
 
 /obj/effect/bhole/proc/controller()
-	while(src)
+	set waitfor = FALSE
+	while(!QDELETED(src))
 
 		if(!isturf(loc))
 			qdel(src)
@@ -24,8 +27,7 @@
 			qdel(M)
 		for(var/obj/O in orange(1,src))
 			qdel(O)
-		var/turf/T = loc
-		var/base_turf = T.baseturf
+		var/base_turf = get_base_turf_by_area(src)
 		for(var/turf/simulated/ST in orange(1,src))
 			if(ST.type == base_turf)
 				continue
@@ -56,7 +58,7 @@
 		//MOVEMENT
 		if( prob(50) )
 			src.anchored = 0
-			step(src,pick(alldirs))
+			step(src,pick(GLOB.alldirs))
 			src.anchored = 1
 
 /obj/effect/bhole/proc/grav(var/r, var/ex_act_force, var/pull_chance, var/turf_removal_chance)
@@ -75,11 +77,11 @@
 	var/turf/T = locate(x, y, z)
 	if(isnull(T))	return
 
-	//Pulling and/or ex_act-ing movable atoms in that turf
+	//Sucking in and/or ex_act-ing movable atoms in that turf
 	if( prob(pull_chance) )
 		for(var/obj/O in T.contents)
 			if(O.anchored)
-				O.ex_act(ex_act_force)
+				O.explosion_act(ex_act_force)
 			else
 				step_towards(O,src)
 		for(var/mob/living/M in T.contents)

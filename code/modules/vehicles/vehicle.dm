@@ -7,11 +7,11 @@
 /obj/vehicle
 	name = "vehicle"
 	icon = 'icons/obj/vehicles.dmi'
-	layer = MOB_LAYER + 0.1 //so it sits above objects including mobs
+	layer = ABOVE_HUMAN_LAYER
 	density = 1
 	anchored = 1
 	animate_movement=1
-	light_range = 3
+	light_outer_range = 3
 
 	can_buckle = 1
 	buckle_movable = 1
@@ -31,26 +31,21 @@
 	var/move_delay = 1	//set this to limit the speed of the vehicle
 
 	var/obj/item/cell/cell
-	var/charge_use = 5	//set this to adjust the amount of power the vehicle uses per move
+	var/charge_use = 200 //W
 
 	var/atom/movable/load		//all vehicles can take a load, since they should all be a least drivable
 	var/load_item_visible = 1	//set if the loaded item should be overlayed on the vehicle sprite
 	var/load_offset_x = 0		//pixel_x offset for item overlay
 	var/load_offset_y = 0		//pixel_y offset for item overlay
-	var/mob_offset_y = 0		//pixel_y offset for mob overlay
-	var/flying = FALSE
 
 //-------------------------------------------
 // Standard procs
 //-------------------------------------------
-/obj/vehicle/New()
-	..()
-	//spawn the cell you want in each vehicle
 
 /obj/vehicle/Move()
 	if(world.time > l_move_time + move_delay)
 		var/old_loc = get_turf(src)
-		if(on && powered && cell.charge < charge_use)
+		if(on && powered && cell.charge < (charge_use * CELLRATE))
 			turn_off()
 
 		var/init_anc = anchored
@@ -63,7 +58,7 @@
 		anchored = init_anc
 
 		if(on && powered)
-			cell.use(charge_use)
+			cell.use(charge_use * CELLRATE)
 
 		//Dummy loads do not have to be moved as they are just an overlay
 		//See load_object() proc in cargo_trains.dm for an example
@@ -75,99 +70,87 @@
 	else
 		return 0
 
-/obj/vehicle/attackby(obj/item/W as obj, mob/user as mob)
+/obj/vehicle/attackby(obj/item/W, mob/user)
 	if(istype(W, /obj/item/hand_labeler))
 		return
-	if(W.isscrewdriver())
+	if(isScrewdriver(W))
 		if(!locked)
 			open = !open
 			update_icon()
 			to_chat(user, "<span class='notice'>Maintenance panel is now [open ? "opened" : "closed"].</span>")
-	else if(W.iscrowbar() && cell && open)
+	else if(isCrowbar(W) && cell && open)
 		remove_cell(user)
 
 	else if(istype(W, /obj/item/cell) && !cell && open)
 		insert_cell(W, user)
-	else if(W.iswelder())
+	else if(isWelder(W))
 		var/obj/item/weldingtool/T = W
 		if(T.welding)
 			if(health < maxhealth)
 				if(open)
 					health = min(maxhealth, health+10)
 					user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
-					user.visible_message("<span class='warning'>[user] repairs [src]!</span>","<span class='notice'>You repair [src]!</span>")
+					user.visible_message("<span class='warning'>\The [user] repairs \the [src]!</span>","<span class='notice'>You repair \the [src]!</span>")
 				else
 					to_chat(user, "<span class='notice'>Unable to repair with the maintenance panel closed.</span>")
 			else
 				to_chat(user, "<span class='notice'>[src] does not need a repair.</span>")
 		else
 			to_chat(user, "<span class='notice'>Unable to repair while [src] is off.</span>")
-	else if(hasvar(W,"force") && hasvar(W,"damtype"))
+	else
 		user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 		switch(W.damtype)
-			if("fire")
+			if(BURN)
 				health -= W.force * fire_dam_coeff
-			if("brute")
+			if(BRUTE)
 				health -= W.force * brute_dam_coeff
 		..()
 		healthcheck()
-	else
-		..()
 
 /obj/vehicle/bullet_act(var/obj/item/projectile/Proj)
 	health -= Proj.get_structure_damage()
 	..()
-
-	if (prob(20))
-		spark(src, 5, alldirs)
-
 	healthcheck()
 
-/obj/vehicle/ex_act(severity)
-	switch(severity)
-		if(1.0)
-			explode()
-			return
-		if(2.0)
+/obj/vehicle/explosion_act(severity)
+	SHOULD_CALL_PARENT(FALSE)
+	if(severity == 1)
+		explode()
+	else 
+		if(severity == 2)
 			health -= rand(5,10)*fire_dam_coeff
 			health -= rand(10,20)*brute_dam_coeff
-			healthcheck()
-			return
-		if(3.0)
-			if (prob(50))
-				health -= rand(1,5)*fire_dam_coeff
-				health -= rand(1,5)*brute_dam_coeff
-				healthcheck()
-				return
-	return
+		else if(prob(50))
+			health -= rand(1,5)*fire_dam_coeff
+			health -= rand(1,5)*brute_dam_coeff
+		healthcheck()
 
 /obj/vehicle/emp_act(severity)
 	var/was_on = on
 	stat |= EMPED
-	var/obj/effect/overlay/pulse2 = new /obj/effect/overlay(src.loc)
+	var/obj/effect/overlay/pulse2 = new /obj/effect/overlay(loc)
 	pulse2.icon = 'icons/effects/effects.dmi'
 	pulse2.icon_state = "empdisable"
-	pulse2.name = "emp sparks"
+	pulse2.SetName("emp sparks")
 	pulse2.anchored = 1
-	pulse2.set_dir(pick(cardinal))
+	pulse2.set_dir(pick(GLOB.cardinal))
 
-	QDEL_IN(pulse2, 10)
+	spawn(10)
+		qdel(pulse2)
 	if(on)
 		turn_off()
+	spawn(severity*300)
+		stat &= ~EMPED
+		if(was_on)
+			turn_on()
 
-	addtimer(CALLBACK(src, .proc/post_emp, was_on), severity * 300)
-
-/obj/vehicle/proc/post_emp(was_on)
-	stat &= ~EMPED
-	if(was_on)
-		turn_on()
-
-/obj/vehicle/attack_ai(mob/user as mob)
+/obj/vehicle/attack_ai(mob/user)
 	return
 
-// For downstream compatibility (in particular Paradise)
-/obj/vehicle/proc/handle_rotation()
-	return
+/obj/vehicle/unbuckle_mob(mob/user)
+	. = ..(user)
+	if(load == .)
+		unload(.)
 
 //-------------------------------------------
 // Vehicle procs
@@ -175,10 +158,10 @@
 /obj/vehicle/proc/turn_on()
 	if(stat)
 		return 0
-	if(powered && cell.charge < charge_use)
+	if(powered && cell.charge < (charge_use * CELLRATE))
 		return 0
 	on = 1
-	set_light(initial(light_range))
+	set_light(0.8, 1, 5)
 	update_icon()
 	return 1
 
@@ -187,7 +170,7 @@
 	set_light(0)
 	update_icon()
 
-/obj/vehicle/emag_act(var/remaining_charges, mob/user as mob)
+/obj/vehicle/emag_act(var/remaining_charges, mob/user)
 	if(!emagged)
 		emagged = 1
 		if(locked)
@@ -196,11 +179,11 @@
 		return 1
 
 /obj/vehicle/proc/explode()
-	visible_message("<span class='danger'>[src] blows apart!</span>")
+	src.visible_message("<span class='danger'>\The [src] blows apart!</span>")
 	var/turf/Tsec = get_turf(src)
 
-	new /obj/item/stack/rods(Tsec)
-	new /obj/item/stack/rods(Tsec)
+	new /obj/item/stack/material/rods(Tsec)
+	new /obj/item/stack/material/rods(Tsec)
 	new /obj/item/stack/cable_coil/cut(Tsec)
 
 	if(cell)
@@ -232,7 +215,7 @@
 		turn_off()
 		return
 
-	if(cell.charge < charge_use)
+	if(cell.charge < (charge_use * CELLRATE))
 		turn_off()
 		return
 
@@ -245,8 +228,8 @@
 		return
 	if(!istype(C))
 		return
-
-	H.drop_from_inventory(C,src)
+	if(!H.unEquip(C, src))
+		return
 	cell = C
 	powercheck()
 	to_chat(usr, "<span class='notice'>You install [C] in [src].</span>")
@@ -256,7 +239,6 @@
 		return
 
 	to_chat(usr, "<span class='notice'>You remove [cell] from [src].</span>")
-	cell.forceMove(get_turf(H))
 	H.put_in_hands(cell)
 	cell = null
 	powercheck()
@@ -281,8 +263,8 @@
 
 	// if a create/closet, close before loading
 	var/obj/structure/closet/crate = C
-	if(istype(crate))
-		crate.close()
+	if(istype(crate) && crate.opened && !crate.close())
+		return 0
 
 	C.forceMove(loc)
 	C.set_dir(dir)
@@ -291,21 +273,17 @@
 	load = C
 
 	if(load_item_visible)
-		C.pixel_x += load_offset_x
-		if(ismob(C))
-			C.pixel_y += mob_offset_y
-		else
-			C.pixel_y += load_offset_y
-		C.layer = layer + 0.1		//so it sits above the vehicle
+		C.plane = plane
+		C.layer = VEHICLE_LOAD_LAYER		//so it sits above the vehicle
 
 	if(ismob(C))
 		buckle_mob(C)
+	else if(load_item_visible)
+		C.pixel_x += load_offset_x
+		C.pixel_y += load_offset_y
 
 	return 1
 
-/obj/vehicle/user_unbuckle_mob(var/mob/user)
-	unload(user)
-	return
 
 /obj/vehicle/proc/unload(var/mob/user, var/direction)
 	if(!load)
@@ -325,7 +303,7 @@
 	//if these all result in the same turf as the vehicle or nullspace, pick a new turf with open space
 	if(!dest || dest == get_turf(src))
 		var/list/options = new()
-		for(var/test_dir in alldirs)
+		for(var/test_dir in GLOB.alldirs)
 			var/new_dir = get_step_to(src, get_step(src, test_dir))
 			if(new_dir && load.Adjacent(new_dir))
 				options += new_dir
@@ -340,55 +318,26 @@
 	load.forceMove(dest)
 	load.set_dir(get_dir(loc, dest))
 	load.anchored = 0		//we can only load non-anchored items, so it makes sense to set this to false
-	load.pixel_x = initial(load.pixel_x)
-	load.pixel_y = initial(load.pixel_y)
-	load.layer = initial(load.layer)
+	if(ismob(load)) //atoms should probably have their own procs to define how their pixel shifts and layer can be manipulated, someday
+		var/mob/M = load
+		M.pixel_x = M.default_pixel_x
+		M.pixel_y = M.default_pixel_y
+	else
+		load.pixel_x = initial(load.pixel_x)
+		load.pixel_y = initial(load.pixel_y)
+	load.reset_plane_and_layer()
 
 	if(ismob(load))
 		unbuckle_mob(load)
 
 	load = null
+	update_icon()
 
 	return 1
 
-// This exists to stop a weird jumping motion when you disembark.
-// It essentially makes disembarkation count as a movement.
-// Yes, it's not the full calculation. But it's relatively close, and will make it seamless.
-/obj/vehicle/post_buckle_mob(var/mob/M)
-	if (M.client)
-		M.client.move_delay = M.movement_delay() + config.walk_speed
 
 //-------------------------------------------------------
 // Stat update procs
 //-------------------------------------------------------
 /obj/vehicle/proc/update_stats()
 	return
-
-/obj/vehicle/attack_generic(var/mob/user, var/damage, var/attack_message)
-	if(!damage)
-		return
-	visible_message("<span class='danger'>[user] [attack_message] the [src]!</span>")
-	user.attack_log += text("\[[time_stamp()]\] <span class='warning'>attacked [src.name]</span>")
-	user.do_attack_animation(src)
-	src.health -= damage
-	if(prob(10))
-		new /obj/effect/decal/cleanable/blood/oil(src.loc)
-	spawn(1) healthcheck()
-	return 1
-
-/obj/vehicle/can_fall(turf/below, turf/simulated/open/dest = src.loc)
-	if (flying)
-		return FALSE
-
-	if (LAZYLEN(dest.climbers) && (src in dest.climbers))
-		return FALSE
-
-	if (!dest.is_hole)
-		return FALSE
-
-	// See if something prevents us from falling.
-	for(var/atom/A in below)
-		if(!A.CanPass(src, dest))
-			return FALSE
-
-	return TRUE

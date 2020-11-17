@@ -1,139 +1,90 @@
-/obj/item/clothing/head/softcap
-	name = "softcap"
-	desc = "It's a softcap in a tasteless color."
-	icon = 'icons/obj/clothing/hats/soft_caps.dmi'
-	icon_state = "softcap"
-	contained_sprite = TRUE
-	var/flipped = FALSE
+/obj/item/clothing/head/soft
+	name = "cargo cap"
+	desc = "It's a peaked cap in a tasteless yellow color."
+	icon_state = ICON_STATE_WORLD
+	icon = 'icons/clothing/head/softcap.dmi'
+	color = COLOR_YELLOW_GRAY
+	var/flipped = 0
 	siemens_coefficient = 0.9
+	body_parts_covered = 0
 
-/obj/item/clothing/head/softcap/dropped()
-	icon_state = initial(icon_state)
-	item_state = icon_state
-	flipped = FALSE
+/obj/item/clothing/head/soft/on_update_icon()
+	..()
+	if(flipped)
+		icon_state = "[get_world_inventory_state()]_flipped"
+
+/obj/item/clothing/head/soft/experimental_mob_overlay(mob/user_mob, slot)
+	var/image/ret = ..()
+	if(flipped && check_state_in_icon("[ret.icon_state]_flipped", icon))
+		ret.icon_state = "[ret.icon_state]_flipped"
+	return ret	
+
+/obj/item/clothing/head/soft/dropped()
+	src.flipped=0
+	update_icon()
 	..()
 
-/obj/item/clothing/head/softcap/on_slotmove()
-	icon_state = initial(icon_state)
-	item_state = icon_state
-	flipped = FALSE
-	..()
-
-/obj/item/clothing/head/softcap/verb/ToggleHat()
-	set name = "Flip Hat"
-	set category = "Object"
-	set src in usr
-
-	if(use_check_and_message(usr))
-		return 0
-
-	flipped = !flipped
-	icon_state = "[initial(icon_state)][flipped ? "_flipped" : ""]"
-	item_state = icon_state
-	to_chat(usr, "You flip the hat [flipped ? "backwards" : "forwards"].")
+/obj/item/clothing/head/soft/attack_self(mob/user)
+	src.flipped = !src.flipped
+	if(src.flipped)
+		to_chat(user, "You flip the hat backwards.")
+	else
+		to_chat(user, "You flip the hat back in normal position.")
+	update_icon()
 	update_clothing_icon()	//so our mob-overlays update
 
-/obj/item/clothing/head/softcap/colorable
-	icon_state = "softcap_colorable"
+/obj/item/clothing/head/soft/red
+	name = "red cap"
+	desc = "It's a peaked hat in a tasteless red color."
+	color = COLOR_NT_RED
 
-/obj/item/clothing/head/softcap/colorable/random/Initialize()
-	. = ..()
-	color = get_random_colour(TRUE)
+/obj/item/clothing/head/soft/blue
+	name = "blue cap"
+	desc = "It's a peaked cap in a tasteless blue color."
+	color = COLOR_BLUE_GRAY
 
-/obj/item/clothing/head/softcap/rainbow
+/obj/item/clothing/head/soft/green
+	name = "green cap"
+	desc = "It's a peaked cap in a tasteless green color."
+	color = COLOR_BOTTLE_GREEN
+
+/obj/item/clothing/head/soft/yellow
+	name = "yellow cap"
+	desc = "It's a peaked cap in a tasteless yellow color."
+	color = COLOR_YELLOW_GRAY
+
+/obj/item/clothing/head/soft/grey
+	name = "grey cap"
+	desc = "It's a peaked cap in a tasteful grey color."
+	color = COLOR_GRAY
+
+/obj/item/clothing/head/soft/orange
+	name = "orange cap"
+	desc = "It's a peaked cap in a tasteless orange color."
+	color = COLOR_SEDONA
+
+/obj/item/clothing/head/soft/mime
+	name = "white cap"
+	desc = "It's a peaked cap in a tasteless white color."
+	color = COLOR_WHITE
+
+/obj/item/clothing/head/soft/purple
+	name = "purple cap"
+	desc = "It's a peaked cap in a tasteless purple color."
+	color = COLOR_PURPLE
+
+/obj/item/clothing/head/soft/rainbow
 	name = "rainbow cap"
 	desc = "It's a peaked cap in a bright rainbow of colors."
-	icon_state = "rainbowsoft"
+	icon = 'icons/clothing/head/softcap_rainbow.dmi'
+	color = null
 
-/obj/item/clothing/head/softcap/red // Antag red.
-	name = "red softcap"
-	desc = "It's a softcap in a menacing crimson red."
-	icon_state = "softcap_red"
-	item_state = "softcap_red"
+/obj/item/clothing/head/soft/sec
+	name = "security cap"
+	desc = "It's a field cap in tasteful red color."
+	color = COLOR_NT_RED
 
-// Departmental softcaps. By Wowzewow (Wezzy).
-
-/obj/item/clothing/head/softcap/captain
-	name = "captain's softcap"
-	desc = "It's a peaked cap in a authoritative blue and yellow."
-	icon_state = "softcap_captain"
-	item_state = "softcap_captain"
-
-/obj/item/clothing/head/softcap/security
-	name = "security softcap"
-	desc = "It's a peaked cap in a secure blue and grey."
-	icon_state = "softcap_sec"
-	item_state = "softcap_sec"
-
-/obj/item/clothing/head/softcap/medical
-	name = "medical softcap"
-	desc = "It's a peaked cap in a sterile white and green."
-	icon_state = "softcap_med"
-	item_state = "softcap_med"
-
-/obj/item/clothing/head/softcap/science
-	name = "science softcap"
-	desc = "It's a peaked cap in a analytical white and purple."
-	icon_state = "softcap_sci"
-	item_state = "softcap_sci"
-
-/obj/item/clothing/head/softcap/engineering
-	name = "engineering softcap"
-	desc = "It's a peaked cap in a reflective yellow and orange."
-	icon_state = "softcap_engi"
-	item_state = "softcap_engi"
-
-/obj/item/clothing/head/softcap/atmos
-	name = "atmospherics softcap"
-	desc = "It's a peaked cap in a refreshing yellow and blue."
-	icon_state = "softcap_atmos"
-	item_state = "softcap_atmos"
-
-/obj/item/clothing/head/softcap/hydro
-	name = "hydroponics softcap"
-	desc = "It's a peaked cap in a fresh green and blue."
-	icon_state = "softcap_hydro"
-	item_state = "softcap_hydro"
-
-/obj/item/clothing/head/softcap/cargo
-	name = "cargo softcap"
-	desc = "It's a peaked cap in a dusty yellow and grey."
-	icon_state = "softcap_cargo"
-	item_state = "softcap_cargo"
-
-/obj/item/clothing/head/softcap/miner
-	name = "mining softcap"
-	desc = "It's a peaked cap in a chalky purple and brown."
-	icon_state = "softcap_miner"
-	item_state = "softcap_miner"
-
-/obj/item/clothing/head/softcap/janitor
-	name = "janitor softcap"
-	desc = "It's a peaked cap in a sanitary purple and yellow."
-	icon_state = "softcap_janitor"
-	item_state = "softcap_janitor"
-
-// Corporate.
-
-/obj/item/clothing/head/softcap/security/corp
-	name = "corporate security cap"
-	desc = "It's field cap in corporate colors. In an oppresive grey, no doubt."
-	icon_state = "corp"
-	item_state = "corp"
-
-/obj/item/clothing/head/softcap/security/idris
-	name = "idris cap"
-	desc = "It's a company-issue Idris cap. Comes with flagrant corporate branding."
-	icon_state = "idris"
-	item_state = "idris"
-
-/obj/item/clothing/head/softcap/iac
-	name = "IAC cap"
-	desc = "An IAC cap. Standard issue and utilitarian."
-	icon_state = "iac"
-	item_state = "iac"
-
-/obj/item/clothing/head/softcap/eri
-	name = "eridani cap"
-	desc = "A grey EPMC fatigue cap with the symbol of the Eridani Corporate Federation on its front. For amoral mercenaries that prefer style over protection."
-	icon_state = "eridani"
+/obj/item/clothing/head/soft/black
+	name = "black cap"
+	desc = "It's a peaked cap in a tasteful black color."
+	color = COLOR_GRAY20

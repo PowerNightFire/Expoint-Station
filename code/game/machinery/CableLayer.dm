@@ -1,7 +1,6 @@
 /obj/machinery/cablelayer
 	name = "automatic cable layer"
-
-	icon = 'icons/obj/stationobjs.dmi'
+	icon = 'icons/obj/machines/pipe_dispenser.dmi'
 	icon_state = "pipe_d"
 	density = 1
 	var/obj/structure/cable/last_piece
@@ -18,16 +17,16 @@
 	..()
 	layCable(new_turf,M_Dir)
 
-/obj/machinery/cablelayer/attack_hand(mob/user as mob)
-	if(!cable&&!on)
+/obj/machinery/cablelayer/physical_attack_hand(mob/user)
+	if(!cable && !on)
 		to_chat(user, "<span class='warning'>\The [src] doesn't have any cable loaded.</span>")
-		return
-	on=!on
+		return TRUE
+	on = !on
 	user.visible_message("\The [user] [!on?"dea":"a"]ctivates \the [src].", "You switch [src] [on? "on" : "off"]")
-	return
+	return TRUE
 
-/obj/machinery/cablelayer/attackby(var/obj/item/O as obj, var/mob/user as mob)
-	if(O.iscoil())
+/obj/machinery/cablelayer/attackby(var/obj/item/O, var/mob/user)
+	if(istype(O, /obj/item/stack/cable_coil))
 
 		var/result = load_cable(O)
 		if(!result)
@@ -36,13 +35,13 @@
 			to_chat(user, "You load [result] lengths of cable into [src].")
 		return
 
-	if(O.iswirecutter())
+	if(isWirecutter(O))
 		if(cable && cable.amount)
 			var/m = round(input(usr,"Please specify the length of cable to cut","Cut cable",min(cable.amount,30)) as num, 1)
 			m = min(m, cable.amount)
 			m = min(m, 30)
 			if(m)
-				playsound(loc, 'sound/items/wirecutter.ogg', 50, 1)
+				playsound(loc, 'sound/items/Wirecutter.ogg', 50, 1)
 				use_cable(m)
 				var/obj/item/stack/cable_coil/CC = new (get_turf(src))
 				CC.amount = m
@@ -50,7 +49,7 @@
 			to_chat(usr, "<span class='warning'>There's no more cable on the reel.</span>")
 
 /obj/machinery/cablelayer/examine(mob/user)
-	..()
+	. = ..()
 	to_chat(user, "\The [src]'s cable reel has [cable.amount] length\s left.")
 
 /obj/machinery/cablelayer/proc/load_cable(var/obj/item/stack/cable_coil/CC)

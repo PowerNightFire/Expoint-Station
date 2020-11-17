@@ -21,6 +21,7 @@ If d1 = 0 and d2 = dir, it's a O-X cable, getting from the center of the tile to
 If d1 = dir1 and d2 = dir2, it's a full X-X cable, getting from dir1 to dir2
 By design, d1 is the smallest direction and d2 is the highest
 */
+
 /obj/structure/cable
 	level = 1
 	anchored =1
@@ -31,198 +32,200 @@ By design, d1 is the smallest direction and d2 is the highest
 	icon_state = "0-1"
 	var/d1 = 0
 	var/d2 = 1
-	layer = CABLE_LAYER //Just below unary stuff, which is at 2.45 and above pipes, which are at 2.4
-	color = COLOR_RED
+
+	layer = EXPOSED_WIRE_LAYER
+
+	color = COLOR_MAROON
 	var/obj/machinery/power/breakerbox/breaker_box
+
 
 /obj/structure/cable/drain_power(var/drain_check, var/surge, var/amount = 0)
 
 	if(drain_check)
-		return TRUE
+		return 1
 
-	var/datum/powernet/PN = powernet
-	if(!PN) return FALSE
+	var/datum/powernet/PN = get_powernet()
+	if(!PN) return 0
 
 	return PN.draw_power(amount)
 
 /obj/structure/cable/yellow
-	color = COLOR_YELLOW
+	color = COLOR_AMBER
 
 /obj/structure/cable/green
-	color = COLOR_LIME
+	color = COLOR_GREEN
 
 /obj/structure/cable/blue
-	color = COLOR_BLUE
+	color = COLOR_CYAN_BLUE
 
 /obj/structure/cable/pink
-	color = COLOR_PINK
+	color = COLOR_PURPLE
 
 /obj/structure/cable/orange
 	color = COLOR_ORANGE
 
 /obj/structure/cable/cyan
-	color = COLOR_CYAN
+	color = COLOR_SKY_BLUE
 
 /obj/structure/cable/white
-	color = COLOR_WHITE
+	color = COLOR_SILVER
 
-/obj/structure/cable/Initialize()
-	. = ..()
-
+/obj/structure/cable/Initialize(var/ml)
+	. = ..(ml)
 	// ensure d1 & d2 reflect the icon_state for entering and exiting cable
-
 	var/dash = findtext(icon_state, "-")
-
-	d1 = text2num( copytext( icon_state, 1, dash ) )
-
-	d2 = text2num( copytext( icon_state, dash+1 ) )
-
+	d1 = text2num(copytext(icon_state, 1, dash))
+	d2 = text2num(copytext(icon_state, dash+1))
 	var/turf/T = src.loc			// hide if turf is not intact
-	if(level == 1 && !T.is_hole)
-		hide(!T.is_plating())
+	if(level==1 && T) hide(!T.is_plating())
+	cable_list += src //add it to the global cable list
 
-	SSpower.all_cables += src //add it to the global cable list
-
-/obj/structure/cable/Destroy()					// called when a cable is deleted
+/obj/structure/cable/Destroy()     // called when a cable is deleted
 	if(powernet)
-		cut_cable_from_powernet()				// update the powernets
-	SSpower.all_cables -= src							//remove it from global cable list
-	return ..()										// then go ahead and delete the cable
+		cut_cable_from_powernet()  // update the powernets
+	cable_list -= src              // remove it from global cable list
+	. = ..()                       // then go ahead and delete the cable
+
+// Ghost examining the cable -> tells him the power
+/obj/structure/cable/attack_ghost(mob/user)
+	if(user.client && user.client.inquisitive_ghost)
+		user.examinate(src)
+		// following code taken from attackby (multitool)
+		if(powernet && (powernet.avail > 0))
+			to_chat(user, "<span class='warning'>[get_wattage()] in power network.</span>")
+		else
+			to_chat(user, "<span class='warning'>The cable is not powered.</span>")
+	return
 
 ///////////////////////////////////
 // General procedures
 ///////////////////////////////////
 
+/obj/structure/cable/proc/get_wattage()
+	if(powernet.avail >= 1000000000)
+		return "[round(powernet.avail/1000000, 0.01)] MW"
+	if(powernet.avail >= 1000000)
+		return "[round(powernet.avail/1000, 0.01)] kW"
+	return "[round(powernet.avail)] W"
+
 //If underfloor, hide the cable
 /obj/structure/cable/hide(var/i)
 	if(istype(loc, /turf))
-		invisibility = i ? 101 : 0
+		set_invisibility(i ? 101 : 0)
 	update_icon()
 
 /obj/structure/cable/hides_under_flooring()
-	return TRUE
+	return 1
 
-/obj/structure/cable/update_icon()
+/obj/structure/cable/on_update_icon()
 	icon_state = "[d1]-[d2]"
 	alpha = invisibility ? 127 : 255
 
-//Telekinesis has no effect on a cable
-/obj/structure/cable/do_simple_ranged_interaction(var/mob/user)
-	return
+// returns the powernet this cable belongs to
+/obj/structure/cable/proc/get_powernet()			//TODO: remove this as it is obsolete
+	return powernet
 
 // Items usable on a cable :
 //   - Wirecutters : cut it duh !
 //   - Cable coil : merge cables
 //   - Multitool : get the power currently passing through the cable
 //
+
 /obj/structure/cable/attackby(obj/item/W, mob/user)
+	if(isWirecutter(W))
+		cut_wire(W, user)
 
-	var/turf/T = src.loc
-	if(!T.can_have_cabling())
-		return
-
-	if(W.iswirecutter() || (W.sharp || W.edge))
-
-		if(!W.iswirecutter())
-			if(user.a_intent != I_HELP)
-				return
-
-			if(W.flags & CONDUCT)
-				shock(user, 50, 0.7)
-
-		if(d1 == 12 || d2 == 12)
-			to_chat(user, SPAN_WARNING("You must cut this cable from above."))
-			return
-
-		if(breaker_box)
-			to_chat(user, SPAN_WARNING("This cable is connected to a nearby breaker box. Use the breaker box to interact with it."))
-			return
-
-		if (shock(user, 50))
-			return
-
-		if(src.d1)	// 0-X cables are 1 unit, X-X cables are 2 units long
-			new/obj/item/stack/cable_coil(T, 2, color)
-		else
-			new/obj/item/stack/cable_coil(T, 1, color)
-
-		for(var/mob/O in viewers(src, null))
-			O.show_message(SPAN_WARNING("[user] cuts the cable."), 1)
-			playsound(src.loc, 'sound/items/wirecutter.ogg', 50, 1)
-
-		if(d1 == 11 || d2 == 11)
-			var/turf/turf = GetBelow(src)
-			if(turf)
-				for(var/obj/structure/cable/c in turf)
-					if(c.d1 == 12 || c.d2 == 12)
-						qdel(c)
-
-		investigate_log("was cut by [key_name(user, user.client)] in [user.loc.loc]","wires")
-
-		qdel(src)
-		return
-
-
-	else if(W.iscoil())
+	else if(isCoil(W))
 		var/obj/item/stack/cable_coil/coil = W
 		if (coil.get_amount() < 1)
-			to_chat(user, "You don't have enough cable.")
+			to_chat(user, "Not enough cable")
 			return
 		coil.cable_join(src, user)
 
-	else if(W.ismultitool())
+	else if(isMultitool(W))
 
 		if(powernet && (powernet.avail > 0))		// is it powered?
-			to_chat(user, SPAN_WARNING("[powernet.avail]W in power network."))
+			to_chat(user, "<span class='warning'>[get_wattage()] in power network.</span>")
 
 		else
-			to_chat(user, SPAN_WARNING("The cable is not powered."))
+			to_chat(user, "<span class='warning'>The cable is not powered.</span>")
 
 		shock(user, 5, 0.2)
 
+
+	else if(W.edge)
+
+		var/delay_holder
+
+		if(W.force < 5)
+			visible_message("<span class='warning'>[user] starts sawing away roughly at the cable with \the [W].</span>")
+			delay_holder = 8 SECONDS
+		else
+			visible_message("<span class='warning'>[user] begins to cut through the cable with \the [W].</span>")
+			delay_holder = 3 SECONDS
+
+		if(user.do_skilled(delay_holder, SKILL_ELECTRICAL, src))
+			cut_wire(W, user)
+			if(W.obj_flags & OBJ_FLAG_CONDUCTIBLE)
+				shock(user, 66, 0.7)
+		else
+			visible_message("<span class='warning'>[user] stops cutting before any damage is done.</span>")
+
 	src.add_fingerprint(user)
+
+/obj/structure/cable/proc/cut_wire(obj/item/W, mob/user)
+	var/turf/T = get_turf(src)
+	if(!T || !T.is_plating())
+		return
+
+	if(d1 == UP || d2 == UP)
+		to_chat(user, "<span class='warning'>You must cut this cable from above.</span>")
+		return
+
+	if(breaker_box)
+		to_chat(user, "<span class='warning'>This cable is connected to a nearby breaker box. Use the breaker box to interact with it.</span>")
+		return
+
+	if (shock(user, 50))
+		return
+
+	new/obj/item/stack/cable_coil(T, (src.d1 ? 2 : 1), color)
+
+	visible_message("<span class='warning'>[user] cuts the cable.</span>")
+
+	if(HasBelow(z))
+		for(var/turf/turf in GetBelow(src))
+			for(var/obj/structure/cable/c in turf)
+				if(c.d1 == UP || c.d2 == UP)
+					qdel(c)
+
+	investigate_log("was cut by [key_name(usr, usr.client)] in [user.loc.loc]","wires")
+
+	qdel(src)
 
 // shock the user with probability prb
 /obj/structure/cable/proc/shock(mob/user, prb, var/siemens_coeff = 1.0)
 	if(!prob(prb))
-		return FALSE
+		return 0
 	if (electrocute_mob(user, powernet, src, siemens_coeff))
-		spark(src, 5, alldirs)
-		if(user.stunned)
-			return TRUE
-	return FALSE
+		var/datum/effect/effect/system/spark_spread/s = new /datum/effect/effect/system/spark_spread
+		s.set_up(5, 1, src)
+		s.start()
+		if(usr.stunned)
+			return 1
+	return 0
 
-/obj/structure/cable/attack_generic(var/mob/user)
-	//Let those rats (and other small things) nibble the cables
-	if (issmall(user) && !isDrone(user))
-		to_chat(user, SPAN_DANGER("You bite into \the [src]."))
-		if(powernet && powernet.avail > 100) //100W should be sufficient to grill a rat
-			spark(src)
-			user.dust()
-	..()
-
-/obj/structure/cable/shuttle_move(turf/loc)
-	..()
-	SSmachinery.powernet_update_queued = TRUE
+/obj/structure/cable/create_dismantled_products(turf/T)
+	new /obj/item/stack/cable_coil(loc, (d1 ? 2 : 1), color)
 
 //explosion handling
-/obj/structure/cable/ex_act(severity)
-	switch(severity)
-		if(1.0)
-			qdel(src)
-		if(2.0)
-			if (prob(50))
-				new/obj/item/stack/cable_coil(src.loc, src.d1 ? 2 : 1, color)
-				qdel(src)
-
-		if(3.0)
-			if (prob(25))
-				new/obj/item/stack/cable_coil(src.loc, src.d1 ? 2 : 1, color)
-				qdel(src)
-	return
+/obj/structure/cable/explosion_act(severity)
+	. = ..()
+	if(. && (severity == 1 || (severity == 2 && prob(50)) || (severity == 3 && prob(25))))
+		physically_destroyed()
 
 obj/structure/cable/proc/cableColor(var/colorC)
-	var/color_n = "#DD0000"
+	var/color_n = "#dd0000"
 	if(colorC)
 		color_n = colorC
 	color = color_n
@@ -279,12 +282,12 @@ obj/structure/cable/proc/cableColor(var/colorC)
 // merge with the powernets of power objects in the given direction
 /obj/structure/cable/proc/mergeConnectedNetworks(var/direction)
 
-	var/fdir = (!direction)? 0 : turn(direction, 180) //flip the direction, to match with the source position on its turf
+	var/fdir = direction ? GLOB.reverse_dir[direction] : 0 //flip the direction, to match with the source position on its turf
 
 	if(!(d1 == direction || d2 == direction)) //if the cable is not pointed in this direction, do nothing
 		return
 
-	var/turf/TB  = get_step(src, direction)
+	var/turf/TB  = get_zstep(src, direction)
 
 	for(var/obj/structure/cable/C in TB)
 
@@ -326,12 +329,13 @@ obj/structure/cable/proc/cableColor(var/colorC)
 
 		else if(istype(AM,/obj/machinery/power/apc))
 			var/obj/machinery/power/apc/N = AM
-			if(!N.terminal)	continue // APC are connected through their terminal
+			var/obj/machinery/power/terminal/terminal = N.terminal()
+			if(!terminal)	continue // APC are connected through their terminal
 
-			if(N.terminal.powernet == powernet)
+			if(terminal.powernet == powernet)
 				continue
 
-			to_connect += N.terminal //we'll connect the machines after all cables are merged
+			to_connect += terminal //we'll connect the machines after all cables are merged
 
 		else if(istype(AM,/obj/machinery/power)) //other power machines
 			var/obj/machinery/power/M = AM
@@ -355,26 +359,15 @@ obj/structure/cable/proc/cableColor(var/colorC)
 	. = list()	// this will be a list of all connected power objects
 	var/turf/T
 
-	// Handle up/down cables
-	if(d1 == 11 || d2 == 11)
-		T = GetBelow(src)
-		if(T)
-			. += power_list(T, src, 12, powernetless_only)
-
-	if(d1 == 12 || d2 == 12)
-		T = GetAbove(src)
-		if(T)
-			. += power_list(T, src, 11, powernetless_only)
-
 	// Handle standard cables in adjacent turfs
 	for(var/cable_dir in list(d1, d2))
-		if(cable_dir == 11 || cable_dir == 12 || cable_dir == 0)
+		if(cable_dir == 0)
 			continue
-		var/reverse = reverse_dir[cable_dir]
-		T = get_step(src, cable_dir)
+		var/reverse = GLOB.reverse_dir[cable_dir]
+		T = get_zstep(src, cable_dir)
 		if(T)
 			for(var/obj/structure/cable/C in T)
-				if((C.d1 && C.d1 == reverse) || (C.d2 && C.d2 == reverse))
+				if(C.d1 == reverse || C.d2 == reverse)
 					. += C
 		if(cable_dir & (cable_dir - 1)) // Diagonal, check for /\/\/\ style cables along cardinal directions
 			for(var/pair in list(NORTH|SOUTH, EAST|WEST))
@@ -382,7 +375,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 				if(T)
 					var/req_dir = cable_dir ^ pair
 					for(var/obj/structure/cable/C in T)
-						if((C.d1 && C.d1 == req_dir) || (C.d2 && C.d2 == req_dir))
+						if(C.d1 == req_dir || C.d2 == req_dir)
 							. += C
 
 	// Handle cables on the same turf as us
@@ -437,7 +430,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		return
 
 	// remove the cut cable from its turf and powernet, so that it doesn't get count in propagate_network worklist
-	loc = null
+	forceMove(null)
 	powernet.remove_cable(src) //remove the cut cable from its powernet
 
 	var/datum/powernet/newPN = new()// creates a new powernet...
@@ -448,6 +441,8 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		for(var/obj/machinery/power/P in T1)
 			if(!P.connect_to_network()) //can't find a node cable on a the turf to connect to
 				P.disconnect_from_network() //remove from current network
+
+	powernet = null // And finally null the powernet var.
 
 ///////////////////////////////////////////////
 // The cable coil object, used for laying cable
@@ -460,221 +455,31 @@ obj/structure/cable/proc/cableColor(var/colorC)
 #define MAXCOIL 30
 
 /obj/item/stack/cable_coil
-	name = "power cable"
+	name = "multipurpose cable coil"
 	icon = 'icons/obj/power.dmi'
 	icon_state = "coil"
-	item_state = "coil"
-	desc = "A coil of wire used in delicate electronics and cable laying."
-	singular_name = "length"
-	gender = NEUTER
+	randpixel = 2
 	amount = MAXCOIL
 	max_amount = MAXCOIL
-	color = COLOR_RED
-	throwforce = 10
-	w_class = ITEMSIZE_SMALL
+	color = COLOR_MAROON
+	desc = "A coil of wiring, for delicate electronics use aswell as the more basic cable laying."
+	throwforce = 0
+	w_class = ITEM_SIZE_NORMAL
 	throw_speed = 2
 	throw_range = 5
-	matter = list(DEFAULT_WALL_MATERIAL = 50, MATERIAL_GLASS = 20)
-	recyclable = TRUE
-	flags = CONDUCT
-	slot_flags = SLOT_BELT
+	material = /decl/material/solid/metal/steel
+	matter = list(
+		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
+		/decl/material/solid/plastic = MATTER_AMOUNT_TRACE
+	)
+	obj_flags = OBJ_FLAG_CONDUCTIBLE
+	slot_flags = SLOT_LOWER_BODY
+	item_state = "coil"
 	attack_verb = list("whipped", "lashed", "disciplined", "flogged")
 	stacktype = /obj/item/stack/cable_coil
-	drop_sound = 'sound/items/drop/accessory.ogg'
-	pickup_sound = 'sound/items/pickup/accessory.ogg'
-	var/static/list/possible_cable_coil_colours = list(
-		"Yellow" = COLOR_YELLOW,
-		"Green" = COLOR_LIME,
-		"Pink" = COLOR_PINK,
-		"Blue" = COLOR_BLUE,
-		"Orange" = COLOR_ORANGE,
-		"Cyan" = COLOR_CYAN,
-		"Red" = COLOR_RED,
-		"White" = COLOR_WHITE
-	)
-	build_from_parts = TRUE
-	worn_overlay = "end"
 
-/obj/item/stack/cable_coil/iscoil()
-	return TRUE
-
-/obj/item/stack/cable_coil/Initialize(mapload, amt, param_color = null)
-	. = ..(mapload, amt)
-
-	if(param_color) // It should be red by default, so only recolor it if parameter was specified.
-		color = param_color
-
-	pixel_x = rand(-2,2)
-	pixel_y = rand(-2,2)
-	update_icon()
-	update_wclass()
-
-/obj/item/stack/cable_coil/attack(mob/living/carbon/M, mob/user)
-	if(..())
-		return TRUE
-
-	if(ishuman(M))
-		var/mob/living/carbon/human/H = M
-		var/obj/item/organ/external/affecting = H.get_organ(user.zone_sel.selecting)
-
-		if(affecting.open != 0)
-			if(can_operate(H))
-				if(do_surgery(H,user,src))
-					return TRUE
-		else
-			if(!BP_IS_ROBOTIC(affecting))
-				if(affecting.is_bandaged())
-					to_chat(user, SPAN_WARNING("The wounds on [M]'s [affecting.name] have already been closed."))
-					return ..()
-				else
-					if(amount <= 10)
-						to_chat(user, SPAN_NOTICE("You don't have enough coils for this!"))
-						return
-					user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
-					for(var/datum/wound/W in affecting.wounds)
-						if(W.bandaged)
-							continue
-						if(W.current_stage <= W.max_bleeding_stage)
-							user.visible_message(SPAN_NOTICE("\The [user] starts carefully suturing the open wound on [M]'s [affecting.name]..."), \
-												SPAN_NOTICE("You start carefully suturing the open wound on [M]'s [affecting.name]... This will take a while."))
-							if(!do_mob(user, M, 200))
-								user.visible_message(SPAN_DANGER("[user]'s hand slips and tears open the wound on [M]'s [affecting.name]!"), \
-														SPAN_DANGER("<font size=2>The wound on your [affecting.name] is torn open!</font>"))
-								M.apply_damage(rand(1,10), BRUTE)
-								break
-							user.visible_message(SPAN_NOTICE("\The [user] barely manages to stitch \a [W.desc] on [M]'s [affecting.name]."), \
-														SPAN_NOTICE("You barely manage to stitch \a [W.desc] on [M]'s [affecting.name].") )
-							W.bandage("cable-stitched")
-							use(10)
-							affecting.add_pain(25)
-							if(prob(50))
-								var/obj/item/organ/external/O = H.get_organ(user.zone_sel.selecting)
-								to_chat(H, SPAN_DANGER("Something burns in your [O.name]!"))
-								O.germ_level += rand(400, 600)
-						else
-							to_chat(user, SPAN_NOTICE("This wound isn't large enough for a stitch!"))
-					affecting.update_damages()
-			else
-				return ..()
-
-/obj/item/stack/cable_coil/afterattack(var/mob/living/M, var/mob/user)
-	if(ishuman(M))
-		var/mob/living/carbon/human/H = M
-		var/obj/item/organ/external/S = H.organs_by_name[user.zone_sel.selecting]
-
-		if(!S)
-			return
-
-		if(!(S.status & ORGAN_ASSISTED) || user.a_intent != I_HELP)
-			return ..()
-
-		if(M.isSynthetic() && M == user && !(M.get_species() == SPECIES_IPC_TERMINATOR))
-			to_chat(user, SPAN_WARNING("You can't repair damage to your own body - it's against OH&S."))
-			return
-
-		if(S.burn_dam)
-			if(S.burn_dam > ROBOLIMB_SELF_REPAIR_CAP)
-				to_chat(user, SPAN_WARNING("The damage is far too severe to patch over externally!"))
-				return
-			else
-				repair_organ(user, H, S)
-
-		else if(S.open != 2)
-			to_chat(user, SPAN_NOTICE("You can't see any external damage to repair."))
-
-	else
-		return ..()
-
-/obj/item/stack/cable_coil/proc/repair_organ(var/mob/living/user, var/mob/living/carbon/human/target, var/obj/item/organ/external/affecting)
-	if(!affecting.burn_dam)
-		user.visible_message(SPAN_NOTICE("\The [user] finishes mending the burnt wiring in [target]'s [affecting]."))
-		return
-
-	if(do_mob(user, target, 30))
-		if(use(2))
-			var/static/list/repair_messages = list(
-				"mends some cables",
-				"adjusts some wiring",
-				"splices some cables"
-			)
-			affecting.heal_damage(burn = 15, robo_repair = TRUE)
-			user.visible_message(SPAN_NOTICE("\The [user] [pick(repair_messages)] in [target]'s [affecting.name] with \the [src]."))
-			playsound(target, 'sound/items/wirecutter.ogg', 15)
-			repair_organ(user, target, affecting)
-		else
-			to_chat(user, SPAN_WARNING("You don't have enough cable for this!"))
-
-/obj/item/stack/cable_coil/update_icon()
-	if(!color)
-		color = pick(possible_cable_coil_colours)
-	name = "[initial(name)]"
-	if(amount == 1)
-		icon_state = "[initial(icon_state)]1"
-		item_state = "[initial(icon_state)]1"
-		name += " piece"
-	else if(amount == 2)
-		icon_state = "[initial(icon_state)]2"
-		item_state = "[initial(icon_state)]2"
-		name += " piece"
-	else
-		icon_state = "[initial(icon_state)]"
-		item_state = "[initial(icon_state)]"
-		name += " coil"
-	update_held_icon()
-	cut_overlays()
-	add_overlay(overlay_image(icon, "[icon_state]_end", flags=RESET_COLOR))
-
-/obj/item/stack/cable_coil/attackby(var/obj/item/W, var/mob/user)
-	if(W.ismultitool())
-		choose_cable_color(user)
-	return ..()
-
-/obj/item/stack/cable_coil/proc/choose_cable_color(var/user)
-	var/selected_type = input("Pick a new colour.", "Cable Colour", null, null) as null|anything in possible_cable_coil_colours
-	set_cable_color(selected_type, user)
-
-/obj/item/stack/cable_coil/proc/set_cable_color(selected_color, var/user)
-	if(!selected_color)
-		return
-
-	var/final_color = possible_cable_coil_colours[selected_color]
-	if(!final_color)
-		final_color = possible_cable_coil_colours["Red"]
-		selected_color = "Red"
-	color = final_color
-	to_chat(user, SPAN_NOTICE("You change \the [src]'s color to [lowertext(selected_color)]."))
-
-/obj/item/stack/cable_coil/proc/update_wclass()
-	if(amount == 1)
-		w_class = ITEMSIZE_TINY
-		slot_flags = SLOT_BELT | SLOT_EARS //one cable piece can fit in your ear.
-	else
-		w_class = ITEMSIZE_SMALL
-		slot_flags = SLOT_BELT
-
-/obj/item/stack/cable_coil/examine(mob/user)
-	..()
-	to_chat(user, "There [src.amount == 1 ? "is" : "are"] <b>[src.amount]</b> [src.singular_name]\s of cable in the coil.")
-
-/obj/item/stack/cable_coil/verb/make_restraint()
-	set name = "Make Cable Restraints"
-	set category = "Object"
-
-	if(ishuman(usr) && !usr.restrained() && !usr.stat && !usr.paralysis && ! usr.stunned)
-		if(!isturf(usr.loc))
-			return
-		if(src.amount <= 14)
-			to_chat(usr, SPAN_WARNING("You need at least 15 lengths to make restraints!"))
-			return
-		to_chat(usr, SPAN_NOTICE("You start winding some cable together to make some restraints."))
-		if(do_after(usr, 150))
-			var/obj/item/handcuffs/cable/cuffs = new /obj/item/handcuffs/cable(usr.loc, color)
-			to_chat(usr, SPAN_NOTICE("You wind some cable together to make some restraints."))
-			playsound(src.loc, 'sound/weapons/cablecuff.ogg', 30, 1, -2)
-			use(15)
-			usr.put_in_hands(cuffs)
-	else
-		to_chat(usr, SPAN_WARNING("You cannot do that."))
+/obj/item/stack/cable_coil/single
+	amount = 1
 
 /obj/item/stack/cable_coil/cyborg
 	name = "cable coil synthesizer"
@@ -684,11 +489,108 @@ obj/structure/cable/proc/cableColor(var/colorC)
 	uses_charge = 1
 	charge_costs = list(1)
 
-/obj/item/stack/cable_coil/cyborg/verb/set_colour(mob/user)
+/obj/item/stack/cable_coil/Initialize(mapload, length = MAXCOIL, var/param_color = null)
+	. = ..(mapload, length)
+	src.amount = length
+	if (param_color) // It should be red by default, so only recolor it if parameter was specified.
+		color = param_color
+	update_icon()
+	update_wclass()
+
+///////////////////////////////////
+// General procedures
+///////////////////////////////////
+
+//you can use wires to heal robotics
+/obj/item/stack/cable_coil/attack(var/atom/A, var/mob/living/user, var/def_zone)
+	if(ishuman(A) && user.a_intent == I_HELP)
+		var/mob/living/carbon/human/H = A
+		var/obj/item/organ/external/S = H.organs_by_name[user.zone_sel.selecting]
+
+		if (!S) return
+		if(!BP_IS_PROSTHETIC(S) || user.a_intent != I_HELP)
+			return ..()
+
+		if(BP_IS_BRITTLE(S))
+			to_chat(user, "<span class='warning'>\The [H]'s [S.name] is hard and brittle - \the [src] cannot repair it.</span>")
+			return 1
+
+		var/use_amt = min(src.amount, ceil(S.burn_dam/3), 5)
+		if(can_use(use_amt))
+			if(S.robo_repair(3*use_amt, BURN, "some damaged wiring", src, user))
+				src.use(use_amt)
+		return
+	return ..()
+
+
+/obj/item/stack/cable_coil/on_update_icon()
+	if (!color)
+		color = GLOB.possible_cable_colours[pick(GLOB.possible_cable_colours)]
+	if(amount == 1)
+		icon_state = "coil1"
+		SetName("cable piece")
+	else if(amount == 2)
+		icon_state = "coil2"
+		SetName("cable piece")
+	else if(amount > 2 && amount != max_amount)
+		icon_state = "coil"
+		SetName(initial(name))
+	else
+		icon_state = "coil-max"
+		SetName(initial(name))
+
+/obj/item/stack/cable_coil/proc/set_cable_color(var/selected_color, var/user)
+	if(!selected_color)
+		return
+
+	var/final_color = GLOB.possible_cable_colours[selected_color]
+	if(!final_color)
+		selected_color = "Red"
+		final_color = GLOB.possible_cable_colours[selected_color]
+	color = final_color
+	to_chat(user, "<span class='notice'>You change \the [src]'s color to [lowertext(selected_color)].</span>")
+
+/obj/item/stack/cable_coil/proc/update_wclass()
+	if(amount == 1)
+		w_class = ITEM_SIZE_TINY
+	else
+		w_class = ITEM_SIZE_SMALL
+
+/obj/item/stack/cable_coil/examine(mob/user, distance)
+	. = ..()
+	if(distance > 1)
+		return
+
+	if(get_amount() == 1)
+		to_chat(user, "A short piece of power cable.")
+	else if(get_amount() == 2)
+		to_chat(user, "A piece of power cable.")
+	else
+		to_chat(user, "A coil of power cable. There are [get_amount()] lengths of cable in the coil.")
+
+
+/obj/item/stack/cable_coil/verb/make_restraint()
+	set name = "Make Cable Restraints"
+	set category = "Object"
+	var/mob/M = usr
+
+	if(ishuman(M) && !M.incapacitated())
+		if(!istype(usr.loc,/turf)) return
+		if(!src.use(15))
+			to_chat(usr, "<span class='warning'>You need at least 15 lengths to make restraints!</span>")
+			return
+		var/obj/item/handcuffs/cable/B = new /obj/item/handcuffs/cable(usr.loc)
+		B.color = color
+		to_chat(usr, "<span class='notice'>You wind some cable together to make some restraints.</span>")
+	else
+		to_chat(usr, "<span class='notice'>You cannot do that.</span>")
+
+/obj/item/stack/cable_coil/cyborg/verb/set_colour()
 	set name = "Change Colour"
 	set category = "Object"
 
-	choose_cable_color(user)
+	var/selected_type = input("Pick new colour.", "Cable Colour", null, null) as null|anything in GLOB.possible_cable_colours
+	set_cable_color(selected_type, usr)
 
 // Items usable on a cable coil :
 //   - Wirecutters : cut them duh !
@@ -697,32 +599,22 @@ obj/structure/cable/proc/cableColor(var/colorC)
 	return color == C.color
 
 /obj/item/stack/cable_coil/cyborg/can_merge()
-	return TRUE
+	return 1
 
 /obj/item/stack/cable_coil/transfer_to(obj/item/stack/cable_coil/S)
 	if(!istype(S))
-		return
-	if(!can_merge(S))
-		return
+		return 0
+	if(!(can_merge(S) || S.can_merge(src)))
+		return 0
 
-	..()
-
-/obj/item/stack/cable_coil/use()
-	. = ..()
-	update_icon()
-	return
-
-/obj/item/stack/cable_coil/add()
-	. = ..()
-	update_icon()
-	return
+	return ..()
 
 ///////////////////////////////////////////////
 // Cable laying procedures
 //////////////////////////////////////////////
 
 // called when cable_coil is clicked on a turf/simulated/floor
-/obj/item/stack/cable_coil/proc/turf_place(turf/F, mob/user)
+/obj/item/stack/cable_coil/proc/turf_place(turf/simulated/F, mob/user)
 	if(!isturf(user.loc))
 		return
 
@@ -734,93 +626,31 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		to_chat(user, "You can't lay cable at a place that far away.")
 		return
 
-	if (!F.can_lay_cable())
-		if (istype(F, /turf/simulated/floor))
-			to_chat(user, "You can't lay cable there unless the floor tiles are removed.")
-		else
-			to_chat(user, "You can't lay cable there unless there is plating or a catwalk.")
+	if(!F.is_plating())		// Ff floor is intact, complain
+		to_chat(user, "You can't lay cable there unless the floor tiles are removed.")
 		return
 
+	var/dirn
+	if(user.loc == F)
+		dirn = user.dir			// if laying on the tile we're on, lay in the direction we're facing
 	else
-		var/dirn
+		dirn = get_dir(F, user)
 
-		if(user.loc == F)
-			dirn = user.dir			// if laying on the tile we're on, lay in the direction we're facing
-		else
-			dirn = get_dir(F, user)
+	var/end_dir = 0
+	if(istype(F, /turf/simulated/open))
+		if(!can_use(2))
+			to_chat(user, "You don't have enough cable to do this!")
+			return
+		end_dir = DOWN
 
-		for(var/obj/structure/cable/LC in F)
-			if((LC.d1 == dirn && LC.d2 == 0 ) || ( LC.d2 == dirn && LC.d1 == 0))
-				to_chat(user, SPAN_WARNING("There's already a cable at that position."))
-				return
-///// Z-Level Stuff
-		// check if the target is open space
-		if(isopenturf(F))
-			for(var/obj/structure/cable/LC in F)
-				if((LC.d1 == dirn && LC.d2 == 11 ) || ( LC.d2 == dirn && LC.d1 == 11))
-					to_chat(user, SPAN_WARNING("There's already a cable at that position."))
-					return
+	for(var/obj/structure/cable/LC in F)
+		if((LC.d1 == dirn && LC.d2 == end_dir ) || ( LC.d2 == dirn && LC.d1 == end_dir))
+			to_chat(user, "<span class='warning'>There's already a cable at that position.</span>")
+			return
 
-			var/obj/structure/cable/C = new(F)
-			var/obj/structure/cable/D = new(GetBelow(F))
-
-			C.cableColor(color)
-
-			C.d1 = 11
-			C.d2 = dirn
-			C.add_fingerprint(user)
-			C.update_icon()
-
-			var/datum/powernet/PN = new()
-			PN.add_cable(C)
-
-			C.mergeConnectedNetworks(C.d2)
-			C.mergeConnectedNetworksOnTurf()
-
-			D.cableColor(color)
-
-			D.d1 = 12
-			D.d2 = 0
-			D.add_fingerprint(user)
-			D.update_icon()
-
-			PN.add_cable(D)
-			D.mergeConnectedNetworksOnTurf()
-
-		// do the normal stuff
-		else
-///// Z-Level Stuff
-			for(var/obj/structure/cable/LC in F)
-				if((LC.d1 == dirn && LC.d2 == 0 ) || ( LC.d2 == dirn && LC.d1 == 0))
-					to_chat(user, "There's already a cable at that position.")
-					return
-
-			var/obj/structure/cable/C = new(F)
-
-			C.cableColor(color)
-
-			//set up the new cable
-			C.d1 = 0 //it's a O-X node cable
-			C.d2 = dirn
-			C.add_fingerprint(user)
-			C.update_icon()
-
-			//create a new powernet with the cable, if needed it will be merged later
-			var/datum/powernet/PN = new()
-			PN.add_cable(C)
-
-			C.mergeConnectedNetworks(C.d2) //merge the powernet with adjacents powernets
-			C.mergeConnectedNetworksOnTurf() //merge the powernet with on turf powernets
-
-			if(C.d2 & (C.d2 - 1))// if the cable is layed diagonally, check the others 2 possible directions
-				C.mergeDiagonalsNetworks(C.d2)
-
-
-			use(1)
-			if (C.shock(user, 50))
-				if (prob(50)) //fail
-					new/obj/item/stack/cable_coil(C.loc, 1, C.color)
-					qdel(C)
+	put_cable(F, user, end_dir, dirn)
+	if(end_dir == DOWN)
+		put_cable(GetBelow(F), user, UP, 0)
 
 // called when cable_coil is click on an installed obj/cable
 // or click on a turf that already contains a "node" cable
@@ -831,13 +661,12 @@ obj/structure/cable/proc/cableColor(var/colorC)
 
 	var/turf/T = C.loc
 
-	if(!isturf(T) || !T.can_have_cabling())		// sanity checks, also stop use interacting with T-scanner revealed cable
+	if(!isturf(T) || !T.is_plating())		// sanity checks, also stop use interacting with T-scanner revealed cable
 		return
 
 	if(get_dist(C, user) > 1)		// make sure it's close enough
 		to_chat(user, "You can't lay cable at a place that far away.")
 		return
-
 
 	if(U == T) //if clicked on the turf we're standing on, try to put a cable in the direction we're facing
 		turf_place(T,user)
@@ -847,7 +676,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 
 	// one end of the clicked cable is pointing towards us
 	if(C.d1 == dirn || C.d2 == dirn)
-		if(!T.can_have_cabling())						// can't place a cable if the floor is complete
+		if(!U.is_plating())						// can't place a cable if the floor is complete
 			to_chat(user, "You can't lay cable there unless the floor tiles are removed.")
 			return
 		else
@@ -860,32 +689,7 @@ obj/structure/cable/proc/cableColor(var/colorC)
 				if(LC.d1 == fdirn || LC.d2 == fdirn)
 					to_chat(user, "There's already a cable at that position.")
 					return
-
-			var/obj/structure/cable/NC = new(U)
-			NC.cableColor(color)
-
-			NC.d1 = 0
-			NC.d2 = fdirn
-			NC.add_fingerprint()
-			NC.update_icon()
-
-			//create a new powernet with the cable, if needed it will be merged later
-			var/datum/powernet/newPN = new()
-			newPN.add_cable(NC)
-
-			NC.mergeConnectedNetworks(NC.d2) //merge the powernet with adjacents powernets
-			NC.mergeConnectedNetworksOnTurf() //merge the powernet with on turf powernets
-
-			if(NC.d2 & (NC.d2 - 1))// if the cable is layed diagonally, check the others 2 possible directions
-				NC.mergeDiagonalsNetworks(NC.d2)
-
-			use(1)
-
-			if (NC.shock(user, 50))
-				if (prob(50)) //fail
-					new/obj/item/stack/cable_coil(NC.loc, 1, NC.color)
-					qdel(NC)
-
+			put_cable(U,user,0,fdirn)
 			return
 
 	// exisiting cable doesn't point at our position, so see if it's a stub
@@ -938,6 +742,37 @@ obj/structure/cable/proc/cableColor(var/colorC)
 		C.denode()// this call may have disconnected some cables that terminated on the centre of the turf, if so split the powernets.
 		return
 
+/obj/item/stack/cable_coil/proc/put_cable(turf/simulated/F, mob/user, d1, d2)
+	if(!istype(F))
+		return
+
+	var/obj/structure/cable/C = new(F)
+	C.cableColor(color)
+	C.d1 = d1
+	C.d2 = d2
+	C.add_fingerprint(user)
+	C.update_icon()
+
+	//create a new powernet with the cable, if needed it will be merged later
+	var/datum/powernet/PN = new()
+	PN.add_cable(C)
+
+	C.mergeConnectedNetworks(C.d1) //merge the powernets...
+	C.mergeConnectedNetworks(C.d2) //...in the two new cable directions
+	C.mergeConnectedNetworksOnTurf()
+
+	if(C.d1 & (C.d1 - 1))// if the cable is layed diagonally, check the others 2 possible directions
+		C.mergeDiagonalsNetworks(C.d1)
+
+	if(C.d2 & (C.d2 - 1))// if the cable is layed diagonally, check the others 2 possible directions
+		C.mergeDiagonalsNetworks(C.d2)
+
+	use(1)
+	if (C.shock(user, 50))
+		if (prob(50)) //fail
+			new/obj/item/stack/cable_coil(C.loc, 1, C.color)
+			qdel(C)
+
 //////////////////////////////
 // Misc.
 /////////////////////////////
@@ -945,246 +780,61 @@ obj/structure/cable/proc/cableColor(var/colorC)
 /obj/item/stack/cable_coil/cut
 	item_state = "coil2"
 
-/obj/item/stack/cable_coil/cut/Initialize(mapload)
+/obj/item/stack/cable_coil/cut/Initialize()
 	. = ..()
 	src.amount = rand(1,2)
-	pixel_x = rand(-2,2)
-	pixel_y = rand(-2,2)
 	update_icon()
 	update_wclass()
 
 /obj/item/stack/cable_coil/yellow
-	color = COLOR_YELLOW
+	color = COLOR_AMBER
 
 /obj/item/stack/cable_coil/blue
-	color = COLOR_BLUE
+	color = COLOR_CYAN_BLUE
 
 /obj/item/stack/cable_coil/green
 	color = COLOR_GREEN
 
 /obj/item/stack/cable_coil/pink
-	color = COLOR_PINK
+	color = COLOR_PURPLE
 
 /obj/item/stack/cable_coil/orange
 	color = COLOR_ORANGE
 
 /obj/item/stack/cable_coil/cyan
-	color = COLOR_CYAN
+	color = COLOR_SKY_BLUE
 
 /obj/item/stack/cable_coil/white
-	color = COLOR_WHITE
+	color = COLOR_SILVER
 
 /obj/item/stack/cable_coil/random/Initialize()
-	color = pick(possible_cable_coil_colours)
+	color = GLOB.possible_cable_colours[pick(GLOB.possible_cable_colours)]
 	. = ..()
 
-//////////////////////////////
-// Nooses.
-/////////////////////////////
-/obj/item/stack/cable_coil/verb/make_noose(mob/user)
-	set name = "Make Noose"
-	set category = "Object"
-	var/mob/M = user
+// Produces cable coil from a rig power cell.
+/obj/item/stack/cable_coil/fabricator
+	name = "cable fabricator"
+	var/cost_per_cable = 10
 
-	if(ishuman(M) && !M.restrained() && !M.stat && !M.paralysis && ! M.stunned)
-		if(!istype(user.loc,/turf)) return
-		if(!(locate(/obj/item/stool) in user.loc) && !(locate(/obj/structure/bed) in user.loc) && !(locate(/obj/structure/table) in user.loc) && !(locate(/obj/structure/toilet) in user.loc))
-			to_chat(user, SPAN_WARNING("You have to be standing on top of a chair/table/bed to make a noose!"))
-			return FALSE
-		if(src.amount <= 24)
-			to_chat(user, SPAN_WARNING("You need at least 25 lengths to make a noose!"))
-			return
-		user.visible_message(SPAN_WARNING("[user] starts winding some cable together to make a noose, tying it to the ceiling!"),
-							 SPAN_NOTICE("You start to wind some cable together to make a noose, tying it to the ceiling."))
-		if(do_after(user, 250))
-			new/obj/structure/noose(user.loc, color)
-			to_chat(user, SPAN_NOTICE("You wind some cable together to make a noose, tying it to the ceiling."))
-			playsound(user.loc, 'sound/effects/noose_idle.ogg', 50, 1, -3)
-			src.use(25)
-	else
-		to_chat(user, SPAN_WARNING("You cannot do that."))
+/obj/item/stack/cable_coil/fabricator/split(var/tamount, var/force=FALSE)
+	return
 
-/obj/structure/noose
-	name = "noose"
-	desc = "A morbid apparatus."
-	icon_state = "noose"
-	buckle_lying = 0
-	icon = 'icons/obj/noose.dmi'
-	anchored = 1
-	can_buckle = 1
-	layer = 5
-	color = null
-	var/image/over = null
-	var/ticks = 0
+/obj/item/stack/cable_coil/fabricator/get_cell()
+	if(istype(loc, /obj/item/rig_module))
+		var/obj/item/rig_module/module = loc
+		return module.get_cell()
+	if(istype(loc, /mob/living/silicon/robot))
+		var/mob/living/silicon/robot/R = loc
+		return R.get_cell()
 
-/obj/structure/noose/attackby(obj/item/I, mob/user, params)
-	if(I.iswirecutter())
-		user.visible_message("[user] cuts the noose.",
-							 SPAN_NOTICE("You cut the noose."))
-		playsound(src.loc, 'sound/items/wirecutter.ogg', 50, 1)
-		if(buckled_mob)
-			buckled_mob.visible_message(SPAN_DANGER("[buckled_mob] falls over and hits the ground!"),\
-										SPAN_DANGER("You fall over and hit the ground!"))
-			buckled_mob.adjustBruteLoss(10)
-		new/obj/item/stack/cable_coil(get_turf(src), 25, color)
-		qdel(src)
-		return
-	..()
+/obj/item/stack/cable_coil/fabricator/use(var/used)
+	var/obj/item/cell/cell = get_cell()
+	if(cell) cell.use(used * cost_per_cable)
 
-/obj/structure/noose/Initialize(mapload, param_color = null)
-	. = ..()
-	pixel_y += 16 //Noose looks like it's "hanging" in the air
-	over = image(icon, "noose_overlay")
-	over.layer = MOB_LAYER + 0.1
-	if(param_color)
-		color = param_color
-	if(!color)
-		color = pick(COLOR_RED, COLOR_BLUE, COLOR_LIME, COLOR_ORANGE, COLOR_WHITE, COLOR_PINK, COLOR_YELLOW, COLOR_CYAN)
+/obj/item/stack/cable_coil/fabricator/get_amount()
+	var/obj/item/cell/cell = get_cell()
+	. = (cell ? Floor(cell.charge / cost_per_cable) : 0)
 
-/obj/structure/noose/Destroy()
-	STOP_PROCESSING(SSprocessing, src)
-	return ..()
-
-/obj/structure/noose/post_buckle_mob(mob/living/M)
-	if(M == buckled_mob)
-		layer = MOB_LAYER
-		add_overlay(over)
-		START_PROCESSING(SSprocessing, src)
-		M.pixel_y = initial(M.pixel_y) + 8 //rise them up a bit
-		M.dir = SOUTH
-	else
-		layer = initial(layer)
-		cut_overlay(over)
-		STOP_PROCESSING(SSprocessing, src)
-		pixel_x = initial(pixel_x)
-		M.pixel_x = initial(M.pixel_x)
-		M.pixel_y = initial(M.pixel_y)
-
-/obj/structure/noose/user_unbuckle_mob(mob/living/user)
-
-	if(!user.IsAdvancedToolUser())
-		return
-
-	if(buckled_mob && buckled_mob.buckled == src)
-		var/mob/living/M = buckled_mob
-		if(M != user)
-			user.visible_message(SPAN_NOTICE("[user] begins to untie the noose over [M]'s neck..."),\
-								 SPAN_NOTICE("You begin to untie the noose over [M]'s neck..."))
-			if(do_mob(user, M, 100))
-				user.visible_message(SPAN_NOTICE("[user] unties the noose over [M]'s neck!"),\
-									 SPAN_NOTICE("You untie the noose over [M]'s neck!"))
-			else
-				return
-		else
-			M.visible_message(\
-				SPAN_WARNING("[M] struggles to untie the noose over their neck!"),\
-				SPAN_NOTICE("You struggle to untie the noose over your neck."))
-			if(!do_after(M, 150))
-				if(M && M.buckled)
-					to_chat(M, SPAN_WARNING("You fail to untie yourself!"))
-				return
-			if(!M.buckled)
-				return
-			M.visible_message(\
-				SPAN_WARNING("[M] unties the noose over their neck!"),\
-				SPAN_NOTICE("You untie the noose over your neck!"))
-			M.Weaken(3)
-		unbuckle_mob()
-		add_fingerprint(user)
-
-/obj/structure/noose/user_buckle_mob(mob/living/carbon/human/M, mob/user)
-	if(!in_range(user, src) || user.stat || user.restrained() || !istype(M))
-		return FALSE
-
-	if(!user.IsAdvancedToolUser())
-		return
-
-	if (ishuman(M))
-		var/mob/living/carbon/human/H = M
-		var/obj/item/organ/external/affecting = H.get_organ(BP_HEAD)
-		if(!affecting)
-			to_chat(user, SPAN_DANGER("They don't have a head."))
-			return
-
-	if(M.loc != src.loc) return FALSE //Can only noose someone if they're on the same tile as noose
-
-	add_fingerprint(user)
-
-	if(M == user && buckle_mob(M))
-		M.visible_message(\
-			SPAN_WARNING("[M] ties \the [src] over their neck!"),\
-			SPAN_WARNING("You tie \the [src] over your neck!"))
-		playsound(user.loc, 'sound/effects/noosed.ogg', 50, 1, -1)
-		SSfeedback.IncrementSimpleStat("hangings")
-		return TRUE
-	else
-		M.visible_message(\
-			SPAN_DANGER("[user] attempts to tie \the [src] over [M]'s neck!"),\
-			SPAN_DANGER("[user] ties \the [src] over your neck!"))
-		to_chat(user, SPAN_NOTICE("It will take 20 seconds and you have to stand still."))
-		if(do_after(user, 200))
-			if(buckle_mob(M))
-				M.visible_message(\
-					SPAN_DANGER("[user] ties \the [src] over [M]'s neck!"),\
-					SPAN_DANGER("[user] ties \the [src] over your neck!"))
-				playsound(user.loc, 'sound/effects/noosed.ogg', 50, 1, -1)
-				SSfeedback.IncrementSimpleStat("hangings")
-				return TRUE
-			else
-				user.visible_message(\
-					SPAN_WARNING("[user] fails to tie \the [src] over [M]'s neck!"),\
-					SPAN_WARNING("You fail to tie \the [src] over [M]'s neck!"))
-				return FALSE
-		else
-			user.visible_message(\
-				SPAN_WARNING("[user] fails to tie \the [src] over [M]'s neck!"),\
-				SPAN_WARNING("You fail to tie \the [src] over [M]'s neck!"))
-			return FALSE
-
-/obj/structure/noose/process(mob/living/carbon/human/M, mob/user)
-	if(!buckled_mob)
-		STOP_PROCESSING(SSprocessing, src)
-		buckled_mob.pixel_x = initial(buckled_mob.pixel_x)
-		pixel_x = initial(pixel_x)
-		return
-
-	ticks++
-	switch(ticks)
-		if(1)
-			pixel_x -= 1
-			buckled_mob.pixel_x -= 1
-		if(2)
-			pixel_x = initial(pixel_x)
-			buckled_mob.pixel_x = initial(buckled_mob.pixel_x)
-		if(3) //Every third tick it plays a sound and RNG's a flavor text
-			pixel_x += 1
-			buckled_mob.pixel_x += 1
-			if(buckled_mob)
-				if (ishuman(buckled_mob))
-					var/mob/living/carbon/human/H = buckled_mob
-					if (H.species && (H.species.flags & NO_BREATHE))
-						return
-				if(prob(15))
-					var/flavor_text = list(SPAN_WARNING("[buckled_mob]'s legs flail for anything to stand on."),\
-											SPAN_WARNING("[buckled_mob]'s hands are desperately clutching the noose."),\
-											SPAN_WARNING("[buckled_mob]'s limbs sway back and forth with diminishing strength."))
-					if(buckled_mob.stat == DEAD)
-						flavor_text = list(SPAN_WARNING("[buckled_mob]'s limbs lifelessly sway back and forth."),\
-											SPAN_WARNING("[buckled_mob]'s eyes stare straight ahead."))
-					buckled_mob.visible_message(pick(flavor_text))
-				playsound(buckled_mob.loc, 'sound/effects/noose_idle.ogg', 50, 1, -3)
-		if(4)
-			pixel_x = initial(pixel_x)
-			buckled_mob.pixel_x = initial(buckled_mob.pixel_x)
-			ticks = 0
-
-	if(buckled_mob)
-		if (ishuman(buckled_mob))
-			var/mob/living/carbon/human/H = buckled_mob
-			if (H.species && (H.species.flags & NO_BREATHE))
-				return
-		buckled_mob.adjustOxyLoss(5)
-		buckled_mob.adjustBrainLoss(1)
-		buckled_mob.silent = max(buckled_mob.silent, 10)
-		if(prob(25)) //to reduce gasp spam
-			buckled_mob.emote("gasp")
+/obj/item/stack/cable_coil/fabricator/get_max_amount()
+	var/obj/item/cell/cell = get_cell()
+	. = (cell ? Floor(cell.maxcharge / cost_per_cable) : 0)

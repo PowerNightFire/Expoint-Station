@@ -8,25 +8,37 @@
 	icon_state = "term"
 	desc = "It's an underfloor wiring terminal for power equipment."
 	level = 1
-	layer = TURF_LAYER
-	var/obj/machinery/power/master = null
+	layer = EXPOSED_WIRE_TERMINAL_LAYER
+	var/obj/item/stock_parts/power/terminal/master
 	anchored = 1
-	layer = 2.6 // a bit above wires
 
+	uncreated_component_parts = null
+	construct_state = /decl/machine_construction/noninteractive // Axiliary entity; all interactions pass through owner machine part instead.
 
 /obj/machinery/power/terminal/Initialize()
 	. = ..()
 	var/turf/T = src.loc
-	if(level == 1) 
-		hide(!T.is_plating())
-	return
+	if(level==1) hide(!T.is_plating())
 
-/obj/machinery/power/terminal/Destroy()
-	if(master)
-		master.disconnect_terminal()
-		master = null
-	return ..()
+/obj/machinery/power/terminal/proc/master_machine()
+	var/obj/machinery/machine = master && master.loc
+	if(istype(machine))
+		return machine
 
-/obj/machinery/power/terminal/hide(var/i)
-	invisibility = i ? 101 : initial(invisibility)
-	icon_state = i ? "term-f" : "term"
+/obj/machinery/power/terminal/hide(var/do_hide)
+	if(do_hide && level == 1)
+		layer = WIRE_TERMINAL_LAYER
+	else
+		reset_plane_and_layer()
+
+/obj/machinery/power/terminal/connect_to_network()
+	. = ..()
+	var/obj/machinery/machine = master_machine()
+	if(machine)
+		machine.power_change()
+
+/obj/machinery/power/terminal/disconnect_from_network()
+	. = ..()
+	var/obj/machinery/machine = master_machine()
+	if(machine)
+		machine.power_change()

@@ -1,156 +1,69 @@
-
-
 /mob/living/simple_animal/hostile/carp
 	name = "space carp"
 	desc = "A ferocious, fang-bearing creature that resembles a fish."
-	icon_state = "carp"
-	icon_living = "carp"
-	icon_dead = "carp_dead"
+	icon = 'icons/mob/simple_animal/carp.dmi'
+	icon_state = "carp" //for mapping purposes
 	icon_gib = "carp_gib"
-	icon_rest = "carp_rest"
 	speak_chance = 0
-	turns_per_move = 5
-	meat_type = /obj/item/reagent_containers/food/snacks/fish/carpmeat
-	organ_names = list("head", "chest", "tail", "left flipper", "right flipper")
+	turns_per_move = 3
 	response_help = "pets the"
 	response_disarm = "gently pushes aside the"
 	response_harm = "hits the"
-	speed = 4
-	maxHealth = 25
-	health = 25
-	mob_size = 10
-
-	blood_overlay_icon = 'icons/mob/npc/blood_overlay_carp.dmi'
-	harm_intent_damage = 8
-	melee_damage_lower = 15
-	melee_damage_upper = 15
-	attacktext = "bitten"
-	attack_sound = 'sound/weapons/bite.ogg'
-
-	//Space carp aren't affected by atmos.
-	min_oxy = 0
-	max_oxy = 0
-	min_tox = 0
-	max_tox = 0
-	min_co2 = 0
-	max_co2 = 0
-	min_n2 = 0
-	max_n2 = 0
-	minbodytemp = 0
-
-	break_stuff_probability = 15
-
-	faction = "carp"
-	attack_emote = "nashes at"
-
-	flying = TRUE
-	see_in_dark = 8
-	see_invisible = SEE_INVISIBLE_NOLIGHTING
-
-/mob/living/simple_animal/hostile/carp/update_icon()
-	..()
-	if(resting || stat == DEAD)
-		blood_overlay_icon = 'icons/mob/npc/blood_overlay.dmi'
-	else
-		blood_overlay_icon = initial(blood_overlay_icon)
-	handle_blood_overlay(TRUE)
-
-/mob/living/simple_animal/hostile/carp/Allow_Spacemove(var/check_drift = 0)
-	return 1	//No drifting in space for space carp!	//original comments do not steal
-
-/mob/living/simple_animal/hostile/carp/MoveToTarget()
-	stop_automated_movement = 1
-	if(istype(target_mob, /obj/effect/energy_field) && !QDELETED(target_mob) && (target_mob in targets))
-		stance = HOSTILE_STANCE_ATTACKING
-		walk_to(src, target_mob, 1, move_to_delay)
-		return 1
-	..()
-
-/mob/living/simple_animal/hostile/carp/AttackTarget()
-	stop_automated_movement = 1
-	if(istype(target_mob, /obj/effect/energy_field) && !QDELETED(target_mob) && (get_dist(src, target_mob) <= 1))
-		AttackingTarget()
-		attacked_times += 1
-		return 1
-	return ..()
-
-/mob/living/simple_animal/hostile/carp/AttackingTarget()
-	. = ..()
-	if(.)
-		return
-	if(istype(target_mob, /obj/effect/energy_field))
-		var/obj/effect/energy_field/e = target_mob
-		e.Stress(rand(1,2))
-		visible_message("<span class='danger'>\the [src] bites \the [e]!</span>")
-		src.do_attack_animation(e)
-		return e
-
-/mob/living/simple_animal/hostile/carp/DestroySurroundings(var/bypass_prob = FALSE)
-	if(stance != HOSTILE_STANCE_ATTACKING)
-		return 0
-	if(prob(break_stuff_probability) || bypass_prob)
-		for(var/dir in cardinal) // North, South, East, West
-			var/obj/effect/energy_field/e = locate(/obj/effect/energy_field, get_step(src, dir))
-			if(e && e.strength >= 1)
-				e.Stress(rand(1,2))
-				visible_message("<span class='danger'>\the [src] bites \the [e]!</span>")
-				src.do_attack_animation(e)
-				target_mob = e
-				stance = HOSTILE_STANCE_ATTACKING
-				return 1
-			for(var/obj/structure/window/obstacle in get_step(src, dir))
-				if(obstacle.dir == reverse_dir[dir]) // So that windows get smashed in the right order
-					obstacle.attack_generic(src,rand(melee_damage_lower,melee_damage_upper),attacktext)
-					return 1
-			var/obj/structure/obstacle = locate(/obj/structure, get_step(src, dir))
-			if(istype(obstacle, /obj/structure/window) || istype(obstacle, /obj/structure/closet) || istype(obstacle, /obj/structure/table) || istype(obstacle, /obj/structure/grille))
-				obstacle.attack_generic(src,rand(melee_damage_lower,melee_damage_upper),attacktext)
-				return 1
-	return 0
-
-/mob/living/simple_animal/hostile/carp/russian
-	name = "Ivan the carp"
-	desc = "A feared space carp, nicknamed as Ivan by the old spacemen of Tau Ceti."
-	icon_state = "carp_russian"
-	icon_living = "carp_russian"
-	icon_dead = "carp_russian_dead"
-	maxHealth = 50 //stronk
+	speed = 2
+	maxHealth = 50
 	health = 50
 
-/mob/living/simple_animal/hostile/carp/russian/FindTarget()
-    . = ..()
-    if(.)
-        custom_emote(VISIBLE_MESSAGE,"spots a filthy capitalist!")
+	harm_intent_damage = 8
+	natural_weapon = /obj/item/natural_weapon/bite
+	pry_time = 10 SECONDS
+	melee_damage_flags = DAM_SHARP
+	pry_desc = "biting"
 
-/mob/living/simple_animal/hostile/carp/shark
-	name = "space shark"
-	desc = "The bigger, angrier cousin of the space carp."
-	icon_state = "shark"
-	icon_living = "shark"
-	icon_dead = "shark_dead"
-	icon_rest = "shark_rest"
-	meat_amount = 5
+	//Space carp aren't affected by atmos.
+	min_gas = null
+	max_gas = null
+	minbodytemp = 0
 
-	maxHealth = 100
-	health = 100
+	break_stuff_probability = 25
+	faction = "carp"
+	bleed_colour = "#5d0d71"
+	pass_flags = PASS_FLAG_TABLE
 
-	mob_size = 15
+	meat_type = /obj/item/chems/food/snacks/fish/poison
+	skin_material = /decl/material/solid/skin/fish/purple
+	bone_material = /decl/material/solid/bone/cartilage
 
-	harm_intent_damage = 5
-	melee_damage_lower = 20
-	melee_damage_upper = 25
+	var/carp_color = "carp" //holder for icon set
+	var/list/icon_sets = list("carp", "blue", "yellow", "grape", "rust", "teal")
 
-/mob/living/simple_animal/hostile/carp/old
-	icon_state = "carp_old"
-	icon_living = "carp_old"
-	icon_dead = "carp_old_dead"
-	icon_gib = "carp_old_gib"
-	icon_rest = "carp_old"
+/mob/living/simple_animal/hostile/carp/Initialize()
+	. = ..()
+	carp_randomify()
+	update_icon()
 
-/mob/living/simple_animal/hostile/carp/shark/old
-	icon = 'icons/mob/npc/spaceshark.dmi'
-	icon_state = "shark"
-	icon_living = "shark"
-	icon_dead = "shark_dead"
-	icon_rest = "shark"
-	pixel_x = -16
+/mob/living/simple_animal/hostile/carp/proc/carp_randomify()
+	maxHealth = rand(initial(maxHealth), (1.5 * initial(maxHealth)))
+	health = maxHealth
+	if(prob(1))
+		carp_color = pick("white", "black")
+	else
+		carp_color = pick(icon_sets)
+	icon_state = "[carp_color]"
+	icon_living = "[carp_color]"
+	icon_dead = "[carp_color]_dead"
+
+/mob/living/simple_animal/hostile/carp/Process_Spacemove()
+	return 1	//No drifting in space for space carp!	//original comments do not steal
+
+/mob/living/simple_animal/hostile/carp/FindTarget()
+	. = ..()
+	if(.)
+		custom_emote(1,"nashes at [.]")
+
+/mob/living/simple_animal/hostile/carp/AttackingTarget()
+	. =..()
+	var/mob/living/L = .
+	if(istype(L))
+		if(prob(15))
+			L.Weaken(3)
+			L.visible_message("<span class='danger'>\the [src] knocks down \the [L]!</span>")

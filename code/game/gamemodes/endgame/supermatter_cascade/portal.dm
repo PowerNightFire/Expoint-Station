@@ -1,8 +1,8 @@
 /*** EXIT PORTAL ***/
 
 /obj/singularity/narsie/large/exit
-	name = "Bluespace Rift"
-	desc = "NO TIME TO EXPLAIN, JUMP IN"
+	name = "unstable wormhole"
+	desc = "NO TIME TO EXPLAIN, JUMP IN!"
 	icon = 'icons/obj/rift.dmi'
 	icon_state = "rift"
 
@@ -14,11 +14,15 @@
 
 	consume_range = 6
 
-/obj/singularity/narsie/large/exit/update_icon()
-	overlays = 0
+/obj/singularity/narsie/large/exit/Initialize()
+	. = ..()
+	START_PROCESSING(SSobj, src)
 
-/obj/singularity/narsie/large/exit/process()
-	for(var/mob/M in player_list)
+/obj/singularity/narsie/large/exit/on_update_icon()
+	overlays.Cut()
+
+/obj/singularity/narsie/large/exit/Process()
+	for(var/mob/M in GLOB.player_list)
 		if(M.client)
 			M.see_rift(src)
 	eat()
@@ -43,7 +47,7 @@
 		var/turf/T = A
 		var/dist = get_dist(T, src)
 		if (dist <= consume_range && T.density)
-			T.density = 0
+			T.set_density(0)
 
 		for (var/atom/movable/AM in T.contents)
 			if (AM == src) // This is the snowflake.
@@ -70,7 +74,7 @@
 
 /mob/proc/see_rift(var/obj/singularity/narsie/large/exit/R)
 	var/turf/T_mob = get_turf(src)
-	if((R.z == T_mob.z) && (get_dist(R,T_mob) <= (R.consume_range+10)) && !(R in view(T_mob)))
+	if((R.z == get_z(T_mob)) && (get_dist(R,T_mob) <= (R.consume_range+10)) && !(R in view(T_mob)))
 		if(!riftimage)
 			riftimage = image('icons/obj/rift.dmi',T_mob,"rift",LIGHTING_LAYER+2,1)
 			riftimage.mouse_opacity = 0
@@ -82,6 +86,6 @@
 		riftimage.loc = T_mob
 
 		src << riftimage
+
 	else
-		if(riftimage)
-			qdel(riftimage)
+		QDEL_NULL(riftimage)

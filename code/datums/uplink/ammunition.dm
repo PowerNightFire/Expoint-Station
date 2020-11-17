@@ -5,62 +5,95 @@
 	item_cost = 4
 	category = /datum/uplink_category/ammunition
 
-/datum/uplink_item/item/ammo/mc9mm
-	name = "9mm Magazine"
+/datum/uplink_item/item/ammo/holdout
+	name = "Small Magazine"
+	desc = "A magazine for small pistols. Contains 8 rounds."
+	item_cost = 3
+	path = /obj/item/ammo_magazine/pistol/small
+
+/datum/uplink_item/item/ammo/empslug
+	name = "Haywire Slug"
+	desc = "Single 12-gauge shotgun slug fitted with a single-use ion pulse generator"
 	item_cost = 1
-	path = /obj/item/ammo_magazine/mc9mm
-	desc = "Contains ten rounds of 9mm bullets."
+	path = /obj/item/ammo_casing/shotgun/emp
 
 /datum/uplink_item/item/ammo/darts
-	name = "Chemical Darts"
-	item_cost = 1
+	name = "Dart Cartridge"
+	desc = "A small cartridge for a gas-powered dart gun. Contains 5 hollow darts."
 	path = /obj/item/ammo_magazine/chemdart
-	desc = "Contains five chemical darts for use with a dart gun."
 
-/datum/uplink_item/item/ammo/fourty_five
-	name = ".45 Pistol Magazine"
-	item_cost = 2
-	path = /obj/item/ammo_magazine/c45m
-	desc = "Contains seven rounds of .45 bullets."
+/datum/uplink_item/item/ammo/speedloader
+	name = "Standard Speedloader"
+	desc = "A speedloader for standard revolvers. Contains 6 rounds."
+	item_cost = 8
+	path = /obj/item/ammo_magazine/speedloader
 
-/datum/uplink_item/item/ammo/submachinegundrum
-	name = "Submachine Gun Drum Magazine (.45)"
-	item_cost = 6
-	path = /obj/item/ammo_magazine/submachinedrum
-	desc = "Contains fifty rounds of .45 bullets, for use with the vintage submachine gun."
+/datum/uplink_item/item/ammo/rifle
+	name = "Rifle Magazine"
+	desc = "A magazine for assault rifles. Contains 20 rounds."
+	item_cost = 8
+	path = /obj/item/ammo_magazine/rifle
 
-/datum/uplink_item/item/ammo/submachinegunmag
-	name = "Submachine Gun Magazine (.45)"
-	item_cost = 4
-	path = /obj/item/ammo_magazine/submachinemag
-	desc = "Contains twenty rounds of .45 bullets, for use with the vintage submachine gun."
-
-/datum/uplink_item/item/ammo/a357
-	name = ".357 Speedloader"
-	item_cost = 2
-	path = /obj/item/ammo_magazine/a357
-	desc = "Contains eight rounds of .357 bullets."
+/datum/uplink_item/item/ammo/bullpup //for zipguns
+	name = "Bullpup Rifle Magazine"
+	desc = "A magazine for bullpup assault rifles. Contains 15 rounds."
+	item_cost = 8
+	path = /obj/item/ammo_magazine/rifle
 
 /datum/uplink_item/item/ammo/sniperammo
-	name = "14.5mm box"
+	name = "Ammobox of Sniper Rounds"
+	desc = "A container of rounds for the anti-materiel rifle. Contains 7 rounds."
 	item_cost = 8
-	path = /obj/item/storage/box/sniperammo
-	desc = "Contains seven rounds of 14.5mm bullets, for use with the anti-materiel rifle."
+	path = /obj/item/storage/box/ammo/sniperammo
+	antag_roles = list(MODE_MERCENARY)
+
+/datum/uplink_item/item/ammo/sniperammo/apds
+	name = "Ammobox of APDS Sniper Rounds"
+	desc = "A container of armor piercing rounds for the anti-materiel rifle. Contains 3 rounds."
+	item_cost = 12
+	path = /obj/item/storage/box/ammo/sniperammo/apds
+	antag_roles = list(MODE_MERCENARY)
 
 /datum/uplink_item/item/ammo/shotgun_shells
-	name = "Box of Shells"
-	item_cost = 5
-	path = /obj/item/storage/box/shotgunshells
-	desc = "Contains eight shotgun buckshot shells."
+	name = "Ammobox of Shotgun Shells"
+	desc = "An ammobox with 2 sets of shell holders. Contains 8 buckshot shells total."
+	item_cost = 8
+	path = /obj/item/storage/box/ammo/shotgunshells
 
-/datum/uplink_item/item/ammo/plasma_mag
-	name = "Plasma Shotgun Magazine"
-	item_cost = 5
-	path = /obj/item/ammo_magazine/plasma
-	desc = "Contains ten plasma cells."
+/datum/uplink_item/item/ammo/shotgun_slugs
+	name = "Ammobox of Shotgun Slugs"
+	desc = "An ammobox with 2 sets of shell holders. Contains 8 slugs total."
+	item_cost = 8
+	path = /obj/item/storage/box/ammo/shotgunammo
 
-/datum/uplink_item/item/ammo/rifle_mag
-	name = "7.62mm clip"
-	item_cost = 4
-	path = /obj/item/ammo_magazine/boltaction
-	desc = "Contains five rounds of 7.62mm bullets."
+/datum/uplink_item/item/ammo/smg
+	name = "Standard Box Magazine"
+	desc = "A magazine for standard SMGs. Contains 20 rounds."
+	item_cost = 8
+	path = /obj/item/ammo_magazine/smg
+	antag_roles = list(MODE_MERCENARY)
+
+/datum/uplink_item/item/ammo/speedloader_magnum
+	name = "Magnum Speedloader"
+	desc = "A speedloader for magnum revolvers. Contains 6 rounds."
+	item_cost = 8
+	path = /obj/item/ammo_magazine/speedloader
+
+/datum/uplink_item/item/ammo/flechette
+	name = "Flechette Rifle Magazine"
+	desc = "A  rifle magazine loaded with flechette rounds. Contains 9 rounds."
+	item_cost = 8
+	path = /obj/item/magnetic_ammo
+	antag_roles = list(MODE_MERCENARY)
+
+/datum/uplink_item/item/ammo/pistol_emp
+	name = "Standard EMP Ammo Box"
+	desc = "A box of EMP ammo for standard pistols. Contains 15 rounds."
+	item_cost = 8
+	path = /obj/item/ammo_magazine/box/emp/pistol
+
+/datum/uplink_item/item/ammo/holdout_emp
+	name = "Small EMP Ammo Box"
+	desc = "A box of EMP ammo for small pistols and revolvers. Contains 8 rounds."
+	item_cost = 6
+	path = /obj/item/ammo_magazine/box/emp/smallpistol

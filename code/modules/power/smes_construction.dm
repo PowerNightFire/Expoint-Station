@@ -6,95 +6,106 @@
 // It also supports RCON System which allows you to operate it remotely, if properly set.
 
 //MAGNETIC COILS - These things actually store and transmit power within the SMES. Different types have different
-/obj/item/smes_coil
+/obj/item/stock_parts/smes_coil
 	name = "superconductive magnetic coil"
-	desc = "Standard superconductive magnetic coil with balanced capacity and I/O rating."
-	icon = 'icons/obj/stock_parts.dmi'
+	desc = "Standard superconductive magnetic coil with average capacity and I/O rating."
+	icon = 'icons/obj/items/stock_parts/stock_parts.dmi'
 	icon_state = "smes_coil"			// Just few icons patched together. If someone wants to make better icon, feel free to do so!
-	w_class = ITEMSIZE_LARGE 			// It's LARGE (backpack size)
-	var/ChargeCapacity = 5000000
-	var/IOCapacity = 250000
+	w_class = ITEM_SIZE_LARGE							// It's LARGE (backpack size)
+	origin_tech = "{'materials':7,'powerstorage':7,'engineering':5}"
+	base_type = /obj/item/stock_parts/smes_coil
+	part_flags = PART_FLAG_HAND_REMOVE
+	material = /decl/material/solid/metal/steel
+	matter = list(
+		/decl/material/solid/glass = MATTER_AMOUNT_REINFORCEMENT,
+		/decl/material/solid/metal/gold = MATTER_AMOUNT_TRACE,
+		/decl/material/solid/metal/silver = MATTER_AMOUNT_TRACE,
+		/decl/material/solid/metal/aluminium = MATTER_AMOUNT_TRACE
+	)
 
-/obj/item/smes_coil/examine(mob/user)
-	. = ..()
-	if(Adjacent(user))
-		to_chat(user, "The label reads:\
-			<div class='notice' style='padding-left:2rem'>Only certified professionals are allowed to handle and install this component.<br>\
-			Charge capacity: [ChargeCapacity/1000000] MJ<br>\
-			Input/Output rating: [IOCapacity/1000] kW</div>",
-			trailing_newline = FALSE)
+	var/ChargeCapacity = 50 KILOWATTS
+	var/IOCapacity = 250 KILOWATTS
 
 // 20% Charge Capacity, 60% I/O Capacity. Used for substation/outpost SMESs.
-/obj/item/smes_coil/weak
+/obj/item/stock_parts/smes_coil/weak
 	name = "basic superconductive magnetic coil"
-	desc = "Cheaper model of the standard superconductive magnetic coil. Its capacity and I/O rating are considerably lower."
-	ChargeCapacity = 1000000
-	IOCapacity = 150000
+	desc = "Cheaper model of standard superconductive magnetic coil. It's capacity and I/O rating are considerably lower."
+	ChargeCapacity = 10 KILOWATTS
+	IOCapacity = 150 KILOWATTS
 
-// 1000% Charge Capacity, 20% I/O Capacity
-/obj/item/smes_coil/super_capacity
+// 500% Charge Capacity, 40% I/O Capacity. Holds a lot of energy, but charges slowly if not combined with other coils. Ideal for backup storage.
+/obj/item/stock_parts/smes_coil/super_capacity
 	name = "superconductive capacitance coil"
-	desc = "Specialised version of the standard superconductive magnetic coil. It has significantly stronger containment field, allowing for immense power storage. However its I/O rating is much lower."
-	ChargeCapacity = 50000000
-	IOCapacity = 50000
+	desc = "Specialised version of standard superconductive magnetic coil. This one has significantly stronger containment field, allowing for significantly larger power storage. It's IO rating is much lower, however."
+	ChargeCapacity = 250 KILOWATTS
+	IOCapacity = 100 KILOWATTS
 
-// 10% Charge Capacity, 400% I/O Capacity. Technically turns SMES into large super capacitor.Ideal for shields.
-/obj/item/smes_coil/super_io
+// 40% Charge Capacity, 500% I/O Capacity. Technically turns SMES into large super capacitor. Ideal for shields.
+/obj/item/stock_parts/smes_coil/super_io
 	name = "superconductive transmission coil"
-	desc = "Specialised version of the standard superconductive magnetic coil. While it's almost useless for power storage it can rapidly transfer power, making it useful in systems that require large throughput."
-	ChargeCapacity = 500000
-	IOCapacity = 1000000
+	desc = "Specialised version of standard superconductive magnetic coil. While this one won't store almost any power, it rapidly transfers power, making it useful in systems which require large throughput."
+	ChargeCapacity = 20 KILOWATTS
+	IOCapacity = 1.25 MEGAWATTS
 
 
-// SMES SUBTYPES - THESE ARE MAPPED IN AND CONTAIN DIFFERENT TYPES OF COILS
-
+// DEPRECATED
 // These are used on individual outposts as backup should power line be cut, or engineering outpost lost power.
 // 1M Charge, 150K I/O
-/obj/machinery/power/smes/buildable/outpost_substation/Initialize()
-	. = ..()
-	component_parts += new /obj/item/smes_coil/weak(src)
+/obj/machinery/power/smes/buildable/outpost_substation
+	uncreated_component_parts = list(/obj/item/stock_parts/smes_coil/weak = 1)
 
 // This one is pre-installed on engineering shuttle. Allows rapid charging/discharging for easier transport of power to outpost
 // 11M Charge, 2.5M I/O
-/obj/machinery/power/smes/buildable/power_shuttle/Initialize()
-	. = ..()
-	component_parts += new /obj/item/smes_coil/super_io(src)
-	component_parts += new /obj/item/smes_coil/super_io(src)
-	component_parts += new /obj/item/smes_coil(src)
+/obj/machinery/power/smes/buildable/power_shuttle
+	uncreated_component_parts = list(
+		/obj/item/stock_parts/smes_coil/super_io = 2,
+		/obj/item/stock_parts/smes_coil = 1)
 
 // END SMES SUBTYPES
 
 // SMES itself
 /obj/machinery/power/smes/buildable
-	max_coils = 6 				// 30M capacity, 1.5MW input/output when fully upgraded /w default coils
-	var/cur_coils = 1 			// Current amount of installed coils
 	var/safeties_enabled = 1 	// If 0 modifications can be done without discharging the SMES, at risk of critical failure.
 	var/failing = 0 			// If 1 critical failure has occured and SMES explosion is imminent.
-	var/datum/wires/smes/wires
+	wires = /datum/wires/smes
 	var/grounding = 1			// Cut to quickly discharge, at cost of "minor" electrical issues in output powernet.
 	var/RCon = 1				// Cut to disable AI and remote control.
 	var/RCon_tag = "NO_TAG"		// RCON tag, change to show it on SMES Remote control console.
+	var/emp_proof = 0			// Whether the SMES is EMP proof
+
 	charge = 0
 	should_be_mapped = 1
-	component_types = list(
-		/obj/item/stack/cable_coil,
-		/obj/item/circuitboard/smes
-	)
+	base_type = /obj/machinery/power/smes/buildable
+	maximum_component_parts = list(/obj/item/stock_parts/smes_coil = 6, /obj/item/stock_parts = 15)
+	interact_offline = TRUE
 
-/obj/machinery/power/smes/buildable/Destroy()
-	qdel(wires)
-	wires = null
-	SSmachinery.queue_rcon_update()
-	return ..()
+/obj/machinery/power/smes/buildable/malf_upgrade(var/mob/living/silicon/ai/user)
+	..()
+	malf_upgraded = 1
+	emp_proof = 1
+	RefreshParts()
+	to_chat(user, "\The [src] has been upgraded. It's transfer rate and capacity has increased, and it is now resistant against EM pulses.")
+	return 1
+
+
+/obj/machinery/power/smes/buildable/max_cap_in_out/Initialize()
+	. = ..()
+	charge = capacity
+	input_attempt = TRUE
+	output_attempt = TRUE
+	input_level = input_level_max
+	output_level = output_level_max
 
 // Proc: process()
 // Parameters: None
 // Description: Uses parent process, but if grounding wire is cut causes sparks to fly around.
 // This also causes the SMES to quickly discharge, and has small chance of damaging output APCs.
-/obj/machinery/power/smes/buildable/machinery_process()
+/obj/machinery/power/smes/buildable/Process()
 	if(!grounding && (Percentage() > 5))
-		spark(src, 5, alldirs)
-		charge -= (output_level_max * SMESRATE)
+		var/datum/effect/effect/system/spark_spread/s = new /datum/effect/effect/system/spark_spread
+		s.set_up(5, 1, src)
+		s.start()
+		charge -= (output_level_max * CELLRATE)
 		if(prob(1)) // Small chance of overload occuring since grounding is disabled.
 			apcs_overload(5,10,20)
 
@@ -103,68 +114,38 @@
 // Proc: attack_ai()
 // Parameters: None
 // Description: AI requires the RCON wire to be intact to operate the SMES.
-/obj/machinery/power/smes/buildable/attack_ai()
+/obj/machinery/power/smes/buildable/attack_ai(mob/user)
 	if(RCon)
 		..()
 	else // RCON wire cut
-		to_chat(usr, "<span class='warning'>Connection error: Destination Unreachable.</span>")
-
-	// Cyborgs standing next to the SMES can play with the wiring.
-	if(istype(usr, /mob/living/silicon/robot) && Adjacent(usr) && open_hatch)
-		wires.Interact(usr)
-
-// Proc: Initialize()
-// Parameters: 2 (dir - direction machine should face, install_coils - if coils should be spawned)
-// Description: Adds standard components for this SMES, and forces recalculation of properties.
-/obj/machinery/power/smes/buildable/Initialize(mapload, dir)
-	wires = new /datum/wires/smes(src)
-
-	SSmachinery.queue_rcon_update()
-	..()
-
-	LAZYINITLIST(component_parts)	// Parent machinery call won't initialize this list if this is a newly constructed SMES.
-
-	for (var/i in 1 to cur_coils)
-		component_parts += new /obj/item/smes_coil(src)
-
-	return INITIALIZE_HINT_LATELOAD
-
-/obj/machinery/power/smes/buildable/LateInitialize()
-	recalc_coils()
-
-// Proc: attack_hand()
-// Parameters: None
-// Description: Opens the UI as usual, and if cover is removed opens the wiring panel.
-/obj/machinery/power/smes/buildable/attack_hand()
-	..()
-	if(open_hatch)
-		wires.Interact(usr)
+		to_chat(user, "<span class='warning'>Connection error: Destination Unreachable.</span>")
 
 // Proc: recalc_coils()
 // Parameters: None
 // Description: Updates properties (IO, capacity, etc.) of this SMES by checking internal components.
-/obj/machinery/power/smes/buildable/proc/recalc_coils()
-	if ((cur_coils <= max_coils) && (cur_coils >= 1))
-		capacity = 0
-		input_level_max = 0
-		output_level_max = 0
-		for(var/obj/item/smes_coil/C in component_parts)
-			capacity += C.ChargeCapacity
-			input_level_max += C.IOCapacity
-			output_level_max += C.IOCapacity
-		charge = between(0, charge, capacity)
-		return 1
-	else
-		return 0
+/obj/machinery/power/smes/buildable/RefreshParts()
+	..()
+	capacity = 0
+	input_level_max = 0
+	output_level_max = 0
+	for(var/obj/item/stock_parts/smes_coil/C in component_parts)
+		capacity += C.ChargeCapacity
+		input_level_max += C.IOCapacity
+		output_level_max += C.IOCapacity
+	if(malf_upgraded)
+		capacity *= 1.2
+		input_level_max *= 2
+		output_level_max *= 2
+	charge = between(0, charge, capacity)
 
 // Proc: total_system_failure()
 // Parameters: 2 (intensity - how strong the failure is, user - person which caused the failure)
 // Description: Checks the sensors for alerts. If change (alerts cleared or detected) occurs, calls for icon update.
-/obj/machinery/power/smes/buildable/proc/total_system_failure(var/intensity = 0, var/mob/user as mob)
+/obj/machinery/power/smes/buildable/proc/total_system_failure(var/intensity = 0, var/mob/user)
 	// SMESs store very large amount of power. If someone screws up (ie: Disables safeties and attempts to modify the SMES) very bad things happen.
 	// Bad things are based on charge percentage.
 	// Possible effects:
-	// Sparks - Lets out few sparks, mostly fire hazard if phoron present. Otherwise purely aesthetic.
+	// Sparks - Lets out few sparks, mostly fire hazard if flammable gas present. Otherwise purely aesthetic.
 	// Shock - Depending on intensity harms the user. Insultated Gloves protect against weaker shocks, but strong shock bypasses them.
 	// EMP Pulse - Lets out EMP pulse discharge which screws up nearby electronics.
 	// Light Overload - X% chance to overload each lighting circuit in connected powernet. APC based.
@@ -182,39 +163,39 @@
 
 
 	// Preparations
+	var/datum/effect/effect/system/spark_spread/s = new /datum/effect/effect/system/spark_spread
 	// Check if user has protected gloves.
 	var/user_protected = 0
 	if(h_user.gloves)
 		var/obj/item/clothing/gloves/G = h_user.gloves
 		if(G.siemens_coefficient == 0)
 			user_protected = 1
-	log_game("SMES FAILURE: <b>[src.x]X [src.y]Y [src.z]Z</b> User: [usr.ckey], Intensity: [intensity]/100",ckey=key_name(usr))
-	message_admins("SMES FAILURE: <b>[src.x]X [src.y]Y [src.z]Z</b> User: [usr.ckey], Intensity: [intensity]/100 - <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[src.x];Y=[src.y];Z=[src.z]'>JMP</a>")
+	log_and_message_admins("SMES FAILURE: <b>[src.x]X [src.y]Y [src.z]Z</b> User: [usr.ckey], Intensity: [intensity]/100 - <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[src.x];Y=[src.y];Z=[src.z]'>JMP</a>")
 
 
 	switch (intensity)
 		if (0 to 15)
 			// Small overcharge
 			// Sparks, Weak shock
-			small_spark.queue()	// This belongs to the parent SMES type.
-			if (user_protected && prob(80))
-				to_chat(h_user, "Small electrical arc almost burns your hand. Luckily you had your gloves on!")
+			s.set_up(2, 1, src)
+			s.start()
+			if(user_protected && prob(80))
+				to_chat(h_user, SPAN_WARNING("Small electrical arc almost burns your hand. Luckily you had your gloves on!"))
 			else
-				to_chat(h_user, "Small electrical arc sparks and burns your hand as you touch the [src]!")
-				h_user.adjustFireLoss(rand(5,10))
-				h_user.Paralyse(2)
+				to_chat(h_user, SPAN_DANGER("Small electrical arc sparks and burns your hand as you touch the [src]!"))
+				h_user.electrocute_act(rand(5,20), src, def_zone = h_user.get_active_held_item_slot())//corrected to counter act armor and stuff
 			charge = 0
 
 		if (16 to 35)
 			// Medium overcharge
 			// Sparks, Medium shock, Weak EMP
-			big_spark.queue()
+			s.set_up(4,1,src)
+			s.start()
 			if (user_protected && prob(25))
-				to_chat(h_user, "Medium electrical arc sparks and almost burns your hand. Luckily you had your gloves on!")
+				to_chat(h_user, SPAN_WARNING("Medium electrical arc sparks and almost burns your hand. Luckily you had your gloves on!"))
 			else
-				to_chat(h_user, "Medium electrical sparks as you touch the [src], severely burning your hand!")
-				h_user.adjustFireLoss(rand(10,25))
-				h_user.Paralyse(5)
+				to_chat(h_user, SPAN_DANGER("Medium electrical sparks as you touch the [src], severely burning your hand!"))
+				h_user.electrocute_act(rand(15,35), src, def_zone = h_user.get_active_held_item_slot())
 			spawn(0)
 				empulse(src.loc, 2, 4)
 			apcs_overload(0, 5, 10)
@@ -223,16 +204,16 @@
 		if (36 to 60)
 			// Strong overcharge
 			// Sparks, Strong shock, Strong EMP, 10% light overload. 1% APC failure
-			big_spark.queue()
-			big_spark.queue()
+			s.set_up(7,1,src)
+			s.start()
 			if (user_protected)
-				to_chat(h_user, "Strong electrical arc sparks between you and [src], ignoring your gloves and burning your hand!")
-				h_user.adjustFireLoss(rand(25,60))
-				h_user.Paralyse(8)
+				to_chat(h_user, SPAN_DANGER("Strong electrical arc sparks between you and [src], ignoring your gloves and burning your hand!"))
+				h_user.electrocute_act(rand(30,60), src, def_zone = h_user.get_active_held_item_slot())
+				h_user.Paralyse(3)
 			else
-				to_chat(h_user, "Strong electrical arc sparks between you and [src], knocking you out for a while!")
-				h_user.adjustFireLoss(rand(35,75))
-				h_user.Paralyse(12)
+				to_chat(h_user, SPAN_DANGER("Strong electrical arc sparks between you and [src], knocking you out for a while!"))
+				h_user.electrocute_act(rand(40,80), src, def_zone = ran_zone(null))
+				h_user.Paralyse(6)
 			spawn(0)
 				empulse(src.loc, 8, 16)
 			charge = 0
@@ -243,12 +224,12 @@
 		if (61 to INFINITY)
 			// Massive overcharge
 			// Sparks, Near - instantkill shock, Strong EMP, 25% light overload, 5% APC failure. 50% of SMES explosion. This is bad.
-			big_spark.queue()
-			big_spark.queue()
-			to_chat(h_user, "A massive electrical arc sparks between you and \the [src]. The last thing that goes through your mind is \"Oh shit...\".")
+			s.set_up(10,1,src)
+			s.start()
+			to_chat(h_user, SPAN_WARNING("Massive electrical arc sparks between you and [src].<br>Last thing you can think about is <span class='danger'>\"Oh shit...\"</span>"))
 			// Remember, we have few gigajoules of electricity here.. Turn them into crispy toast.
-			h_user.adjustFireLoss(rand(150,195))
-			h_user.Paralyse(25)
+			h_user.electrocute_act(rand(170,210), src, def_zone = ran_zone(null))
+			h_user.Paralyse(8)
 			spawn(0)
 				empulse(src.loc, 32, 64)
 			charge = 0
@@ -258,8 +239,7 @@
 
 			if (prob(50))
 				// Added admin-notifications so they can stop it when griffed.
-				log_game("SMES explosion imminent.")
-				message_admins("SMES explosion imminent.")
+				log_and_message_admins("SMES explosion imminent.")
 				src.ping("DANGER! Magnetic containment field unstable! Containment field failure imminent!")
 				failing = 1
 				// 30 - 60 seconds and then BAM!
@@ -273,7 +253,17 @@
 					// Not sure if this is necessary, but just in case the SMES *somehow* survived..
 					qdel(src)
 
+/obj/machinery/power/smes/buildable/proc/check_total_system_failure(var/mob/user)
+	// Probability of failure if safety circuit is disabled (in %)
+	var/failure_probability = capacity ? round((charge / capacity) * 100) : 0
 
+	// If failure probability is below 5% it's usually safe to do modifications
+	if (failure_probability < 5)
+		failure_probability = 0
+
+	if (failure_probability && prob(failure_probability * (1.5 - (user.get_skill_value(core_skill) - SKILL_MIN)/(SKILL_MAX - SKILL_MIN))))// 0.5 - 1.5, step of 0.25
+		total_system_failure(failure_probability, user)
+		return TRUE
 
 // Proc: apcs_overload()
 // Parameters: 3 (failure_chance - chance to actually break the APC, overload_chance - Chance of breaking lights, reboot_chance - Chance of temporarily disabling the APC)
@@ -282,102 +272,87 @@
 	if (!src.powernet)
 		return
 
-	for(var/obj/machinery/power/terminal/T in src.powernet.nodes)
-		if(istype(T.master, /obj/machinery/power/apc))
-			var/obj/machinery/power/apc/A = T.master
+	for(var/obj/machinery/power/terminal/T in powernet.nodes)
+		var/obj/machinery/power/apc/A = T.master_machine()
+		if(istype(A))
 			if (prob(overload_chance))
 				A.overload_lighting()
 			if (prob(failure_chance))
-				A.set_broken()
+				A.set_broken(TRUE)
 			if(prob(reboot_chance))
 				A.energy_fail(rand(30,60))
 
 // Proc: update_icon()
 // Parameters: None
 // Description: Allows us to use special icon overlay for critical SMESs
-/obj/machinery/power/smes/buildable/update_icon()
+/obj/machinery/power/smes/buildable/on_update_icon()
 	if (failing)
-		cut_overlays()
-		add_overlay("smes-crit")
+		overlays.Cut()
+		overlays += image('icons/obj/power.dmi', "smes-crit")
 	else
 		..()
+
+/obj/machinery/power/smes/buildable/cannot_transition_to(state_path, mob/user)
+	if(failing)
+		return SPAN_WARNING("\The [src]'s screen is flashing with alerts. It seems to be overloaded! Touching it now is probably not a good idea.")
+
+	if(state_path == /decl/machine_construction/default/deconstructed)
+		if(charge > (capacity/100) && safeties_enabled)
+			return SPAN_WARNING("\The [src]'s safety circuit is preventing modifications while it's charged!")
+		if(output_attempt || input_attempt)
+			return SPAN_WARNING("Turn \the [src] off first!")
+		if(!(stat & BROKEN))
+			return SPAN_WARNING("You have to disassemble the terminal[num_terminals > 1 ? "s" : ""] first!")
+		if(user)
+			if(!do_after(user, 5 SECONDS * number_of_components(/obj/item/stock_parts/smes_coil), src) && isCrowbar(user.get_active_hand()))
+				return MCS_BLOCK
+			if(check_total_system_failure(user))
+				return MCS_BLOCK
+	return ..()
+
+/obj/machinery/power/smes/buildable/can_add_component(obj/item/stock_parts/component, mob/user)
+	if(charge > (capacity/100) && safeties_enabled)
+		to_chat(user,  SPAN_WARNING("\The [src]'s safety circuit is preventing modifications while it's charged!"))
+		return FALSE
+	. = ..()
+	if(!.)
+		return
+	if(istype(component,/obj/item/stock_parts/smes_coil))
+		if(output_attempt || input_attempt)
+			to_chat(user, SPAN_WARNING("Turn \the [src] off first!"))
+			return FALSE
+		if(!do_after(user, 5 SECONDS, src) || check_total_system_failure(user))
+			return FALSE
+
+/obj/machinery/power/smes/buildable/remove_part_and_give_to_user(path, mob/user)
+	if(charge > (capacity/100) && safeties_enabled)
+		to_chat(user,  SPAN_WARNING("\The [src]'s safety circuit is preventing modifications while it's charged!"))
+		return
+	if(ispath(path,/obj/item/stock_parts/smes_coil))
+		if(output_attempt || input_attempt)
+			to_chat(user, SPAN_WARNING("Turn \the [src] off first!"))
+			return
+		if(!do_after(user, 5 SECONDS, src) || check_total_system_failure(user))
+			return
+	..()
 
 // Proc: attackby()
 // Parameters: 2 (W - object that was used on this machine, user - person which used the object)
 // Description: Handles tool interaction. Allows deconstruction/upgrading/fixing.
-/obj/machinery/power/smes/buildable/attackby(var/obj/item/W as obj, var/mob/user as mob)
+/obj/machinery/power/smes/buildable/attackby(var/obj/item/W, var/mob/user)
 	// No more disassembling of overloaded SMESs. You broke it, now enjoy the consequences.
 	if (failing)
-		to_chat(user, "<span class='warning'>The [src]'s screen is flashing with alerts. It seems to be overloaded! Touching it now is probably not a good idea.</span>")
+		to_chat(user, "<span class='warning'>\The [src]'s screen is flashing with alerts. It seems to be overloaded! Touching it now is probably not a good idea.</span>")
 		return
-	// If parent returned 1:
-	// - Hatch is open, so we can modify the SMES
-	// - No action was taken in parent function (terminal de/construction atm).
-	if (..())
+
+	if (!..())
 
 		// Multitool - change RCON tag
-		if(W.ismultitool())
+		if(isMultitool(W))
 			var/newtag = input(user, "Enter new RCON tag. Use \"NO_TAG\" to disable RCON or leave empty to cancel.", "SMES RCON system") as text
 			if(newtag)
 				RCon_tag = newtag
 				to_chat(user, "<span class='notice'>You changed the RCON tag to: [newtag]</span>")
-				SSmachinery.queue_rcon_update()
-			return
-		// Charged above 1% and safeties are enabled.
-		if((charge > (capacity/100)) && safeties_enabled)
-			to_chat(user, "<span class='warning'>Safety circuit of [src] is preventing modifications while it's charged!</span>")
-			return
-
-		if (output_attempt || input_attempt)
-			to_chat(user, "<span class='warning'>Turn off the [src] first!</span>")
-			return
-
-		// Probability of failure if safety circuit is disabled (in %)
-		var/failure_probability = round((charge / capacity) * 100)
-
-		// If failure probability is below 5% it's usually safe to do modifications
-		if (failure_probability < 5)
-			failure_probability = 0
-
-		// Crowbar - Disassemble the SMES.
-		if(W.iscrowbar())
-			if (terminal)
-				to_chat(user, "<span class='warning'>You have to disassemble the terminal first!</span>")
-				return
-
-			playsound(get_turf(src), W.usesound, 50, 1)
-			to_chat(user, "<span class='warning'>You begin to disassemble the [src]!</span>")
-			if (do_after(usr, 100 * cur_coils)) // More coils = takes longer to disassemble. It's complex so largest one with 5 coils will take 50s
-
-				if (failure_probability && prob(failure_probability))
-					total_system_failure(failure_probability, user)
-					return
-
-				to_chat(usr, "<span class='warning'>You have disassembled the SMES cell!</span>")
-				var/obj/machinery/constructable_frame/machine_frame/M = new /obj/machinery/constructable_frame/machine_frame(src.loc)
-				M.state = 2
-				M.icon_state = "box_1"
-				for(var/obj/I in component_parts)
-					I.forceMove(src.loc)
-					component_parts -= I
-				qdel(src)
-				return
-
-		// Superconducting Magnetic Coil - Upgrade the SMES
-		else if(istype(W, /obj/item/smes_coil))
-			if (cur_coils < max_coils)
-
-				if (failure_probability && prob(failure_probability))
-					total_system_failure(failure_probability, user)
-					return
-
-				to_chat(usr, "You install the coil into the SMES unit!")
-				user.drop_from_inventory(W,src)
-				cur_coils ++
-				component_parts += W
-				recalc_coils()
-			else
-				to_chat(usr, "<span class='warning'>You can't insert more coils to this SMES unit!</span>")
 
 // Proc: toggle_input()
 // Parameters: None
@@ -406,3 +381,8 @@
 /obj/machinery/power/smes/buildable/proc/set_output(var/new_output = 0)
 	output_level = between(0, new_output, output_level_max)
 	update_icon()
+
+/obj/machinery/power/smes/buildable/emp_act(var/severity)
+	if(emp_proof)
+		return
+	..(severity)

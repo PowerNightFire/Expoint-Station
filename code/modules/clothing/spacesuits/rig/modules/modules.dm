@@ -12,19 +12,20 @@
 	name = "hardsuit upgrade"
 	desc = "It looks pretty sciency."
 	icon = 'icons/obj/rig_modules.dmi'
-	icon_state = "generic"
-	matter = list(DEFAULT_WALL_MATERIAL = 20000, MATERIAL_PLASTIC = 30000, MATERIAL_GLASS = 5000)
-
-	var/list/construction_cost = list(DEFAULT_WALL_MATERIAL=7000, MATERIAL_GLASS =7000)
-	var/construction_time = 100
+	icon_state = "module"
+	material = /decl/material/solid/metal/steel
+	matter = list(
+		/decl/material/solid/plastic = MATTER_AMOUNT_REINFORCEMENT,
+		/decl/material/solid/glass = MATTER_AMOUNT_TRACE
+	)
 
 	var/damage = 0
 	var/obj/item/rig/holder
+	var/list/banned_modules = list()
 
 	var/module_cooldown = 10
 	var/next_use = 0
 
-	var/engage_on_activate = TRUE       // Whether the rig should call engage() in its activate() proc
 	var/toggleable                      // Set to 1 for the device to show up as an active effect.
 	var/usable                          // Set to 1 for the device to have an on-use effect.
 	var/selectable                      // Set to 1 to be able to assign the device as primary system.
@@ -32,12 +33,11 @@
 	var/permanent                       // If set, the module can't be removed.
 	var/disruptive = 1                  // Can disrupt by other effects.
 	var/activates_on_touch              // If set, unarmed attacks will call engage() on the target.
-	var/confined_use = FALSE				// If set, can be used inside mechs and other vehicles.
 
 	var/active                          // Basic module status
 	var/disruptable                     // Will deactivate if some other powers are used.
-	var/attackdisrupts = 0             // Will deactivate if user attacks
 
+	// Now in joules/watts!
 	var/use_power_cost = 0              // Power used when single-use ability called.
 	var/active_power_cost = 0           // Power used when turned on.
 	var/passive_power_cost = 0          // Power used when turned off.
@@ -59,60 +59,63 @@
 	var/deactivate_string = "Deactivate"
 
 	var/list/stat_rig_module/stat_modules = new()
-	var/category	// Use for restricting modules for specific suits, to specialize
 
 /obj/item/rig_module/examine(mob/user)
-	..()
+	. = ..()
 	switch(damage)
 		if(0)
-			to_chat(user, SPAN_NOTICE("It is undamaged."))
+			to_chat(user, "It is undamaged.")
 		if(1)
-			to_chat(user, SPAN_WARNING("It is badly damaged."))
+			to_chat(user, "It is badly damaged.")
 		if(2)
-			to_chat(user, SPAN_DANGER("It is almost completely destroyed."))
+			to_chat(user, "It is almost completely destroyed.")
 
 /obj/item/rig_module/attackby(obj/item/W, mob/user)
-	if(istype(W, /obj/item/stack/nanopaste))
+
+	if(istype(W,/obj/item/stack/nanopaste))
+
 		if(damage == 0)
-			to_chat(user, SPAN_WARNING("There is no damage to mend."))
+			to_chat(user, "There is no damage to mend.")
 			return
 
-		to_chat(user, SPAN_NOTICE("You start mending the damaged portions of \the [src]..."))
-		if(!do_after(user,30) || !W || !src)
+		to_chat(user, "You start mending the damaged portions of \the [src]...")
+
+		if(!do_after(user,30,src) || !W || !src)
 			return
 
 		var/obj/item/stack/nanopaste/paste = W
 		damage = 0
-		to_chat(user, SPAN_NOTICE("You mend the damage to \the [src] with \the [W]."))
+		to_chat(user, "You mend the damage to [src] with [W].")
 		paste.use(1)
 		return
 
-	else if(W.iscoil())
+	else if(isCoil(W))
+
 		switch(damage)
 			if(0)
-				to_chat(user, SPAN_WARNING("There is no damage to mend."))
+				to_chat(user, "There is no damage to mend.")
 				return
 			if(2)
-				to_chat(user, SPAN_WARNING("\The [src] is too damaged to repair with cable coil, it needs nanopaste."))
+				to_chat(user, "There is no damage that you are capable of mending with such crude tools.")
 				return
 
 		var/obj/item/stack/cable_coil/cable = W
-		if(!cable.amount >= 5)
-			to_chat(user, SPAN_WARNING("You need five units of cable to repair \the [src]."))
+		if(!cable.can_use(5))
+			to_chat(user, "You need five units of cable to repair \the [src].")
 			return
 
-		to_chat(user, SPAN_NOTICE("You start mending the damaged portions of \the [src]..."))
-		if(!do_after(user, 30) || !W || !src)
+		to_chat(user, "You start mending the damaged portions of \the [src]...")
+		if(!do_after(user,30,src) || !W || !src)
 			return
 
 		damage = 1
-		to_chat(user, SPAN_NOTICE("You mend some of damage to \the [src] with \the [W], but you will need more advanced tools to fix it completely."))
+		to_chat(user, "You mend some of damage to [src] with [W], but you will need more advanced tools to fix it completely.")
 		cable.use(5)
 		return
 	..()
 
-/obj/item/rig_module/New()
-	..()
+/obj/item/rig_module/Initialize()
+	. =..()
 	if(suit_overlay_inactive)
 		suit_overlay = suit_overlay_inactive
 
@@ -131,96 +134,114 @@
 
 		charges = processed_charges
 
-	stat_modules += new /stat_rig_module/activate(src)
-	stat_modules += new /stat_rig_module/deactivate(src)
-	stat_modules += new /stat_rig_module/engage(src)
-	stat_modules += new /stat_rig_module/select(src)
-	stat_modules += new /stat_rig_module/charge(src)
-
+	stat_modules +=	new/stat_rig_module/activate(src)
+	stat_modules +=	new/stat_rig_module/deactivate(src)
+	stat_modules +=	new/stat_rig_module/engage(src)
+	stat_modules +=	new/stat_rig_module/select(src)
+	stat_modules +=	new/stat_rig_module/charge(src)
 
 /obj/item/rig_module/Destroy()
-	for(var/sm in stat_modules)
-		qdel(sm)
-	stat_modules.Cut()
-	holder = null
-	return ..()
+	deactivate()
+	QDEL_NULL_LIST(stat_modules)
+	. = ..()
 
 // Called when the module is installed into a suit.
 /obj/item/rig_module/proc/installed(var/obj/item/rig/new_holder)
 	holder = new_holder
 	return
 
-//Proc for one-use abilities like teleport.
-/obj/item/rig_module/proc/engage(atom/target, mob/user)
+/obj/item/rig_module/proc/check(var/charge = 50)
+
 	if(damage >= 2)
-		to_chat(user, SPAN_WARNING("\The [interface_name] is damaged beyond use!"))
-		return FALSE
+		to_chat(usr, "<span class='warning'>The [interface_name] is damaged beyond use!</span>")
+		return 0
 
 	if(world.time < next_use)
-		to_chat(user, SPAN_WARNING("You cannot use \the [interface_name] again so soon."))
-		return FALSE
+		to_chat(usr, "<span class='warning'>You cannot use the [interface_name] again so soon.</span>")
+		return 0
 
 	if(!holder || holder.canremove)
-		to_chat(user, SPAN_WARNING("The suit is not initialized."))
-		return FALSE
+		to_chat(usr, "<span class='warning'>The suit is not initialized.</span>")
+		return 0
 
-	if(user.lying || user.stat || user.stunned || user.paralysis || user.weakened)
-		to_chat(user, SPAN_WARNING("You cannot use the suit in this state."))
-		return FALSE
+	if(usr.lying || usr.stat || usr.stunned || usr.paralysis || usr.weakened)
+		to_chat(usr, "<span class='warning'>You cannot use the suit in this state.</span>")
+		return 0
 
 	if(holder.wearer && holder.wearer.lying)
-		to_chat(user, SPAN_WARNING("The suit cannot function while the wearer is prone."))
-		return FALSE
+		to_chat(usr, "<span class='warning'>The suit cannot function while the wearer is prone.</span>")
+		return 0
 
-	if(holder.security_check_enabled && !holder.check_suit_access(user))
-		to_chat(user, SPAN_DANGER("Access denied."))
-		return FALSE
+	if(holder.security_check_enabled && !holder.check_suit_access(usr))
+		to_chat(usr, "<span class='danger'>Access denied.</span>")
+		return 0
 
-	if(!holder.check_power_cost(user, use_power_cost, 0, src, (istype(user,/mob/living/silicon ? 1 : 0) ) ) )
-		return FALSE
+	if(!holder.check_power_cost(usr, charge, 0, src, (istype(usr,/mob/living/silicon ? 1 : 0) ) ) )
+		return 0
 
-	if(!confined_use && istype(user.loc, /mob/living/heavy_vehicle))
-		to_chat(user, SPAN_DANGER("You cannot use the suit in the confined space."))
-		return FALSE
+	return 1
+
+//Proc for one-use abilities like teleport.
+/obj/item/rig_module/proc/engage()
+
+	if(!check(use_power_cost))
+		return 0
 
 	next_use = world.time + module_cooldown
-
-	return TRUE
+	return 1
 
 // Proc for toggling on active abilities.
-/obj/item/rig_module/proc/activate(mob/user)
-	if(active)
-		return FALSE
-	if(engage_on_activate && !engage(null, user))
-		return FALSE
+/obj/item/rig_module/proc/activate()
 
-	active = TRUE
+	if(active || !engage())
+		return 0
 
-	spawn(1)
-		if(suit_overlay_active)
-			suit_overlay = suit_overlay_active
-		else
-			suit_overlay = null
-		holder.update_icon()
+	active = 1
 
-	return TRUE
+	if(suit_overlay_active)
+		suit_overlay = suit_overlay_active
+	else
+		suit_overlay = null
+	holder.update_icon()
+
+	return 1
 
 // Proc for toggling off active abilities.
-/obj/item/rig_module/proc/deactivate(mob/user)
+/obj/item/rig_module/proc/deactivate()
+
 	if(!active)
-		return FALSE
+		return 0
 
-	active = FALSE
+	active = 0
 
-	spawn(1)
-		if(suit_overlay_inactive)
-			suit_overlay = suit_overlay_inactive
+	if(suit_overlay_inactive)
+		suit_overlay = suit_overlay_inactive
+	else
+		suit_overlay = null
+	if(holder)
+		holder.update_icon()
+
+	return 1
+
+//Proc for selecting module
+/obj/item/rig_module/proc/select()
+
+	if(!check())
+		return 0
+
+	if(holder.selected_module)
+		if(holder.selected_module.suit_overlay_inactive)
+			holder.selected_module.suit_overlay = holder.selected_module.suit_overlay_inactive
 		else
-			suit_overlay = null
-		if(holder)
-			holder.update_icon()
+			holder.selected_module.suit_overlay = null
 
-	return TRUE
+	holder.selected_module = src
+	if(suit_overlay_active)
+		suit_overlay = suit_overlay_active
+	else
+		suit_overlay = null
+	holder.update_icon()
+	return 1
 
 // Called when the module is uninstalled from a suit.
 /obj/item/rig_module/proc/removed()
@@ -228,8 +249,11 @@
 	holder = null
 	return
 
+/obj/item/rig_module/get_cell()
+	return holder && holder.get_cell()
+
 // Called by the hardsuit each rig process tick.
-/obj/item/rig_module/process()
+/obj/item/rig_module/Process()
 	if(active)
 		return active_power_cost
 	else
@@ -238,14 +262,7 @@
 // Called by holder rigsuit attackby()
 // Checks if an item is usable with this module and handles it if it is
 /obj/item/rig_module/proc/accepts_item(var/obj/item/input_device)
-	return FALSE
-
-/obj/item/rig_module/proc/message_user(mob/user, var/user_text, var/wearer_text)
-	to_chat(user, user_text)
-
-	if(holder.wearer && user != holder.wearer)
-		to_chat(holder.wearer, wearer_text)
-		return
+	return 0
 
 /mob/living/carbon/human/Stat()
 	. = ..()
@@ -257,7 +274,16 @@
 /mob/proc/SetupStat(var/obj/item/rig/R)
 	if(R && !R.canremove && R.installed_modules.len && statpanel("Hardsuit Modules"))
 		var/cell_status = R.cell ? "[R.cell.charge]/[R.cell.maxcharge]" : "ERROR"
-		stat("Suit charge", cell_status)
+		stat("Suit Charge:", cell_status)
+		var/air_tank
+		if(R.air_supply)//makes sure you have tank
+			if(R.air_supply.air_contents)//make sure your tank has air
+				air_tank = "[round(R.air_supply.air_contents.return_pressure())] kPa"
+			else
+				air_tank = "0 kPa"
+		else
+			air_tank = "NOT FOUND"
+		stat("Tank Pressure:", air_tank)
 		for(var/obj/item/rig_module/module in R.installed_modules)
 			for(var/stat_rig_module/SRM in module.stat_modules)
 				if(SRM.CanUse())
@@ -268,19 +294,22 @@
 	var/module_mode = ""
 	var/obj/item/rig_module/module
 
+/stat_rig_module/Destroy()
+	if(module)
+		if(module.stat_modules)
+			module.stat_modules -= src
+		module = null
+	. = ..()
+
 /stat_rig_module/New(var/obj/item/rig_module/module)
 	..()
 	src.module = module
-
-/stat_rig_module/Destroy()
-	module = null
-	return ..()
 
 /stat_rig_module/proc/AddHref(var/list/href_list)
 	return
 
 /stat_rig_module/proc/CanUse()
-	return FALSE
+	return 0
 
 /stat_rig_module/Click()
 	if(CanUse())
@@ -296,9 +325,10 @@
 
 /stat_rig_module/activate/New(var/obj/item/rig_module/module)
 	..()
-	name = module.activate_string
-	if(module.active_power_cost)
-		name += " ([module.active_power_cost*10]A)"
+	if(module)
+		name = module.activate_string
+		if(module.active_power_cost)
+			name += " ([module.active_power_cost*10]A)"
 	module_mode = "activate"
 
 /stat_rig_module/activate/CanUse()
@@ -306,11 +336,11 @@
 
 /stat_rig_module/deactivate/New(var/obj/item/rig_module/module)
 	..()
-	name = module.deactivate_string
-	// Show cost despite being 0, if it means changing from an active cost.
-	if(module.active_power_cost || module.passive_power_cost)
-		name += " ([module.passive_power_cost*10]P)"
-
+	if(module)
+		name = module.deactivate_string
+		// Show cost despite being 0, if it means changing from an active cost.
+		if(module.active_power_cost || module.passive_power_cost)
+			name += " ([module.passive_power_cost*10]P)"
 	module_mode = "deactivate"
 
 /stat_rig_module/deactivate/CanUse()
@@ -318,9 +348,10 @@
 
 /stat_rig_module/engage/New(var/obj/item/rig_module/module)
 	..()
-	name = module.engage_string
-	if(module.use_power_cost)
-		name += " ([module.use_power_cost*10]E)"
+	if(module)
+		name = module.engage_string
+		if(module.use_power_cost)
+			name += " ([module.use_power_cost*10]E)"
 	module_mode = "engage"
 
 /stat_rig_module/engage/CanUse()
@@ -334,8 +365,8 @@
 /stat_rig_module/select/CanUse()
 	if(module.selectable)
 		name = module.holder.selected_module == module ? "Selected" : "Select"
-		return TRUE
-	return FALSE
+		return 1
+	return 0
 
 /stat_rig_module/charge/New()
 	..()
@@ -355,22 +386,5 @@
 	if(module.charges && module.charges.len)
 		var/datum/rig_charge/charge = module.charges[module.charge_selected]
 		name = "[charge.display_name] ([charge.charges]C) - Change"
-		return TRUE
-	return FALSE
-
-/mob/living/carbon/human/ClickOn(atom/A, params)
-	. = ..()
-	if (ismob(A) && istype(back, /obj/item/rig))
-		var/obj/item/rig/R = back
-		R.attack_disrupt_check(src)
-
-/mob/living/carbon/human/throw_item(atom/target)
-	. = ..()
-	if (ismob(src) && istype(back, /obj/item/rig))
-		var/obj/item/rig/R = back
-		R.attack_disrupt_check(src)
-
-/obj/item/rig/proc/attack_disrupt_check()
-	for (var/obj/item/rig_module/module in installed_modules)
-		if (module.active && module.attackdisrupts)
-			module.deactivate()
+		return 1
+	return 0

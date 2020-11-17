@@ -1,12 +1,15 @@
-/mob/living/silicon/robot/LateLogin()
+/mob/living/silicon/robot/Login()
 	..()
 	regenerate_icons()
+	update_hud()
+
 	show_laws(0)
 
-	// the fuck
-	winset(src, null, "mainwindow.macro=borgmacro hotkey_toggle.is-checked=false input.focus=true input.background-color=#D3B5B5")
+	winset(src, null, "mainwindow.macro=borgmacro hotkey_toggle.is-checked=false input.focus=true input.background-color=#d3b5b5")
 
 	// Forces synths to select an icon relevant to their module
-	if(module && !icon_selected)
-		choose_icon()
-	set_intent(a_intent) // to set the eye colour
+	if(!icon_selected)
+		choose_icon(module_sprites)
+
+	if(hands)
+		hands.icon_state = istype(module) ? lowertext(module.display_name) : "nomod"

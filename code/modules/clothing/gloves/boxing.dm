@@ -1,24 +1,16 @@
 /obj/item/clothing/gloves/boxing
 	name = "boxing gloves"
 	desc = "Because you really needed another excuse to punch your crewmates."
-	icon_state = "boxing"
-	item_state = "boxing"
-	species_restricted = list("exclude",BODYTYPE_VAURCA_BREEDER,BODYTYPE_VAURCA_WARFORM)
-
-/obj/item/clothing/gloves/boxing/attackby(obj/item/W, mob/user)
-	if(W.iswirecutter() || istype(W, /obj/item/surgery/scalpel))
-		to_chat(user, "<span class='notice'>That won't work.</span>")	//Nope)
-		return
-	..()
+	icon = 'icons/clothing/hands/gloves_boxing.dmi'
+	icon_state = ICON_STATE_WORLD
+	color = COLOR_RED_GRAY
+	item_flags = ITEM_FLAG_THICKMATERIAL | ITEM_FLAG_PADDED
 
 /obj/item/clothing/gloves/boxing/green
-	icon_state = "boxinggreen"
-	item_state = "boxinggreen"
+	color = COLOR_GREEN_GRAY
 
 /obj/item/clothing/gloves/boxing/blue
-	icon_state = "boxingblue"
-	item_state = "boxingblue"
+	color = COLOR_BLUE_GRAY
 
 /obj/item/clothing/gloves/boxing/yellow
-	icon_state = "boxingyellow"
-	item_state = "boxingyellow"
+	color = COLOR_YELLOW_GRAY
