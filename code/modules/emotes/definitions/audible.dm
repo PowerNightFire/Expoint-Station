@@ -5,13 +5,8 @@
 	var/emote_sound
 
 /decl/emote/audible/do_extra(var/atom/user)
-	var/sound_to_play
 	if(emote_sound)
-		if(islist(emote_sound))
-			sound_to_play = pick(emote_sound)
-		else
-			sound_to_play = emote_sound
-		playsound(user.loc, sound_to_play, 50, 0, vary = FALSE)
+		playsound(user.loc, emote_sound, 50, 0)
 
 /decl/emote/audible/deathgasp_alien
 	key = "deathgasp"
@@ -32,7 +27,7 @@
 
 /decl/emote/audible/choke
 	key ="choke"
-	emote_message_3p = "USER chokes!"
+	emote_message_3p = "USER chokes."
 	conscious = 0
 
 /decl/emote/audible/gnarl
@@ -48,31 +43,6 @@
 	key ="mchirp"
 	emote_message_3p = "USER chirps a chorus of notes!"
 	emote_sound = 'sound/misc/multichirp.ogg'
-
-/decl/emote/audible/paincreak
-	key ="pcreak"
-	emote_message_3p = "USER creaks in pain!"
-
-/decl/emote/audible/painrustle
-	key ="prustle"
-	emote_message_3p = "USER rustles in agony!"
-
-/decl/emote/audible/nymphsqueal
-	key ="psqueal"
-	emote_message_3p = "USER's nymphs squeal in pain!"
-
-/decl/emote/audible/chitter
-	key = "chitter"
-	emote_message_3p = "USER chitters."
-	emote_sound = list('sound/misc/zapsplat/chitter1.ogg', 'sound/misc/zapsplat/chitter2.ogg', 'sound/misc/zapsplat/chitter3.ogg')
-
-/decl/emote/audible/shriek
-	key = "shriek"
-	emote_message_3p = "USER shrieks!"
-
-/decl/emote/audible/screech
-	key = "screech"
-	emote_message_3p = "USER screeches!"
 
 /decl/emote/audible/alarm
 	key = "alarm"
@@ -122,13 +92,7 @@
 
 /decl/emote/audible/clap
 	key = "clap"
-	emote_message_3p = "USER claps!"
-	emote_sound = 'sound/effects/clap.ogg'
-
-/decl/emote/audible/golfclap
-	key = "golfclap"
-	emote_message_3p = "USER claps, clearly unimpressed."
-	emote_sound = 'sound/effects/golfclap.ogg'
+	emote_message_3p = "USER claps."
 
 /decl/emote/audible/chuckle
 	key = "chuckle"
@@ -184,23 +148,34 @@
 
 /decl/emote/audible/slap
 	key = "slap"
-	emote_message_1p_target = "<span class='warning'>You slap TARGET across the face!</span>"
+	emote_message_1p_target = "You slap TARGET across the face!"
 	emote_message_1p = "You slap yourself across the face!"
-	emote_message_3p_target = "<span class='warning'>USER slaps TARGET across the face!</span>"
+	emote_message_3p_target = "USER slaps TARGET across the face!"
 	emote_message_3p = "USER slaps USER_SELF across the face!"
 	emote_sound = 'sound/effects/snap.ogg'
+	check_restraints = TRUE
+	check_range = 1
 
-/decl/emote/audible/slap/target_check(var/atom/user, var/atom/target)
-	if(!ismob(target))
-		return FALSE
-	if(!target.Adjacent(user))
-		return FALSE
-	return TRUE
+/decl/emote/audible/bug_hiss
+	key ="hiss"
+	emote_message_3p_target = "USER hisses at TARGET."
+	emote_message_3p = "USER hisses."
+	emote_sound = 'sound/voice/BugHiss.ogg'
 
-/decl/emote/audible/snap
-	key = "snap"
-	emote_message_3p = "USER snaps USER_THEIR fingers."
-	emote_sound = 'sound/effects/fingersnap.ogg'
+/decl/emote/audible/bug_buzz
+	key ="buzz"
+	emote_message_3p = "USER buzzes its wings."
+	emote_sound = 'sound/voice/BugBuzz.ogg'
+
+/decl/emote/audible/bug_chitter
+	key ="chitter"
+	emote_message_3p = "USER chitters."
+	emote_sound = 'sound/voice/Bug.ogg'
+
+/decl/emote/audible/vox_shriek
+	key ="shriek"
+	emote_message_3p = "USER SHRIEKS!"
+	emote_sound = 'sound/voice/shriek1.ogg'
 
 /decl/emote/audible/roar
 	key = "roar"
@@ -219,20 +194,17 @@
 	emote_message_3p = "USER wheezes."
 
 /decl/emote/audible/hiss
-	key = "hiss"
+	key ="hiss_"
 	emote_message_3p_target = "USER hisses softly at TARGET."
 	emote_message_3p = "USER hisses softly."
-
-/decl/emote/audible/hiss/long
-	key = "hiss2"
-	emote_sound = 'sound/voice/LizardHiss.ogg'
-
-/decl/emote/audible/hiss/short
-	key = "hiss3"
-	emote_sound = 'sound/voice/LizardHissShort.ogg'
-
+	
 /decl/emote/audible/lizard_bellow
 	key = "bellow"
 	emote_message_3p_target = "USER bellows deeply at TARGET!"
 	emote_message_3p = "USER bellows!"
 	emote_sound = 'sound/voice/LizardBellow.ogg'
+
+/decl/emote/audible/lizard_squeal
+	key = "squeal"
+	emote_message_3p = "USER squeals."
+	emote_sound = 'sound/voice/LizardSqueal.ogg'

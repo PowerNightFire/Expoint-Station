@@ -2,7 +2,8 @@
 
 /obj/machinery/computer/ship/engines
 	name = "engine control console"
-	icon_screen = "enginecontrol"
+	icon_keyboard = "tech_key"
+	icon_screen = "engines"
 	var/display_state = "status"
 
 /obj/machinery/computer/ship/engines/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
@@ -31,16 +32,16 @@
 	data["engines_info"] = enginfo
 	data["total_thrust"] = total_thrust
 
-	ui = SSnanoui.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "engines_control.tmpl", "[linked.name] Engines Control", 390, 530)
 		ui.set_initial_data(data)
 		ui.open()
 		ui.set_auto_update(1)
 
-/obj/machinery/computer/ship/engines/Topic(href, href_list)
+/obj/machinery/computer/ship/engines/OnTopic(var/mob/user, var/list/href_list, state)
 	if(..())
-		return TOPIC_HANDLED
+		return ..()
 
 	if(href_list["state"])
 		display_state = href_list["state"]
@@ -55,7 +56,7 @@
 
 	if(href_list["set_global_limit"])
 		var/newlim = input("Input new thrust limit (0..100%)", "Thrust limit", linked.thrust_limit*100) as num
-		if(!CanInteract(usr, physical_state))
+		if(!CanInteract(user, state))
 			return TOPIC_NOACTION
 		linked.thrust_limit = Clamp(newlim/100, 0, 1)
 		for(var/datum/ship_engine/E in linked.engines)
@@ -72,7 +73,7 @@
 		if(href_list["set_limit"])
 			var/datum/ship_engine/E = locate(href_list["engine"])
 			var/newlim = input("Input new thrust limit (0..100)", "Thrust limit", E.get_thrust_limit()) as num
-			if(!CanInteract(usr, physical_state))
+			if(!CanInteract(user, state))
 				return
 			var/limit = Clamp(newlim/100, 0, 1)
 			if(istype(E))

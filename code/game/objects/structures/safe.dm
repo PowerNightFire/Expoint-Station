@@ -7,38 +7,33 @@ FLOOR SAFES
 //SAFES
 /obj/structure/safe
 	name = "safe"
-	desc = "A huge chunk of metal with a dial embedded in it. Fine print on the dial reads \"Scarborough Arms - 2 tumbler safe, guaranteed thermite resistant, explosion resistant, and assistant resistant.\""
+	desc = "A huge chunk of metal with a dial embedded in it. Fine print on the dial reads \"Scarborough Arms - 2 tumbler safe, guaranteed thermite resistant, explosion resistant, and assistant resistant.\"."
 	icon = 'icons/obj/structures.dmi'
 	icon_state = "safe"
 	anchored = 1
 	density = 1
 	var/open = 0		//is the safe open?
-	var/tumbler_1_pos	//the tumbler position- from 0 to 71
-	var/tumbler_1_open	//the tumbler position to open at- 0 to 71
+	var/tumbler_1_pos	//the tumbler position- from 0 to 72
+	var/tumbler_1_open	//the tumbler position to open at- 0 to 72
 	var/tumbler_2_pos
 	var/tumbler_2_open
 	var/dial = 0		//where is the dial pointing?
 	var/space = 0		//the combined w_class of everything in the safe
 	var/maxspace = 24	//the maximum combined w_class of stuff in the safe
 
-
-/obj/structure/safe/New()
-	tumbler_1_pos = rand(0, 71)
-	tumbler_1_open = rand(0, 71)
-
-	tumbler_2_pos = rand(0, 71)
-	tumbler_2_open = min(71 , max( 1 , abs(tumbler_1_open + rand(-34, 34))))
-
-
 /obj/structure/safe/Initialize()
-	. = ..()
 	for(var/obj/item/I in loc)
 		if(space >= maxspace)
 			return
-		if(I.w_class + space <= maxspace)
+		if(I.w_class + space <= maxspace) //todo replace with internal storage or something
 			space += I.w_class
 			I.forceMove(src)
+	. = ..()
+	tumbler_1_pos = rand(0, 72)
+	tumbler_1_open = rand(0, 72)
 
+	tumbler_2_pos = rand(0, 72)
+	tumbler_2_open = rand(0, 72)
 
 /obj/structure/safe/proc/check_unlocked(mob/user as mob, canhear)
 	if(user && canhear)
@@ -66,7 +61,7 @@ FLOOR SAFES
 	return num
 
 
-/obj/structure/safe/update_icon()
+/obj/structure/safe/on_update_icon()
 	if(open)
 		icon_state = "[initial(icon_state)]-open"
 	else
@@ -83,7 +78,7 @@ FLOOR SAFES
 			var/obj/item/P = contents[i]
 			dat += "<tr><td><a href='?src=\ref[src];retrieve=\ref[P]'>[P.name]</a></td></tr>"
 		dat += "</table></center>"
-	user << browse("<html><head><title>[name]</title></head><body>[dat]</body></html>", "window=safe;size=350x300")
+	show_browser(user, "<html><head><title>[name]</title></head><body>[dat]</body></html>", "window=safe;size=350x300")
 
 
 /obj/structure/safe/Topic(href, href_list)
@@ -134,7 +129,7 @@ FLOOR SAFES
 		return
 
 	if(href_list["retrieve"])
-		user << browse("", "window=safe") // Close the menu)
+		show_browser(user, "", "window=safe") // Close the menu
 
 		var/obj/item/P = locate(href_list["retrieve"]) in src
 		if(open)
@@ -146,8 +141,9 @@ FLOOR SAFES
 /obj/structure/safe/attackby(obj/item/I as obj, mob/user as mob)
 	if(open)
 		if(I.w_class + space <= maxspace)
+			if(!user.unEquip(I, src))
+				return
 			space += I.w_class
-			user.drop_from_inventory(I,src)
 			to_chat(user, "<span class='notice'>You put [I] in [src].</span>")
 			updateUsrDialog()
 			return
@@ -169,7 +165,7 @@ obj/structure/safe/ex_act(severity)
 	icon_state = "floorsafe"
 	density = 0
 	level = 1	//underfloor
-	layer = 2.5
+	layer = BELOW_OBJ_LAYER
 
 /obj/structure/safe/floor/Initialize()
 	. = ..()
@@ -179,18 +175,7 @@ obj/structure/safe/ex_act(severity)
 	update_icon()
 
 /obj/structure/safe/floor/hide(var/intact)
-	invisibility = intact ? 101 : 0
+	set_invisibility(intact ? 101 : 0)
 
 /obj/structure/safe/floor/hides_under_flooring()
 	return 1
-
-//random station safe, may come with some different loot
-/obj/structure/safe/station
-	name = "corporate safe"
-
-/obj/structure/safe/station/Initialize()
-	. = ..()
-	new /obj/random/highvalue(src)
-	new /obj/random/highvalue(src)
-	new /obj/random/highvalue(src)
-	new /obj/random/highvalue(src)

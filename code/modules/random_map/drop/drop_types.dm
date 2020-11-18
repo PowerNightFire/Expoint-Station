@@ -3,7 +3,7 @@ var/global/list/datum/supply_drop_loot/supply_drop
 /proc/supply_drop_random_loot_types()
 	if(!supply_drop)
 		supply_drop = init_subtypes(/datum/supply_drop_loot)
-		sortTim(supply_drop, /proc/cmp_supply_drop, FALSE)
+		supply_drop = dd_sortedObjectList(supply_drop)
 	return supply_drop
 
 /datum/supply_drop_loot
@@ -19,6 +19,9 @@ var/global/list/datum/supply_drop_loot/supply_drop
 	for(var/content in contents())
 		new content(C)
 
+/datum/supply_drop_loot/dd_SortValue()
+	return name
+
 /datum/supply_drop_loot/supermatter
 	name = "Supermatter"
 /datum/supply_drop_loot/supermatter/New()
@@ -31,10 +34,10 @@ var/global/list/datum/supply_drop_loot/supply_drop
 /datum/supply_drop_loot/lasers/New()
 	..()
 	contents = list(
-		/obj/item/gun/energy/laser,
-		/obj/item/gun/energy/laser,
-		/obj/item/gun/energy/sniperrifle,
-		/obj/item/gun/energy/rifle/ionrifle)
+		/obj/item/weapon/gun/energy/laser,
+		/obj/item/weapon/gun/energy/laser,
+		/obj/item/weapon/gun/energy/sniperrifle,
+		/obj/item/weapon/gun/energy/ionrifle)
 
 /datum/supply_drop_loot/ballistics
 	name = "Ballistics"
@@ -42,11 +45,11 @@ var/global/list/datum/supply_drop_loot/supply_drop
 /datum/supply_drop_loot/ballistics/New()
 	..()
 	contents = list(
-		/obj/item/gun/projectile/sec,
-		/obj/item/gun/projectile/shotgun/doublebarrel,
-		/obj/item/gun/projectile/shotgun/pump/combat,
-		/obj/item/gun/projectile/automatic/wt550,
-		/obj/item/gun/projectile/automatic/rifle/z8)
+		/obj/item/weapon/gun/projectile/pistol/sec,
+		/obj/item/weapon/gun/projectile/shotgun/doublebarrel,
+		/obj/item/weapon/gun/projectile/shotgun/pump/combat,
+		/obj/item/weapon/gun/projectile/automatic/sec_smg,
+		/obj/item/weapon/gun/projectile/automatic/bullpup_rifle)
 
 /datum/supply_drop_loot/ballistics
 	name = "Ballistics"
@@ -54,14 +57,14 @@ var/global/list/datum/supply_drop_loot/supply_drop
 /datum/supply_drop_loot/ballistics/New()
 	..()
 	contents = list(
-		/obj/item/gun/projectile/sec,
-		/obj/item/gun/projectile/shotgun/doublebarrel,
-		/obj/item/gun/projectile/shotgun/pump/combat,
-		/obj/item/gun/projectile/automatic/wt550,
-		/obj/item/gun/projectile/automatic/rifle/z8)
+		/obj/item/weapon/gun/projectile/pistol/sec,
+		/obj/item/weapon/gun/projectile/shotgun/doublebarrel,
+		/obj/item/weapon/gun/projectile/shotgun/pump/combat,
+		/obj/item/weapon/gun/projectile/automatic/sec_smg,
+		/obj/item/weapon/gun/projectile/automatic/bullpup_rifle)
 
 /datum/supply_drop_loot/seeds
-	name = SEED_NOUN_SEEDS
+	name = "Seeds"
 	container = /obj/structure/closet/crate
 /datum/supply_drop_loot/seeds/New()
 	..()
@@ -89,21 +92,21 @@ var/global/list/datum/supply_drop_loot/supply_drop
 /datum/supply_drop_loot/food/New()
 	..()
 	contents = list(
-		/obj/item/reagent_containers/food/condiment/flour,
-		/obj/item/reagent_containers/food/condiment/flour,
-		/obj/item/reagent_containers/food/condiment/flour,
-		/obj/item/reagent_containers/food/drinks/milk,
-		/obj/item/reagent_containers/food/drinks/milk,
-		/obj/item/storage/box/fancy/egg_box,
-		/obj/item/reagent_containers/food/snacks/tofu,
-		/obj/item/reagent_containers/food/snacks/tofu,
-		/obj/item/reagent_containers/food/snacks/meat,
-		/obj/item/reagent_containers/food/snacks/meat)
+		/obj/item/weapon/reagent_containers/food/condiment/flour,
+		/obj/item/weapon/reagent_containers/food/condiment/flour,
+		/obj/item/weapon/reagent_containers/food/condiment/flour,
+		/obj/item/weapon/reagent_containers/food/drinks/milk,
+		/obj/item/weapon/reagent_containers/food/drinks/milk,
+		/obj/item/weapon/storage/fancy/egg_box,
+		/obj/item/weapon/reagent_containers/food/snacks/tofu,
+		/obj/item/weapon/reagent_containers/food/snacks/tofu,
+		/obj/item/weapon/reagent_containers/food/snacks/meat,
+		/obj/item/weapon/reagent_containers/food/snacks/meat)
 
-/datum/supply_drop_loot/armor
-	name = "Armor"
+/datum/supply_drop_loot/armour
+	name = "Armour"
 	container = /obj/structure/largecrate
-/datum/supply_drop_loot/armor/New()
+/datum/supply_drop_loot/armour/New()
 	..()
 	contents = list(
 		/obj/item/clothing/head/helmet/riot,
@@ -141,16 +144,17 @@ var/global/list/datum/supply_drop_loot/supply_drop
 /datum/supply_drop_loot/medical/New()
 	..()
 	contents = list(
-		/obj/item/storage/firstaid/regular,
-		/obj/item/storage/firstaid/fire,
-		/obj/item/storage/firstaid/toxin,
-		/obj/item/storage/firstaid/o2,
-		/obj/item/storage/firstaid/adv,
-		/obj/item/reagent_containers/glass/bottle/antitoxin,
-		/obj/item/reagent_containers/glass/bottle/inaprovaline,
-		/obj/item/reagent_containers/glass/bottle/stoxin,
-		/obj/item/storage/box/syringes,
-		/obj/item/storage/box/autoinjectors)
+		/obj/item/weapon/storage/firstaid/regular,
+		/obj/item/weapon/storage/firstaid/trauma,
+		/obj/item/weapon/storage/firstaid/fire,
+		/obj/item/weapon/storage/firstaid/toxin,
+		/obj/item/weapon/storage/firstaid/o2,
+		/obj/item/weapon/storage/firstaid/adv,
+		/obj/item/weapon/reagent_containers/glass/bottle/antitoxin,
+		/obj/item/weapon/reagent_containers/glass/bottle/inaprovaline,
+		/obj/item/weapon/reagent_containers/glass/bottle/stoxin,
+		/obj/item/weapon/storage/box/syringes,
+		/obj/item/weapon/storage/box/autoinjectors)
 
 /datum/supply_drop_loot/power
 	name = "Power"

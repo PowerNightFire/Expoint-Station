@@ -3,27 +3,37 @@
 /proc/is_on_same_plane_or_station(var/z1, var/z2)
 	if(z1 == z2)
 		return 1
-	if(isStationLevel(z1) && isStationLevel(z2))
+	if((z1 in GLOB.using_map.station_levels) &&	(z2 in GLOB.using_map.station_levels))
 		return 1
 	return 0
 
 /proc/max_default_z_level()
 	var/max_z = 0
-	for(var/z in current_map.station_levels)
+	for(var/z in GLOB.using_map.station_levels)
 		max_z = max(z, max_z)
-	for(var/z in current_map.admin_levels)
+	for(var/z in GLOB.using_map.admin_levels)
 		max_z = max(z, max_z)
-	for(var/z in current_map.player_levels)
+	for(var/z in GLOB.using_map.player_levels)
 		max_z = max(z, max_z)
 	return max_z
+
+/proc/living_observers_present(var/list/zlevels)
+	if(LAZYLEN(zlevels))
+		for(var/mob/M in GLOB.player_list) //if a tree ticks on the empty zlevel does it really tick
+			if(M.stat != DEAD) //(no it doesn't)
+				var/turf/T = get_turf(M)
+				if(T && (T.z in zlevels))
+					return TRUE
+	return FALSE
 
 /proc/get_area(O)
 	var/turf/loc = get_turf(O)
 	if(loc)
-		.= loc.loc
+		var/area/res = loc.loc
+		.= res
 
 /proc/get_area_name(N) //get area by its name
-	for(var/area/A in all_areas)
+	for(var/area/A in world)
 		if(A.name == N)
 			return A
 	return 0
@@ -33,11 +43,11 @@
 	if (isarea(A))
 		return A
 
-/proc/in_range(source, user)
+/proc/in_range(atom/source, mob/user)
 	if(get_dist(source, user) <= 1)
-		return 1
+		return TRUE
 
-	return 0 //not in range and not telekinetic
+	return FALSE //not in range and not telekinetic
 
 // Like view but bypasses luminosity check
 
@@ -50,6 +60,24 @@
 	source.luminosity = lum
 
 	return heard
+
+/proc/isStationLevel(var/level)
+	return level in GLOB.using_map.station_levels
+
+/proc/isNotStationLevel(var/level)
+	return !isStationLevel(level)
+
+/proc/isPlayerLevel(var/level)
+	return level in GLOB.using_map.player_levels
+
+/proc/isAdminLevel(var/level)
+	return level in GLOB.using_map.admin_levels
+
+/proc/isNotAdminLevel(var/level)
+	return !isAdminLevel(level)
+
+/proc/isContactLevel(var/level)
+	return level in GLOB.using_map.contact_levels
 
 /proc/circlerange(center=usr,radius=3)
 
@@ -81,6 +109,14 @@
 	//turfs += centerturf
 	return atoms
 
+/proc/trange(rad = 0, turf/centre = null) //alternative to range (ONLY processes turfs and thus less intensive)
+	if(!centre)
+		return
+
+	var/turf/x1y1 = locate(((centre.x-rad)<1 ? 1 : centre.x-rad),((centre.y-rad)<1 ? 1 : centre.y-rad),centre.z)
+	var/turf/x2y2 = locate(((centre.x+rad)>world.maxx ? world.maxx : centre.x+rad),((centre.y+rad)>world.maxy ? world.maxy : centre.y+rad),centre.z)
+	return block(x1y1,x2y2)
+
 /proc/get_dist_euclidian(atom/Loc1 as turf|mob|obj,atom/Loc2 as turf|mob|obj)
 	var/dx = Loc1.x - Loc2.x
 	var/dy = Loc1.y - Loc2.y
@@ -91,17 +127,17 @@
 
 /proc/circlerangeturfs(center=usr,radius=3)
 	var/turf/centerturf = get_turf(center)
-	if(radius == 1)
-		return list(centerturf)
-	var/list/turfs = new/list()
+	. = list()
+	if(!centerturf)
+		return
+
 	var/rsq = radius * (radius+0.5)
 
 	for(var/turf/T in range(radius, centerturf))
 		var/dx = T.x - centerturf.x
 		var/dy = T.y - centerturf.y
 		if(dx*dx + dy*dy <= rsq)
-			turfs += T
-	return turfs
+			. += T
 
 /proc/circleviewturfs(center=usr,radius=3)		//Is there even a diffrence between this proc and circlerangeturfs()?
 
@@ -116,43 +152,39 @@
 			turfs += T
 	return turfs
 
-// Will recursively loop through an atom's locs until it finds the atom loc above a turf
-/proc/recursive_loc_turf_check(var/atom/O, var/recursion_limit = 3)
-	if(recursion_limit <= 0 || isturf(O.loc))
-		return O
-	else
-		O = O.loc
-		recursion_limit--
-		return recursive_loc_turf_check(O, recursion_limit)
+
+
+//var/debug_mob = 0
 
 // Will recursively loop through an atom's contents and check for mobs, then it will loop through every atom in that atom's contents.
 // It will keep doing this until it checks every content possible. This will fix any problems with mobs, that are inside objects,
 // being unable to hear people due to being in a box within a bag.
-// Does not return list, as list is passed as reference.
 
 /proc/recursive_content_check(var/atom/O,  var/list/L = list(), var/recursion_limit = 3, var/client_check = 1, var/sight_check = 1, var/include_mobs = 1, var/include_objects = 1)
 
 	if(!recursion_limit)
-		return 
+		return L
 
 	for(var/I in O.contents)
 
 		if(ismob(I))
 			if(!sight_check || isInSight(I, O))
-				recursive_content_check(I, L, recursion_limit - 1, client_check, sight_check, include_mobs, include_objects)
+				L |= recursive_content_check(I, L, recursion_limit - 1, client_check, sight_check, include_mobs, include_objects)
 				if(include_mobs)
 					if(client_check)
 						var/mob/M = I
 						if(M.client)
-							L += M
+							L |= M
 					else
-						L += I
+						L |= I
 
-		else if(isobj(I))
+		else if(istype(I,/obj/))
 			if(!sight_check || isInSight(I, O))
-				recursive_content_check(I, L, recursion_limit - 1, client_check, sight_check, include_mobs, include_objects)
+				L |= recursive_content_check(I, L, recursion_limit - 1, client_check, sight_check, include_mobs, include_objects)
 				if(include_objects)
-					L += I
+					L |= I
+
+	return L
 
 // Returns a list of mobs and/or objects in range of R from source. Used in radio and say code.
 
@@ -168,13 +200,13 @@
 
 	for(var/I in range)
 		if(ismob(I))
-			recursive_content_check(I, hear, 3, 1, 0, include_mobs, include_objects)
+			hear |= recursive_content_check(I, hear, 3, 1, 0, include_mobs, include_objects)
 			if(include_mobs)
 				var/mob/M = I
 				if(M.client)
 					hear += M
-		else if(istype(I, /obj/))
-			recursive_content_check(I, hear, 3, 1, 0, include_mobs, include_objects)
+		else if(istype(I,/obj/))
+			hear |= recursive_content_check(I, hear, 3, 1, 0, include_mobs, include_objects)
 			if(include_objects)
 				hear += I
 
@@ -207,57 +239,42 @@
 
 
 	// Try to find all the players who can hear the message
-	for(var/i = 1; i <= player_list.len; i++)
-		var/mob/M = player_list[i]
+	for(var/i = 1; i <= GLOB.player_list.len; i++)
+		var/mob/M = GLOB.player_list[i]
 		if(M)
 			var/turf/ear = get_turf(M)
 			if(ear)
 				// Ghostship is magic: Ghosts can hear radio chatter from anywhere
-				if(speaker_coverage[ear] || (istype(M, /mob/abstract/observer) && (M.client) && (M.client.prefs.toggles & CHAT_GHOSTRADIO)))
-					. += M
+				if(speaker_coverage[ear] || (isghost(M) && M.get_preference_value(/datum/client_preference/ghost_radio) == GLOB.PREF_ALL_CHATTER))
+					. |= M		// Since we're already looping through mobs, why bother using |= ? This only slows things down.
 	return .
 
-/proc/get_mobs_and_objs_in_view_fast(turf/T, range, list/mobs, list/objs, checkghosts = GHOSTS_ALL_HEAR)
-	var/list/hear = list()
-	DVIEW(hear, range, T, INVISIBILITY_MAXIMUM)
+/proc/get_mobs_and_objs_in_view_fast(var/turf/T, var/range, var/list/mobs, var/list/objs, var/checkghosts = null)
+
+	var/list/hear = dview(range,T,INVISIBILITY_MAXIMUM)
 	var/list/hearturfs = list()
 
-	for(var/am in hear)
-		var/atom/movable/AM = am
-		if (!AM.loc)
-			continue
-
-		var/turf/AM_turf = get_turf(AM)
-
+	for(var/atom/movable/AM in hear)
 		if(ismob(AM))
-			mobs[AM] = TRUE
-			hearturfs[AM_turf] = TRUE
+			mobs += AM
+			hearturfs += get_turf(AM)
 		else if(isobj(AM))
-			objs[AM] = TRUE
-			hearturfs[AM_turf] = TRUE
+			objs += AM
+			hearturfs += get_turf(AM)
 
-	for(var/m in player_list)
-		var/mob/M = m
-		if(istype(M, /mob/living/test))
-			if (!mobs[M])
-				mobs[M] = TRUE
-			continue
-		if(checkghosts == GHOSTS_ALL_HEAR && M.stat == DEAD && !isnewplayer(M) && (M.client && M.client.prefs.toggles & CHAT_GHOSTEARS))
-			if (!mobs[M])
-				mobs[M] = TRUE
-			continue
+	for(var/mob/M in GLOB.player_list)
+		if(checkghosts && M.stat == DEAD && M.get_preference_value(checkghosts) != GLOB.PREF_NEARBY)
+			mobs |= M
+		else if(get_turf(M) in hearturfs)
+			mobs |= M
 
-		var/turf/M_turf = get_turf(M)
-		if(M.loc && hearturfs[M_turf])
-			if (!mobs[M])
-				mobs[M] = TRUE
+	for(var/obj/O in GLOB.listening_objects)
+		if(get_turf(O) in hearturfs)
+			objs |= O
 
-	for(var/o in listening_objects)
-		var/obj/O = o
-		var/turf/O_turf = get_turf(O)
-		if(O && O.loc && hearturfs[O_turf])
-			if (!objs[O])
-				objs[O] = TRUE
+
+
+
 
 proc
 	inLineOfSight(X1,Y1,X2,Y2,Z=1,PX1=16.5,PY1=16.5,PX2=16.5,PY2=16.5)
@@ -266,7 +283,7 @@ proc
 			if(Y1==Y2)
 				return 1 //Light cannot be blocked on same tile
 			else
-				var/s = SIGN(Y2-Y1)
+				var/s = SIMPLE_SIGN(Y2-Y1)
 				Y1+=s
 				while(Y1!=Y2)
 					T=locate(X1,Y1,Z)
@@ -276,8 +293,8 @@ proc
 		else
 			var/m=(32*(Y2-Y1)+(PY2-PY1))/(32*(X2-X1)+(PX2-PX1))
 			var/b=(Y1+PY1/32-0.015625)-m*(X1+PX1/32-0.015625) //In tiles
-			var/signX = SIGN(X2-X1)
-			var/signY = SIGN(Y2-Y1)
+			var/signX = SIMPLE_SIGN(X2-X1)
+			var/signY = SIMPLE_SIGN(Y2-Y1)
 			if(X1<X2)
 				b+=m
 			while(X1!=X2 || Y1!=Y2)
@@ -319,7 +336,7 @@ proc/isInSight(var/atom/A, var/atom/B)
 			return get_step(start, EAST)
 
 /proc/get_mob_by_key(var/key)
-	for(var/mob/M in mob_list)
+	for(var/mob/M in SSmobs.mob_list)
 		if(M.ckey == lowertext(key))
 			return M
 	return null
@@ -331,14 +348,12 @@ proc/isInSight(var/atom/A, var/atom/B)
 	var/list/candidates = list() //List of candidate KEYS to assume control of the new larva ~Carn
 	var/i = 0
 	while(candidates.len <= 0 && i < 5)
-		for(var/mob/abstract/observer/G in player_list)
+		for(var/mob/observer/ghost/G in GLOB.player_list)
 			if(((G.client.inactivity/10)/60) <= buffer + i) // the most active players are more likely to become an alien
 				if(!(G.mind && G.mind.current && G.mind.current.stat != DEAD))
 					candidates += G.key
 		i++
 	return candidates
-
-// Same as above but for alien candidates.
 
 /proc/ScreenText(obj/O, maptext="", screen_loc="CENTER-7,CENTER-7", maptext_height=480, maptext_width=480)
 	if(!isobj(O))	O = new /obj/screen/text()
@@ -350,13 +365,20 @@ proc/isInSight(var/atom/A, var/atom/B)
 
 /proc/Show2Group4Delay(obj/O, list/group, delay=0)
 	if(!isobj(O))	return
-	if(!group)	group = clients
+	if(!group)	group = GLOB.clients
 	for(var/client/C in group)
 		C.screen += O
 	if(delay)
 		spawn(delay)
 			for(var/client/C in group)
 				C.screen -= O
+
+/proc/flick_overlay(image/I, list/show_to, duration)
+	for(var/client/C in show_to)
+		C.images += I
+	spawn(duration)
+		for(var/client/C in show_to)
+			C.images -= I
 
 datum/projectile_data
 	var/src_x
@@ -381,11 +403,14 @@ datum/projectile_data
 
 /proc/projectile_trajectory(var/src_x, var/src_y, var/rotation, var/angle, var/power)
 
-	var/g = 9.81
-	var/h = 10
+	// returns the destination (Vx,y) that a projectile shot at [src_x], [src_y], with an angle of [angle],
+	// rotated at [rotation] and with the power of [power]
+	// Thanks to VistaPOWA for this function
+
 	var/power_x = power * cos(angle)
 	var/power_y = power * sin(angle)
-	var/time = (power_y + sqrt((power_y*power_y)+(2*g*h)))/g
+	var/time = 2* power_y / 10 //10 = g
+
 	var/distance = time * power_x
 
 	var/dest_x = src_x + distance*sin(rotation);
@@ -461,7 +486,7 @@ datum/projectile_data
 /proc/getOPressureDifferential(var/turf/loc)
 	var/minp=16777216;
 	var/maxp=0;
-	for(var/dir in cardinal)
+	for(var/dir in GLOB.cardinal)
 		var/turf/simulated/T=get_turf(get_step(loc,dir))
 		var/cp=0
 		if(T && istype(T) && T.zone)
@@ -482,7 +507,7 @@ datum/projectile_data
 
 /proc/getCardinalAirInfo(var/turf/loc, var/list/stats=list("temperature"))
 	var/list/temps = new/list(4)
-	for(var/dir in cardinal)
+	for(var/dir in GLOB.cardinal)
 		var/direction
 		switch(dir)
 			if(NORTH)
@@ -522,24 +547,17 @@ datum/projectile_data
 	return seconds * 10
 
 /proc/round_is_spooky(var/spookiness_threshold = config.cult_ghostwriter_req_cultists)
-	if(enabled_spooking)
-		return 1
+	return (GLOB.cult.current_antagonists.len > spookiness_threshold)
+
+/proc/getviewsize(view)
+	var/viewX
+	var/viewY
+	if(isnum(view))
+		var/totalviewrange = 1 + 2 * view
+		viewX = totalviewrange
+		viewY = totalviewrange
 	else
-		return (cult.current_antagonists.len > spookiness_threshold)
-
-/proc/remove_images_from_clients(image/I, list/show_to)
-	for(var/client/C in show_to)
-		C.images -= I
-
-/proc/flick_overlay(image/I, list/show_to, duration)
-	for(var/client/C in show_to)
-		C.images += I
-	addtimer(CALLBACK(GLOBAL_PROC, /.proc/remove_images_from_clients, I, show_to), duration)
-
-/proc/flick_overlay_view(image/I, atom/target, duration) //wrapper for the above, flicks to everyone who can see the target atom
-	var/list/viewing = list()
-	for(var/m in viewers(target))
-		var/mob/M = m
-		if(M.client)
-			viewing += M.client
-	flick_overlay(I, viewing, duration)
+		var/list/viewrangelist = splittext(view,"x")
+		viewX = text2num(viewrangelist[1])
+		viewY = text2num(viewrangelist[2])
+	return list(viewX, viewY)

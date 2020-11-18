@@ -44,12 +44,10 @@ Thanks to spacemaniac and mcdonald for help with the JS side of this.
 	winset(src, "forumb", "text-color = [COLOR_DARKMODE_TEXT];text-color = #000000")
 	winset(src, "changelog", "background-color = #494949;background-color = none")
 	winset(src, "changelog", "text-color = [COLOR_DARKMODE_TEXT];text-color = #000000")
-	winset(src, "interfaceb", "background-color = #494949;background-color = none")
-	winset(src, "interfaceb", "text-color = [COLOR_DARKMODE_TEXT];text-color = #000000")
-	winset(src, "discordb", "background-color = #494949;background-color = none")
-	winset(src, "discordb", "text-color = [COLOR_DARKMODE_TEXT];text-color = #000000")
-	winset(src, "reportbugb", "background-color = #494949;background-color = none")
-	winset(src, "reportbugb", "text-color = [COLOR_DARKMODE_TEXT];text-color = #000000")
+	winset(src, "github", "background-color = #494949;background-color = none")
+	winset(src, "github", "text-color = [COLOR_DARKMODE_TEXT];text-color = #000000")
+	winset(src, "BugReport", "background-color = #494949;background-color = none")
+	winset(src, "BugReport", "text-color = [COLOR_DARKMODE_TEXT];text-color = #000000")
 	winset(src, "hotkey_toggle", "background-color = #494949;background-color = none")
 	winset(src, "hotkey_toggle", "text-color = [COLOR_DARKMODE_TEXT];text-color = #000000")
 	//Status and verb tabs
@@ -70,6 +68,8 @@ Thanks to spacemaniac and mcdonald for help with the JS side of this.
 	winset(src, "saybutton", "text-color = [COLOR_DARKMODE_TEXT];text-color = #000000")
 	winset(src, "asset_cache_browser", "background-color = [COLOR_DARKMODE_BACKGROUND];background-color = none")
 	winset(src, "asset_cache_browser", "background-color = [COLOR_DARKMODE_BACKGROUND];background-color = none")
+	//winset(src, "input", "background-color = [COLOR_DARKMODE_BACKGROUND];background-color = none")
+	//winset(src, "input", "text-color = [COLOR_DARKMODE_TEXT];text-color = #000000")
 
 /client/proc/force_dark_theme() //Inversely, if theyre using white theme and want to swap to the superior dark theme, let's get WINSET() ing
 	//Main windows
@@ -103,12 +103,10 @@ Thanks to spacemaniac and mcdonald for help with the JS side of this.
 	winset(src, "forumb", "text-color = #000000;text-color = [COLOR_DARKMODE_TEXT]")
 	winset(src, "changelog", "background-color = none;background-color = #494949")
 	winset(src, "changelog", "text-color = #000000;text-color = [COLOR_DARKMODE_TEXT]")
-	winset(src, "interfaceb", "background-color = none;background-color = #494949")
-	winset(src, "interfaceb", "text-color = #000000;text-color = [COLOR_DARKMODE_TEXT]")
-	winset(src, "discordb", "background-color = none;background-color = #494949")
-	winset(src, "discordb", "text-color = #000000;text-color = [COLOR_DARKMODE_TEXT]")
-	winset(src, "reportbugb", "background-color = none;background-color = #494949")
-	winset(src, "reportbugb", "text-color = #000000;text-color = [COLOR_DARKMODE_TEXT]")
+	winset(src, "github", "background-color = none;background-color = #494949")
+	winset(src, "github", "text-color = #000000;text-color = [COLOR_DARKMODE_TEXT]")
+	winset(src, "BugReport", "background-color = none;background-color = #494949")
+	winset(src, "BugReport", "text-color = #000000;text-color = [COLOR_DARKMODE_TEXT]")
 	winset(src, "hotkey_toggle", "background-color = none;background-color = #494949")
 	winset(src, "hotkey_toggle", "text-color = #000000;text-color = [COLOR_DARKMODE_TEXT]")
 	//Status and verb tabs
@@ -130,3 +128,5 @@ Thanks to spacemaniac and mcdonald for help with the JS side of this.
 	winset(src, "asset_cache_browser", "background-color = none;background-color = [COLOR_DARKMODE_BACKGROUND]")
 	winset(src, "asset_cache_browser", "text-color = #000000;text-color = [COLOR_DARKMODE_TEXT]")
 
+	//winset(src, "input", "background-color = none;background-color = [COLOR_DARKMODE_BACKGROUND]")
+	//winset(src, "input", "text-color = #000000;text-color = [COLOR_DARKMODE_TEXT]")

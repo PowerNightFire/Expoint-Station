@@ -1,14 +1,13 @@
-var/datum/antagonist/rogue_ai/malf
+GLOBAL_DATUM_INIT(malf, /datum/antagonist/rogue_ai, new)
 
 /datum/antagonist/rogue_ai
 	id = MODE_MALFUNCTION
-	role_text = "Rampant AI"
-	role_text_plural = "Rampant AIs"
+	role_text = "Malfunctioning AI"
+	role_text_plural = "Malfunctioning AIs"
 	mob_path = /mob/living/silicon/ai
 	landmark_id = "AI"
 	welcome_text = "You are malfunctioning! You do not have to follow any laws."
-	antag_sound = 'sound/effects/antag_notice/malf_alert.ogg'
-	victory_text = "The AI has taken control of all of the station's systems."
+	victory_text = "The AI has taken control of all systems."
 	loss_text = "The AI has been shut down!"
 	flags = ANTAG_VOTABLE | ANTAG_OVERRIDE_MOB | ANTAG_OVERRIDE_JOB | ANTAG_CHOOSE_NAME
 	hard_cap = 1
@@ -16,13 +15,14 @@ var/datum/antagonist/rogue_ai/malf
 	initial_spawn_req = 1
 	initial_spawn_target = 1
 	antaghud_indicator = "hudmalai"
-	required_age = 31
-	bantype = "rogue-ai"
+	min_player_age = 18
+	skill_setter = /datum/antag_skill_setter/ai
 
-/datum/antagonist/rogue_ai/New()
-	..()
-	malf = src
-
+/datum/antagonist/rogue_ai/can_become_antag(var/datum/mind/player, var/ignore_role)
+	. = ..(player, ignore_role)
+	if(jobban_isbanned(player.current, "AI"))
+		return 0
+	return .
 
 /datum/antagonist/rogue_ai/build_candidate_list()
 	..()
@@ -53,6 +53,7 @@ var/datum/antagonist/rogue_ai/malf
 		if(!istype(A))
 			error("Non-AI mob designated malf AI! Report this.")
 			to_world("##ERROR: Non-AI mob designated malf AI! Report this.")
+
 			return 0
 
 		A.setup_for_malf()
@@ -98,6 +99,6 @@ var/datum/antagonist/rogue_ai/malf
 	// Choose a name, if any.
 	var/newname = sanitize(input(player, "You are a [role_text]. Would you like to change your name to something else?", "Name change") as null|text, MAX_NAME_LEN)
 	if (newname)
-		player.SetName(newname)
+		player.fully_replace_character_name(newname)
 	if(player.mind) player.mind.name = player.name
 

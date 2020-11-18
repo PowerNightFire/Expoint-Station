@@ -25,4 +25,3 @@
 		return
 	var/turf/T = pick_mobless_turf_if_exists(starting_locations)
 	mob.forceMove(T)
-	mob.lastarea = get_area(mob.loc)

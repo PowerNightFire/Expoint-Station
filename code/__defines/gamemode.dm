@@ -1,19 +1,18 @@
-#define GAME_STATE_PREGAME		1
-#define GAME_STATE_SETTING_UP	2
-#define GAME_STATE_PLAYING		3
-#define GAME_STATE_FINISHED		4
+//Used with the ticker to help choose the gamemode.
+#define CHOOSE_GAMEMODE_SUCCESS     1 // A gamemode was successfully chosen.
+#define CHOOSE_GAMEMODE_RETRY       2 // The gamemode could not be chosen; we will use the next most popular option voted in, or the default.
+#define CHOOSE_GAMEMODE_REVOTE      3 // The gamemode could not be chosen; we need to have a revote.
+#define CHOOSE_GAMEMODE_RESTART     4 // The gamemode could not be chosen; we will restart the server.
+#define CHOOSE_GAMEMODE_SILENT_REDO 5 // The gamemode could not be chosen; we request to have the the proc rerun on the next tick.
 
-#define GAME_FAILURE_NONE                  0x0 //WHAT'S THIS????
-#define GAME_FAILURE_NO_ANTAGS             0x1
-#define GAME_FAILURE_NO_PLAYERS            0x2
-#define GAME_FAILURE_TOO_MANY_PLAYERS      0x4
-
-// Security levels.
-#define SEC_LEVEL_GREEN  0
-#define SEC_LEVEL_YELLOW 1
-#define SEC_LEVEL_BLUE   2
-#define SEC_LEVEL_RED    3
-#define SEC_LEVEL_DELTA  4
+//End game state, to manage round end.
+#define END_GAME_NOT_OVER         1
+#define END_GAME_MODE_FINISH_DONE 2
+#define END_GAME_AWAITING_MAP     3
+#define END_GAME_READY_TO_END     4
+#define END_GAME_ENDING           5
+#define END_GAME_AWAITING_TICKETS 6
+#define END_GAME_DELAYED          7
 
 #define BE_PLANT "BE_PLANT"
 #define BE_SYNTH "BE_SYNTH"
@@ -32,43 +31,35 @@
 #define ANTAG_VOTABLE           0x200 // Can be voted as an additional antagonist before roundstart.
 #define ANTAG_SET_APPEARANCE    0x400 // Causes antagonists to use an appearance modifier on spawn.
 #define ANTAG_RANDOM_EXCEPTED   0x800 // If a game mode randomly selects antag types, antag types with this flag should be excluded.
-#define ANTAG_NO_FLAVORTEXT    0x1000 // To prevent flavor text from being scrubbed from crewmember intruders
 
 // Mode/antag template macros.
-#define MODE_BORER "borer"
-#define MODE_LOYALIST "loyalist"
-#define MODE_MUTINEER "mutineer"
-#define MODE_COMMANDO "commando"
-#define MODE_DEATHSQUAD "deathsquad"
-#define MODE_ERT "ert"
-#define MODE_MERCENARY "mercenary"
-#define MODE_NINJA "ninja"
-#define MODE_RAIDER_MAGE "raider mage"
-#define MODE_RAIDER "raider"
-#define MODE_BURGLAR "burglar"
-#define MODE_WIZARD "wizard"
-#define MODE_CHANGELING "changeling"
-#define MODE_CULTIST "cultist"
-#define MODE_HIGHLANDER "highlander"
-#define MODE_MONKEY "monkey"
-#define MODE_RENEGADE "renegade"
+#define MODE_BORER         "borer"
+#define MODE_LOYALIST      "loyalist"
+#define MODE_COMMANDO      "commando"
+#define MODE_DEATHSQUAD    "deathsquad"
+#define MODE_ERT           "ert"
+#define MODE_ACTOR         "actor"
+#define MODE_MERCENARY     "mercenary"
+#define MODE_NINJA         "ninja"
+#define MODE_RAIDER        "raider"
+#define MODE_WIZARD        "wizard"
+#define MODE_CHANGELING    "changeling"
+#define MODE_CULTIST       "cultist"
+#define MODE_MONKEY        "monkey"
+#define MODE_RENEGADE      "renegade"
 #define MODE_REVOLUTIONARY "revolutionary"
-#define MODE_MALFUNCTION "malf"
-#define MODE_TRAITOR "traitor"
-#define MODE_VAMPIRE "vampire"
-#define MODE_THRALL "thrall"
+#define MODE_MALFUNCTION   "malf"
+#define MODE_TRAITOR       "traitor"
+#define MODE_DEITY         "deity"
+#define MODE_GODCULTIST    "god cultist"
+#define MODE_THRALL        "mind thrall"
+#define MODE_PARAMOUNT     "paramount"
+#define MODE_FOUNDATION    "foundation agent"
+#define MODE_MISC_AGITATOR "provocateur"
+#define MODE_HUNTER        "hunter"
 
-#define DEFAULT_TELECRYSTAL_AMOUNT 25
-
-// Defines (NOT FLAGS) for making secret, random, and mixed secret less snowflake-string
-// and number dependant.
-#define ROUNDTYPE_RANDOM       0
-#define ROUNDTYPE_SECRET       1
-#define ROUNDTYPE_MIXED_SECRET 2
-
-#define ROUNDTYPE_STR_SECRET       "secret"
-#define ROUNDTYPE_STR_MIXED_SECRET "mixed secret"
-#define ROUNDTYPE_STR_RANDOM       "random"
+#define DEFAULT_TELECRYSTAL_AMOUNT 130
+#define IMPLANT_TELECRYSTAL_AMOUNT(x) (round(x * 0.49)) // If this cost is ever greater than half of DEFAULT_TELECRYSTAL_AMOUNT then it is possible to buy more TC than you spend
 
 /////////////////
 ////WIZARD //////
@@ -79,12 +70,14 @@
 #define NEEDSCLOTHES	0x2		//does it need the wizard garb to cast? Nonwizard spells should not have this
 #define NEEDSHUMAN		0x4		//does it require the caster to be human?
 #define Z2NOCAST		0x8		//if this is added, the spell can't be cast at centcomm
-#define STATALLOWED		0x10	//if set, the user doesn't have to be conscious to cast. Required for ghost spells
+#define NO_SOMATIC		0x10	//spell will go off if the person is incapacitated or stunned
 #define IGNOREPREV		0x20	//if set, each new target does not overlap with the previous one
 //The following flags only affect different types of spell, and therefore overlap
 //Targeted spells
 #define INCLUDEUSER		0x40	//does the spell include the caster in its target selection?
 #define SELECTABLE		0x80	//can you select each target for the spell?
+#define NOFACTION		0x1000  //Don't do the same as our faction
+#define NONONFACTION	0x2000  //Don't do people other than our faction
 //AOE spells
 #define IGNOREDENSE		0x40	//are dense turfs ignored in selection?
 #define IGNORESPACE		0x80	//are space turfs ignored in selection?
@@ -108,13 +101,11 @@
 #define Sp_CHARGES	"charges"
 #define Sp_HOLDVAR	"holdervar"
 
-/////////////////
-//// Vampire ////
-/////////////////
+//Voting-related
+#define VOTE_PROCESS_ABORT    1
+#define VOTE_PROCESS_COMPLETE 2
+#define VOTE_PROCESS_ONGOING  3
 
-#define VAMP_DRAINING   0x1
-#define VAMP_HEALING    0x2
-#define VAMP_PRESENCE   0x4
-#define VAMP_FRENZIED   0x8
-#define VAMP_ISTHRALL   0x10
-#define VAMP_FULLPOWER  0x20
+#define VOTE_STATUS_PREVOTE   1
+#define VOTE_STATUS_ACTIVE    2
+#define VOTE_STATUS_COMPLETE  3

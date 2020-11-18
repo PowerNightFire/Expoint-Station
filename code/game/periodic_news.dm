@@ -6,7 +6,7 @@
 		round_time // time of the round at which this should be announced, in seconds
 		message // body of the message
 		author = "NanoTrasen Editor"
-		channel_name = "Tau Ceti Daily"
+		channel_name = "Nyx Daily"
 		can_be_redacted = 0
 		message_type = "Story"
 
@@ -52,21 +52,21 @@
 	random_junk
 
 		cheesy_honkers
-			author = "Editor Carl Ritz"
+			author = "Assistant Editor Carl Ritz"
 			channel_name = "The Gibson Gazette"
 			message = {"Do cheesy honkers increase risk of having a miscarriage? Several health administrations
 						say so!"}
 			round_time = 60 * 15
 
 		net_block
-			author = "Editor Carl Ritz"
+			author = "Assistant Editor Carl Ritz"
 			channel_name = "The Gibson Gazette"
-			message = {"Several corporations banding together to block access to 'wetskrell.nt', site administrators
+			message = {"Several corporations banding together to block access to 'wetskrell.net', site administrators
 			claiming violation of net laws."}
 			round_time = 60 * 50
 
 		found_ssd
-			channel_name = "Tau Ceti Daily"
+			channel_name = "Nyx Daily"
 			author = "Doctor Eric Hanfield"
 
 			message = {"Several people have been found unconscious at their terminals. It is thought that it was due
@@ -78,7 +78,7 @@
 	lotus_tree
 
 		explosions
-			channel_name = "Tau Ceti Daily"
+			channel_name = "Nyx Daily"
 			author = "Reporter Leland H. Howards"
 
 			message = {"The newly-christened civillian transport Lotus Tree suffered two very large explosions near the
@@ -92,7 +92,7 @@
 	food_riots
 
 		breaking_news
-			channel_name = "Tau Ceti Daily"
+			channel_name = "Nyx Daily"
 			author = "Reporter Ro'kii Ar-Raqis"
 
 			message = {"Breaking news: Food riots have broken out throughout the Refuge asteroid colony in the Tenebrae
@@ -103,7 +103,7 @@
 			round_time = 60 * 10
 
 		more
-			channel_name = "Tau Ceti Daily"
+			channel_name = "Nyx Daily"
 			author = "Reporter Ro'kii Ar-Raqis"
 
 			message = {"More on the Refuge food riots: The Refuge Council has condemned NanoTrasen's withdrawal from
@@ -129,10 +129,19 @@ proc/check_for_newscaster_updates(type)
 			announce_newscaster_news(news)
 
 proc/announce_newscaster_news(datum/news_announcement/news)
-	var/datum/feed_channel/sendto = SSnews.GetFeedChannel(news.channel_name)
+	var/datum/feed_channel/sendto
+	for(var/datum/feed_channel/FC in news_network.network_channels)
+		if(FC.channel_name == news.channel_name)
+			sendto = FC
+			break
+
 	if(!sendto)
-		SSnews.CreateFeedChannel(news.channel_name, news.author, 1, 1)
+		sendto = new /datum/feed_channel
+		sendto.channel_name = news.channel_name
+		sendto.author = news.author
+		sendto.locked = 1
+		sendto.is_admin_channel = 1
+		news_network.network_channels += sendto
 
 	var/author = news.author ? news.author : sendto.author
-	var/datum/feed_channel/ch =  SSnews.GetFeedChannel(news.channel_name)
-	SSnews.SubmitArticle(news.message, author, ch, null, !news.can_be_redacted, news.message_type)
+	news_network.SubmitArticle(news.message, author, news.channel_name, null, !news.can_be_redacted, news.message_type)

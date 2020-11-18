@@ -1,30 +1,3 @@
-// WARNING
-//-- Added 2016-08-02 by Nanako
-//This file is deprecated. The lists in event_container.dm handle event probabilities
-//Do not use this file
-
-
-/*
-/proc/start_events()
-	//changed to a while(1) loop since they are more efficient.
-	//Moved the spawn in here to allow it to be called with advance proc call if it crashes.
-	//and also to stop spawn copying variables from the game ticker
-	spawn(3000)
-		while(1)
-			/*if(prob(50))//Every 120 seconds and prob 50 2-4 weak spacedusts will hit the station
-				spawn(1)
-					dust_swarm("weak")*/
-			if(!event)
-				//CARN: checks to see if random events are enabled.
-				if(config.allow_random_events)
-					hadevent = event()
-				else
-					Holiday_Random_Event()
-			else
-				event = 0
-			sleep(2400)
-			*/
-
 var/list/event_last_fired = list()
 
 //Always triggers an event when called, dynamically chooses events based on job population
@@ -51,21 +24,22 @@ var/list/event_last_fired = list()
 	// Code/WorkInProgress/Cael_Aislinn/Economy/Economy_Events_Mundane.dm
 
 	possibleEvents[/datum/event/economic_event] = 300
+	possibleEvents[/datum/event/trivial_news] = 400
 	possibleEvents[/datum/event/mundane_news] = 300
 
-	possibleEvents[/datum/event/money_lotto] = max(min(5, player_list.len), 50)
+	possibleEvents[/datum/event/money_lotto] = max(min(5, GLOB.player_list.len), 50)
 	if(account_hack_attempted)
-		possibleEvents[/datum/event/money_hacker] = max(min(25, player_list.len) * 4, 200)
+		possibleEvents[/datum/event/money_hacker] = max(min(25, GLOB.player_list.len) * 4, 200)
 
 
 	possibleEvents[/datum/event/carp_migration] = 20 + 10 * active_with_role["Engineer"]
-	possibleEvents[/datum/event/brand_intelligence] = 20 + 25 * active_with_role["Janitor"]
+	possibleEvents[/datum/event/brand_intelligence] = 10 + 10 * active_with_role["Janitor"]
 
 	possibleEvents[/datum/event/rogue_drone] = 5 + 25 * active_with_role["Engineer"] + 25 * active_with_role["Security"]
 	possibleEvents[/datum/event/infestation] = 100 + 100 * active_with_role["Janitor"]
 
 	possibleEvents[/datum/event/communications_blackout] = 50 + 25 * active_with_role["AI"] + active_with_role["Scientist"] * 25
-	possibleEvents[/datum/event/ionstorm] = active_with_role["AI"] * 25 + active_with_role["Cyborg"] * 25 + active_with_role["Engineer"] * 10 + active_with_role["Scientist"] * 5
+	possibleEvents[/datum/event/ionstorm] = active_with_role["AI"] * 25 + active_with_role["Robot"] * 25 + active_with_role["Engineer"] * 10 + active_with_role["Scientist"] * 5
 	possibleEvents[/datum/event/grid_check] = 25 + 10 * active_with_role["Engineer"]
 	possibleEvents[/datum/event/electrical_storm] = 15 * active_with_role["Janitor"] + 5 * active_with_role["Engineer"]
 	possibleEvents[/datum/event/wallrot] = 30 * active_with_role["Engineer"] + 50 * active_with_role["Gardener"]
@@ -112,7 +86,6 @@ var/list/event_last_fired = list()
 	//The event will add itself to the MC's event list
 	//and start working via the constructor.
 	new picked_event
-
 	return 1
 
 // Returns how many characters are currently active(not logged out, not AFK for more than 10 minutes)
@@ -122,15 +95,14 @@ var/list/event_last_fired = list()
 	var/list/active_with_role = list()
 	active_with_role["Engineer"] = 0
 	active_with_role["Medical"] = 0
-	active_with_role["Surgeon"] = 0
 	active_with_role["Security"] = 0
 	active_with_role["Scientist"] = 0
 	active_with_role["AI"] = 0
-	active_with_role["Cyborg"] = 0
+	active_with_role["Robot"] = 0
 	active_with_role["Janitor"] = 0
 	active_with_role["Gardener"] = 0
 
-	for(var/mob/M in player_list)
+	for(var/mob/M in GLOB.player_list)
 		if(!M.mind || !M.client || M.client.is_afk(10 MINUTES)) // longer than 10 minutes AFK counts them as inactive
 			continue
 
@@ -139,32 +111,32 @@ var/list/event_last_fired = list()
 		if(istype(M, /mob/living/silicon/robot))
 			var/mob/living/silicon/robot/R = M
 			if(R.module)
-				if(istype(R.module, /obj/item/robot_module/engineering))
+				if(istype(R.module, /obj/item/weapon/robot_module/engineering))
 					active_with_role["Engineer"]++
-				else if(istype(R.module, /obj/item/robot_module/medical))
+				else if(istype(R.module, /obj/item/weapon/robot_module/security))
+					active_with_role["Security"]++
+				else if(istype(R.module, /obj/item/weapon/robot_module/medical))
 					active_with_role["Medical"]++
-				else if(istype(R.module, /obj/item/robot_module/research))
+				else if(istype(R.module, /obj/item/weapon/robot_module/research))
 					active_with_role["Scientist"]++
 
-		if(M.mind.assigned_role in engineering_positions)
+		if(M.mind.assigned_role in SSjobs.titles_by_department(ENG))
 			active_with_role["Engineer"]++
 
-		if(M.mind.assigned_role in medical_positions)
+		if(M.mind.assigned_role in SSjobs.titles_by_department(MED))
 			active_with_role["Medical"]++
-			if(M.mind.assigned_role == "Surgeon")
-				active_with_role["Surgeon"]++
 
-		if(M.mind.assigned_role in security_positions)
+		if(M.mind.assigned_role in SSjobs.titles_by_department(SEC))
 			active_with_role["Security"]++
 
-		if(M.mind.assigned_role in science_positions)
+		if(M.mind.assigned_role in SSjobs.titles_by_department(SCI))
 			active_with_role["Scientist"]++
 
 		if(M.mind.assigned_role == "AI")
 			active_with_role["AI"]++
 
-		if(M.mind.assigned_role == "Cyborg")
-			active_with_role["Cyborg"]++
+		if(M.mind.assigned_role == "Robot")
+			active_with_role["Robot"]++
 
 		if(M.mind.assigned_role == "Janitor")
 			active_with_role["Janitor"]++

@@ -2,63 +2,53 @@
 //Functionally identical to regular drinks. The only difference is that the default bottle size is 100. - Darem
 //Bottles now weaken and break when smashed on people's heads. - Giacom
 
-/obj/item/reagent_containers/food/drinks/bottle
-	name = "empty bottle"
-	desc = "A sad empty bottle."
-	icon_state = "alco-clear"
-	center_of_mass = list("x" = 16,"y" = 6)
-	amount_per_transfer_from_this = 5//Smaller sip size for more BaRP and less guzzling a litre of vodka before you realise it
+/obj/item/weapon/reagent_containers/food/drinks/bottle
+	amount_per_transfer_from_this = 10
 	volume = 100
 	item_state = "broken_beer" //Generic held-item sprite until unique ones are made.
 	force = 5
-	hitsound = /decl/sound_category/bottle_hit_intact_sound
-	shatter = TRUE
 	var/smash_duration = 5 //Directly relates to the 'weaken' duration. Lowered by armor (i.e. helmets)
-	matter = list(MATERIAL_GLASS = 800)
+	var/isGlass = TRUE //Whether the 'bottle' is made of glass or not so that milk cartons dont shatter when someone gets hit by it
 
-	var/obj/item/reagent_containers/glass/rag/rag = null
+	var/obj/item/weapon/reagent_containers/glass/rag/rag = null
 	var/rag_underlay = "rag"
-	drink_flags = IS_GLASS
 
-/obj/item/reagent_containers/food/drinks/bottle/Destroy()
+/obj/item/weapon/reagent_containers/food/drinks/bottle/New()
+	..()
+	if(isGlass) unacidable = 1
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/Destroy()
 	if(rag)
 		rag.forceMove(src.loc)
 	rag = null
 	return ..()
 
 //when thrown on impact, bottles smash and spill their contents
-/obj/item/reagent_containers/food/drinks/bottle/throw_impact(atom/hit_atom, var/speed)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/throw_impact(atom/hit_atom, var/datum/thrownthing/TT)
 	..()
-
-	var/mob/M = thrower
-	if((drink_flags & IS_GLASS) && istype(M) && M.a_intent == I_HURT)
-		var/throw_dist = get_dist(throw_source, loc)
-		if(speed >= throw_speed && smash_check(throw_dist)) //not as reliable as smashing directly
+	if(isGlass && TT.thrower && TT.thrower.a_intent != I_HELP)
+		if(TT.speed > throw_speed || smash_check(TT.dist_travelled)) //not as reliable as smashing directly
 			if(reagents)
 				hit_atom.visible_message("<span class='notice'>The contents of \the [src] splash all over [hit_atom]!</span>")
 				reagents.splash(hit_atom, reagents.total_volume)
 			src.smash(loc, hit_atom)
 
-/obj/item/reagent_containers/food/drinks/bottle/proc/smash_check(var/distance)
-	if(!(drink_flags & IS_GLASS) || !smash_duration)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/proc/smash_check(var/distance)
+	if(!isGlass || !smash_duration)
 		return 0
 
-	var/list/chance_table = list(90, 90, 85, 85, 60, 35, 15) //starting from distance 0
+	var/list/chance_table = list(95, 95, 90, 85, 75, 60, 40, 15) //starting from distance 0
 	var/idx = max(distance + 1, 1) //since list indices start at 1
 	if(idx > chance_table.len)
 		return 0
 	return prob(chance_table[idx])
 
-/obj/item/reagent_containers/food/drinks/bottle/proc/smash(var/newloc, atom/against = null)
-	if(ismob(loc))
-		var/mob/M = loc
-		M.drop_from_inventory(src)
-
+/obj/item/weapon/reagent_containers/food/drinks/bottle/proc/smash(var/newloc, atom/against = null)
 	//Creates a shattering noise and replaces the bottle with a broken_bottle
-	var/obj/item/broken_bottle/B = new /obj/item/broken_bottle(newloc)
+	var/obj/item/weapon/broken_bottle/B = new /obj/item/weapon/broken_bottle(newloc)
 	if(prob(33))
-		new/obj/item/material/shard(newloc) // Create a glass shard at the target's location!
-	B.icon_state = initial(icon_state)
+		new/obj/item/weapon/material/shard(newloc) // Create a glass shard at the target's location!
+	B.icon_state = src.icon_state
 
 	var/icon/I = new('icons/obj/drinks.dmi', src.icon_state)
 	I.Blend(B.broken_outline, ICON_OVERLAY, rand(5), 1)
@@ -70,82 +60,71 @@
 		var/mob/living/L = against
 		L.IgniteMob()
 
-	playsound(src, /decl/sound_category/glass_break_sound, 70, 1)
+	playsound(src, "shatter", 70, 1)
 	src.transfer_fingerprints_to(B)
 
 	qdel(src)
 	return B
 
-/obj/item/reagent_containers/food/drinks/bottle/attackby(obj/item/W, mob/user)
-	if(!rag && istype(W, /obj/item/reagent_containers/glass/rag))
+/obj/item/weapon/reagent_containers/food/drinks/bottle/attackby(obj/item/W, mob/user)
+	if(!rag && istype(W, /obj/item/weapon/reagent_containers/glass/rag))
 		insert_rag(W, user)
 		return
-	if(rag && W.isFlameSource())
+	if(rag && istype(W, /obj/item/weapon/flame))
 		rag.attackby(W, user)
 		return
 	..()
 
-/obj/item/reagent_containers/food/drinks/bottle/attack_self(mob/user)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/attack_self(mob/user)
 	if(rag)
 		remove_rag(user)
 	else
 		..()
 
-/obj/item/reagent_containers/food/drinks/bottle/proc/insert_rag(obj/item/reagent_containers/glass/rag/R, mob/user)
-	if(!(drink_flags & IS_GLASS) || rag)
-		return
+/obj/item/weapon/reagent_containers/food/drinks/bottle/proc/insert_rag(obj/item/weapon/reagent_containers/glass/rag/R, mob/user)
+	if(!isGlass || rag) return
 	if(user.unEquip(R))
 		to_chat(user, "<span class='notice'>You stuff [R] into [src].</span>")
 		rag = R
 		rag.forceMove(src)
-		flags &= ~OPENCONTAINER
+		atom_flags &= ~ATOM_FLAG_OPEN_CONTAINER
 		update_icon()
 
-/obj/item/reagent_containers/food/drinks/bottle/proc/remove_rag(mob/user)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/proc/remove_rag(mob/user)
 	if(!rag) return
 	user.put_in_hands(rag)
 	rag = null
-	flags |= (initial(flags) & OPENCONTAINER)
+	atom_flags |= ATOM_FLAG_OPEN_CONTAINER
 	update_icon()
 
-/obj/item/reagent_containers/food/drinks/bottle/open(mob/user)
-	if(rag)
-		return
+/obj/item/weapon/reagent_containers/food/drinks/bottle/open(mob/user)
+	if(rag) return
 	..()
 
-/obj/item/reagent_containers/food/drinks/bottle/update_icon()
+/obj/item/weapon/reagent_containers/food/drinks/bottle/on_update_icon()
 	underlays.Cut()
 	if(rag)
 		var/underlay_image = image(icon='icons/obj/drinks.dmi', icon_state=rag.on_fire? "[rag_underlay]_lit" : rag_underlay)
 		underlays += underlay_image
-		set_light(2)
+		set_light(rag.light_max_bright, 0.1, rag.light_outer_range, 2, rag.light_color)
 	else
 		set_light(0)
-		..()
 
-/obj/item/reagent_containers/food/drinks/bottle/attack(mob/living/target, mob/living/user, var/hit_zone)
-	var/blocked = ..()
+/obj/item/weapon/reagent_containers/food/drinks/bottle/apply_hit_effect(mob/living/target, mob/living/user, var/hit_zone)
+	. = ..()
 
 	if(user.a_intent != I_HURT)
 		return
-	if(target == user)  //A check so you don't accidentally smash your brains out while trying to get your drink on.
-		var/confirm = alert("Do you want to smash the bottle on yourself?","Hit yourself?","No", "Yeah!", "Splash Reagents")
-		if(confirm == "No")
-			return 1 //prevents standard_splash_mob on return
-		if(confirm == "Splash Reagents")
-			return //standard_splash_mob will still play on return, in case we want to douse ourselves in reagents.
 	if(!smash_check(1))
 		return //won't always break on the first hit
-
-	// You are going to knock someone out for longer if they are not wearing a helmet.
-	var/weaken_duration = 0
-	if(blocked < 100)
-		weaken_duration = smash_duration + min(0, force - target.getarmor(hit_zone, "melee") + 10)
 
 	var/mob/living/carbon/human/H = target
 	if(istype(H) && H.headcheck(hit_zone))
 		var/obj/item/organ/affecting = H.get_organ(hit_zone) //headcheck should ensure that affecting is not null
 		user.visible_message("<span class='danger'>[user] smashes [src] into [H]'s [affecting.name]!</span>")
+		// You are going to knock someone out for longer if they are not wearing a helmet.
+		var/blocked = target.get_blocked_ratio(hit_zone, BRUTE, damage = 10) * 100
+		var/weaken_duration = smash_duration + min(0, force - blocked + 10)
 		if(weaken_duration)
 			target.apply_effect(min(weaken_duration, 5), WEAKEN, blocked) // Never weaken more than a flash!
 	else
@@ -157,17 +136,13 @@
 		reagents.splash(target, reagents.total_volume)
 
 	//Finally, smash the bottle. This kills (qdel) the bottle.
-	var/obj/item/broken_bottle/B = smash(target.loc, target)
+	var/obj/item/weapon/broken_bottle/B = smash(target.loc, target)
 	user.put_in_active_hand(B)
 
-	return blocked
-
-/obj/item/reagent_containers/food/drinks/bottle/bullet_act()
-	smash(loc)
-
 //Keeping this here for now, I'll ask if I should keep it here.
-/obj/item/broken_bottle
-	name = "broken bottle"
+/obj/item/weapon/broken_bottle
+
+	name = "Broken Bottle"
 	desc = "A bottle with a sharp broken bottom."
 	icon = 'icons/obj/drinks.dmi'
 	icon_state = "broken_bottle"
@@ -177,440 +152,538 @@
 	throw_range = 5
 	item_state = "beer"
 	attack_verb = list("stabbed", "slashed", "attacked")
-	sharp = TRUE
-	edge = FALSE
-	hitsound = /decl/sound_category/bottle_hit_broken
+	sharp = 1
+	edge = 0
 	var/icon/broken_outline = icon('icons/obj/drinks.dmi', "broken")
-	w_class = ITEMSIZE_SMALL
 
-#define DRINK_FLUFF_GETMORE  "This drink is made by Getmore Corporation, a subsidiary of NanoTrasen. It mostly specializes in fast food and consumer food products, \
-							   but also makes average quality alcohol. Many can find Getmore products in grocery stores, vending machines, \
-							   and fast food restaurants all under the Getmore brand."
-
-#define DRINK_FLUFF_ZENGHU    "This drink is made by Zeng-Hu Pharmaceuticals, a trans-stellar medical research and pharmaceutical conglomerate that has heavy ties with Skrell. \
-							   With a big genetics and xenobiology division, it has also revolutionized the production of some old Terran alcohol."
-
-#define DRINK_FLUFF_SILVERPORT "This drink is made by Silverport Quality Brand, an Idris subsidiary that focuses on production of expensive, extremely high-quality drinks. \
-								Its facilities can be found on both Silversun and Venus, but the Cytherean part of Venus are its main consumers. \
-								Still, Silverport has excellent reputation all across the Orion Spur."
+/obj/item/weapon/broken_bottle/attack(mob/living/carbon/M as mob, mob/living/carbon/user as mob)
+	playsound(loc, 'sound/weapons/bladeslice.ogg', 50, 1, -1)
+	return ..()
 
 
-/obj/item/reagent_containers/food/drinks/bottle/gin
-	name = "Alderamin gin"
-	desc = "A bottle of average quality gin, produced on NanoTrasen Space Station Cepheus."
-	desc_fluff = DRINK_FLUFF_GETMORE
+/obj/item/weapon/reagent_containers/food/drinks/bottle/gin
+	name = "Griffeater Gin"
+	desc = "A bottle of high quality gin, produced in the New London Space Station."
 	icon_state = "ginbottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/gin = 100)
+	center_of_mass = "x=16;y=4"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/gin, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/victorygin
-	name = "Victory gin"
-	desc = "Pour one out for Al'mari. His gun was on stun, bless his heart."
-	icon_state = "victorygin"
-	center_of_mass = list("x"=16, "y"=4)
-	desc_fluff = "Adhomian beverages are commonly made with fermented grains or vegetables, if alcoholic, or juices mixed with sugar or honey. Victory gin is the most \
-	widespread alcoholic drink in Adhomai, the result of the fermentation of honey extracted from Messa's tears, but its production and consumption is slowly declining due to the \
-	People's Republic situation in the current conflict."
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/victorygin = 100)
-
-/obj/item/reagent_containers/food/drinks/bottle/whiskey
-	name = "Mu Cephei Special Reserve"
-	desc = "An okayish single-malt whiskey, gently matured inside the maintenance tunnels of NSS Cepheus. TUNNEL WHISKEY RULES."
-	desc_fluff = DRINK_FLUFF_GETMORE
+/obj/item/weapon/reagent_containers/food/drinks/bottle/whiskey
+	name = "Uncle Git's Special Reserve Whiskey"
+	desc = "A premium single-malt whiskey, gently matured inside the tunnels of a nuclear shelter. TUNNEL WHISKEY RULES."
 	icon_state = "whiskeybottle"
-	center_of_mass = list("x"=16, "y"=4)
+	center_of_mass = "x=16;y=3"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/whiskey, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/whiskey/Initialize()
-	. = ..()
-	reagents.add_reagent(/datum/reagent/alcohol/ethanol/whiskey, 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/specialwhiskey
+	name = "Special Blend Whiskey"
+	desc = "Just when you thought regular whiskey was good... This silky, amber goodness has to come along and ruin everything."
+	icon_state = "whiskeybottle2"
+	center_of_mass = "x=16;y=3"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/specialwhiskey, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/fireball
-	name = "Delta Cephei Cinnamon Fireball"
-	desc = "An okayish single-malt whiskey, infused with cinnamon and hot pepper inside the maintenance tunnels of NSS Cepheus. \
-			It is sometimes claimed that Tunnel Runners came up with the current recipe for this drink."
-	desc_fluff = DRINK_FLUFF_GETMORE
-	icon_state = "whiskeybottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/fireball = 100)
-
-/obj/item/reagent_containers/food/drinks/bottle/vodka
-	name = "Martian 50% Premium"
-	desc = "Only potatoes grown in real imported Martian soil may be used for this premium vodka. Made by Silverport, drunk by Zavodskoi."
-	desc_fluff = DRINK_FLUFF_SILVERPORT
+/obj/item/weapon/reagent_containers/food/drinks/bottle/vodka
+	name = "Tunguska Triple Distilled Vodka"
+	desc = "Aah, vodka. Prime choice of drink AND fuel by Indies around the galaxy."
 	icon_state = "vodkabottle"
-	center_of_mass = list("x"=17, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/vodka = 100)
+	center_of_mass = "x=17;y=3"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/vodka, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/vodka/mushroom
-	name = "Magnitogorsk Import mushroom vodka"
-	desc = "A mushroom-based vodka imported from the breweries of Himeo. Drinking too much of this will result in a personal permanent revolution."
-	desc_fluff = "Vodka made from mushrooms is a local favourite on Himeo, due to the ease with which mushrooms can be grown under the planet's surface. This bottle is \
-	from the Vodnik Breweries Syndicate in Magnitogorsk, arguably the most famous brewery on Himeo (though fans of the Coal Canary Syndicated Brewery in Highland City \
-	would disagree). Drinkers of the world, unite!"
-	icon_state = "mushroomvodkabottle"
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/vodka/mushroom = 100)
-
-/obj/item/reagent_containers/food/drinks/bottle/tequila
-	name = "Chip's Guaranteed Quality tequila"
+/obj/item/weapon/reagent_containers/food/drinks/bottle/tequilla
+	name = "Caccavo Guaranteed Quality Tequilla"
 	desc = "Made from premium petroleum distillates, pure thalidomide and other fine quality ingredients!"
-	desc_fluff = DRINK_FLUFF_GETMORE
-	icon_state = "tequilabottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/tequila = 100)
+	icon_state = "tequillabottle"
+	center_of_mass = "x=16;y=3"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/tequilla, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/bottleofnothing
-	name = "bottle of nothing"
-	desc = "A bottle filled with nothing"
+/obj/item/weapon/reagent_containers/food/drinks/bottle/bottleofnothing
+	name = "Bottle of Nothing"
+	desc = "A bottle filled with nothing."
 	icon_state = "bottleofnothing"
-	center_of_mass = list("x"=16, "y"=5)
-	reagents_to_add = list(/datum/reagent/drink/nothing = 100)
+	center_of_mass = "x=17;y=5"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/drink/nothing, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/bitters
-	name = "Nojosuru Aromatic Bitters"
-	desc = "Only the finest and highest quality herbs find their way into our cocktail bitters, both human <i>and</i> skrellian."
-	desc_fluff = "This drink is made by Nojosuru Foods, a subsidiary of Zeng-Hu Pharmaceuticals, founded on Earth in 2252. \
-				  They are known for their surprisingly affordable and incredible quality foods, as well as growing many crops used in pharmaceuticals and luxury items."
-	icon_state = "bitters"
-	center_of_mass = list("x"=16, "y"=9)
-
-/obj/item/reagent_containers/food/drinks/bottle/bitters/Initialize()
-	. = ..()
-	reagents.add_reagent(/datum/reagent/alcohol/ethanol/bitters,40)
-
-/obj/item/reagent_containers/food/drinks/bottle/champagne
-	name = "Silverport's Bubbliest champagne"
-	desc = "A rather fancy bottle of champagne, fit for collecting and storing in a cellar for decades."
-	desc_fluff = DRINK_FLUFF_SILVERPORT
-	icon_state = "champagnebottle"
-	center_of_mass = list("x"=16, "y"=4)
-
-/obj/item/reagent_containers/food/drinks/bottle/champagne/Initialize()
-	. = ..()
-	reagents.add_reagent(/datum/reagent/alcohol/ethanol/champagne,100)
-
-/obj/item/reagent_containers/food/drinks/bottle/mintsyrup
-	name = "Getmore's Bold Peppermint"
-	desc = "Minty fresh. Contains dyn (and just a little peppermint)."
-	desc_fluff = DRINK_FLUFF_GETMORE
-	icon_state = "mint_syrup"
-	center_of_mass = list("x"=16, "y"=6)
-	reagents_to_add = list(/datum/reagent/drink/mintsyrup = 100)
-
-/obj/item/reagent_containers/food/drinks/bottle/patron
-	name = "Cytherea Artiste patron"
-	desc = "Silver laced tequila, served in space night clubs across the galaxy. It's among some of the most expensive Silverport Quality Brand products, \
-			perhaps due to demand rather than the actual cost of production."
-	desc_fluff = DRINK_FLUFF_SILVERPORT
+/obj/item/weapon/reagent_containers/food/drinks/bottle/patron
+	name = "Wrapp Artiste Patron"
+	desc = "Silver laced tequilla, served in space night clubs across the galaxy."
 	icon_state = "patronbottle"
-	center_of_mass = list("x"=16, "y"=7)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/patron = 100)
+	center_of_mass = "x=16;y=6"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/patron, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/rum
-	name = "Captain Melinda's Cuban Spiced rum"
-	desc = "If Getmore gets any alcohol right, it's certainly rum. It's practically GRIFF in a bottle."
-	desc_fluff = DRINK_FLUFF_GETMORE
+/obj/item/weapon/reagent_containers/food/drinks/bottle/rum
+	name = "Captain Pete's Cuban Spiced Rum"
+	desc = "This isn't just rum, oh no. It's practically GRIFF in a bottle."
 	icon_state = "rumbottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/rum = 100)
+	center_of_mass = "x=16;y=8"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/rum, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/holywater
-	name = "flask of holy water"
+/obj/item/weapon/reagent_containers/food/drinks/bottle/holywater
+	name = "Flask of Holy Water"
 	desc = "A flask of the chaplain's holy water."
 	icon_state = "holyflask"
-	center_of_mass = list("x"=17, "y"=10)
-	drink_flags = NO_EMPTY_ICON
-	reagents_to_add = list(/datum/reagent/water/holywater = 100)
+	center_of_mass = "x=17;y=10"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/water/holywater, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/vermouth
-	name = "Xinghua vermouth"
-	desc = "Sweet, sweet dryness. Some alcohol critics say that the addition of dyn to the recipe ruins the drink, \
-			but the average consumer doesn't really notice the difference, and it's cheaper to manufacture."
-	desc_fluff = DRINK_FLUFF_ZENGHU
+/obj/item/weapon/reagent_containers/food/drinks/bottle/vermouth
+	name = "Goldeneye Vermouth"
+	desc = "Sweet, sweet dryness~"
 	icon_state = "vermouthbottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/vermouth = 100)
+	center_of_mass = "x=17;y=3"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/vermouth, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/kahlua
-	name = "Nixiqi's Happy Accident coffee liqueur"
-	desc = "A particularly genius Skrell came up with the recipe by accident in a hydroponics lab by spilling coffee in their herbal concoction, or so the story goes."
-	desc_fluff = DRINK_FLUFF_ZENGHU
+/obj/item/weapon/reagent_containers/food/drinks/bottle/kahlua
+	name = "Robert Robust's Coffee Liqueur"
+	desc = "A widely known, Mexican coffee-flavoured liqueur. In production since 1936, HONK!"
 	icon_state = "kahluabottle"
-	center_of_mass = list("x"=16, "y"=5)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/coffee/kahlua = 100)
+	center_of_mass = "x=17;y=3"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/coffee/kahlua, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/goldschlager
-	name = "Uptown Cytherean goldschlager"
-	desc = "Not as sophisticated as Cytherea Artiste, but I guess if you <i>really</i> want to have pure gold in your drink..."
-	desc_fluff = DRINK_FLUFF_SILVERPORT
+/obj/item/weapon/reagent_containers/food/drinks/bottle/goldschlager
+	name = "College Girl Goldschlager"
+	desc = "Because they are the only ones who will drink 100 proof cinnamon schnapps."
 	icon_state = "goldschlagerbottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/goldschlager = 100)
+	center_of_mass = "x=15;y=3"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/goldschlager, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/cognac
-	name = "Cytherea Golden Sweetness cognac"
-	desc = "A sweet and strongly alchoholic drink, made after numerous distillations and years of maturing. Savor this, and feel the real high life."
-	desc_fluff = DRINK_FLUFF_SILVERPORT
+/obj/item/weapon/reagent_containers/food/drinks/bottle/cognac
+	name = "Chateau De Baton Premium Cognac"
+	desc = "A sweet and strongly alchoholic drink, made after numerous distillations and years of maturing. You might as well not scream 'SHITCURITY' this time."
 	icon_state = "cognacbottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/cognac = 100)
+	center_of_mass = "x=16;y=6"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/cognac, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/wine
-	name = "Silverport Quality Brand red wine"
-	desc = "Some consider this to be Silversun's main cultural export."
-	desc_fluff = DRINK_FLUFF_SILVERPORT
+/obj/item/weapon/reagent_containers/food/drinks/bottle/wine
+	name = "Doublebeard Bearded Special Wine"
+	desc = "A faint aura of unease and asspainery surrounds the bottle."
 	icon_state = "winebottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/wine = 100)
+	center_of_mass = "x=16;y=4"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/wine, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/absinthe
-	name = "Jailbreaker Verte"
-	desc = "One sip of this and you just know you're gonna have a good time. Particularly artistic Cythereans drink this Silverport product to get inspired."
-	desc_fluff = DRINK_FLUFF_SILVERPORT
+/obj/item/weapon/reagent_containers/food/drinks/bottle/absinthe
+	name = "Jailbreaker Verte Absinthe"
+	desc = "One sip of this and you just know you're gonna have a good time."
 	icon_state = "absinthebottle"
-	center_of_mass = list("x"=16, "y"=7)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/absinthe = 100)
+	center_of_mass = "x=16;y=6"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/absinthe, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/melonliquor
-	name = "Emeraldine melon liquor"
-	desc = "A bottle of 46 proof Emeraldine Melon Liquor, made from a Silversun-grown variety of melon. Sweet and light, and surprisingly cheap considering the manufacturer."
-	desc_fluff = DRINK_FLUFF_SILVERPORT
-	icon_state = "alco-green"
-	center_of_mass = list("x"=16, "y"=6)
-	drink_flags = IS_GLASS | UNIQUE_EMPTY_ICON
-	empty_icon_state = "alco-blue_empty"
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/melonliquor = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/melonliquor
+	name = "Emeraldine Melon Liquor"
+	desc = "A bottle of 46 proof Emeraldine Melon Liquor. Sweet and light."
+	icon_state = "alco-green" //Placeholder.
+	center_of_mass = "x=16;y=6"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/melonliquor, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/bluecuracao
-	name = "Xuaousha curacao"
-	desc = "A fruity, exceptionally azure drink. Thanks to weird Skrellian genetic experiments, oranges used for this are, in fact, really blue."
-	desc_fluff = DRINK_FLUFF_ZENGHU
-	icon_state = "alco-blue"
-	empty_icon_state = "alco-clear"
-	center_of_mass = list("x"=16, "y"=6)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/bluecuracao = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/bluecuracao
+	name = "Miss Blue Curacao"
+	desc = "A fruity, exceptionally azure drink. Does not allow the imbiber to use the fifth magic."
+	icon_state = "alco-blue" //Placeholder.
+	center_of_mass = "x=16;y=6"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/bluecuracao, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/grenadine
-	name = "Getmore's Tangy grenadine syrup"
+/obj/item/weapon/reagent_containers/food/drinks/bottle/herbal
+	name = "Liqueur d'Herbe"
+	desc = "A bottle of the seventh-finest herbal liquor sold under a generic name in the galaxy. The back label has a load of guff about the monks who traditionally made this particular variety."
+	icon_state = "herbal"
+	center_of_mass = "x=16;y=6"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/herbal, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/grenadine
+	name = "Briar Rose Grenadine Syrup"
 	desc = "Sweet and tangy, a bar syrup used to add color or flavor to drinks."
-	desc_fluff = DRINK_FLUFF_GETMORE
 	icon_state = "grenadinebottle"
-	drink_flags = IS_GLASS | NO_EMPTY_ICON
-	center_of_mass = list("x"=16, "y"=6)
-	reagents_to_add = list(/datum/reagent/drink/grenadine = 100)
+	center_of_mass = "x=16;y=6"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/drink/grenadine, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/cola
-	name = "space cola"
-	desc = "Cola. In space."
+/obj/item/weapon/reagent_containers/food/drinks/bottle/cola
+	name = "\improper Space Cola"
+	desc = "Cola. in space."
 	icon_state = "colabottle"
-	center_of_mass = list("x"=16, "y"=6)
-	drink_flags = NO_EMPTY_ICON
-	drop_sound = 'sound/items/drop/shoes.ogg'
-	pickup_sound = 'sound/items/pickup/shoes.ogg'
-	reagents_to_add = list(/datum/reagent/drink/space_cola = 100)
-	shatter_material = MATERIAL_PLASTIC
-	shatter = FALSE
+	center_of_mass = "x=16;y=6"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/drink/space_cola, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/space_up
+/obj/item/weapon/reagent_containers/food/drinks/bottle/space_up
 	name = "\improper Space-Up"
 	desc = "Tastes like a hull breach in your mouth."
 	icon_state = "space-up_bottle"
-	center_of_mass = list("x"=16, "y"=6)
-	drink_flags = NO_EMPTY_ICON
-	drop_sound = 'sound/items/drop/shoes.ogg'
-	pickup_sound = 'sound/items/pickup/shoes.ogg'
-	reagents_to_add = list(/datum/reagent/drink/spaceup = 100)
-	shatter_material = MATERIAL_PLASTIC
-	shatter = FALSE
+	center_of_mass = "x=16;y=6"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/drink/space_up, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/space_mountain_wind
+/obj/item/weapon/reagent_containers/food/drinks/bottle/space_mountain_wind
 	name = "\improper Space Mountain Wind"
 	desc = "Blows right through you like a space wind."
 	icon_state = "space_mountain_wind_bottle"
-	center_of_mass = list("x"=16, "y"=6)
-	drink_flags = NO_EMPTY_ICON
-	drop_sound = 'sound/items/drop/shoes.ogg'
-	pickup_sound = 'sound/items/pickup/shoes.ogg'
-	reagents_to_add = list(/datum/reagent/drink/spacemountainwind = 100)
-	shatter_material = MATERIAL_PLASTIC
-	shatter = FALSE
+	center_of_mass = "x=16;y=6"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/drink/spacemountainwind, 100)
 
-/obj/item/reagent_containers/food/drinks/bottle/pwine
-	name = "Chip Getmore's Velvet"
+/obj/item/weapon/reagent_containers/food/drinks/bottle/pwine
+	name = "Warlock's Velvet"
 	desc = "What a delightful packaging for a surely high quality wine! The vintage must be amazing!"
-	desc_fluff = DRINK_FLUFF_GETMORE
 	icon_state = "pwinebottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/pwine = 100)
+	center_of_mass = "x=16;y=4"
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/ethanol/pwine, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/blackstrap
+	name = "Two Brothers Blackstrap"
+	desc = "A bottle of Blackstrap, distilled in Two Brothers, Tersten."
+	icon_state = "blackstrap"
+	center_of_mass = "x=16;y=4"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/blackstrap/Initialize()
+	. = ..()
+	reagents.add_reagent(/datum/reagent/ethanol/blackstrap, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/sake
+	name = "Takeo Sadow's Combined Sake"
+	desc = "Finest Sake allowed for import in the SCG."
+	icon_state = "sake"
+	center_of_mass = "x=16;y=4"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/sake/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/sake, 100)
+
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/lordaniawine
+	name = "New Aresian Vintage 2230"
+	desc = "The kind of wine that just demands attention, and a big wallet."
+	icon_state = "lordaniawine"
+	center_of_mass = "x=16;y=4"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/lordaniawine/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/lordaniawine, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/champagne
+	name = "Murcelano Vinyard's Premium Champagne"
+	desc = "The regal drink of celebrities and royalty."
+	icon_state = "champagne"
+	center_of_mass = "x=16;y=4"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/champagne/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/champagne, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/prosecco
+	name = "2280 Vintage Prosecco."
+	desc = "A delicious prosecco, ideal for long days at work. This one proudly advertises itself as 2280 Vintage. Must have been a special year."
+	icon_state = "prosecco"
+	center_of_mass = "x=16;y=4"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/prosecco/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/prosecco, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/llanbrydewhiskey
+	name = "Pritchard's Wisgi Ucheldirol"
+	desc = "The bottle is covered in strange archaic markings... Oh wait, that's just Welsh."
+	icon_state = "whiskeybottle3"
+	center_of_mass = "x=16;y=4"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/llanbrydewhiskey/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/llanbrydewhiskey, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/jagermeister
+	name = "Kaisermeister Deluxe Jagermeister"
+	desc = "Jagermeister. This drink just demands a party."
+	icon_state = "herbal"
+	center_of_mass = "x=16;y=6"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/jagermeister/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/jagermeister, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/cachaca
+	name = "Acacara Cachaca"
+	desc = "Cachaca, distilled from fermented sugarcane.  This one was bottled in Acacara, Yuklid."
+	icon_state = "cachaca"
+	center_of_mass = "x=16;y=6"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/cachaca/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/cachaca, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/baijiu
+	name = "Huangjin Bay Baijiu"
+	desc = "A large bottle of Baijiu with a beautiful looking sunset on the cover."
+	icon_state = "baijiu"
+	center_of_mass = "x=16;y=6"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/baijiu/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/baijiu, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/soju
+	name = "Sol Hyonjun's Soju"
+	desc = "A clear, see-through bottle of Soju."
+	icon_state = "soju"
+	center_of_mass = "x=16;y=6"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/soju/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/soju, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/rakia
+	name = "Sadmir Cumani's Rakia"
+	desc = "A polite looking man on the label promises you this is 100 percent Albanian."
+	icon_state = "rakia"
+	center_of_mass = "x=16;y=6"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/rakia/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/rakia, 100)
+
+//////////////////////////PREMIUM ALCOHOL ///////////////////////
+/obj/item/weapon/reagent_containers/food/drinks/bottle/premiumvodka
+	name = "Four Stripes Quadruple Distilled"
+	desc = "Premium distilled vodka imported directly from the Gilgamesh Colonial Confederation."
+	icon_state = "premiumvodka"
+	center_of_mass = "x=17;y=3"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/premiumvodka/New()
+	..()
+	reagents.add_reagent(/datum/reagent/ethanol/vodka/premium, 100)
+	var/namepick = pick("Four Stripes","Gilgamesh","Novaya Zemlya","Indie","STS-35")
+	var/typepick = pick("Absolut","Gold","Quadruple Distilled","Platinum","Standard")
+	name = "[namepick] [typepick]"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/premiumwine
+	name = "Uve De Blanc"
+	desc = "You feel pretentious just looking at it."
+	icon_state = "premiumwine"
+	center_of_mass = "x=16;y=4"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/premiumwine/New()
+	..()
+	reagents.add_reagent(/datum/reagent/ethanol/wine/premium, 100)
+	var/namepick = pick("Calumont","Sciacchemont","Recioto","Torcalota")
+	var/agedyear = rand(game_year-150,game_year)
+	name = "Chateau [namepick] De Blanc"
+	desc += " This bottle is marked as [agedyear] Vintage."
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/brandy
+	name = "New Amsterdam Deluxe Brandy"
+	desc = "A bottle of premium Lunar brandy."
+	icon_state = "lunabrandy"
+	center_of_mass = "x=16;y=4"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/brandy/Initialize()
+	. = ..()
+	reagents.add_reagent(/datum/reagent/ethanol/lunabrandy, 100)
+	var/namepick = pick("Selenian","New Vegas","Yueliang","Gideon","New Amsterdam","Saurian")
+	var/typepick = pick("Deluxe Brandy","Premium Brandy","Luxury Brandy","Expensive Brandy","Special Brandy")
+	SetName("[namepick] [typepick]")
+
+//////////////////////////JUICES AND STUFF ///////////////////////
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/orangejuice
+	name = "Orange Juice"
+	desc = "Full of vitamins and deliciousness!"
+	icon_state = "orangejuice"
+	item_state = "carton"
+	center_of_mass = "x=16;y=7"
+	isGlass = FALSE
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/drink/juice/orange, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/cream
+	name = "Milk Cream"
+	desc = "It's cream. Made from milk. What else did you think you'd find in there?"
+	icon_state = "cream"
+	item_state = "carton"
+	center_of_mass = "x=16;y=8"
+	isGlass = FALSE
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/drink/milk/cream, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/tomatojuice
+	name = "Tomato Juice"
+	desc = "Well, at least it LOOKS like tomato juice. You can't tell with all that redness."
+	icon_state = "tomatojuice"
+	item_state = "carton"
+	center_of_mass = "x=16;y=8"
+	isGlass = FALSE
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/drink/juice/tomato, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/limejuice
+	name = "Lime Juice"
+	desc = "Sweet-sour goodness."
+	icon_state = "limejuice"
+	item_state = "carton"
+	center_of_mass = "x=16;y=8"
+	isGlass = FALSE
+	New()
+		..()
+		reagents.add_reagent(/datum/reagent/drink/juice/lime, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/unathijuice
+	name = "Hrukhza Leaf Extract"
+	desc = "Hrukhza Leaf, a vital component of any Moghes drinks."
+	icon_state = "hrukhzaextract"
+	item_state = "carton"
+	center_of_mass = "x=16;y=8"
+	isGlass = FALSE
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/unathijuice/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/drink/alien/unathijuice, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/lemonjuice
+	name = "Lemon Juice"
+	desc = "Sweet-sour goodness."
+	icon_state = "lemonjuice"
+	item_state = "carton"
+	center_of_mass = "x=16;y=8"
+	isGlass = FALSE
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/lemonjuice/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/drink/juice/lemon, 100)
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/maplesyrup
+	name = "maple syrup bottle"
+	desc = "Sweet, syrupy goodness."
+	icon_state = "maplesyrup"
+	center_of_mass = "x=16;y=8"
+
+/obj/item/weapon/reagent_containers/food/drinks/bottle/maplesyrup/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/drink/maplesyrup, 100)
 
 //Small bottles
-/obj/item/reagent_containers/food/drinks/bottle/small
-	name = "empty small bottle"
-	desc = "A sad empty bottle."
-	icon_state = "beer"
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small
 	volume = 50
 	smash_duration = 1
-	flags = 0 //starts closed
+	atom_flags = 0 //starts closed
 	rag_underlay = "rag_small"
 
-/obj/item/reagent_containers/food/drinks/bottle/small/beer
-	name = "Ultimate Quality beer"
-	desc = "Contains only water, malt and hops. Not really as high-quality as the name says, but it's still popular."
-	desc_fluff = DRINK_FLUFF_GETMORE
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/beer
+	name = "space beer"
+	desc = "Contains only water, malt and hops."
 	icon_state = "beer"
-	center_of_mass = list("x"=16, "y"=8)
+	center_of_mass = "x=16;y=12"
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/beer/New()
+	. = ..()
+	reagents.add_reagent(/datum/reagent/ethanol/beer, 30)
 
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/beer = 30)
-
-/obj/item/reagent_containers/food/drinks/bottle/small/ale
-	name = "\improper Magm-ale"
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/ale
+	name = "\improper Magm-Ale"
 	desc = "A true dorf's drink of choice."
 	icon_state = "alebottle"
 	item_state = "beer"
-	center_of_mass = list("x"=16, "y"=8)
+	center_of_mass = "x=16;y=10"
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/ale/New()
+	. = ..()
+	reagents.add_reagent(/datum/reagent/ethanol/ale, 30)
 
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/ale = 30)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/hellshenpa
+	name = "Hellshen Pale Ale"
+	desc = "The best ale on Mars, according to the label."
+	icon_state = "hellshenbeer"
+	center_of_mass = "x=16;y=12"
 
-//aurora's drinks
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/hellshenpa/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/hellshenpa, 30)
 
-/obj/item/reagent_containers/food/drinks/bottle/chartreusegreen
-	name = "Nralakk Touch green chartreuse"
-	desc = "A green, strong liqueur with a very strong flavor. The original recipe called for almost a hundred of different herbs, \
-			but thanks to Skrellian improvements to the recipe, it now just has five, without losing any nuance."
-	desc_fluff = DRINK_FLUFF_ZENGHU
-	icon_state = "chartreusegreenbottle"
-	center_of_mass = list("x" = 15,"y" = 5)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/chartreusegreen = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/gingerbeer
+	name = "Ginger Beer"
+	desc = "A delicious non-alcoholic beverage enjoyed across Sol space."
+	icon_state = "gingerbeer"
+	center_of_mass = "x=16;y=12"
 
-/obj/item/reagent_containers/food/drinks/bottle/chartreuseyellow
-	name = "Nralakk Touch yellow chartreuse"
-	desc = "A green, strong liqueur with a very strong flavor. The original recipe called for almost a hundred of different herbs, \
-			but thanks to Skrellian improvements to the recipe, it now just has five, without losing any nuance."
-	desc_fluff = DRINK_FLUFF_ZENGHU
-	icon_state = "chartreuseyellowbottle"
-	center_of_mass = list("x" = 15,"y" = 5)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/chartreuseyellow = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/gingerbeer/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/drink/gingerbeer, 50)
 
-/obj/item/reagent_containers/food/drinks/bottle/cremewhite
-	name = "Xinghua White Mint"
-	desc = "Mint-flavoured alcohol, in a bottle."
-	desc_fluff = DRINK_FLUFF_ZENGHU
-	icon_state = "whitecremebottle"
-	center_of_mass = list("x" = 16,"y" = 5)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/cremewhite = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/dandelionburdock
+	name = "Dandelion and Burdock"
+	desc = "A bottle of dandelion and burdock. Not actually made from either of the two."
+	icon_state = "dnb"
+	center_of_mass = "x=16;y=12"
 
-/obj/item/reagent_containers/food/drinks/bottle/cremeyvette
-	name = "Xinghua Delicate Violet"
-	desc = "Berry-flavoured alcohol, in a bottle."
-	desc_fluff = DRINK_FLUFF_ZENGHU
-	icon_state = "cremedeyvettebottle"
-	center_of_mass = list("x" = 16,"y" = 6)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/cremeyvette = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/dandelionburdock/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/drink/dandelionburdock, 50)
 
-/obj/item/reagent_containers/food/drinks/bottle/brandy
-	name = "Admiral Cindy's brandy"
-	desc = "Cheap knock off for Silverport cognac; Getmore's attempt to ride off the cognac fad of the 2420s."
-	desc_fluff = DRINK_FLUFF_GETMORE
-	icon_state = "brandybottle"
-	center_of_mass = list("x" = 15,"y" = 8)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/brandy = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/alcoholfreebeer
+	name = "Alcohol-Free Beer"
+	desc = "A bottle of alcohol-free beer. Finally, you can drink on duty."
+	icon_state = "alcoholfreebeer"
+	center_of_mass = "x=16;y=12"
 
-/obj/item/reagent_containers/food/drinks/bottle/guinness
-	name = "Guinness"
-	desc = "A bottle of good old Guinness."
-	icon_state = "guinness_bottle"
-	center_of_mass = list("x" = 15,"y" = 4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/guinness = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/alcoholfreebeer/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/drink/alcoholfreebeer, 50)
 
-/obj/item/reagent_containers/food/drinks/bottle/drambuie
-	name = "Xinghua Honeyed Satisfaction"
-	desc = "A bottle of trendy whiskey with genetically modified barley. The exact genome is a closely-guarded secret, but it tastes sweet and slightly herbal."
-	desc_fluff = DRINK_FLUFF_ZENGHU
-	icon_state = "drambuie_bottle"
-	center_of_mass = list("x" = 16,"y" = 6)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/drambuie = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/lager
+	name = "Hans' Original Lager"
+	desc = "A bottle of premium lager. Has Hans' seal of approval, apparently."
+	icon_state = "lager"
+	center_of_mass = "x=16;y=12"
 
-/obj/item/reagent_containers/food/drinks/bottle/sbiten
-	name = "Getmore's Traditional Sbiten"
-	desc = "A drink that died, then got revived, then died again, and became a fad <i>again</i> now thanks to Getmore having a surplus of honey."
-	desc_fluff = DRINK_FLUFF_GETMORE
-	icon_state = "sbitenbottle"
-	center_of_mass = list("x" = 16,"y" = 7)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/sbiten = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/small/lager/Initialize()
+	.=..()
+	reagents.add_reagent(/datum/reagent/ethanol/lager, 50)
 
-/obj/item/reagent_containers/food/drinks/bottle/messa_mead
-	name = "messa's mead"
-	desc = "A bottle of Messa's mead. Bottled somewhere in the icy world of Adhomai."
-	icon_state = "messa_mead"
-	center_of_mass = list("x" = 16,"y" = 5)
-	desc_fluff = "Adhomian beverages are commonly made with fermented grains or vegetables, if alcoholic, or juices mixed with sugar or honey. Victory gin is the most \
-	widespread alcoholic drink in Adhomai, the result of the fermentation of honey extracted from Messa's tears, but its production and consumption is slowly declining due to the \
-	People's Republic situation in the current conflict. Messa's mead is also another more traditional alternative, made with honey and fermented Earthen-Root juice."
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/messa_mead = 100)
+//Probably not the right place for it, but no idea where else to put it without making a brand new DM and slogging through making vars from scratch.
 
-/obj/item/reagent_containers/food/drinks/bottle/sake
-	name = "Shokyodo Sake"
-	desc = "A rice-based alcohol produced and marketed by Nojosuru Foods. While frequently described as rice wine, its production shares more in common with beer."
-	desc_fluff = "Brewed in Nojosuru's facilities in Akita Prefecture, Japan, Shokyodo Sake is marketed as a premium good reflecting its lineage from Earth. \
-	Despite its high level of quality and pleasing taste, it has never gained much popularity outside of Sol and the Inner Colonies owing to its high cost and Konyang-based \
-	competitors."
-	icon_state = "sakebottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/sake = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/oiljug
+	name = "oil jug"
+	desc = "A plastic jug of engine oil. Not for human consumption."
+	icon_state = "oil"
+	isGlass = FALSE
 
-/obj/item/reagent_containers/food/drinks/bottle/soju
-	name = "Boryeong '45 soju"
-	desc = "A rice-based liquor commonly consumed by the non-synthetic residents of Konyang. This particular brand originates from the city of Boreyeong, on Konyang."
-	desc_fluff = "While most commonly associated with Konyang, soju can be found throughout the Sol Alliance thanks to the inexpensive cost of producing it and a successful \
-	marketing campaign carried out during the robotics boom on Konyang. It is traditionally consumed neat, or without mixing any other liquids into it. The '45 in this brand's \
-	name refers to its alcohol by volume content, and not a calendar year."
-	icon_state = "sojubottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/soju = 100)
-
-/obj/item/reagent_containers/food/drinks/bottle/makgeolli
-	name = "Doctor Kyung's makgeolli"
-	desc = "A rice wine imported from Konyang with a very low alcohol content, makegeolli is commonly consumed during social events on Konyang. This bottle has a smiling man \
-	wearing a labcoat on its label."
-	desc_fluff = "Doctor Gyeong Kyung, PhD., is considered to be one of the Point Verdant Terraneus Institute of AI Research's premiere scholars, and is commonly seen at robotics \
-	conferences throughout the Orion Spur. He has also proven to be a fairly successful hobbyist brewer on the side, as seen by this very successful brand. Due to its association \
-	with the PVTI, Doctor Kyung's makegeolli is partially funded by Einstein Engines. This has not stopped it from becoming popular even in NanoTrasen-dominated areas, as it \
-	really is just that good."
-	icon_state = "makgeollibottle"
-	center_of_mass = list("x"=16, "y"=5)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/makgeolli = 100)
-
-// Butanol-based alcoholic drinks
-//=====================================
-//These are mainly for unathi, and have very little (but still some) effect on other species
-
-/obj/item/reagent_containers/food/drinks/bottle/small/xuizijuice
-	name = "Xuizi Juice"
-	desc = "Blended flower buds from the Xuizi cactus. It smells faintly of vanilla. Bottled by the Arizi Guild for over 200 years."
-	icon_state = "xuizibottle"
-	center_of_mass = list("x"=16, "y"=8)
-	reagents_to_add = list(/datum/reagent/alcohol/butanol/xuizijuice = 30)
-
-/obj/item/reagent_containers/food/drinks/bottle/sarezhiwine
-	name = "Sarezhi Wine"
-	desc = "A premium Moghean wine made from Sareszhi berries. Bottled by the Arizi Guild for over 200 years."
-	icon_state = "sarezhibottle"
-	center_of_mass = list("x" = 16,"y" = 6)
-	reagents_to_add = list(/datum/reagent/alcohol/butanol/sarezhiwine = 100)
-
-// Synnono Meme (Bottled) Drinks
-//======================================
-//
-
-/obj/item/reagent_containers/food/drinks/bottle/boukha
-	name = "Boukha Boboksa Classic"
-	desc = "A distillation of figs, imported from the Serene Republic of Elyra. Makes an excellent apertif or digestif."
-	icon_state = "boukhabottle"
-	center_of_mass = list("x"=16, "y"=6)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/boukha = 100)
-
-/obj/item/reagent_containers/food/drinks/bottle/whitewine
-	name = "Doublebeard Bearded White Wine"
-	desc = "A faint aura of unease and asspainery surrounds the bottle."
-	icon_state = "whitewinebottle"
-	center_of_mass = list("x"=16, "y"=4)
-	reagents_to_add = list(/datum/reagent/alcohol/ethanol/whitewine = 100)
+/obj/item/weapon/reagent_containers/food/drinks/bottle/oiljug/New()
+	. = ..()
+	reagents.add_reagent(/datum/reagent/oil, 100)

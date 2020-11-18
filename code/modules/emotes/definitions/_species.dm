@@ -28,53 +28,66 @@
 		/decl/emote/human/fastsway,
 		/decl/emote/human/swag,
 		/decl/emote/human/stopsway,
-		/decl/emote/audible/lizard_bellow,
-		/decl/emote/audible/hiss,
-		/decl/emote/audible/hiss/long,
-		/decl/emote/audible/hiss/short
+		/decl/emote/audible/lizard_bellow
 		)
-	pain_emotes_with_pain_level = list(
-		list(/decl/emote/audible/roar, /decl/emote/audible/whimper, /decl/emote/audible/moan) = 70,
-		list(/decl/emote/audible/grunt, /decl/emote/audible/groan, /decl/emote/audible/moan) = 40,
-		list(/decl/emote/audible/grunt, /decl/emote/audible/groan) = 10,
+
+/datum/species/unathi/yeosa
+	default_emotes = list(
+		/decl/emote/human/swish,
+		/decl/emote/human/wag,
+		/decl/emote/human/sway,
+		/decl/emote/human/qwag,
+		/decl/emote/human/fastsway,
+		/decl/emote/human/swag,
+		/decl/emote/human/stopsway,
+		/decl/emote/audible/lizard_bellow,
+		/decl/emote/audible/lizard_squeal
+		)
+
+/datum/species/nabber
+	default_emotes = list(
+		/decl/emote/audible/bug_hiss,
+		/decl/emote/audible/bug_buzz,
+		/decl/emote/audible/bug_chitter
+		)
+
+
+/datum/species/nabber/monarch_queen
+	default_emotes = list(
+		/decl/emote/audible/bug_hiss,
+		/decl/emote/audible/bug_buzz,
+		/decl/emote/audible/bug_chitter,
+		/decl/emote/audible/ascent_purr,
+	)
+
+/datum/species/adherent
+	default_emotes = list(
+		/decl/emote/audible/adherent_chime,
+		/decl/emote/audible/adherent_ding
+	)
+
+/datum/species/vox
+	default_emotes = list(
+		/decl/emote/audible/vox_shriek
+	)
+
+/datum/species/mantid
+	default_emotes = list(
+		/decl/emote/audible/ascent_purr,
+		/decl/emote/audible/ascent_hiss,
+		/decl/emote/audible/ascent_snarl,
+		/decl/emote/visible/ascent_flicker,
+		/decl/emote/visible/ascent_glint,
+		/decl/emote/visible/ascent_glimmer,
+		/decl/emote/visible/ascent_pulse,
+		/decl/emote/visible/ascent_shine,
+		/decl/emote/visible/ascent_dazzle
 	)
 
 /datum/species/diona
 	default_emotes = list(
 		/decl/emote/audible/chirp,
-		/decl/emote/audible/multichirp,
-		/decl/emote/audible/nymphsqueal,
-		/decl/emote/audible/painrustle,
-		/decl/emote/audible/paincreak
-	)
-	pain_emotes_with_pain_level = list(
-		list(/decl/emote/audible/painrustle, /decl/emote/audible/paincreak, /decl/emote/audible/nymphsqueal) = 70,
-		list(/decl/emote/audible/painrustle, /decl/emote/audible/nymphsqueal) = 40,
-		list(/decl/emote/audible/paincreak) = 10,
-	)
-
-/datum/species/bug
-	default_emotes = list(
-		/decl/emote/audible/hiss,
-		/decl/emote/audible/chitter,
-		/decl/emote/audible/shriek,
-		/decl/emote/audible/screech
-	)
-	pain_emotes_with_pain_level = list(
-		list(/decl/emote/audible/screech, /decl/emote/audible/shriek) = 70,
-		list(/decl/emote/audible/shriek, /decl/emote/audible/hiss) = 40,
-		list(/decl/emote/audible/hiss) = 10,
-	)
-
-/datum/species/tajaran
-	default_emotes = list(
-		/decl/emote/audible/howl,
-		/decl/emote/audible/hiss
-	)
-	pain_emotes_with_pain_level = list(
-		list(/decl/emote/audible/scream, /decl/emote/audible/whimper, /decl/emote/audible/moan, /decl/emote/audible/cry, /decl/emote/audible/howl) = 70,
-		list(/decl/emote/audible/grunt, /decl/emote/audible/groan, /decl/emote/audible/moan, /decl/emote/audible/hiss) = 40,
-		list(/decl/emote/audible/grunt, /decl/emote/audible/groan, /decl/emote/audible/hiss) = 10,
+		/decl/emote/audible/multichirp
 	)
 
 /mob/living/carbon/human/set_species(var/new_species, var/default_colour = 1)

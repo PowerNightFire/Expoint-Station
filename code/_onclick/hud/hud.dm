@@ -1,135 +1,20 @@
 /*
-	The global hud:
-	Uses the same visual objects for all players.
-*/
-var/datum/global_hud/global_hud	// Initialized in SSatoms.
-var/list/global_huds
-
-/datum/hud/var/obj/screen/grab_intent
-/datum/hud/var/obj/screen/hurt_intent
-/datum/hud/var/obj/screen/disarm_intent
-/datum/hud/var/obj/screen/help_intent
-
-/datum/global_hud
-	var/obj/screen/vr_control
-	var/obj/screen/druggy
-	var/obj/screen/blurry
-	var/list/vimpaired
-	var/list/darkMask
-	var/obj/screen/nvg
-	var/obj/screen/thermal
-	var/obj/screen/meson
-	var/obj/screen/science
-	var/obj/screen/holomap
-
-/datum/global_hud/proc/setup_overlay(var/icon_state, var/color)
-	var/obj/screen/screen = new /obj/screen()
-	screen.alpha = 25 // Adjust this if you want goggle overlays to be thinner or thicker.
-	screen.screen_loc = "SOUTHWEST to NORTHEAST" // Will tile up to the whole screen, scaling beyond 15x15 if needed.
-	screen.icon = 'icons/obj/hud_tiled.dmi'
-	screen.icon_state = icon_state
-	screen.layer = SCREEN_LAYER
-	screen.mouse_opacity = 0
-	screen.color = color
-
-	return screen
-
-/datum/global_hud/New()
-	//420erryday psychedellic colours screen overlay for when you are high
-	druggy = new /obj/screen()
-	druggy.screen_loc = ui_entire_screen
-	druggy.icon_state = "druggy"
-	druggy.layer = 17
-	druggy.mouse_opacity = 0
-	druggy.alpha = 127
-	druggy.blend_mode = BLEND_MULTIPLY
-
-	//that white blurry effect you get when you eyes are damaged
-	blurry = new /obj/screen()
-	blurry.screen_loc = ui_entire_screen
-	blurry.icon_state = "blurry"
-	blurry.layer = 17
-	blurry.mouse_opacity = 0
-	blurry.alpha = 100
-
-	vr_control = new /obj/screen()
-	vr_control.icon = 'icons/mob/screen/full.dmi'
-	vr_control.icon_state = "vr_control"
-	vr_control.screen_loc = "1,1"
-	vr_control.mouse_opacity = 0
-	vr_control.alpha = 120
-
-	nvg = setup_overlay("scanline", "#06ff00")
-	thermal = setup_overlay("scanline", "#ff0000")
-	meson = setup_overlay("scanline", "#9fd800")
-	science = setup_overlay("scanline", "#d600d6")
-
-	// The holomap screen object is actually totally invisible.
-	// Station maps work by setting it as an images location before sending to client, not
-	// actually changing the icon or icon state of the screen object itself!
-	// Why do they work this way? I don't know really, that is how /vg/ designed them, but since they DO
-	// work this way, we can take advantage of their immutability by making them part of
-	// the global_hud (something we have and /vg/ doesn't) instead of an instance per mob.
-	holomap = new /obj/screen()
-	holomap.name = "holomap"
-	holomap.icon = null
-	holomap.screen_loc = ui_holomap
-	holomap.mouse_opacity = 0
-
-	var/obj/screen/O
-	var/i
-	//that nasty looking dither you  get when you're short-sighted
-	vimpaired = newlist(/obj/screen,/obj/screen,/obj/screen,/obj/screen)
-	O = vimpaired[1]
-	O.screen_loc = "1,1 to 5,15"
-	O = vimpaired[2]
-	O.screen_loc = "5,1 to 10,5"
-	O = vimpaired[3]
-	O.screen_loc = "6,11 to 10,15"
-	O = vimpaired[4]
-	O.screen_loc = "11,1 to 15,15"
-
-	//welding mask overlay black/dither
-	darkMask = newlist(/obj/screen, /obj/screen, /obj/screen, /obj/screen, /obj/screen, /obj/screen, /obj/screen, /obj/screen)
-	O = darkMask[1]
-	O.screen_loc = "WEST+2,SOUTH+2 to WEST+4,NORTH-2"
-	O = darkMask[2]
-	O.screen_loc = "WEST+4,SOUTH+2 to EAST-5,SOUTH+4"
-	O = darkMask[3]
-	O.screen_loc = "WEST+5,NORTH-4 to EAST-5,NORTH-2"
-	O = darkMask[4]
-	O.screen_loc = "EAST-4,SOUTH+2 to EAST-2,NORTH-2"
-	O = darkMask[5]
-	O.screen_loc = "WEST,SOUTH to EAST,SOUTH+1"
-	O = darkMask[6]
-	O.screen_loc = "WEST,SOUTH+2 to WEST+1,NORTH"
-	O = darkMask[7]
-	O.screen_loc = "EAST-1,SOUTH+2 to EAST,NORTH"
-	O = darkMask[8]
-	O.screen_loc = "WEST+2,NORTH-1 to EAST-2,NORTH"
-
-	for(i = 1, i <= 4, i++)
-		O = vimpaired[i]
-		O.icon_state = "dither50"
-		O.layer = 17
-		O.mouse_opacity = 0
-
-		O = darkMask[i]
-		O.icon_state = "dither50"
-		O.layer = 17
-		O.mouse_opacity = 0
-
-	for(i = 5, i <= 8, i++)
-		O = darkMask[i]
-		O.icon_state = "black"
-		O.layer = 17
-		O.mouse_opacity = 0
-
-/*
 	The hud datum
 	Used to show and hide huds for all the different mob types,
 	including inventories and item quick actions.
 */
+
+/mob
+	var/hud_type = null
+	var/datum/hud/hud_used = null
+
+/mob/proc/InitializeHud()
+	if(hud_used)
+		qdel(hud_used)
+	if(hud_type)
+		hud_used = new hud_type(src)
+	else
+		hud_used = new /datum/hud
 
 /datum/hud
 	var/mob/mymob
@@ -140,12 +25,11 @@ var/list/global_huds
 	var/hotkey_ui_hidden = 0	//This is to hide the buttons that can be used via hotkeys. (hotkeybuttons list of buttons)
 
 	var/obj/screen/lingchemdisplay
-	var/obj/screen/blobpwrdisplay
-	var/obj/screen/blobhealthdisplay
 	var/obj/screen/r_hand_hud_object
 	var/obj/screen/l_hand_hud_object
 	var/obj/screen/action_intent
-	var/obj/screen/movement_intent/move_intent
+	var/obj/screen/move_intent
+	var/obj/screen/stamina/stamina_bar
 
 	var/list/adding
 	var/list/other
@@ -154,20 +38,15 @@ var/list/global_huds
 	var/obj/screen/movable/action_button/hide_toggle/hide_actions_toggle
 	var/action_buttons_hidden = 0
 
-datum/hud/New(mob/owner)
+/datum/hud/New(mob/owner)
 	mymob = owner
 	instantiate()
 	..()
 
 /datum/hud/Destroy()
 	. = ..()
-	grab_intent = null
-	hurt_intent = null
-	disarm_intent = null
-	help_intent = null
+	stamina_bar = null
 	lingchemdisplay = null
-	blobpwrdisplay = null
-	blobhealthdisplay = null
 	r_hand_hud_object = null
 	l_hand_hud_object = null
 	action_intent = null
@@ -175,8 +54,15 @@ datum/hud/New(mob/owner)
 	adding = null
 	other = null
 	hotkeybuttons = null
-//	item_action_list = null // ?
 	mymob = null
+
+/datum/hud/proc/update_stamina()
+	if(mymob && stamina_bar)
+		stamina_bar.invisibility = INVISIBILITY_MAXIMUM
+		var/stamina = mymob.get_stamina()
+		if(stamina < 100)
+			stamina_bar.invisibility = 0
+			stamina_bar.icon_state = "prog_bar_[Floor(stamina/5)*5]"
 
 /datum/hud/proc/hidden_inventory_update()
 	if(!mymob) return
@@ -271,11 +157,10 @@ datum/hud/New(mob/owner)
 	var/ui_color = mymob.client.prefs.UI_style_color
 	var/ui_alpha = mymob.client.prefs.UI_style_alpha
 
-	mymob.instantiate_hud(src, ui_style, ui_color, ui_alpha)
 
-	update_parallax_existence()
+	FinalizeInstantiation(ui_style, ui_color, ui_alpha)
 
-/mob/proc/instantiate_hud(var/datum/hud/HUD, var/ui_style, var/ui_color, var/ui_alpha)
+/datum/hud/proc/FinalizeInstantiation(var/ui_style, var/ui_color, var/ui_alpha)
 	return
 
 //Triggered when F12 is pressed (Unless someone changed something in the DMF)
@@ -378,7 +263,14 @@ datum/hud/New(mob/owner)
 	update_action_buttons()
 
 /mob/proc/add_click_catcher()
-	client.screen |= click_catchers
+	client.screen |= GLOB.click_catchers
 
 /mob/new_player/add_click_catcher()
 	return
+
+/obj/screen/stamina
+	name = "stamina"
+	icon = 'icons/effects/progessbar.dmi'
+	icon_state = "prog_bar_100"
+	invisibility = INVISIBILITY_MAXIMUM
+	screen_loc = ui_stamina

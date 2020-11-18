@@ -1,5 +1,5 @@
 
-/mob/living/LateLogin()
+/mob/living/Login()
 	..()
 	//Mind updates
 	mind_initialize()	//updates the mind (or creates and initializes one if one doesn't exist)

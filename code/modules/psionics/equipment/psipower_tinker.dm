@@ -1,45 +1,39 @@
 /obj/item/psychic_power/tinker
 	name = "psychokinetic crowbar"
-	icon_state = "crowbar"
-	force = 5
-	var/emulating = "crowbar"
-	var/list/tools = list("crowbar", "wrench", "screwdriver", "cutters")
-
-/obj/item/psychic_power/tinker/Initialize(mapload, ...)
-	. = ..()
-	var/list/new_tools = list()
-	for(var/tool_name in tools)
-		var/image/radial_image = image('icons/obj/psychic_powers.dmi', tool_name)
-		new_tools[capitalize_first_letters(tool_name)] = radial_image
-	tools = new_tools
+	icon_state = "tinker"
+	force = 1
+	var/emulating = "Crowbar"
 
 /obj/item/psychic_power/tinker/iscrowbar()
-	return emulating == "crowbar"
+	return emulating == "Crowbar"
 
 /obj/item/psychic_power/tinker/iswrench()
-	return emulating == "wrench"
+	return emulating == "Wrench"
 
 /obj/item/psychic_power/tinker/isscrewdriver()
-	return emulating == "screwdriver"
+	return emulating == "Screwdriver"
 
 /obj/item/psychic_power/tinker/iswirecutter()
-	return emulating == "cutters"
+	return emulating == "Wirecutters"
 
-/obj/item/psychic_power/tinker/attack_self(mob/user)
+/obj/item/psychic_power/tinker/attack_self()
+
 	if(!owner || loc != owner)
 		return
 
-	var/choice = show_radial_menu(user, user, tools, radius = 42, tooltips = TRUE)
+	var/choice = input("Select a tool to emulate.","Power") as null|anything in list("Crowbar","Wrench","Screwdriver","Wirecutters","Dismiss")
 	if(!choice)
-		playsound(get_turf(src), 'sound/effects/psi/power_fail.ogg', 40, TRUE)
+		return
+
+	if(!owner || loc != owner)
+		return
+
+	if(choice == "Dismiss")
+		sound_to(owner, 'sound/effects/psi/power_fail.ogg')
 		owner.drop_from_inventory(src)
 		return
 
-	if(!owner || loc != owner)
-		return
-
-	emulating = lowertext(choice)
-	name = "psychokinetic [emulating]"
-	icon_state = emulating
-	to_chat(owner, SPAN_NOTICE("You begin emulating \a [emulating]."))
-	playsound(get_turf(src), 'sound/effects/psi/power_fabrication.ogg', 40, TRUE)
+	emulating = choice
+	name = "psychokinetic [lowertext(emulating)]"
+	to_chat(owner, "<span class='notice'>You begin emulating \a [lowertext(emulating)].</span>")
+	sound_to(owner, 'sound/effects/psi/power_fabrication.ogg')

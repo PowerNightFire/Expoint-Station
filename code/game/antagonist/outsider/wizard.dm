@@ -1,26 +1,22 @@
-var/datum/antagonist/wizard/wizards
+GLOBAL_DATUM_INIT(wizards, /datum/antagonist/wizard, new)
 
 /datum/antagonist/wizard
 	id = MODE_WIZARD
-	role_text = "Space Wizard"
-	role_text_plural = "Space Wizards"
-	bantype = "wizard"
+	role_text = ANTAG_WIZARD
+	role_text_plural = ANTAG_WIZARD + "s"
 	landmark_id = "wizard"
 	welcome_text = "You will find a list of available spells in your spell book. Choose your magic arsenal carefully.<br>In your pockets you will find a teleport scroll. Use it as needed."
-	flags = ANTAG_OVERRIDE_JOB | ANTAG_CLEAR_EQUIPMENT | ANTAG_CHOOSE_NAME | ANTAG_VOTABLE | ANTAG_SET_APPEARANCE | ANTAG_NO_FLAVORTEXT
+	flags = ANTAG_OVERRIDE_JOB | ANTAG_OVERRIDE_MOB | ANTAG_CLEAR_EQUIPMENT | ANTAG_CHOOSE_NAME | ANTAG_VOTABLE | ANTAG_SET_APPEARANCE
 	antaghud_indicator = "hudwizard"
-	required_age = 10
 
 	hard_cap = 1
 	hard_cap_round = 3
 	initial_spawn_req = 1
 	initial_spawn_target = 1
+	min_player_age = 18
 
-	faction = "Space Wizard"
-
-/datum/antagonist/wizard/New()
-	..()
-	wizards = src
+	faction = "wizard"
+	base_to_load = /datum/map_template/ruin/antag_spawn/wizard
 
 /datum/antagonist/wizard/create_objectives(var/datum/mind/wizard)
 
@@ -67,54 +63,42 @@ var/datum/antagonist/wizard/wizards
 
 /datum/antagonist/wizard/update_antag_mob(var/datum/mind/wizard)
 	..()
-	wizard.store_memory("<B>Remember:</B> do not forget to prepare your spells.")
+	wizard.StoreMemory("<B>Remember:</B> do not forget to prepare your spells.", /decl/memory_options/system)
+	wizard.current.real_name = "[pick(GLOB.wizard_first)] [pick(GLOB.wizard_second)]"
+	wizard.current.SetName(wizard.current.real_name)
 
-/datum/antagonist/wizard/set_antag_name(mob/living/player)
-	player.real_name = "[pick(wizard_first)] [pick(wizard_second)]"
-	player.name = player.real_name
-	var/newname = sanitize(input(player, "You are a [role_text]. Would you like to change your name to something else?", "Name change") as null|text, MAX_NAME_LEN)
-	if(newname)
-		player.real_name = newname
-		player.name = player.real_name
-		player.dna.real_name = newname
-	if(player.mind)
-		player.mind.name = player.name
-	// Update any ID cards.
-	update_access(player)
-
-/datum/antagonist/wizard/equip(var/mob/living/carbon/human/player)
+/datum/antagonist/wizard/equip(var/mob/living/carbon/human/wizard_mob)
 
 	if(!..())
-		return FALSE
+		return 0
 
-	for (var/obj/item/I in player)
-		if (istype(I, /obj/item/implant))
-			continue
-		player.drop_from_inventory(I)
-		if(I.loc != player)
-			qdel(I)
+	var/outfit_type = pick(subtypesof(/decl/hierarchy/outfit/wizard))
+	var/decl/hierarchy/outfit/wizard_outfit = outfit_by_type(outfit_type)
+	wizard_outfit.equip(wizard_mob)
 
-	player.preEquipOutfit(/datum/outfit/admin/wizard, FALSE)
-	player.equipOutfit(/datum/outfit/admin/wizard, FALSE)
-	player.force_update_limbs()
-	player.update_eyes()
-	player.regenerate_icons()
+	return 1
 
-/datum/antagonist/wizard/check_victory()
-	var/survivor
-	for(var/datum/mind/player in current_antagonists)
-		if(!player.current || player.current.stat)
-			continue
-		survivor = 1
-		break
-	if(!survivor)
-		feedback_set_details("round_end_result","loss - wizard killed")
-		to_world("<span class='danger'><font size = 3>The [(current_antagonists.len>1)?"[role_text_plural] have":"[role_text] has"] been killed by the crew! The Space Wizards Federation has been taught a lesson they will not soon forget!</font></span>")
+/datum/antagonist/wizard/print_player_summary()
+	..()
+	for(var/p in current_antagonists)
+		var/datum/mind/player = p
+		var/text = "<b>[player.name]'s spells were:</b>"
+		if(!player.learned_spells || !player.learned_spells.len)
+			text += "<br>None!"
+		else
+			for(var/s in player.learned_spells)
+				var/spell/spell = s
+				text += "<br><b>[spell.name]</b> - "
+				text += "Speed: [spell.spell_levels["speed"]] Power: [spell.spell_levels["power"]]"
+		text += "<br>"
+		to_world(text)
 
 
 //To batch-remove wizard spells. Linked to mind.dm.
 /mob/proc/spellremove()
-	for(var/spell/spell_to_remove in src.spell_list)
+	if(!mind || !mind.learned_spells)
+		return
+	for(var/spell/spell_to_remove in mind.learned_spells)
 		remove_spell(spell_to_remove)
 
 obj/item/clothing
@@ -122,7 +106,7 @@ obj/item/clothing
 
 // Does this clothing slot count as wizard garb? (Combines a few checks)
 /proc/is_wiz_garb(var/obj/item/clothing/C)
-	return C && C.wizard_garb
+	return istype(C) && C.wizard_garb
 
 /*Checks if the wizard is wearing the proper attire.
 Made a proc so this is not repeated 14 (or more) times.*/
@@ -133,9 +117,12 @@ Made a proc so this is not repeated 14 (or more) times.*/
 // Humans can wear clothes.
 /mob/living/carbon/human/wearing_wiz_garb()
 	if(!is_wiz_garb(src.wear_suit) && (!src.species.hud || (slot_wear_suit in src.species.hud.equip_slots)))
-		to_chat(src, "<span class='warning'>I don't feel strong enough without my robes.</span>")
+		to_chat(src, "<span class='warning'>I don't feel strong enough without my robe.</span>")
+		return 0
+	if(!is_wiz_garb(src.shoes) && (!species.hud || (slot_shoes in src.species.hud.equip_slots)))
+		to_chat(src, "<span class='warning'>I don't feel strong enough without my sandals.</span>")
 		return 0
 	if(!is_wiz_garb(src.head) && (!species.hud || (slot_head in src.species.hud.equip_slots)))
-		to_chat(src, "<span class='warning'>I don't feel strong enough without my headwear.</span>")
+		to_chat(src, "<span class='warning'>I don't feel strong enough without my hat.</span>")
 		return 0
 	return 1

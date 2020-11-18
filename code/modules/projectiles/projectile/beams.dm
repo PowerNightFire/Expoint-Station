@@ -1,115 +1,126 @@
 /obj/item/projectile/beam
 	name = "laser"
 	icon_state = "laser"
-	pass_flags = PASSTABLE | PASSGLASS | PASSGRILLE
-	damage = 30
-	damage_type = BURN
+	temperature = T0C + 300
+	fire_sound='sound/weapons/Laser.ogg'
 	impact_sounds = list(BULLET_IMPACT_MEAT = SOUNDS_LASER_MEAT, BULLET_IMPACT_METAL = SOUNDS_LASER_METAL)
-	check_armor = "laser"
-	eyeblur = 4
+	pass_flags = PASS_FLAG_TABLE | PASS_FLAG_GLASS | PASS_FLAG_GRILLE
+	damage = 40
+	damage_type = BURN
+	sharp = 1 //concentrated burns
 	damage_flags = DAM_LASER
-	var/frequency = 1
+	eyeblur = 4
 	hitscan = 1
 	invisibility = 101	//beam projectiles are invisible as they are rendered by the effect engine
+	penetration_modifier = 0.3
+	distance_falloff = 2.5
 
-	muzzle_type = /obj/effect/projectile/muzzle/laser
-	tracer_type = /obj/effect/projectile/tracer/laser
-	impact_type = /obj/effect/projectile/impact/laser
+	muzzle_type = /obj/effect/projectile/laser/muzzle
+	tracer_type = /obj/effect/projectile/laser/tracer
+	impact_type = /obj/effect/projectile/laser/impact
 
 /obj/item/projectile/beam/practice
-	name = "laser"
-	icon_state = "laser"
-	pass_flags = PASSTABLE | PASSGLASS | PASSGRILLE
+	fire_sound = 'sound/weapons/Taser.ogg'
 	damage = 0
-	damage_type = BURN
-	no_attack_log = 1
-	check_armor = "laser"
 	eyeblur = 2
 
-/obj/item/projectile/beam/pistol
-	damage = 35
-
-/obj/item/projectile/beam/pistol/hegemony
-	icon = 'icons/obj/guns/hegemony_pistol.dmi'
-	icon_state = "hegemony_pistol"
-	damage = 30
-	armor_penetration = 5
-
-	muzzle_type = /obj/effect/projectile/muzzle/hegemony
-	tracer_type = /obj/effect/projectile/tracer/hegemony
-	impact_type = /obj/effect/projectile/impact/hegemony
+/obj/item/projectile/beam/smalllaser
+	damage = 25
+	armor_penetration = 10
 
 /obj/item/projectile/beam/midlaser
-	damage = 35
-	armor_penetration = 10
+	damage = 50
+	armor_penetration = 20
+	distance_falloff = 1
 
 /obj/item/projectile/beam/heavylaser
 	name = "heavy laser"
 	icon_state = "heavylaser"
+	fire_sound = 'sound/weapons/lasercannonfire.ogg'
 	damage = 60
 	armor_penetration = 30
+	distance_falloff = 0.5
 
-	muzzle_type = /obj/effect/projectile/muzzle/heavy_laser
-	tracer_type = /obj/effect/projectile/tracer/heavy_laser
-	impact_type = /obj/effect/projectile/impact/heavy_laser
+	muzzle_type = /obj/effect/projectile/laser/heavy/muzzle
+	tracer_type = /obj/effect/projectile/laser/heavy/tracer
+	impact_type = /obj/effect/projectile/laser/heavy/impact
 
 /obj/item/projectile/beam/xray
-	name = "xray beam"
+	name = "x-ray beam"
 	icon_state = "xray"
-	damage = 25
-	armor_penetration = 50
+	fire_sound = 'sound/weapons/laser3.ogg'
+	damage = 30
+	armor_penetration = 30
+	penetration_modifier = 0.8
 
-	muzzle_type = /obj/effect/projectile/muzzle/xray
-	tracer_type = /obj/effect/projectile/tracer/xray
-	impact_type = /obj/effect/projectile/impact/xray
+	muzzle_type = /obj/effect/projectile/laser/xray/muzzle
+	tracer_type = /obj/effect/projectile/laser/xray/tracer
+	impact_type = /obj/effect/projectile/laser/xray/impact
+
+/obj/item/projectile/beam/xray/midlaser
+	damage = 30
+	armor_penetration = 50
 
 /obj/item/projectile/beam/pulse
 	name = "pulse"
 	icon_state = "u_laser"
-	damage = 50
-	armor_penetration = 50
+	fire_sound='sound/weapons/pulse.ogg'
+	damage = 15 //lower damage, but fires in bursts
 
-	muzzle_type = /obj/effect/projectile/muzzle/pulse
-	tracer_type = /obj/effect/projectile/tracer/pulse
-	impact_type = /obj/effect/projectile/impact/pulse
+	muzzle_type = /obj/effect/projectile/laser/pulse/muzzle
+	tracer_type = /obj/effect/projectile/laser/pulse/tracer
+	impact_type = /obj/effect/projectile/laser/pulse/impact
 
-/obj/item/projectile/beam/pulse/on_hit(var/atom/target, var/blocked = 0)
+/obj/item/projectile/beam/pulse/mid
+	damage = 20
+
+/obj/item/projectile/beam/pulse/heavy
+	damage = 25
+
+/obj/item/projectile/beam/pulse/destroy
+	name = "destroyer pulse"
+	damage = 100 //badmins be badmins I don't give a fuck
+	armor_penetration = 100
+
+/obj/item/projectile/beam/pulse/destroy/on_hit(var/atom/target, var/blocked = 0)
 	if(isturf(target))
 		target.ex_act(2)
 	..()
 
-/obj/item/projectile/beam/pulse/heavy
-	name = "heavy pulse laser"
-	icon_state = "pulse1_bl"
-	var/life = 20
+/obj/item/projectile/beam/pulse/skrell
+	icon_state = "pu_laser"
+	damage = 20
+	muzzle_type = /obj/effect/projectile/laser/pulse/skrell/muzzle
+	tracer_type = /obj/effect/projectile/laser/pulse/skrell/tracer
+	impact_type = /obj/effect/projectile/laser/pulse/skrell/impact
 
-/obj/item/projectile/beam/pulse/heavy/Collide(atom/A)
-	A.bullet_act(src, def_zone)
-	src.life -= 10
-	if(life <= 0)
-		qdel(src)
+/obj/item/projectile/beam/pulse/skrell/heavy
+	damage = 30
+
+/obj/item/projectile/beam/pulse/skrell/single
+	damage = 50
 
 /obj/item/projectile/beam/emitter
 	name = "emitter beam"
 	icon_state = "emitter"
+	fire_sound = 'sound/weapons/emitter.ogg'
 	damage = 0 // The actual damage is computed in /code/modules/power/singularity/emitter.dm
 
-	muzzle_type = /obj/effect/projectile/muzzle/emitter
-	tracer_type = /obj/effect/projectile/tracer/emitter
-	impact_type = /obj/effect/projectile/impact/emitter
+	muzzle_type = /obj/effect/projectile/laser/emitter/muzzle
+	tracer_type = /obj/effect/projectile/laser/emitter/tracer
+	impact_type = /obj/effect/projectile/laser/emitter/impact
 
 /obj/item/projectile/beam/lastertag/blue
 	name = "lasertag beam"
 	icon_state = "bluelaser"
-	pass_flags = PASSTABLE | PASSGLASS | PASSGRILLE
+	pass_flags = PASS_FLAG_TABLE | PASS_FLAG_GLASS | PASS_FLAG_GRILLE
 	damage = 0
 	no_attack_log = 1
 	damage_type = BURN
-	check_armor = "laser"
 
-	muzzle_type = /obj/effect/projectile/muzzle/laser/blue
-	tracer_type = /obj/effect/projectile/tracer/laser/blue
-	impact_type = /obj/effect/projectile/impact/laser/blue
+	muzzle_type = /obj/effect/projectile/laser/blue/muzzle
+	tracer_type = /obj/effect/projectile/laser/blue/tracer
+	impact_type = /obj/effect/projectile/laser/blue/impact
 
 /obj/item/projectile/beam/lastertag/blue/on_hit(var/atom/target, var/blocked = 0)
 	if(istype(target, /mob/living/carbon/human))
@@ -121,11 +132,10 @@
 /obj/item/projectile/beam/lastertag/red
 	name = "lasertag beam"
 	icon_state = "laser"
-	pass_flags = PASSTABLE | PASSGLASS | PASSGRILLE
+	pass_flags = PASS_FLAG_TABLE | PASS_FLAG_GLASS | PASS_FLAG_GRILLE
 	damage = 0
 	no_attack_log = 1
 	damage_type = BURN
-	check_armor = "laser"
 
 /obj/item/projectile/beam/lastertag/red/on_hit(var/atom/target, var/blocked = 0)
 	if(istype(target, /mob/living/carbon/human))
@@ -137,14 +147,13 @@
 /obj/item/projectile/beam/lastertag/omni//A laser tag bolt that stuns EVERYONE
 	name = "lasertag beam"
 	icon_state = "omnilaser"
-	pass_flags = PASSTABLE | PASSGLASS | PASSGRILLE
+	pass_flags = PASS_FLAG_TABLE | PASS_FLAG_GLASS | PASS_FLAG_GRILLE
 	damage = 0
 	damage_type = BURN
-	check_armor = "laser"
 
-	muzzle_type = /obj/effect/projectile/muzzle/disabler
-	tracer_type = /obj/effect/projectile/tracer/disabler
-	impact_type = /obj/effect/projectile/impact/disabler
+	muzzle_type = /obj/effect/projectile/laser/omni/muzzle
+	tracer_type = /obj/effect/projectile/laser/omni/tracer
+	impact_type = /obj/effect/projectile/laser/omni/impact
 
 /obj/item/projectile/beam/lastertag/omni/on_hit(var/atom/target, var/blocked = 0)
 	if(istype(target, /mob/living/carbon/human))
@@ -156,281 +165,169 @@
 /obj/item/projectile/beam/sniper
 	name = "sniper beam"
 	icon_state = "xray"
+	fire_sound = 'sound/weapons/marauder.ogg'
 	damage = 50
-	armor_penetration = 20
+	armor_penetration = 10
 	stun = 3
 	weaken = 3
 	stutter = 3
 
-	muzzle_type = /obj/effect/projectile/muzzle/xray
-	tracer_type = /obj/effect/projectile/tracer/xray
-	impact_type = /obj/effect/projectile/impact/xray
+	muzzle_type = /obj/effect/projectile/laser/xray/muzzle
+	tracer_type = /obj/effect/projectile/laser/xray/tracer
+	impact_type = /obj/effect/projectile/laser/xray/impact
 
 /obj/item/projectile/beam/stun
 	name = "stun beam"
 	icon_state = "stun"
-	nodamage = 1
-	taser_effect = 1
-	sharp = 0
-	eyeblur = 1
+	fire_sound = 'sound/weapons/Taser.ogg'
+	damage_flags = 0
+	sharp = 0 //not a laser
+	damage = 1//flavor burn! still not a laser, dmg will be reduce by energy resistance not laser resistances
+	damage_type = BURN
+	eyeblur = 1//Some feedback that you've been hit
 	agony = 40
-	damage_type = PAIN
 
-	muzzle_type = /obj/effect/projectile/muzzle/stun
-	tracer_type = /obj/effect/projectile/tracer/stun
-	impact_type = /obj/effect/projectile/impact/stun
+	muzzle_type = /obj/effect/projectile/stun/muzzle
+	tracer_type = /obj/effect/projectile/stun/tracer
+	impact_type = /obj/effect/projectile/stun/impact
 
-/obj/item/projectile/beam/gatlinglaser
-	name = "diffused laser"
-	icon_state = "heavylaser"
-	damage = 10
-	no_attack_log = 1
+/obj/item/projectile/beam/stun/heavy
+	name = "heavy stun beam"
+	damage = 2
+	agony = 60
 
-	muzzle_type = /obj/effect/projectile/muzzle/disabler
-	tracer_type = /obj/effect/projectile/tracer/disabler
-	impact_type = /obj/effect/projectile/impact/disabler
-
-/obj/item/projectile/beam/mousegun
-	name = "electrical arc"
-	icon_state = "stun"
-	nodamage = 1
-	damage_type = PAIN
-
-	muzzle_type = /obj/effect/projectile/muzzle/stun
-	tracer_type = /obj/effect/projectile/tracer/stun
-	impact_type = /obj/effect/projectile/impact/stun
-
-/obj/item/projectile/beam/mousegun/on_impact(var/atom/A)
-	mousepulse(A, 1)
-	..()
-
-/obj/item/projectile/beam/mousegun/proc/mousepulse(turf/epicenter, range, log=0)
-	if(!epicenter)
-		return
-
-	if(!istype(epicenter, /turf))
-		epicenter = get_turf(epicenter.loc)
-
-	for(var/mob/living/M in range(range, epicenter))
-		var/distance = get_dist(epicenter, M)
-		if(distance < 0)
-			distance = 0
-		if(distance <= range)
-			if (M.mob_size <= 3 && (M.find_type() & TYPE_ORGANIC))
-				M.visible_message("<span class='danger'>\The [M] gets fried!</span>")
-				M.color = "#4d4d4d" //get fried
-				M.death()
-				spark(M, 3, alldirs)
-			else if(iscarbon(M) && M.contents.len)
-				for(var/obj/item/holder/H in M.contents)
-					if(!H.contained)
-						continue
-
-					var/mob/living/A = H.contained
-					if(!istype(A))
-						continue
-
-					if(A.mob_size <= 3 && (A.find_type() & TYPE_ORGANIC))
-						H.release_mob()
-						A.visible_message("<span class='danger'>\The [A] gets fried!</span>")
-						A.color = "#4d4d4d" //get fried
-						A.death()
-
-			to_chat(M, 'sound/effects/basscannon.ogg')
-	return TRUE
-
-/obj/item/projectile/beam/mousegun/emag
-	name = "diffuse electrical arc"
-
-	nodamage = FALSE
-	damage_type = BURN
+/obj/item/projectile/beam/stun/shock
+	name = "shock beam"
+	agony = 0
 	damage = 15
-	agony = 30
+	damage_type = ELECTROCUTE
+	fire_sound='sound/weapons/pulse.ogg'
 
-/obj/item/projectile/beam/mousegun/emag/mousepulse(turf/epicenter, range, log=0)
-	if(!epicenter)
-		return
+/obj/item/projectile/beam/stun/shock/heavy
+	name = "heavy shock beam"
+	damage = 30
 
-	if(!istype(epicenter, /turf))
-		epicenter = get_turf(epicenter.loc)
-
-	for(var/mob/living/M in range(range, epicenter))
-		var/distance = get_dist(epicenter, M)
-		if(distance < 0)
-			distance = 0
-		if(distance <= range)
-			if(M.mob_size <= 4 && (M.find_type() & TYPE_ORGANIC))
-				M.visible_message("<span class='danger'>[M] bursts like a balloon!</span>")
-				M.gib()
-				spark(M, 3, alldirs)
-			else if(iscarbon(M) && M.contents.len)
-				for(var/obj/item/holder/H in M.contents)
-					if(!H.contained)
-						continue
-
-					var/mob/living/A = H.contained
-					if(!istype(A))
-						continue
-
-					if(A.mob_size <= 4 && (A.find_type() & TYPE_ORGANIC))
-						H.release_mob()
-						A.visible_message("<span class='danger'>[A] bursts like a balloon!</span>")
-						A.gib()
-
-			to_chat(M, 'sound/effects/basscannon.ogg')
-	return TRUE
-
-/obj/item/projectile/beam/shotgun
-	name = "diffuse laser"
-	icon_state = "laser"
-	pass_flags = PASSTABLE | PASSGLASS | PASSGRILLE
-	damage = 20
-	eyeblur = 4
-
-/obj/item/projectile/beam/megaglaive
-	name = "thermal lance"
-	icon_state = "gauss"
-	damage = 10
-	incinerate = 5
-	armor_penetration = 10
-	no_attack_log = 1
-
-	muzzle_type = /obj/effect/projectile/muzzle/solar
-	tracer_type = /obj/effect/projectile/tracer/solar
-	impact_type = /obj/effect/projectile/impact/solar
-
-/obj/item/projectile/beam/megaglaive/on_impact(var/atom/A)
-	if(isturf(A))
-		if(istype(A, /turf/simulated/mineral))
-			if(prob(75)) //likely because its a mining tool
-				var/turf/simulated/mineral/M = A
-				if(prob(10))
-					M.GetDrilled(1)
-				else if(!M.emitter_blasts_taken)
-					M.emitter_blasts_taken += 1
-				else if(prob(33))
-					M.emitter_blasts_taken += 1
-	if(ismob(A))
-		var/mob/living/M = A
-		M.apply_effect(1, INCINERATE, 0)
-	explosion(A, -1, 0, 2)
-	..()
-
-/obj/item/projectile/beam/thermaldrill
-	name = "thermal drill"
-	icon_state = "gauss"
-	damage = 1
-	no_attack_log = 1
-
-	muzzle_type = /obj/effect/projectile/muzzle/solar
-	tracer_type = /obj/effect/projectile/tracer/solar
-	impact_type = /obj/effect/projectile/impact/solar
-
-/obj/item/projectile/beam/thermaldrill/on_impact(var/atom/A)
-	if(isturf(A))
-		if(istype(A, /turf/simulated/mineral))
-			if(prob(75)) //likely because its a mining tool
-				var/turf/simulated/mineral/M = A
-				if(prob(33))
-					M.GetDrilled(1)
-				else if(!M.emitter_blasts_taken)
-					M.emitter_blasts_taken += 2
-				else if(prob(66))
-					M.emitter_blasts_taken += 2
-	..()
-
-
-
-//Beams of magical veil energy fired by empowered pylons. Some inbuilt armor penetration cuz magic.
-//Ablative armor is still overwhelmingly useful
-//These beams are very weak but rapid firing, ~twice per second.
-/obj/item/projectile/beam/cult
-	name = "energy bolt"
-	//For projectiles name is only shown in onhit messages, so its more of a layman's description
-	//of what the projectile looks like
-	damage = 3.5 //Very weak
-	accuracy = 4 //Guided by magic, unlikely to miss
-	eyeblur = 0 //Not bright or blinding
-	var/mob/living/ignore
-
-	muzzle_type = /obj/effect/projectile/muzzle/cult
-	tracer_type = /obj/effect/projectile/tracer/cult
-	impact_type = /obj/effect/projectile/impact/cult
-
-/obj/item/projectile/beam/cult/attack_mob(var/mob/living/target_mob, var/distance, var/miss_modifier=0)
-	//Harmlessly passes through cultists and constructs
-	if (target_mob == ignore)
-		return 0
-	if (iscult(target_mob))
-		return 0
-
-	return ..()
-
-/obj/item/projectile/beam/cult/heavy
-	name = "glowing energy bolt"
-	damage = 10 //Stronger and better armor penetration, though still much weaker than a typical laser
-	armor_penetration = 10
-
-	muzzle_type = /obj/effect/projectile/muzzle/cult/heavy
-	tracer_type = /obj/effect/projectile/tracer/cult/heavy
-	impact_type = /obj/effect/projectile/impact/cult/heavy
-
-/obj/item/projectile/beam/energy_net
-	name = "energy net projection"
-	icon_state = "xray"
-	nodamage = 1
-	damage_type = PAIN
-
-	muzzle_type = /obj/effect/projectile/muzzle/xray
-	tracer_type = /obj/effect/projectile/tracer/xray
-	impact_type = /obj/effect/projectile/impact/xray
-
-/obj/item/projectile/beam/energy_net/on_hit(var/atom/netted)
-	do_net(netted)
-	..()
-
-/obj/item/projectile/beam/energy_net/proc/do_net(var/mob/M)
-	var/obj/item/energy_net/net = new (get_turf(M))
-	net.throw_impact(M)
-
-/obj/item/projectile/beam/tachyon
-	name = "particle beam"
-	icon_state = "xray"
-	damage = 25
-	armor_penetration = 65
-	penetrating = 1
-	maiming = 1
-	maim_rate = 5
-	clean_cut = 1
-	maim_type = DROPLIMB_BURN
-
-	muzzle_type = /obj/effect/projectile/muzzle/tachyon
-	tracer_type = /obj/effect/projectile/tracer/tachyon
-	impact_type = /obj/effect/projectile/impact/tachyon
-
-/obj/item/projectile/beam/tesla
-	name = "tesla bolt"
-	icon_state = "lightning"
-	damage = 10
+/obj/item/projectile/beam/plasmacutter
+	name = "plasma arc"
+	icon_state = "omnilaser"
+	fire_sound = 'sound/weapons/plasma_cutter.ogg'
+	damage = 15
+	sharp = 1
+	edge = 1
 	damage_type = BURN
-	pass_flags = PASSTABLE | PASSGRILLE
-	range = 40
-	eyeblur = 0
+	life_span = 5
+	pass_flags = PASS_FLAG_TABLE
+	distance_falloff = 4
 
-	muzzle_type = /obj/effect/projectile/muzzle/tesla
-	tracer_type = /obj/effect/projectile/tracer/tesla
-	impact_type = /obj/effect/projectile/impact/tesla
+	muzzle_type = /obj/effect/projectile/trilaser/muzzle
+	tracer_type = /obj/effect/projectile/trilaser/tracer
+	impact_type = /obj/effect/projectile/trilaser/impact
 
-/obj/item/projectile/beam/tesla/on_impact(atom/target)
+/obj/item/projectile/beam/plasmacutter/on_impact(var/atom/A)
+	if(istype(A, /turf/simulated/mineral))
+		var/turf/simulated/mineral/M = A
+		M.GetDrilled(1)
 	. = ..()
-	if(isliving(target))
-		tesla_zap(target, 3, 5000)
 
-/obj/item/projectile/beam/tesla/master
-	damage = 15
+/obj/item/projectile/beam/confuseray
+	name = "disorientator ray"
+	icon_state = "beam_grass"
+	fire_sound='sound/weapons/confuseray.ogg'
+	damage = 2
+	agony = 7
+	sharp = FALSE
+	distance_falloff = 5
+	damage_flags = 0
+	damage_type = STUN
+	life_span = 3
+	penetration_modifier = 0
+	var/potency_min = 4
+	var/potency_max = 6
 
-/obj/item/projectile/beam/tesla/grandmaster
+	muzzle_type = /obj/effect/projectile/confuseray/muzzle
+	tracer_type = /obj/effect/projectile/confuseray/tracer
+	impact_type = /obj/effect/projectile/confuseray/impact
+
+/obj/item/projectile/beam/confuseray/on_hit(var/atom/target, var/blocked = 0)
+	if(istype(target, /mob/living))
+		var/mob/living/L = target
+		var/potency = rand(potency_min, potency_max)
+		L.confused += potency
+		L.eye_blurry += potency
+		if(L.confused >= 10)
+			L.Stun(1)
+			L.drop_l_hand()
+			L.drop_r_hand()
+
+	return 1
+
+/obj/item/projectile/beam/particle
+	name = "particle lance"
+	icon_state = "particle"
+	damage = 35
+	armor_penetration = 50
+	muzzle_type = /obj/effect/projectile/laser_particle/muzzle
+	tracer_type = /obj/effect/projectile/laser_particle/tracer
+	impact_type = /obj/effect/projectile/laser_particle/impact
+	penetration_modifier = 0.5
+
+/obj/item/projectile/beam/particle/small
+	name = "particle beam"
 	damage = 20
+	armor_penetration = 20
+	penetration_modifier = 0.3
 
-/obj/item/projectile/beam/tesla/paramount
-	damage = 25
+/obj/item/projectile/beam/darkmatter
+	name = "dark matter bolt"
+	icon_state = "darkb"
+	damage = 40
+	armor_penetration = 35
+	damage_type = BRUTE
+	muzzle_type = /obj/effect/projectile/darkmatter/muzzle
+	tracer_type = /obj/effect/projectile/darkmatter/tracer
+	impact_type = /obj/effect/projectile/darkmatter/impact
+
+/obj/item/projectile/beam/stun/darkmatter
+	name = "dark matter wave"
+	icon_state = "darkt"
+	damage_flags = 0
+	sharp = 0 //not a laser
+	agony = 40
+	damage_type = STUN
+	muzzle_type = /obj/effect/projectile/stun/darkmatter/muzzle
+	tracer_type = /obj/effect/projectile/stun/darkmatter/tracer
+	impact_type = /obj/effect/projectile/stun/darkmatter/impact
+
+/obj/item/projectile/beam/pointdefense
+	name = "point defense salvo"
+	icon_state = "laser"
+	damage = 15
+	damage_type = ELECTROCUTE //You should be safe inside a voidsuit
+	sharp = FALSE //"Wide" spectrum beam
+	muzzle_type = /obj/effect/projectile/pointdefense/muzzle
+	tracer_type = /obj/effect/projectile/pointdefense/tracer
+	impact_type = /obj/effect/projectile/pointdefense/impact
+
+/obj/item/projectile/beam/incendiary_laser
+	name = "scattered laser blast"
+	icon_state = "beam_incen"
+	fire_sound='sound/weapons/scan.ogg'
+	damage = 12
+	agony = 8
+	eyeblur = 8
+	sharp = FALSE
+	damage_flags = 0
+	life_span = 8
+	penetration_modifier = 0.1
+
+	muzzle_type = /obj/effect/projectile/incen/muzzle
+	tracer_type = /obj/effect/projectile/incen/tracer
+	impact_type = /obj/effect/projectile/incen/impact
+
+/obj/item/projectile/beam/incendiary_laser/on_hit(var/atom/target, var/blocked = 0)
+	..()
+	if(isliving(target))
+		var/mob/living/L = target
+		L.adjust_fire_stacks(rand(2,4))
+		if(L.fire_stacks >= 3)
+			L.IgniteMob()

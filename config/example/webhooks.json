@@ -1,5 +1,7 @@
 [
-    {
-        "invalid": 1
-    }
+  {
+    "id" : "webhook_roundend",
+    "url" : "someurl",
+    "mentions" : []
+  }
 ]

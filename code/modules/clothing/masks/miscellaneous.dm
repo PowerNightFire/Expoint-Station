@@ -4,7 +4,7 @@
 	icon_state = "muzzle"
 	item_state = "muzzle"
 	body_parts_covered = FACE
-	w_class = ITEMSIZE_SMALL
+	w_class = ITEM_SIZE_SMALL
 	gas_transfer_coefficient = 0.90
 	voicechange = 1
 
@@ -14,7 +14,7 @@
 	icon = 'icons/obj/bureaucracy.dmi'
 	icon_state = "tape_cross"
 	item_state = null
-	w_class = ITEMSIZE_TINY
+	w_class = ITEM_SIZE_TINY
 
 /obj/item/clothing/mask/muzzle/Initialize()
 	. = ..()
@@ -28,80 +28,82 @@
 	..()
 
 /obj/item/clothing/mask/surgical
-	name = "surgical mask"
-	desc = "A surgical mask designed to help prevent the spread of diseases."
-	icon_state = "surgical"
-	item_state = "surgical"
-	w_class = ITEMSIZE_SMALL
+	name = "sterile mask"
+	desc = "A sterile mask designed to help prevent the spread of diseases."
+	icon_state = "sterile"
+	item_state = "sterile"
+	w_class = ITEM_SIZE_TINY
 	body_parts_covered = FACE
-	item_flags = FLEXIBLEMATERIAL
+	item_flags = ITEM_FLAG_FLEXIBLEMATERIAL
 	gas_transfer_coefficient = 0.90
 	permeability_coefficient = 0.01
-	armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 60, rad = 0)
+	armor = list(
+		bio = ARMOR_BIO_RESISTANT
+		)
 	down_gas_transfer_coefficient = 1
 	down_body_parts_covered = null
-	adjustable = TRUE
-
-/obj/item/clothing/mask/surgical/w
-	desc = "A surgical mask designed to help prevent the spread of diseases. This one's in white."
-	icon_state = "surgicalw"
-	item_state = "surgicalw"
-
-/obj/item/clothing/mask/cloth
-	name = "cloth mask"
-	desc = "A colorable cloth mask designed to protect the wearer against allergens, illnesses, and social interaction."
-	icon_state = "cloth"
-	item_state = "cloth"
-	w_class = ITEMSIZE_SMALL
-	body_parts_covered = FACE
-	item_flags = FLEXIBLEMATERIAL
-	gas_transfer_coefficient = 0.90
-	permeability_coefficient = 0.01
-	armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 15, rad = 0)
-	down_gas_transfer_coefficient = 1
-	down_body_parts_covered = null
-	adjustable = TRUE
-
-/obj/item/clothing/mask/dust
-	name = "dust mask"
-	desc = "A dust mask designed to protect the wearer against construction and/or custodial particulate."
-	icon_state = "dust"
-	item_state = "dust"
-	w_class = ITEMSIZE_SMALL
-	body_parts_covered = FACE
-	item_flags = FLEXIBLEMATERIAL
-	gas_transfer_coefficient = 0.90
-	permeability_coefficient = 0.01
-	armor = list(melee = 0, bullet = 0, laser = 0,energy = 0, bomb = 0, bio = 15, rad = 10)
-	down_gas_transfer_coefficient = 1
-	down_body_parts_covered = null
-	adjustable = TRUE
+	down_icon_state = "steriledown"
+	pull_mask = 1
 
 /obj/item/clothing/mask/fakemoustache
 	name = "fake moustache"
 	desc = "Warning: moustache is fake."
 	icon_state = "fake-moustache"
+	item_state = "fake-moustache"
 	flags_inv = HIDEFACE
 	body_parts_covered = 0
+	visible_name = "Scoundrel"
 
 /obj/item/clothing/mask/snorkel
-	name = "snorkel"
+	name = "Snorkel"
 	desc = "For the Swimming Savant."
 	icon_state = "snorkel"
 	item_state = "snorkel"
 	flags_inv = HIDEFACE
 	body_parts_covered = 0
 
-/obj/item/clothing/mask/trinary_mask
-	name = "trinary perfection mask"
-	desc = "A simple lace mask worn by IPCs and organics alike while within the churches of the Trinary Perfection."
-	icon_state = "trinary_mask"
-	item_state = "trinary_mask"
-	w_class = ITEMSIZE_SMALL
+//scarves (fit in in mask slot)
+//None of these actually have on-mob sprites...
+/obj/item/clothing/mask/bluescarf
+	name = "blue neck scarf"
+	desc = "A blue neck scarf."
+	icon_state = "blueneckscarf"
+	item_state = "blueneckscarf"
 	body_parts_covered = FACE
-	item_flags = FLEXIBLEMATERIAL
-	down_body_parts_covered = null
-	adjustable = TRUE
+	item_flags = ITEM_FLAG_FLEXIBLEMATERIAL
+	w_class = ITEM_SIZE_SMALL
+	gas_transfer_coefficient = 0.90
+
+/obj/item/clothing/mask/redscarf
+	name = "red scarf"
+	desc = "A red and white checkered neck scarf."
+	icon_state = "redwhite_scarf"
+	item_state = "redwhite_scarf"
+	body_parts_covered = FACE
+	item_flags = ITEM_FLAG_FLEXIBLEMATERIAL
+	w_class = ITEM_SIZE_SMALL
+	gas_transfer_coefficient = 0.90
+
+/obj/item/clothing/mask/greenscarf
+	name = "green scarf"
+	desc = "A green neck scarf."
+	icon_state = "green_scarf"
+	item_state = "green_scarf"
+	body_parts_covered = FACE
+	item_flags = ITEM_FLAG_THICKMATERIAL
+	w_class = ITEM_SIZE_SMALL
+	gas_transfer_coefficient = 0.90
+
+/obj/item/clothing/mask/ninjascarf
+	name = "ninja scarf"
+	desc = "A stealthy, dark scarf."
+	icon_state = "ninja_scarf"
+	item_state = "ninja_scarf"
+	body_parts_covered = FACE
+	item_flags = ITEM_FLAG_THICKMATERIAL
+	w_class = ITEM_SIZE_SMALL
+	gas_transfer_coefficient = 0.90
+	siemens_coefficient = 0
 
 /obj/item/clothing/mask/pig
 	name = "pig mask"
@@ -109,7 +111,7 @@
 	icon_state = "pig"
 	item_state = "pig"
 	flags_inv = HIDEFACE|BLOCKHAIR
-	w_class = ITEMSIZE_SMALL
+	w_class = ITEM_SIZE_SMALL
 	siemens_coefficient = 0.9
 	body_parts_covered = HEAD|FACE|EYES
 
@@ -120,14 +122,15 @@
 	item_state = "horsehead"
 	flags_inv = HIDEFACE|BLOCKHAIR
 	body_parts_covered = HEAD|FACE|EYES
-	w_class = ITEMSIZE_SMALL
+	w_class = ITEM_SIZE_SMALL
 	siemens_coefficient = 0.9
 
-/obj/item/clothing/mask/horsehead/Initialize()
-	. = ..()
+/obj/item/clothing/mask/horsehead/New()
+	..()
 	// The horse mask doesn't cause voice changes by default, the wizard spell changes the flag as necessary
 	say_messages = list("NEEIIGGGHHHH!", "NEEEIIIIGHH!", "NEIIIGGHH!", "HAAWWWWW!", "HAAAWWW!")
 	say_verbs = list("whinnies", "neighs", "says")
+
 
 /obj/item/clothing/mask/ai
 	name = "camera MIU"
@@ -136,15 +139,15 @@
 	item_state = "s-ninja"
 	flags_inv = HIDEFACE
 	body_parts_covered = FACE|EYES
-	action_button_name = "Toggle MIU"
+	action_button_name = "Toggle MUI"
 	origin_tech = list(TECH_DATA = 5, TECH_ENGINEERING = 5)
 	var/active = FALSE
-	var/mob/abstract/eye/cameranet/eye
+	var/mob/observer/eye/cameranet/eye
 
-/obj/item/clothing/mask/ai/Initialize()
+/obj/item/clothing/mask/ai/New()
 	eye = new(src)
-	eye.name_suffix = "camera MIU"
-	. = ..()
+	eye.name_sufix = "camera MIU"
+	..()
 
 /obj/item/clothing/mask/ai/Destroy()
 	if(eye)
@@ -152,56 +155,182 @@
 			disengage_mask(eye.owner)
 		qdel(eye)
 		eye = null
-
 	..()
 
-/obj/item/clothing/mask/ai/attack_self(mob/user)
+/obj/item/clothing/mask/ai/attack_self(var/mob/user)
 	if(user.incapacitated())
 		return
 	active = !active
-	to_chat(user, SPAN_NOTICE("You [active ? "" : "dis"]engage \the [src]."))
+	to_chat(user, "<span class='notice'>You [active ? "" : "dis"]engage \the [src].</span>")
 	if(active)
 		engage_mask(user)
 	else
 		disengage_mask(user)
 
-/obj/item/clothing/mask/ai/equipped(mob/user, slot)
+/obj/item/clothing/mask/ai/equipped(var/mob/user, var/slot)
 	..(user, slot)
 	engage_mask(user)
 
-/obj/item/clothing/mask/ai/dropped(mob/user)
+/obj/item/clothing/mask/ai/dropped(var/mob/user)
 	..()
 	disengage_mask(user)
 
-/obj/item/clothing/mask/ai/proc/engage_mask(mob/user)
+/obj/item/clothing/mask/ai/proc/engage_mask(var/mob/user)
 	if(!active)
 		return
 	if(user.get_equipped_item(slot_wear_mask) != src)
 		return
 
 	eye.possess(user)
-	to_chat(eye.owner, SPAN_NOTICE("You feel disoriented for a moment as your mind connects to the camera network."))
+	to_chat(eye.owner, "<span class='notice'>You feel disorented for a moment as your mind connects to the camera network.</span>")
 
-/obj/item/clothing/mask/ai/proc/disengage_mask(mob/user)
+/obj/item/clothing/mask/ai/proc/disengage_mask(var/mob/user)
 	if(user == eye.owner)
-		to_chat(eye.owner, SPAN_NOTICE("You feel disoriented for a moment as your mind disconnects from the camera network."))
+		to_chat(eye.owner, "<span class='notice'>You feel disorented for a moment as your mind disconnects from the camera network.</span>")
 		eye.release(eye.owner)
 		eye.forceMove(src)
 
-/obj/item/clothing/mask/offworlder
-	name = "scarab scarf"
-	desc = "Usually a treasured item, these spider-silk scarves are seen passed down by generations of Scarabs."
-	desc_fluff = "Scarves like these are passed down from family members in the Scarab fleets as a coming of age ritual, typically given to children to mark them as worthy of setting off on their own."
-	icon_state = "pioneer_scarf"
-	item_flags = FLEXIBLEMATERIAL
-	item_state = "pioneer_scarf"
-	w_class = ITEMSIZE_SMALL
-	body_parts_covered = FACE
+/obj/item/clothing/mask/rubber
+	name = "rubber mask"
+	desc = "A rubber mask."
+	icon_state = "balaclava"
+	flags_inv = HIDEFACE|BLOCKHAIR
+	siemens_coefficient = 0.9
+	body_parts_covered = HEAD|FACE|EYES
 
-/obj/item/clothing/mask/offworlder/veil
-	name = "starveil"
-	desc = "A thin holographic veil meant to cover the face, intended to block out light."
-	icon_state = "starveil"
-	item_state = "muzzle"
-	down_body_parts_covered = null
-	adjustable = TRUE
+/obj/item/clothing/mask/rubber/trasen
+	name = "Jack Trasen mask"
+	desc = "CEO of NanoTrasen corporation. Perfect for scaring the unionizing children."
+	icon_state = "trasen"
+	visible_name = "Jack Trasen"
+
+/obj/item/clothing/mask/rubber/barros
+	name = "Amaya Barros mask"
+	desc = "Current Secretary-General of Sol Cental Government. Not that the real thing would visit this pigsty."
+	icon_state = "barros"
+	visible_name = "Amaya Barros"
+
+/obj/item/clothing/mask/rubber/admiral
+	name = "Admiral Diwali mask"
+	desc = "Admiral that led the infamous last stand at Helios against the Independent Navy in the Gaia conflict. For bridge officers who wish they'd achieve a fraction of that."
+	icon_state = "admiral"
+	visible_name = "Admiral Diwali"
+
+/obj/item/clothing/mask/rubber/turner
+	name = "Charles Turner mask"
+	desc = "Premier of the Gilgamesh Colonial Confederation. Probably shouldn't wear this in front of your veteran uncle."
+	icon_state = "turner"
+	visible_name = "Charles Turner"
+
+/obj/item/clothing/mask/rubber/species
+	name = "human mask"
+	desc = "A rubber human mask."
+	icon_state = "manmet"
+	var/species = SPECIES_HUMAN
+
+/obj/item/clothing/mask/rubber/species/New()
+	..()
+	visible_name = species
+	var/datum/species/S = all_species[species]
+	if(istype(S))
+		var/decl/cultural_info/C = SSculture.get_culture(S.default_cultural_info[TAG_CULTURE])
+		if(istype(C))
+			visible_name = C.get_random_name(pick(MALE,FEMALE))
+
+/obj/item/clothing/mask/rubber/species/cat
+	name = "cat mask"
+	desc = "A rubber cat mask."
+	icon_state = "catmet"
+
+/obj/item/clothing/mask/rubber/species/unathi
+	name = "unathi mask"
+	desc = "A rubber unathi mask."
+	icon_state = "lizmet"
+	species = SPECIES_UNATHI
+
+/obj/item/clothing/mask/rubber/species/skrell
+	name = "skrell mask"
+	desc = "A rubber skrell mask."
+	icon_state = "skrellmet"
+	species = SPECIES_SKRELL
+
+/obj/item/clothing/mask/spirit
+	name = "spirit mask"
+	desc = "An eerie mask of ancient, pitted wood."
+	icon_state = "spirit_mask"
+	item_state = "spirit_mask"
+	flags_inv = HIDEFACE
+	body_parts_covered = FACE|EYES
+
+// Bandanas below
+/obj/item/clothing/mask/bandana
+	name = "black bandana"
+	desc = "A fine bandana with nanotech lining. Can be worn on the head or face."
+	flags_inv = HIDEFACE
+	slot_flags = SLOT_MASK|SLOT_HEAD
+	body_parts_covered = FACE
+	icon_state = "bandblack"
+	item_state = "bandblack"
+	item_flags = ITEM_FLAG_FLEXIBLEMATERIAL
+	w_class = ITEM_SIZE_SMALL
+
+/obj/item/clothing/mask/bandana/equipped(var/mob/user, var/slot)
+	switch(slot)
+		if(slot_wear_mask) //Mask is the default for all the settings
+			flags_inv = initial(flags_inv)
+			body_parts_covered = initial(body_parts_covered)
+			icon_state = initial(icon_state)
+		if(slot_head)
+			flags_inv = 0
+			body_parts_covered = HEAD
+			icon_state = "[initial(icon_state)]_up"
+			sprite_sheets = list()
+
+	return ..()
+
+/obj/item/clothing/mask/bandana/red
+	name = "red bandana"
+	icon_state = "bandred"
+	item_state = "bandred"
+
+/obj/item/clothing/mask/bandana/blue
+	name = "blue bandana"
+	icon_state = "bandblue"
+	item_state = "bandblue"
+
+/obj/item/clothing/mask/bandana/green
+	name = "green bandana"
+	icon_state = "bandgreen"
+	item_state = "bandgreen"
+
+/obj/item/clothing/mask/bandana/gold
+	name = "gold bandana"
+	icon_state = "bandgold"
+	item_state = "bandgold"
+
+/obj/item/clothing/mask/bandana/orange
+	name = "orange bandana"
+	icon_state = "bandorange"
+	item_state = "bandorange"
+
+/obj/item/clothing/mask/bandana/purple
+	name = "purple bandana"
+	icon_state = "bandpurple"
+	item_state = "bandpurple"
+
+/obj/item/clothing/mask/bandana/botany
+	name = "botany bandana"
+	icon_state = "bandbotany"
+	item_state = "bandbotany"
+
+/obj/item/clothing/mask/bandana/camo
+	name = "camo bandana"
+	icon_state = "bandcamo"
+	item_state = "bandcamo"
+
+/obj/item/clothing/mask/bandana/skull
+	name = "skull bandana"
+	desc = "A fine black bandana with nanotech lining and a skull emblem. Can be worn on the head or face."
+	icon_state = "bandskull"
+	item_state = "bandskull"
+

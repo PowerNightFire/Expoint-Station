@@ -2,29 +2,33 @@
 
 // This code allows for airlocks to be controlled externally by setting an id_tag and comm frequency (disables ID access)
 /obj/machinery/door/airlock
-	var/id_tag
 	var/frequency
-	var/tmp/shockedby
-	var/tmp/datum/radio_frequency/radio_connection
-	var/tmp/cur_command = null	//the command the door is currently attempting to complete
-	var/tmp/waiting_for_roundstart
+	var/shockedby = list()
+	var/datum/radio_frequency/radio_connection
+	var/cur_command = null	//the command the door is currently attempting to complete
+
+/obj/machinery/door/airlock/Process()
+	if (arePowerSystemsOn())
+		execute_current_command()
+	return ..()
 
 /obj/machinery/door/airlock/receive_signal(datum/signal/signal)
-	if (!arePowerSystemsOn()) return //no power
-
 	if(!signal || signal.encryption) return
 
 	if(id_tag != signal.data["tag"] || !signal.data["command"]) return
 
-	cur_command = signal.data["command"]
-	execute_current_command()
+	command(signal.data["command"])
+
+/obj/machinery/door/airlock/proc/command(var/new_command)
+	cur_command = new_command
+
+	//if there's no power, recieve the signal but just don't do anything. This allows airlocks to continue to work normally once power is restored
+	if(arePowerSystemsOn())
+		spawn()
+			execute_current_command()
 
 /obj/machinery/door/airlock/proc/execute_current_command()
-	set waitfor = FALSE
 	if(operating)
-		if (emagged == 1)
-			// Come back and try again later.
-			queue_command()
 		return //emagged or busy doing something else
 
 	if (!cur_command)
@@ -33,22 +37,6 @@
 	do_command(cur_command)
 	if (command_completed(cur_command))
 		cur_command = null
-	else
-		queue_command()
-
-/obj/machinery/door/airlock/proc/queue_command()
-	if (waiting_for_roundstart)
-		return
-
-	if (ROUND_IS_STARTED)
-		addtimer(CALLBACK(src, .proc/execute_current_command), 2 SECONDS, TIMER_UNIQUE | TIMER_OVERRIDE)
-	else
-		SSticker.OnRoundstart(CALLBACK(src, .proc/handle_queue_command))
-		waiting_for_roundstart = TRUE
-
-/obj/machinery/door/airlock/proc/handle_queue_command()
-	waiting_for_roundstart = null
-	execute_current_command()
 
 /obj/machinery/door/airlock/proc/do_command(var/command)
 	switch(command)
@@ -76,8 +64,8 @@
 			unlock()
 			close()
 
-			sleep(2)
 			lock()
+			sleep(2)
 
 	send_status()
 
@@ -106,7 +94,7 @@
 /obj/machinery/door/airlock/proc/send_status(var/bumped = 0)
 	if(radio_connection)
 		var/datum/signal/signal = new
-		signal.transmission_method = TRANSMISSION_RADIO
+		signal.transmission_method = 1 //radio signal
 		signal.data["tag"] = id_tag
 		signal.data["timestamp"] = world.time
 
@@ -116,7 +104,7 @@
 		if (bumped)
 			signal.data["bumped_with_access"] = 1
 
-		radio_connection.post_signal(src, signal, range = AIRLOCK_CONTROL_RANGE, filter = RADIO_AIRLOCK)
+		radio_connection.post_signal(src, signal, RADIO_AIRLOCK, AIRLOCK_CONTROL_RANGE)
 
 
 /obj/machinery/door/airlock/open(surpress_send)
@@ -129,40 +117,38 @@
 	if(!surpress_send) send_status()
 
 /obj/machinery/door/airlock/proc/set_frequency(new_frequency)
-	SSradio.remove_object(src, frequency)
+	radio_controller.remove_object(src, frequency)
 	if(new_frequency)
 		frequency = new_frequency
-		radio_connection = SSradio.add_object(src, frequency, RADIO_AIRLOCK)
+		radio_connection = radio_controller.add_object(src, frequency, RADIO_AIRLOCK)
+
 
 /obj/machinery/door/airlock/Initialize()
 	. = ..()
 	if(frequency)
 		set_frequency(frequency)
 
-	//wireless connection
-	if(_wifi_id)
-		wifi_receiver = new(_wifi_id, src)
-
 	update_icon()
 
-	if(SSradio)
+/obj/machinery/door/airlock/New()
+	..()
+
+	if(radio_controller)
 		set_frequency(frequency)
 
 /obj/machinery/door/airlock/Destroy()
-	if(frequency && SSradio)
-		SSradio.remove_object(src,frequency)
+	if(frequency && radio_controller)
+		radio_controller.remove_object(src,frequency)
 	return ..()
 
 /obj/machinery/airlock_sensor
-	name = "airlock sensor"
 	icon = 'icons/obj/airlock_machines.dmi'
 	icon_state = "airlock_sensor_off"
-	layer = OBJ_LAYER
+	name = "airlock sensor"
 
 	anchored = 1
 	power_channel = ENVIRON
 
-	var/id_tag
 	var/master_tag
 	var/frequency = 1379
 	var/command = "cycle"
@@ -173,7 +159,7 @@
 	var/alert = 0
 	var/previousPressure
 
-/obj/machinery/airlock_sensor/update_icon()
+/obj/machinery/airlock_sensor/on_update_icon()
 	if(on)
 		if(alert)
 			icon_state = "airlock_sensor_alert"
@@ -182,28 +168,31 @@
 	else
 		icon_state = "airlock_sensor_off"
 
-/obj/machinery/airlock_sensor/attack_hand(mob/user)
+/obj/machinery/airlock_sensor/interface_interact(mob/user)
+	if(!CanInteract(user, DefaultTopicState()))
+		return FALSE
 	var/datum/signal/signal = new
-	signal.transmission_method = TRANSMISSION_RADIO
+	signal.transmission_method = 1 //radio signal
 	signal.data["tag"] = master_tag
 	signal.data["command"] = command
 
-	radio_connection.post_signal(src, signal, range = AIRLOCK_CONTROL_RANGE, filter = RADIO_AIRLOCK)
+	radio_connection.post_signal(src, signal, RADIO_AIRLOCK, AIRLOCK_CONTROL_RANGE)
 	flick("airlock_sensor_cycle", src)
+	return TRUE
 
-/obj/machinery/airlock_sensor/machinery_process()
+/obj/machinery/airlock_sensor/Process()
 	if(on)
 		var/datum/gas_mixture/air_sample = return_air()
 		var/pressure = round(air_sample.return_pressure(),0.1)
 
 		if(abs(pressure - previousPressure) > 0.001 || previousPressure == null)
 			var/datum/signal/signal = new
-			signal.transmission_method = TRANSMISSION_RADIO
+			signal.transmission_method = 1 //radio signal
 			signal.data["tag"] = id_tag
 			signal.data["timestamp"] = world.time
 			signal.data["pressure"] = num2text(pressure)
 
-			radio_connection.post_signal(src, signal, range = AIRLOCK_CONTROL_RANGE, filter = RADIO_AIRLOCK)
+			radio_connection.post_signal(src, signal, RADIO_AIRLOCK, AIRLOCK_CONTROL_RANGE)
 
 			previousPressure = pressure
 
@@ -212,19 +201,22 @@
 			update_icon()
 
 /obj/machinery/airlock_sensor/proc/set_frequency(new_frequency)
-	SSradio.remove_object(src, frequency)
+	radio_controller.remove_object(src, frequency)
 	frequency = new_frequency
-	radio_connection = SSradio.add_object(src, frequency, RADIO_AIRLOCK)
+	radio_connection = radio_controller.add_object(src, frequency, RADIO_AIRLOCK)
 
 /obj/machinery/airlock_sensor/Initialize()
-	. = ..()
 	set_frequency(frequency)
-	if(SSradio)
+	. = ..()
+
+/obj/machinery/airlock_sensor/New()
+	..()
+	if(radio_controller)
 		set_frequency(frequency)
 
 /obj/machinery/airlock_sensor/Destroy()
-	if(SSradio)
-		SSradio.remove_object(src,frequency)
+	if(radio_controller)
+		radio_controller.remove_object(src,frequency)
 	return ..()
 
 /obj/machinery/airlock_sensor/airlock_interior
@@ -234,10 +226,9 @@
 	command = "cycle_exterior"
 
 /obj/machinery/access_button
-	name = "access button"
 	icon = 'icons/obj/airlock_machines.dmi'
 	icon_state = "access_button_standby"
-	layer = OBJ_LAYER
+	name = "access button"
 
 	anchored = 1
 	power_channel = ENVIRON
@@ -249,9 +240,10 @@
 	var/datum/radio_frequency/radio_connection
 
 	var/on = 1
+	interact_offline = TRUE
 
 
-/obj/machinery/access_button/update_icon()
+/obj/machinery/access_button/on_update_icon()
 	if(on)
 		icon_state = "access_button_standby"
 	else
@@ -259,40 +251,44 @@
 
 /obj/machinery/access_button/attackby(obj/item/I as obj, mob/user as mob)
 	//Swiping ID on the access button
-	if (I.GetID())
+	if (istype(I, /obj/item/weapon/card/id) || istype(I, /obj/item/modular_computer))
 		attack_hand(user)
 		return
 	..()
 
-/obj/machinery/access_button/attack_hand(mob/user)
-	add_fingerprint(usr)
-	if(!allowed(user))
-		to_chat(user, "<span class='warning'>Access Denied</span>")
-
-	else if(radio_connection)
+/obj/machinery/access_button/interface_interact(mob/user)
+	if(!CanInteract(user, DefaultTopicState()))
+		return FALSE
+	if(radio_connection)
 		var/datum/signal/signal = new
-		signal.transmission_method = TRANSMISSION_RADIO
+		signal.transmission_method = 1 //radio signal
 		signal.data["tag"] = master_tag
 		signal.data["command"] = command
 
-		radio_connection.post_signal(src, signal, range = AIRLOCK_CONTROL_RANGE, filter = RADIO_AIRLOCK)
+		radio_connection.post_signal(src, signal, RADIO_AIRLOCK, AIRLOCK_CONTROL_RANGE)
 	flick("access_button_cycle", src)
-
+	return TRUE
 
 /obj/machinery/access_button/proc/set_frequency(new_frequency)
-	SSradio.remove_object(src, frequency)
+	radio_controller.remove_object(src, frequency)
 	frequency = new_frequency
-	radio_connection = SSradio.add_object(src, frequency, RADIO_AIRLOCK)
+	radio_connection = radio_controller.add_object(src, frequency, RADIO_AIRLOCK)
+
 
 /obj/machinery/access_button/Initialize()
 	. = ..()
+	set_frequency(frequency)
 
-	if(SSradio)
+
+/obj/machinery/access_button/New()
+	..()
+
+	if(radio_controller)
 		set_frequency(frequency)
 
 /obj/machinery/access_button/Destroy()
-	if(SSradio)
-		SSradio.remove_object(src, frequency)
+	if(radio_controller)
+		radio_controller.remove_object(src, frequency)
 	return ..()
 
 /obj/machinery/access_button/airlock_interior
@@ -302,10 +298,3 @@
 /obj/machinery/access_button/airlock_exterior
 	frequency = 1379
 	command = "cycle_exterior"
-
-/obj/machinery/door/airlock/proc/command(var/new_command)
-	cur_command = new_command
-
-	//if there's no power, receive the signal but just don't do anything. This allows airlocks to continue to work normally once power is restored
-	if(arePowerSystemsOn())
-		INVOKE_ASYNC(src, .proc/execute_current_command)

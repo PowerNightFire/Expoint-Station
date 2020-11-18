@@ -1,98 +1,54 @@
+/mob/living/proc/modify_damage_by_armor(def_zone, damage, damage_type, damage_flags, mob/living/victim, armor_pen, silent = FALSE)
+	var/list/armors = get_armors_by_zone(def_zone, damage_type, damage_flags)
+	. = args.Copy(2)
+	for(var/armor in armors)
+		var/datum/extension/armor/armor_datum = armor
+		. = armor_datum.apply_damage_modifications(arglist(.))
 
-/*
-	run_armor_check() args
-	def_zone - What part is getting hit, if null will check entire body
-	attack_flag - The type of armor to be checked
-	armor_pen - reduces the effectiveness of armor
-	absorb_text - shown if the armor check is 100% successful
-	soften_text - shown if the armor check is more than 0% successful and less than 100%
-	Returns
-	a blocked amount between 0 - 100, representing the success of the armor check.
-*/
-#define MOB_FIRE_LIGHT_RANGE  3  //These control the intensity and range of light given off by a mob which is on fire
-#define MOB_FIRE_LIGHT_POWER  2
+/mob/living/proc/get_blocked_ratio(def_zone, damage_type, damage_flags, armor_pen, damage)
+	var/list/armors = get_armors_by_zone(def_zone, damage_type, damage_flags)
+	. = 0
+	for(var/armor in armors)
+		var/datum/extension/armor/armor_datum = armor
+		. = 1 - (1 - .) * (1 - armor_datum.get_blocked(damage_type, damage_flags, armor_pen, damage)) // multiply the amount we let through
+	. = min(1, .)
 
-/mob/living/proc/run_armor_check(var/def_zone = null, var/attack_flag = "melee", var/armor_pen = 0, var/absorb_text = null, var/soften_text = null)
-	if(armor_pen >= 100)
-		return 0 //might as well just skip the processing
+/mob/living/proc/get_armors_by_zone(def_zone, damage_type, damage_flags)
+	. = list()
+	var/natural_armor = get_extension(src, /datum/extension/armor)
+	if(natural_armor)
+		. += natural_armor
+	if(psi)
+		. += get_extension(psi, /datum/extension/armor)
 
-	var/armor = getarmor(def_zone, attack_flag)
-
-	if(armor_pen >= armor)
-		return 0 //effective_armor is going to be 0
-
-	var/blocked = (armor - armor_pen)
-
-	if(blocked >= 100)
-		if(absorb_text)
-			show_message("<span class='warning'>[absorb_text]</span>")
-		else
-			show_message("<span class='warning'>Your armor absorbs the blow!</span>")
-		return 100
-
-	if(blocked > 20)
-		//Should we show this every single time?
-		if(soften_text)
-			show_message("<span class='warning'>[soften_text]</span>")
-		else
-			show_message("<span class='warning'>Your armor softens the blow!</span>")
-
-	return round(blocked, 1)
-
-//Adds two armor values together.
-//If armor_a and armor_b are between 0-100 the result will always also be between 0-100.
-/proc/add_armor(var/armor_a, var/armor_b)
-	if(armor_a >= 100 || armor_b >= 100)
-		return 100 //adding to infinite protection doesn't make it any bigger
-
-	var/protection_a = 1/(BLOCKED_MULT(armor_a)) - 1
-	var/protection_b = 1/(BLOCKED_MULT(armor_b)) - 1
-	return 100 - 1/(protection_a + protection_b + 1)*100
-
-//if null is passed for def_zone, then this should return something appropriate for all zones (e.g. area effect damage)
-/mob/living/proc/getarmor(var/def_zone, var/type)
-	return 0
-
-
-/mob/living/bullet_act(var/obj/item/projectile/P, var/def_zone, var/used_weapon = null)
-
-	//Being hit while using a cloaking device
-	var/obj/item/cloaking_device/C = locate(/obj/item/cloaking_device) in src
-	if(C && C.active)
-		C.attack_self(src)//Should shut it off
-		update_icon()
-		to_chat(src, "<span class='notice'>Your [C.name] was disrupted!</span>")
-		Stun(2)
+/mob/living/bullet_act(var/obj/item/projectile/P, var/def_zone)
 
 	//Being hit while using a deadman switch
-	if(istype(get_active_hand(),/obj/item/device/assembly/signaler))
-		var/obj/item/device/assembly/signaler/signaler = get_active_hand()
-		if(signaler.deadman && prob(80))
-			log_and_message_admins("has triggered a signaler deadman's switch")
-			src.visible_message("<span class='warning'>[src] triggers their deadman's switch!</span>")
-			signaler.signal()
-
-	//Stun Beams
-	if(P.taser_effect)
-		stun_effect_act(0, P.agony, def_zone, P)
-		to_chat(src, "<span class='warning'>You have been hit by [P]!</span>")
-		qdel(P)
-		return
+	var/obj/item/device/assembly/signaler/signaler = get_active_hand()
+	if(istype(signaler) && signaler.deadman)
+		log_and_message_admins("has triggered a signaler deadman's switch")
+		src.visible_message("<span class='warning'>[src] triggers their deadman's switch!</span>")
+		signaler.signal()
 
 	//Armor
-	var/absorb = run_armor_check(def_zone, P.check_armor, P.armor_penetration)
+	var/damage = P.damage
+	var/flags = P.damage_flags()
 	var/damaged
-	if(prob(absorb))
-		if(P.damage_flags & DAM_SHARP || P.damage_flags & DAM_SHARP || P.damage_flags & DAM_LASER)
-			P.damage_flags &= ~DAM_SHARP
-			P.damage_flags &= ~DAM_EDGE
-			P.damage_flags &= ~DAM_LASER
-
 	if(!P.nodamage)
-		damaged = apply_damage(P.damage, P.damage_type, def_zone, absorb, 0, P, damage_flags = P.damage_flags, used_weapon = "\a [P.name]")
+		damaged = apply_damage(damage, P.damage_type, def_zone, flags, P, P.armor_penetration)
 		bullet_impact_visuals(P, def_zone, damaged)
-	P.on_hit(src, absorb, def_zone)
-	return absorb
+	if(damaged || P.nodamage) // Run the block computation if we did damage or if we only use armor for effects (nodamage)
+		. = get_blocked_ratio(def_zone, P.damage_type, flags, P.armor_penetration, P.damage)
+	P.on_hit(src, ., def_zone)
+
+// For visuals and blood splatters etc
+/mob/living/proc/bullet_impact_visuals(var/obj/item/projectile/P, var/def_zone, var/damage)
+	var/list/impact_sounds = LAZYACCESS(P.impact_sounds, get_bullet_impact_effect_type(def_zone))
+	if(length(impact_sounds))
+		playsound(src, pick(impact_sounds), 75)
+
+/mob/living/get_bullet_impact_effect_type(var/def_zone)
+	return BULLET_IMPACT_MEAT
 
 /mob/living/proc/aura_check(var/type)
 	if(!auras)
@@ -116,31 +72,23 @@
 		if(result & AURA_CANCEL)
 			break
 
-//For visuals, blood splatters and so on.
-/mob/living/proc/bullet_impact_visuals(var/obj/item/projectile/P, var/def_zone, var/damage)
-	var/list/impact_sounds = LAZYACCESS(P.impact_sounds, get_bullet_impact_effect_type(def_zone))
-	if(length(impact_sounds))
-		playsound(src, pick(impact_sounds), 75)
-
-/mob/living/get_bullet_impact_effect_type(var/def_zone)
-	return BULLET_IMPACT_MEAT
 
 //Handles the effects of "stun" weapons
 /mob/living/proc/stun_effect_act(var/stun_amount, var/agony_amount, var/def_zone, var/used_weapon=null)
-	flash_pain(stun_amount)
+	flash_pain()
 
-	if(stun_amount)
+	if (stun_amount)
 		Stun(stun_amount)
 		Weaken(stun_amount)
 		apply_effect(stun_amount, STUTTER)
 		apply_effect(stun_amount, EYE_BLUR)
 
-	if(agony_amount)
-		apply_damage(agony_amount, PAIN, def_zone, 0, used_weapon)
-		apply_effect(agony_amount / 10, STUTTER)
-		apply_effect(agony_amount / 10, EYE_BLUR)
+	if (agony_amount)
+		apply_damage(agony_amount, PAIN, def_zone, used_weapon)
+		apply_effect(agony_amount/10, STUTTER)
+		apply_effect(agony_amount/10, EYE_BLUR)
 
-/mob/living/proc/electrocute_act(var/shock_damage, var/obj/source, var/siemens_coeff = 1.0, var/tesla_shock = 0, var/ground_zero)
+/mob/living/proc/electrocute_act(var/shock_damage, var/obj/source, var/siemens_coeff = 1.0, def_zone = null)
 	  return 0 //only carbon liveforms have this proc
 
 /mob/living/emp_act(severity)
@@ -153,109 +101,100 @@
 	return target_zone
 
 //Called when the mob is hit with an item in combat. Returns the blocked result
-/mob/living/proc/hit_with_weapon(obj/item/I, mob/living/user, var/effective_force, var/hit_zone, var/ground_zero)
-	visible_message("<span class='danger'>[src] has been [LAZYPICK(I.attack_verb,"attacked")] with [I] by [user]!</span>")
+/mob/living/proc/hit_with_weapon(obj/item/I, mob/living/user, var/effective_force, var/hit_zone)
+	visible_message("<span class='danger'>[src] has been [I.attack_verb.len? pick(I.attack_verb) : "attacked"] with [I.name] by [user]!</span>")
 
-	var/blocked = run_armor_check(hit_zone, "melee")
-	standard_weapon_hit_effects(I, user, effective_force, blocked, hit_zone)
+	. = standard_weapon_hit_effects(I, user, effective_force, hit_zone)
 
 	if(I.damtype == BRUTE && prob(33)) // Added blood for whacking non-humans too
 		var/turf/simulated/location = get_turf(src)
 		if(istype(location)) location.add_blood_floor(src)
 
-	return blocked
-
 //returns 0 if the effects failed to apply for some reason, 1 otherwise.
-/mob/living/proc/standard_weapon_hit_effects(obj/item/I, mob/living/user, var/effective_force, var/blocked, var/hit_zone)
-	if(!effective_force || blocked >= 100)
+/mob/living/proc/standard_weapon_hit_effects(obj/item/I, mob/living/user, var/effective_force, var/hit_zone)
+	if(!effective_force)
 		return 0
 
 	//Hulk modifier
-	if(HULK in user.mutations)
+	if(MUTATION_HULK in user.mutations)
 		effective_force *= 2
 
 	//Apply weapon damage
 	var/damage_flags = I.damage_flags()
-	if(prob(blocked)) //armor provides a chance to turn sharp/edge weapon attacks into blunt ones
-		damage_flags &= ~DAM_SHARP
-		damage_flags &= ~DAM_EDGE
 
-	apply_damage(effective_force, I.damtype, hit_zone, blocked, used_weapon=I, damage_flags = damage_flags)
-
-	return 1
+	return apply_damage(effective_force, I.damtype, hit_zone, damage_flags, used_weapon=I)
 
 //this proc handles being hit by a thrown atom
-/mob/living/hitby(atom/movable/AM, var/speed = THROWFORCE_SPEED_DIVISOR)//Standardization and logging -Sieve
-	if(!aura_check(AURA_TYPE_THROWN, AM, speed))
+/mob/living/hitby(var/atom/movable/AM, var/datum/thrownthing/TT)
+
+	if(isliving(AM))
+		var/mob/living/M = AM
+		playsound(loc, 'sound/weapons/pierce.ogg', 25, 1, -1)
+		if(skill_fail_prob(SKILL_COMBAT, 75))
+			Weaken(rand(3,5))
+		if(M.skill_fail_prob(SKILL_HAULING, 100))
+			M.Weaken(rand(4,8))
+		M.visible_message(SPAN_DANGER("\The [M] collides with \the [src]!"))
+
+	if(!aura_check(AURA_TYPE_THROWN, AM, TT.speed))
 		return
+
 	if(istype(AM,/obj/))
 		var/obj/O = AM
 		var/dtype = O.damtype
-		var/throw_damage = O.throwforce*(speed/THROWFORCE_SPEED_DIVISOR)
+		var/throw_damage = O.throwforce*(TT.speed/THROWFORCE_SPEED_DIVISOR)
 
-		var/miss_chance = 15
-		if (O.throw_source)
-			var/distance = get_dist(O.throw_source, loc)
-			miss_chance = max(15*(distance-2), 0)
+		var/miss_chance = max(15*(TT.dist_travelled-2),0)
 
 		if (prob(miss_chance))
 			visible_message("<span class='notice'>\The [O] misses [src] narrowly!</span>")
-			playsound(src, 'sound/effects/throw_miss.ogg', 50, 1)
 			return
 
-		src.visible_message("<span class='warning'>[src] has been hit by [O].</span>")
-		var/armor = run_armor_check(null, "melee")
+		src.visible_message("<span class='warning'>\The [src] has been hit by \the [O]</span>.")
+		apply_damage(throw_damage, dtype, null, O.damage_flags(), O)
 
-		var/damage_flags = O.damage_flags()
-		apply_damage(throw_damage, dtype, null, armor, O, damage_flags = damage_flags)
-
-		O.throwing = 0		//it hit, so stop moving
-
-		if(ismob(O.thrower))
-			var/mob/M = O.thrower
-			var/client/assailant = M.client
+		if(TT.thrower)
+			var/client/assailant = TT.thrower.client
 			if(assailant)
-				src.attack_log += text("\[[time_stamp()]\] <font color='orange'>Has been hit with a [O], thrown by [M.name] ([assailant.ckey])</font>")
-				M.attack_log += text("\[[time_stamp()]\] <span class='warning'>Hit [src.name] ([src.ckey]) with a thrown [O]</span>")
-				if(!istype(src,/mob/living/simple_animal/rat))
-					msg_admin_attack("[src.name] ([src.ckey]) was hit by a [O], thrown by [M.name] ([assailant.ckey]) (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[src.x];Y=[src.y];Z=[src.z]'>JMP</a>)",ckey=key_name(M),ckey_target=key_name(src))
+				admin_attack_log(TT.thrower, src, "Threw \an [O] at the victim.", "Had \an [O] thrown at them.", "threw \an [O] at")
 
 		// Begin BS12 momentum-transfer code.
 		var/mass = 1.5
 		if(istype(O, /obj/item))
 			var/obj/item/I = O
 			mass = I.w_class/THROWNOBJ_KNOCKBACK_DIVISOR
-		var/momentum = speed*mass
+		var/momentum = TT.speed*mass
 
-		if(O.throw_source && momentum >= THROWNOBJ_KNOCKBACK_SPEED)
-			var/dir = get_dir(O.throw_source, src)
+		if(momentum >= THROWNOBJ_KNOCKBACK_SPEED)
+			var/dir = TT.init_dir
 
-			visible_message("<span class='warning'>[src] staggers under the impact!</span>","<span class='warning'>You stagger under the impact!</span>")
+			visible_message("<span class='warning'>\The [src] staggers under the impact!</span>","<span class='warning'>You stagger under the impact!</span>")
 			src.throw_at(get_edge_target_turf(src,dir),1,momentum)
 
 			if(!O || !src) return
 
-			if(O.sharp) //Projectile is suitable for pinning.
+			if(O.can_embed()) //Projectile is suitable for pinning.
 				//Handles embedding for non-humans and simple_animals.
 				embed(O)
 
 				var/turf/T = near_wall(dir,2)
 
 				if(T)
-					src.forceMove(T)
+					forceMove(T)
 					visible_message("<span class='warning'>[src] is pinned to the wall by [O]!</span>","<span class='warning'>You are pinned to the wall by [O]!</span>")
 					src.anchored = 1
 					src.pinned += O
 
-/mob/living/proc/embed(var/obj/O, var/def_zone=null)
+/mob/living/proc/embed(var/obj/O, var/def_zone=null, var/datum/wound/supplied_wound)
 	O.forceMove(src)
 	src.embedded += O
 	src.verbs += /mob/proc/yank_out_object
 
-/mob/living/proc/turf_collision(var/turf/T, var/speed = THROWFORCE_SPEED_DIVISOR)
+//This is called when the mob is thrown into a dense turf
+/mob/living/proc/turf_collision(var/turf/T, var/speed)
 	visible_message("<span class='danger'>[src] slams into \the [T]!</span>")
 	playsound(T, 'sound/effects/bangtaper.ogg', 50, 1, 1)//so it plays sounds on the turf instead, makes for awesome carps to hull collision and such
-	apply_damage(speed*5, BRUTE)
+	apply_damage(speed*2, BRUTE)
 
 /mob/living/proc/near_wall(var/direction,var/distance=1)
 	var/turf/T = get_step(get_turf(src),direction)
@@ -263,7 +202,7 @@
 	var/i = 1
 
 	while(i>0 && i<=distance)
-		if(T.density) //Turf is a wall!
+		if(!T || T.density) //Turf is a wall or map edge.
 			return last_turf
 		i++
 		last_turf = T
@@ -274,54 +213,36 @@
 // End BS12 momentum-transfer code.
 
 /mob/living/attack_generic(var/mob/user, var/damage, var/attack_message)
-	if(!damage)
+
+	if(!damage || !istype(user))
 		return
 
 	adjustBruteLoss(damage)
-	user.attack_log += text("\[[time_stamp()]\] <span class='warning'>attacked [src.name] ([src.ckey])</span>")
-	src.attack_log += text("\[[time_stamp()]\] <font color='orange'>was attacked by [user.name] ([user.ckey])</font>")
-	if (attack_message)
-		src.visible_message("<span class='danger'>[user] has [attack_message] [src]!</span>")
+	admin_attack_log(user, src, "Attacked", "Was attacked", "attacked")
+
+	src.visible_message("<span class='danger'>\The [user] has [attack_message] \the [src]!</span>")
 	user.do_attack_animation(src)
 	spawn(1) updatehealth()
 	return 1
 
-/mob/living/proc/IgniteMob(var/fire_stacks_to_add = 0)
-
-	if(fire_stacks_to_add)
-		adjust_fire_stacks(fire_stacks_to_add)
-
+/mob/living/proc/IgniteMob()
 	if(fire_stacks > 0 && !on_fire)
 		on_fire = 1
-		set_light(light_range + MOB_FIRE_LIGHT_RANGE, light_power + MOB_FIRE_LIGHT_POWER)
+		set_light(0.6, 0.1, 4, l_color = COLOR_ORANGE)
 		update_fire()
-		return TRUE
 
-	return FALSE
-
-/mob/living/proc/ExtinguishMob(var/fire_stacks_to_remove = 0)
-
-	if (fire_stacks_to_remove)
-		adjust_fire_stacks(-fire_stacks_to_remove)
-
-	if(fire_stacks <= 0 && on_fire)
+/mob/living/proc/ExtinguishMob()
+	if(on_fire)
 		on_fire = 0
-		set_light(max(0, light_range - MOB_FIRE_LIGHT_RANGE), max(0, light_power - MOB_FIRE_LIGHT_POWER))
+		fire_stacks = 0
+		set_light(0)
 		update_fire()
-		return TRUE
-
-	return FALSE
-
-/mob/living/proc/ExtinguishMobCompletely()
-	return ExtinguishMob(fire_stacks)
 
 /mob/living/proc/update_fire()
 	return
 
-/mob/living/proc/adjust_fire_stacks(var/add_fire_stacks)
+/mob/living/proc/adjust_fire_stacks(add_fire_stacks) //Adjusting the amount of fire_stacks we have on person
 	fire_stacks = Clamp(fire_stacks + add_fire_stacks, FIRE_MIN_STACKS, FIRE_MAX_STACKS)
-
-	return fire_stacks
 
 /mob/living/proc/handle_fire()
 	if(fire_stacks < 0)
@@ -330,19 +251,25 @@
 	if(!on_fire)
 		return 1
 	else if(fire_stacks <= 0)
-		ExtinguishMobCompletely() //Fire's been put out.
+		ExtinguishMob() //Fire's been put out.
 		return 1
 
+	fire_stacks = max(0, fire_stacks - 0.2) //I guess the fire runs out of fuel eventually
+
 	var/datum/gas_mixture/G = loc.return_air() // Check if we're standing in an oxygenless environment
-	if(G.gas[GAS_OXYGEN] < 1)
-		ExtinguishMobCompletely() //If there's no oxygen in the tile we're on, put out the fire
+	if(G.get_by_flag(XGM_GAS_OXIDIZER) < 1)
+		ExtinguishMob() //If there's no oxygen in the tile we're on, put out the fire
 		return 1
 
 	var/turf/location = get_turf(src)
 	location.hotspot_expose(fire_burn_temperature(), 50, 1)
 
-/mob/living/fire_act()
-	IgniteMob(2)
+/mob/living/fire_act(datum/gas_mixture/air, exposed_temperature, exposed_volume)
+	//once our fire_burn_temperature has reached the temperature of the fire that's giving fire_stacks, stop adding them.
+	//allow fire_stacks to go up to 4 for fires cooler than 700 K, since are being immersed in flame after all.
+	if(fire_stacks <= 4 || fire_burn_temperature() < exposed_temperature)
+		adjust_fire_stacks(2)
+	IgniteMob()
 
 /mob/living/proc/get_cold_protection()
 	return 0
@@ -391,7 +318,7 @@
 	if(hud_used.action_buttons_hidden)
 		if(!hud_used.hide_actions_toggle)
 			hud_used.hide_actions_toggle = new(hud_used)
-			hud_used.hide_actions_toggle.update_icon()
+			hud_used.hide_actions_toggle.UpdateIcon()
 
 		if(!hud_used.hide_actions_toggle.moved)
 			hud_used.hide_actions_toggle.screen_loc = hud_used.ButtonNumberToScreenCoords(1)
@@ -410,9 +337,9 @@
 
 		var/obj/screen/movable/action_button/B = A.button
 
-		B.update_icon()
+		B.UpdateIcon()
 
-		B.name = A.UpdateName()
+		B.SetName(A.UpdateName())
 
 		client.screen += B
 
@@ -429,5 +356,7 @@
 			//hud_used.SetButtonCoords(hud_used.hide_actions_toggle,button_number+1)
 		client.screen += hud_used.hide_actions_toggle
 
-#undef	MOB_FIRE_LIGHT_RANGE  //These control the intensity and range of light given off by a mob which is on fire
-#undef	MOB_FIRE_LIGHT_POWER
+/mob/living/lava_act(datum/gas_mixture/air, temperature, pressure)
+	fire_act(air, temperature)
+	FireBurn(0.4*vsc.fire_firelevel_multiplier, temperature, pressure)
+	. =  (health <= 0) ? ..() : FALSE

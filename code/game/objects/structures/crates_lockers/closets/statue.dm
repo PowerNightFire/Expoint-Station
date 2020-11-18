@@ -1,103 +1,71 @@
-/mob/statue_mob
-	name = "statue prisoner"
-	universal_understand = 1
-
-/mob/statue_mob/send_emote()
-	to_chat(src, "You are unable to move while trapped as a statue.")
-
-/mob/statue_mob/say()
-	to_chat(src, "You are unable to speak while trapped as a statue.")
-
-/obj/structure/closet/statue
+/obj/structure/closet/statue //what
 	name = "statue"
 	desc = "An incredibly lifelike marble carving."
 	icon = 'icons/obj/statue.dmi'
 	icon_state = "human_male"
-	density = TRUE
-	anchored = TRUE
+	density = 1
+	anchored = 1
+	setup = 0
 	health = 0 //destroying the statue kills the mob within
-	var/timer = 90 //eventually the person will be freed
-	var/mob/statue_mob/imprisoned = null //the temporary mob that is created when someone is put inside a statue
+	var/intialTox = 0 	//these are here to keep the mob from taking damage from things that logically wouldn't affect a rock
+	var/intialFire = 0	//it's a little sloppy I know but it was this or the GODMODE flag. Lesser of two evils.
+	var/intialBrute = 0
+	var/intialOxy = 0
+	var/timer = 240 //eventually the person will be freed
 
-/obj/structure/closet/statue/eternal
-	timer = -1
-
-/obj/structure/closet/statue/Destroy()
-	QDEL_NULL(imprisoned)
-	STOP_PROCESSING(SSprocessing, src)
-	return ..()
-
-/obj/structure/closet/statue/Initialize(mapload, mob/living/L)
-	if(isliving(L))
+/obj/structure/closet/statue/New(loc, var/mob/living/L)
+	if(L && (ishuman(L) || L.isMonkey() || iscorgi(L)))
 		if(L.buckled)
 			L.buckled = 0
 			L.anchored = 0
 		if(L.client)
 			L.client.perspective = EYE_PERSPECTIVE
 			L.client.eye = src
-
-		L.drop_r_hand()
-		L.drop_l_hand()
-
 		L.forceMove(src)
-		L.sdisabilities |= MUTE
-		health = L.health + 300 //stoning damaged mobs will result in easier to shatter statues
-		L.frozen = TRUE
-
-		appearance = L
-		dir = L.dir
-		color = list(
-					    0.30, 0.3, 0.25,
-					    0.30, 0.3, 0.25,
-					    0.30, 0.3, 0.25
-					)
-		name = "statue of [L.name]"
-		desc = "An incredibly lifelike stone carving."
-
-		if(iscorgi(L))
+		L.set_sdisability(MUTED)
+		health = L.health + 100 //stoning damaged mobs will result in easier to shatter statues
+		intialTox = L.getToxLoss()
+		intialFire = L.getFireLoss()
+		intialBrute = L.getBruteLoss()
+		intialOxy = L.getOxyLoss()
+		if(ishuman(L))
+			name = "statue of [L.name]"
+			if(L.gender == "female")
+				icon_state = "human_female"
+		else if(L.isMonkey())
+			name = "statue of a monkey"
+			icon_state = "monkey"
+		else if(iscorgi(L))
 			name = "statue of a corgi"
+			icon_state = "corgi"
 			desc = "If it takes forever, I will wait for you..."
-
-		var/mob/statue_mob/temporarymob = new (src)
-		temporarymob.forceMove(src)
-		if(L.mind)
-			temporarymob.key = L.key
-		imprisoned = temporarymob
 
 	if(health == 0) //meaning if the statue didn't find a valid target
 		qdel(src)
 		return
 
-	START_PROCESSING(SSprocessing, src)
+	START_PROCESSING(SSobj, src)
 	..()
 
-/obj/structure/closet/statue/process()
-	timer -= 2
-
-	if (timer == 10)
-		visible_message("<span class='notice'>\The [src]'s surface begins cracking and dissolving!</span>")
-
+/obj/structure/closet/statue/Process()
+	timer--
+	for(var/mob/living/M in src) //Go-go gadget stasis field
+		M.setToxLoss(intialTox)
+		M.adjustFireLoss(intialFire - M.getFireLoss())
+		M.adjustBruteLoss(intialBrute - M.getBruteLoss())
+		M.setOxyLoss(intialOxy)
 	if (timer <= 0)
 		dump_contents()
-		STOP_PROCESSING(SSprocessing, src)
+		STOP_PROCESSING(SSobj, src)
 		qdel(src)
 
-/obj/structure/closet/statue/content_info()
-	return
-
 /obj/structure/closet/statue/dump_contents()
-
 	for(var/obj/O in src)
-		O.forceMove(loc)
+		O.dropInto(loc)
 
 	for(var/mob/living/M in src)
-		if(imprisoned)
-			if(imprisoned.key)
-				M.key = imprisoned.key
-
-		M.forceMove(loc)
-		M.sdisabilities &= ~MUTE
-		M.frozen = FALSE
+		M.dropInto(loc)
+		M.unset_sdisability(MUTED)
 		M.take_overall_damage((M.health - health - 100),0) //any new damage the statue incurred is transfered to the mob
 		if(M.client)
 			M.client.eye = M.client.mob
@@ -124,7 +92,6 @@
 	return
 
 /obj/structure/closet/statue/attack_generic(var/mob/user, damage, attacktext, environment_smash)
-	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 	if(damage && environment_smash)
 		for(var/mob/M in src)
 			shatter(M)
@@ -136,7 +103,6 @@
 		check_health()
 
 /obj/structure/closet/statue/attackby(obj/item/I as obj, mob/user as mob)
-	user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
 	health -= I.force
 	user.do_attack_animation(src)
 	visible_message("<span class='danger'>[user] strikes [src] with [I].</span>")
@@ -154,12 +120,11 @@
 /obj/structure/closet/statue/verb_toggleopen()
 	return
 
-/obj/structure/closet/statue/update_icon()
+/obj/structure/closet/statue/on_update_icon()
 	return
 
 /obj/structure/closet/statue/proc/shatter(mob/user as mob)
 	if (user)
-		user.frozen = FALSE
 		user.dust()
 	dump_contents()
 	visible_message("<span class='warning'>[src] shatters!.</span>")

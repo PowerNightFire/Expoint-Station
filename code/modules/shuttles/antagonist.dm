@@ -2,22 +2,19 @@
 	name = "skipjack control console"
 	req_access = list(access_syndicate)
 	shuttle_tag = "Skipjack"
-	light_color = LIGHT_COLOR_RED
 
-/obj/machinery/computer/shuttle_control/multi/burglar
-	name = "pod control console"
-	req_access = list(access_syndicate)
-	shuttle_tag = "Burglar Pod"
-	light_color = LIGHT_COLOR_RED
-
-/obj/machinery/computer/shuttle_control/multi/antag/syndicate
+/obj/machinery/computer/shuttle_control/multi/syndicate
 	name = "mercenary shuttle control console"
 	req_access = list(access_syndicate)
-	shuttle_tag = "Mercenary Shuttle"
-	light_color = LIGHT_COLOR_RED
+	shuttle_tag = "Mercenary"
 
-/obj/machinery/computer/shuttle_control/multi/merc_elite
-	name = "shuttle control console"
+/obj/machinery/computer/shuttle_control/multi/rescue
+	name = "rescue shuttle control console"
+	req_access = list(access_cent_specops)
+	shuttle_tag = "Rescue"
+
+/obj/machinery/computer/shuttle_control/multi/ninja
+	name = "stealth shuttle control console"
 	req_access = list(access_syndicate)
-	shuttle_tag = "Merc Elite"
-	light_color = LIGHT_COLOR_RED
+	shuttle_tag = "Ninja"
+

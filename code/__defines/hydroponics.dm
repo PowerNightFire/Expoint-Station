@@ -1,13 +1,5 @@
 //Misc
-#define DEAD_PLANT_COLOUR "#C2A180"
-
-// Seed noun datums
-#define SEED_NOUN_SPORES          "spores"
-#define SEED_NOUN_PITS            "pits"
-#define SEED_NOUN_NODES           "nodes"
-#define SEED_NOUN_CUTTINGS        "cuttings"
-#define SEED_NOUN_SEEDS           "seeds"
-#define SEED_NOUN_EGGS            "eggs"
+#define DEAD_PLANT_COLOUR "#c2a180"
 
 // Definitions for genes (trait groupings)
 #define GENE_BIOCHEMISTRY "biochemistry"
@@ -34,7 +26,7 @@
 #define TRAIT_PRODUCES_POWER       6
 #define TRAIT_JUICY                7
 #define TRAIT_PRODUCT_ICON         8
-#define TRAIT_PLANT_ICON           0
+#define TRAIT_PLANT_ICON           9
 #define TRAIT_CONSUME_GASSES       10
 #define TRAIT_REQUIRES_NUTRIENTS   11
 #define TRAIT_NUTRIENT_CONSUMPTION 12
@@ -65,5 +57,18 @@
 #define TRAIT_BIOLUM_COLOUR        37
 #define TRAIT_IMMUTABLE            38
 #define TRAIT_FLESH_COLOUR         39
-#define TRAIT_SPOROUS              40
-#define TRAIT_BIOLUM_PWR           41
+#define TRAIT_LARGE            	   40
+#define TRAIT_LEAVES_COLOUR        41
+#define TRAIT_PHOTOSYNTHESIS       42
+
+// Seed noun datums
+#define SEED_NOUN_SPORES          "spores"
+#define SEED_NOUN_PITS            "pits"
+#define SEED_NOUN_NODES           "nodes"
+#define SEED_NOUN_CUTTINGS        "cuttings"
+#define SEED_NOUN_SEEDS           "seeds"
+
+#define GROWTH_WORMS      		  "worms"
+#define GROWTH_VINES      		  "vines"
+#define GROWTH_BIOMASS         	  "mass"
+#define GROWTH_MOLD          	  "mold"

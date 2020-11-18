@@ -4,23 +4,9 @@
 /mob/living/can_emote(var/emote_type)
 	return (..() && !(silent && emote_type == AUDIBLE_MESSAGE))
 
-/mob/verb/custom_audible_emote()
-	set name = "Audible Emote"
-	set category = "IC"
-	set desc = "Type in an emote message that will be received by mobs that can hear you."
-
-	custom_emote(m_type = AUDIBLE_MESSAGE)
-
-/mob/verb/custom_visible_emote()
-	set name = "Visible Emote"
-	set category = "IC"
-	set desc = "Type in an emote message that will be received by mobs that can see you."
-
-	custom_emote(m_type = VISIBLE_MESSAGE)
-
 /mob/proc/emote(var/act, var/m_type, var/message)
 	// s-s-snowflake
-	if((src.stat == DEAD || src.status_flags & FAKEDEATH) && act != "deathgasp")
+	if(src.stat == DEAD && act != "deathgasp")
 		return
 	if(usr == src) //client-called emote
 		if (client && (client.prefs.muted & MUTE_IC))
@@ -70,7 +56,7 @@
 	else
 		use_emote.do_emote(src, message)
 
-	for (var/obj/item/implant/I in src)
+	for (var/obj/item/weapon/implant/I in src)
 		if (I.implanted)
 			I.trigger(act, src)
 
@@ -81,7 +67,7 @@
 	var/end_char
 	var/start_char
 	var/name_anchor
-	var/anchor_char = "^"
+	var/anchor_char = get_prefix_key(/decl/prefix/visible_emote)
 
 	if(!message || !emoter)
 		return
@@ -129,7 +115,7 @@
 	nametext = "<B>[emoter]</B>"
 	return pretext + nametext + subtext
 
-/mob/proc/custom_emote(var/m_type = VISIBLE_MESSAGE, var/message = null, var/do_show_observers = TRUE)
+/mob/proc/custom_emote(var/m_type = VISIBLE_MESSAGE, var/message = null)
 
 	if((usr && stat) || (!use_me && usr == src))
 		to_chat(src, "You are unable to emote.")
@@ -142,21 +128,23 @@
 		input = message
 
 	if(input)
-		message = format_emote(src, input)
+		message = format_emote(src, message)
 	else
 		return
-
+	message = process_chat_markup(message)
 	if (message)
 		log_emote("[name]/[key] : [message]")
+	//do not show NPC animal emotes to ghosts, it turns into hellscape
+	var/check_ghosts = client ? /datum/client_preference/ghost_sight : null
 	if(m_type == VISIBLE_MESSAGE)
-		visible_message(message, show_observers = do_show_observers)
+		visible_message(message, checkghosts = check_ghosts)
 	else
-		audible_message(message, ghost_hearing = do_show_observers)
+		audible_message(message, checkghosts = check_ghosts)
 
 // Specific mob type exceptions below.
 /mob/living/silicon/ai/emote(var/act, var/type, var/message)
 	var/obj/machinery/hologram/holopad/T = src.holo
-	if(T?.active_holograms[src]) //Is the AI using a holopad?
+	if(T && T.masters[src]) //Is the AI using a holopad?
 		src.holopad_emote(message)
 	else //Emote normally, then.
 		..()
@@ -164,18 +152,6 @@
 /mob/living/captive_brain/emote(var/message)
 	return
 
-/mob/abstract/observer/emote(var/act, var/type, var/message)
-	if(!message)
-		return
-
-	if(act != "me")
-		return
-
-	log_emote("Ghost/[src.key] : [message]",ckey=key_name(src))
-
-	if(src.client)
-		if(src.client.prefs.muted & (MUTE_DEADCHAT|MUTE_IC))
-			to_chat(src, "<span class='warning'>You cannot emote in deadchat (muted).</span>")
-			return
-
-	. = src.emote_dead(message)
+/mob/observer/ghost/emote(var/act, var/type, var/message)
+	if(message && act == "me")
+		communicate(/decl/communication_channel/dsay, client, message, /decl/dsay_communication/emote)

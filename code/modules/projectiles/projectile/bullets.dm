@@ -1,20 +1,23 @@
 /obj/item/projectile/bullet
 	name = "bullet"
 	icon_state = "bullet"
-	damage = 60
+	fire_sound = 'sound/weapons/gunshot/gunshot_strong.ogg'
+	damage = 50
 	damage_type = BRUTE
-	impact_sounds = list(BULLET_IMPACT_MEAT = SOUNDS_BULLET_MEAT, BULLET_IMPACT_METAL = SOUNDS_BULLET_METAL)
-	nodamage = FALSE
-	check_armor = "bullet"
-	embed = TRUE
-	sharp = TRUE
-	shrapnel_type = /obj/item/material/shard/shrapnel
+	damage_flags = DAM_BULLET | DAM_SHARP
+	nodamage = 0
+	embed = 1
+	penetration_modifier = 1.0
 	var/mob_passthrough_check = 0
 
-	muzzle_type = /obj/effect/projectile/muzzle/bullet
+	muzzle_type = /obj/effect/projectile/bullet/muzzle
+	miss_sounds = list('sound/weapons/guns/miss1.ogg','sound/weapons/guns/miss2.ogg','sound/weapons/guns/miss3.ogg','sound/weapons/guns/miss4.ogg')
+	ricochet_sounds = list('sound/weapons/guns/ricochet1.ogg', 'sound/weapons/guns/ricochet2.ogg',
+							'sound/weapons/guns/ricochet3.ogg', 'sound/weapons/guns/ricochet4.ogg')
+	impact_sounds = list(BULLET_IMPACT_MEAT = SOUNDS_BULLET_MEAT, BULLET_IMPACT_METAL = SOUNDS_BULLET_METAL)
 
-/obj/item/projectile/bullet/on_hit(var/atom/target, var/blocked = 0, var/def_zone = null)
-	if (..(target, blocked, def_zone))
+/obj/item/projectile/bullet/on_hit(var/atom/target, var/blocked = 0)
+	if (..(target, blocked))
 		var/mob/living/L = target
 		shake_camera(L, 3, 2)
 
@@ -23,7 +26,10 @@
 		mob_passthrough_check = 1
 	else
 		mob_passthrough_check = 0
-	return ..()
+	. = ..()
+
+	if(. == 1 && iscarbon(target_mob))
+		damage *= 0.7 //squishy mobs absorb KE
 
 /obj/item/projectile/bullet/can_embed()
 	//prevent embedding if the projectile is passing through the mob
@@ -32,27 +38,17 @@
 	return ..()
 
 /obj/item/projectile/bullet/check_penetrate(var/atom/A)
-	if(!A || !A.density) return 1 //if whatever it was got destroyed when we hit it, then I guess we can just keep going
+	if(QDELETED(A) || !A.density) return 1 //if whatever it was got destroyed when we hit it, then I guess we can just keep going
 
 	if(ismob(A))
 		if(!mob_passthrough_check)
 			return 0
-		if(iscarbon(A))
-			damage *= 0.7 //squishy mobs absorb KE
 		return 1
 
-	var/chance = 0
-	if(istype(A, /turf/simulated/wall))
-		var/turf/simulated/wall/W = A
-		chance = round(damage/W.material.integrity*180)
-	else if(istype(A, /obj/machinery/door))
-		var/obj/machinery/door/D = A
-		chance = round(damage/D.maxhealth*180)
-		if(D.glass) chance *= 2
-	else if(istype(A, /obj/structure/girder))
-		chance = 100
-	else if(istype(A, /obj/machinery) || istype(A, /obj/structure))
-		chance = damage
+	var/chance = damage
+	if(has_extension(A, /datum/extension/penetration))
+		var/datum/extension/penetration/P = get_extension(A, /datum/extension/penetration)
+		chance = P.PenetrationProbability(chance, damage, damage_type)
 
 	if(prob(chance))
 		if(A.opacity)
@@ -65,12 +61,16 @@
 //For projectiles that actually represent clouds of projectiles
 /obj/item/projectile/bullet/pellet
 	name = "shrapnel" //'shrapnel' sounds more dangerous (i.e. cooler) than 'pellet'
-	icon_state = "pellets"
-	damage = 20
+	damage = 37.5
+	//icon_state = "bullet" //TODO: would be nice to have it's own icon state
 	var/pellets = 4			//number of pellets
 	var/range_step = 2		//projectile will lose a fragment each time it travels this distance. Can be a non-integer.
 	var/base_spread = 90	//lower means the pellets spread more across body parts. If zero then this is considered a shrapnel explosion instead of a shrapnel cone
 	var/spread_step = 10	//higher means the pellets spread more across body parts with distance
+
+/obj/item/projectile/bullet/pellet/Bumped()
+	. = ..()
+	bumped = 0 //can hit all mobs in a tile. pellets is decremented inside attack_mob so this should be fine.
 
 /obj/item/projectile/bullet/pellet/proc/get_pellets(var/distance)
 	var/pellet_loss = round((distance - 1)/range_step) //pellets lost due to distance
@@ -114,190 +114,118 @@
 	//If this is a shrapnel explosion, allow mobs that are prone to get hit, too
 	if(. && !base_spread && isturf(loc))
 		for(var/mob/living/M in loc)
-			if(M.lying || !M.CanPass(src, loc)) //Bump if lying or if we would normally Bump.
-				if(Collide(M)) //Bump will make sure we don't hit a mob multiple times
+			if(M.lying || !M.CanPass(src, loc, 0.5, 0)) //Bump if lying or if we would normally Bump.
+				if(Bump(M)) //Bump will make sure we don't hit a mob multiple times
 					return
 
 /* short-casing projectiles, like the kind used in pistols or SMGs */
 
 /obj/item/projectile/bullet/pistol
-	damage = 20
+	fire_sound = 'sound/weapons/gunshot/gunshot_pistol.ogg'
+	damage = 45
+	distance_falloff = 3
 
-/obj/item/projectile/bullet/pistol/medium
-	damage = 25
+/obj/item/projectile/bullet/pistol/holdout
+	damage = 40
+	penetration_modifier = 1.2
+	distance_falloff = 4
 
 /obj/item/projectile/bullet/pistol/strong
-	damage = 30
+	fire_sound = 'sound/weapons/gunshot/gunshot_strong.ogg'
+	damage = 50
+	penetration_modifier = 0.8
+	distance_falloff = 2.5
 	armor_penetration = 15
-
-/obj/item/projectile/bullet/pistol/revolver
-	damage = 30
 
 /obj/item/projectile/bullet/pistol/rubber //"rubber" bullets
 	name = "rubber bullet"
-	check_armor = "melee"
+	damage_flags = 0
 	damage = 5
-	agony = 40
+	agony = 30
 	embed = 0
+
+/obj/item/projectile/bullet/pistol/rubber/holdout
+	agony = 20
+
+//4mm. Tiny, very low damage, does not embed, but has very high penetration. Only to be used for the experimental SMG.
+/obj/item/projectile/bullet/flechette
+	fire_sound = 'sound/weapons/gunshot/gunshot_4mm.ogg'
+	damage = 23
+	penetrating = 1
+	armor_penetration = 70
+	embed = 0
+	distance_falloff = 2
 
 /* shotgun projectiles */
 
 /obj/item/projectile/bullet/shotgun
 	name = "slug"
-	damage = 60
+	fire_sound = 'sound/weapons/gunshot/shotgun.ogg'
+	damage = 65
+	armor_penetration = 10
 
 /obj/item/projectile/bullet/shotgun/beanbag		//because beanbags are not bullets
 	name = "beanbag"
-	check_armor = "melee"
-	damage = 10
+	damage = 25
+	damage_flags = 0
 	agony = 60
 	embed = 0
-	sharp = 0
-
-/obj/item/projectile/bullet/shotgun/incendiary
-	name = "incendiary"
-	check_armor = "melee"
-	damage = 5
-	agony = 0
-	embed = 0
-	sharp = 0
-	incinerate = 10
-
-/obj/item/projectile/bullet/tracking
-	name = "tracking shot"
-	damage = 20
-	embed_chance = 60 // this thing was designed to embed, so it has a 80% base chance to embed (damage + this flat increase)
-	agony = 20
-	shrapnel_type = /obj/item/implant/tracking
-
-/obj/item/projectile/bullet/tracking/do_embed(obj/item/organ/external/organ)
-	. = ..()
-	if(.)
-		var/obj/item/implant/tracking/T = .
-		T.implanted = TRUE
-		T.imp_in = organ.owner
-		T.part = organ
-		LAZYADD(organ.implants, T)
+	armor_penetration = 0
+	distance_falloff = 3
 
 //Should do about 80 damage at 1 tile distance (adjacent), and 50 damage at 3 tiles distance.
 //Overall less damage than slugs in exchange for more damage at very close range and more embedding
 /obj/item/projectile/bullet/pellet/shotgun
 	name = "shrapnel"
-	damage = 13
+	fire_sound = 'sound/weapons/gunshot/shotgun.ogg'
+	damage = 30
 	pellets = 6
 	range_step = 1
 	spread_step = 10
 
-/obj/item/projectile/bullet/pellet/shotgun/canister
-	pellets = 15
-	range_step = 3
-	spread_step = 15
-
 /* "Rifle" rounds */
 
 /obj/item/projectile/bullet/rifle
-	penetrating = 1
-	armor_penetration = 20
-
-/obj/item/projectile/bullet/rifle/a762
-	damage = 35
-
-/obj/item/projectile/bullet/rifle/a556
-	damage = 30
-
-/obj/item/projectile/bullet/rifle/a556/ap
-	damage = 30
+	fire_sound = 'sound/weapons/gunshot/gunshot3.ogg'
+	damage = 45
 	armor_penetration = 25
+	penetration_modifier = 1.5
+	penetrating = 1
+	distance_falloff = 1.5
 
-/obj/item/projectile/bullet/rifle/a145
+/obj/item/projectile/bullet/rifle/military
+	fire_sound = 'sound/weapons/gunshot/gunshot2.ogg'
+	damage = 40
+	armor_penetration = 35
+	penetration_modifier = 1
+
+/obj/item/projectile/bullet/rifle/shell
+	fire_sound = 'sound/weapons/gunshot/sniper.ogg'
 	damage = 80
 	stun = 3
 	weaken = 3
+	penetrating = 3
+	armor_penetration = 70
+	penetration_modifier = 1.2
+	distance_falloff = 0.5
+
+/obj/item/projectile/bullet/rifle/shell/apds
+	damage = 70
 	penetrating = 5
 	armor_penetration = 80
-	hitscan = 1 //so the PTR isn't useless as a sniper weapon
-	maiming = 1
-	maim_rate = 3
-	maim_type = DROPLIMB_BLUNT
-
-/obj/item/projectile/bullet/rifle/vintage
-	name = "vintage bullet"
-	damage = 50
-	weaken = 1
-
-/obj/item/projectile/bullet/rifle/slugger
-	name = "slugger round"
-	damage = 80
-	weaken = 3
-	penetrating = 5
-	armor_penetration = 15
-	maiming = TRUE
-	maim_rate = 3
-	maim_type = DROPLIMB_BLUNT
-
-/obj/item/projectile/bullet/rifle/slugger/on_hit(var/atom/movable/target, var/blocked = 0)
-	if(!istype(target))
-		return FALSE
-	var/throwdir = get_dir(firer, target)
-	target.throw_at(get_edge_target_turf(target, throwdir), 3, 3)
-	..()
-	return TRUE
-
-/obj/item/projectile/bullet/rifle/tranq
-	name = "dart"
-	icon_state = "dart"
-	damage = 5
-	stun = 0
-	weaken = 0
-	drowsy = 0
-	eyeblur = 0
-	damage_type = TOX
-	speed = 0.3
-
-/obj/item/projectile/bullet/rifle/tranq/on_hit(var/atom/target, var/blocked = 0, var/def_zone = null)
-	var/mob/living/L = target
-	if(!(isanimal(target)))
-		if(!(isipc(target)))
-			if(!isrobot(target))
-				L.apply_effect(5, DROWSY, 0)
-				if(def_zone == "torso")
-					if(blocked < 100 && !(blocked < 20))
-						L.emote("yawns")
-					if(blocked < 20)
-						if(L.reagents)	L.reagents.add_reagent(/datum/reagent/soporific, 10)
-				if(def_zone == BP_HEAD && blocked < 100)
-					if(L.reagents)	L.reagents.add_reagent(/datum/reagent/soporific, 15)
-				if(def_zone != "torso" && def_zone != BP_HEAD)
-					if(blocked < 100 && !(blocked < 20))
-						L.emote("yawns")
-					if(blocked < 20)
-						if(L.reagents)	L.reagents.add_reagent(/datum/reagent/soporific, 5)
-
-	if(isanimal(target))
-		target.visible_message("<b>[target]</b> twitches, foaming at the mouth.")
-		L.apply_damage(35, TOX) //temporary until simple_mob paralysis actually works.
-	..()
+	penetration_modifier = 1.5
 
 /* Miscellaneous */
+/obj/item/projectile/bullet/gyro
+	name = "minirocket"
+	fire_sound = 'sound/effects/Explosion1.ogg'
+	var/gyro_devastation = -1
+	var/gyro_heavy_impact = 0
+	var/gyro_light_impact = 2
 
-/obj/item/projectile/bullet/suffocationbullet//How does this even work?
-	name = "co bullet"
-	damage = 20
-	damage_type = OXY
-
-/obj/item/projectile/bullet/cyanideround
-	name = "poison bullet"
-	damage = 40
-	damage_type = TOX
-
-/obj/item/projectile/bullet/burstbullet
-	name = "exploding bullet"
-	damage = 20
-	embed = 0
-	edge = 1
-
-/obj/item/projectile/bullet/burstbullet/on_impact(var/atom/A)
-	explosion(A, -1, 0, 2)
+/obj/item/projectile/bullet/gyro/on_hit(var/atom/target, var/blocked = 0)
+	if(isturf(target))
+		explosion(target, gyro_devastation, gyro_heavy_impact, gyro_light_impact)
 	..()
 
 /obj/item/projectile/bullet/blank
@@ -305,16 +233,12 @@
 	damage = 1
 	embed = 0
 
-/obj/item/projectile/bullet/chameleon
-	damage = 1 // stop trying to murderbone with a fake gun dumbass!!!
-	embed = 0 // nope
-
 /* Practice */
 
 /obj/item/projectile/bullet/pistol/practice
 	damage = 5
 
-/obj/item/projectile/bullet/rifle/a556/practice
+/obj/item/projectile/bullet/rifle/military/practice
 	damage = 5
 
 /obj/item/projectile/bullet/shotgun/practice
@@ -323,94 +247,28 @@
 
 /obj/item/projectile/bullet/pistol/cap
 	name = "cap"
+	invisibility = 101
+	fire_sound = null
 	damage_type = PAIN
+	damage_flags = 0
 	damage = 0
 	nodamage = 1
 	embed = 0
-	sharp = 0
 
-/obj/item/projectile/bullet/pistol/cap/process()
-	loc = null
+/obj/item/projectile/bullet/pistol/cap/Process()
 	qdel(src)
+	return PROCESS_KILL
 
-/obj/item/projectile/bullet/flechette
-	name = "flechette"
-	icon = 'icons/obj/terminator.dmi'
-	icon_state = "flechette_bullet"
+/obj/item/projectile/bullet/rock //spess dust
+	name = "micrometeor"
+	icon_state = "rock"
 	damage = 40
-	damage_type = BRUTE
-	check_armor = "bullet"
-	embed = 1
-	sharp = 1
-	penetrating = 1
-
-	muzzle_type = /obj/effect/projectile/muzzle/pulse
-
-/obj/item/projectile/bullet/flechette/explosive
-	shrapnel_type = /obj/item/material/shard/shrapnel/flechette
-	penetrating = 0
-	damage = 10
-
-/obj/item/projectile/bullet/gauss
-	name = "slug"
-	icon_state = "heavygauss"
-	damage = 45
-	muzzle_type = /obj/effect/projectile/muzzle/gauss
-	embed = 0
-
-/obj/item/projectile/bullet/gauss/highex
-	name ="high-ex shell"
-	damage = 10
-
-/obj/item/projectile/bullet/gauss/highex/on_impact(var/atom/A)
-	explosion(A, -1, 0, 2)
-	..()
-
-/obj/item/projectile/bullet/gauss/highex/on_hit(var/atom/target, var/blocked = 0)
-	explosion(target, -1, 0, 2)
-	sleep(0)
-	var/obj/T = target
-	var/throwdir = get_dir(firer,target)
-	T.throw_at(get_edge_target_turf(target, throwdir),3,3)
-	return 1
-
-/obj/item/projectile/bullet/cannonball
-	name = "cannonball"
-	icon_state = "cannonball"
-	damage = 60
-	embed = 0
-	penetrating = 1
 	armor_penetration = 25
+	life_span = 255
+	distance_falloff = 0
 
-/obj/item/projectile/bullet/cannonball/explosive
-	damage = 30
-	penetrating = 0
-	armor_penetration = 5
-
-/obj/item/projectile/bullet/cannonball/explosive/on_impact(var/atom/A)
-	explosion(A, -1, 1, 2)
+/obj/item/projectile/bullet/rock/New()
+	icon_state = "rock[rand(1,3)]"
+	pixel_x = rand(-10,10)
+	pixel_y = rand(-10,10)
 	..()
-
-/obj/item/projectile/bullet/nuke
-	name = "miniaturized nuclear warhead"
-	icon_state = "nuke"
-	damage = 25
-
-/obj/item/projectile/bullet/nuke/on_impact(var/atom/A)
-	for(var/mob/living/carbon/human/mob in human_mob_list)
-		var/turf/T = get_turf(mob)
-		if(T && (loc.z == T.z))
-			if(ishuman(mob))
-				mob.apply_effect(450, IRRADIATE)
-	new /obj/effect/temp_visual/nuke(A.loc)
-	explosion(A,2,5,9)
-	..()
-
-/obj/item/projectile/bullet/shard
-	name = "shard"
-	icon_state = "shard"
-	damage = 15
-	muzzle_type = /obj/effect/projectile/muzzle/bolt
-
-/obj/item/projectile/bullet/shard/heavy
-	damage = 30

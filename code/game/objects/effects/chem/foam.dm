@@ -8,7 +8,7 @@
 	opacity = 0
 	anchored = 1
 	density = 0
-	layer = OBJ_LAYER + 0.9
+	layer = ABOVE_OBJ_LAYER
 	mouse_opacity = 0
 	animate_movement = 0
 	var/amount = 3
@@ -20,18 +20,15 @@
 	icon_state = "[ismetal? "m" : ""]foam"
 	metal = ismetal
 	playsound(src, 'sound/effects/bubbles2.ogg', 80, 1, -3)
-	addtimer(CALLBACK(src, .proc/tick), 3 + metal * 3)
-	addtimer(CALLBACK(src, .proc/post), 120)
+	spawn(3 + metal * 3)
+		Process()
+		checkReagents()
+	addtimer(CALLBACK(src, .proc/remove_foam), 12 SECONDS)
 
-/obj/effect/effect/foam/proc/tick()
-	process()
-	checkReagents()
-
-/obj/effect/effect/foam/proc/post()
-	STOP_PROCESSING(SSprocessing, src)
-	sleep(30)
+/obj/effect/effect/foam/proc/remove_foam()
+	STOP_PROCESSING(SSobj, src)
 	if(metal)
-		var/obj/structure/foamedmetal/M = new /obj/structure/foamedmetal(src.loc)
+		var/obj/structure/foamedmetal/M = new(src.loc)
 		M.metal = metal
 		M.update_icon()
 	flick("[icon_state]-disolve", src)
@@ -44,11 +41,11 @@
 		for(var/obj/O in T)
 			reagents.touch_obj(O)
 
-/obj/effect/effect/foam/process()
+/obj/effect/effect/foam/Process()
 	if(--amount < 0)
 		return
 
-	for(var/direction in cardinal)
+	for(var/direction in GLOB.cardinal)
 		var/turf/T = get_step(src, direction)
 		if(!T)
 			continue
@@ -72,7 +69,8 @@
 	if(!metal && prob(max(0, exposed_temperature - 475)))
 		flick("[icon_state]-disolve", src)
 
-		QDEL_IN(src, 5)
+		spawn(5)
+			qdel(src)
 
 /obj/effect/effect/foam/Crossed(var/atom/movable/AM)
 	if(metal)
@@ -103,23 +101,23 @@
 			carried_reagents += R.type
 
 /datum/effect/effect/system/foam_spread/start()
-	set waitfor = FALSE
-	var/obj/effect/effect/foam/F = locate() in location
-	if(F)
-		F.amount += amount
-		return
+	spawn(0)
+		var/obj/effect/effect/foam/F = locate() in location
+		if(F)
+			F.amount += amount
+			return
 
-	F = new /obj/effect/effect/foam(location, metal)
-	F.amount = amount
+		F = new /obj/effect/effect/foam(location, metal)
+		F.amount = amount
 
-	if(!metal) // don't carry other chemicals if a metal foam
-		F.create_reagents(10)
+		if(!metal) // don't carry other chemicals if a metal foam
+			F.create_reagents(10)
 
-		if(carried_reagents)
-			for(var/id in carried_reagents)
-				F.reagents.add_reagent(id, 1, safety = 1) //makes a safety call because all reagents should have already reacted anyway
-		else
-			F.reagents.add_reagent(/datum/reagent/water, 1, safety = 1)
+			if(carried_reagents)
+				for(var/id in carried_reagents)
+					F.reagents.add_reagent(id, 1, safety = 1) //makes a safety call because all reagents should have already reacted anyway
+			else
+				F.reagents.add_reagent(/datum/reagent/water, 1, safety = 1)
 
 // wall formed by metal foams, dense and opaque, but easy to break
 
@@ -131,19 +129,18 @@
 	anchored = 1
 	name = "foamed metal"
 	desc = "A lightweight foamed metal wall."
-	var/metal = 1 // 1 = aluminum, 2 = iron
+	var/metal = 1 // 1 = aluminium, 2 = iron
 
 /obj/structure/foamedmetal/New()
 	..()
 	update_nearby_tiles(1)
 
 /obj/structure/foamedmetal/Destroy()
-	density = 0
+	set_density(0)
 	update_nearby_tiles(1)
-	set_opacity(0)
-	return ..()
+	..()
 
-/obj/structure/foamedmetal/update_icon()
+/obj/structure/foamedmetal/on_update_icon()
 	if(metal == 1)
 		icon_state = "metalfoam"
 	else
@@ -157,7 +154,7 @@
 		qdel(src)
 
 /obj/structure/foamedmetal/attack_hand(var/mob/user)
-	if ((HULK in user.mutations) || (prob(75 - metal * 25)))
+	if ((MUTATION_HULK in user.mutations) || (prob(75 - metal * 25)))
 		user.visible_message("<span class='warning'>[user] smashes through the foamed metal.</span>", "<span class='notice'>You smash through the metal foam wall.</span>")
 		qdel(src)
 	else
@@ -167,7 +164,7 @@
 /obj/structure/foamedmetal/attackby(var/obj/item/I, var/mob/user)
 	if(istype(I, /obj/item/grab))
 		var/obj/item/grab/G = I
-		G.affecting.forceMove(src.loc)
+		G.affecting.loc = src.loc
 		visible_message("<span class='warning'>[G.assailant] smashes [G.affecting] through the foamed metal wall.</span>")
 		qdel(I)
 		qdel(src)

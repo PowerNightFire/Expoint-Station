@@ -46,7 +46,7 @@ var opts = {
 
 	//Ping display
 	'lastPang': 0, //Timestamp of the last response from the server.
-	'pangLimit': 70000,
+	'pangLimit': 35000,
 	'pingTime': 0, //Timestamp of when ping sent
 	'pongTime': 0, //Timestamp of when ping received
 	'noResponse': false, //Tracks the state of the previous ping request
@@ -69,6 +69,12 @@ var replaceRegexes = {};
 
 function clamp(val, min, max) {
 	return Math.max(min, Math.min(val, max))
+}
+
+function outerHTML(el) {
+    var wrap = document.createElement('div');
+    wrap.appendChild(el.cloneNode(true));
+    return wrap.innerHTML;
 }
 
 //Polyfill for fucking date now because of course IE8 and below don't support it
@@ -169,63 +175,57 @@ function replaceRegex() {
 	$(this).removeAttr('replaceRegex');
 }
 
-// Get a highlight markup span
-function createHighlightMarkup() {
+//Actually turns the highlight term match into appropriate html
+function addHighlightMarkup(match) {
 	var extra = '';
 	if (opts.highlightColor) {
-		extra += ' style="background-color: ' + opts.highlightColor + '"';
+		extra += ' style="background-color: '+opts.highlightColor+'"';
 	}
-	return '<span class="highlight"' + extra + '></span>';
+	return '<span class="highlight"'+extra+'>'+match+'</span>';
 }
 
-// Get all child text nodes that match a regex pattern
-function getTextNodes(elem, pattern) {
-	var result = $([]);
-	$(elem).contents().each(function(idx, child) {
-		if (child.nodeType === 3 && /\S/.test(child.nodeValue) && pattern.test(child.nodeValue)) {
-			result = result.add(child);
-		}
-		else {
-			result = result.add(getTextNodes(child, pattern));
-		}
-	});
-	return result;
-}
-
-
-// Highlight all text terms matching the registered regex patterns
+//Highlights words based on user settings
 function highlightTerms(el) {
-	var pattern = new RegExp("(" + opts.highlightTerms.join('|') + ")", 'gi');
-	var nodes = getTextNodes(el, pattern);
+	if (el.children.length > 0) {
+		for(var h = 0; h < el.children.length; h++){
+			highlightTerms(el.children[h]);
+		}
+	}
 
-	nodes.each(function (idx, node) {
-		var content = $(node).text();
-		var parent = $(node).parent();
-		var pre = $(node.previousSibling);
-		$(node).remove();
-		content.split(pattern).forEach(function (chunk) {
-			// Get our highlighted span/text node
-			var toInsert = null;
-			if (pattern.test(chunk)) {
-				var tmpElem = $(createHighlightMarkup());
-				tmpElem.text(chunk);
-				toInsert = tmpElem;
-			}
-			else {
-				toInsert = document.createTextNode(chunk);
-			}
+	var hasTextNode = false;
+	for (var node = 0; node < el.childNodes.length; node++)
+	{
+		if (el.childNodes[node].nodeType === 3)
+		{
+			hasTextNode = true;
+			break;
+		}
+	}
 
-			// Insert back into our element
-			if (pre.length == 0) {
-				var result = parent.prepend(toInsert);
-				pre = $(result[0].firstChild);
+	if (hasTextNode) { //If element actually has text
+		var newText = '';
+		for (var c = 0; c < el.childNodes.length; c++) { //Each child element
+			if (el.childNodes[c].nodeType === 3) { //Is it text only?
+				var words = el.childNodes[c].data.split(' ');
+				for (var w = 0; w < words.length; w++) { //Each word in the text
+					var newWord = null;
+					for (var i = 0; i < opts.highlightTerms.length; i++) { //Each highlight term
+						if (opts.highlightTerms[i] && words[w].toLowerCase().indexOf(opts.highlightTerms[i].toLowerCase()) > -1) { //If a match is found
+							newWord = words[w].replace("<", "&lt;").replace(new RegExp(opts.highlightTerms[i], 'gi'), addHighlightMarkup);
+							break;
+						}
+						if (window.console)
+							console.log(newWord)
+					}
+					newText += newWord || words[w].replace("<", "&lt;");
+					newText += w >= words.length ? '' : ' ';
+				}
+			} else { //Every other type of element
+				newText += outerHTML(el.childNodes[c]);
 			}
-			else {
-				pre.after(toInsert);
-				pre = $(pre[0].nextSibling);
-			}
-		});
-	});
+		}
+		el.innerHTML = newText;
+	}
 }
 
 function iconError(E) {
@@ -420,7 +420,7 @@ function output(message, flag) {
 		//Actually do the snap
 		//Stuff we can do after the message shows can go here, in the interests of responsiveness
 		if (opts.highlightTerms && opts.highlightTerms.length > 0) {
-			highlightTerms($(entry));
+			highlightTerms(entry);
 		}
 	}
 
@@ -702,11 +702,15 @@ $(function() {
 		internalOutput('<span class="internal boldnshit">Loaded ping display of: '+(opts.pingDisabled ? 'hidden' : 'visible')+'</span>', 'internal');
 	}
 	if (savedConfig.shighlightTerms) {
-		var savedTerms = $.parseJSON(savedConfig.shighlightTerms).filter(function (entry) {
-			return entry !== null && /\S/.test(entry);
-		});
-		var actualTerms = savedTerms.length != 0 ? savedTerms.join(', ') : null;
+		var savedTerms = $.parseJSON(savedConfig.shighlightTerms);
+		var actualTerms = '';
+		for (var i = 0; i < savedTerms.length; i++) {
+			if (savedTerms[i]) {
+				actualTerms += savedTerms[i] + ', ';
+			}
+		}
 		if (actualTerms) {
+			actualTerms = actualTerms.substring(0, actualTerms.length - 2);
 			internalOutput('<span class="internal boldnshit">Loaded highlight strings of: ' + actualTerms+'</span>', 'internal');
 			opts.highlightTerms = savedTerms;
 		}
@@ -796,7 +800,6 @@ $(function() {
 			href = escaper(href);
 			runByond('?action=openLink&link='+href);
 		}
-		runByond('byond://winset?mapwindow.map.focus=true');
 	});
 
 	//Fuck everything about this event. Will look into alternatives.
@@ -808,7 +811,65 @@ $(function() {
 		if (e.ctrlKey || e.altKey || e.shiftKey) { //Band-aid "fix" for allowing ctrl+c copy paste etc. Needs a proper fix.
 			return;
 		}
-		runByond('byond://winset?mapwindow.map.focus=true');
+
+		e.preventDefault()
+
+		var k = e.which;
+		// Hardcoded because else there would be no feedback message.
+		if (k == 113) { // F2
+			runByond('byond://winset?screenshot=auto');
+			internalOutput('Screenshot taken', 'internal');
+		}
+
+		var c = "";
+		switch (k) {
+			case 8:
+				c = 'BACK';
+			case 9:
+				c = 'TAB';
+			case 13:
+				c = 'ENTER';
+			case 19:
+				c = 'PAUSE';
+			case 27:
+				c = 'ESCAPE';
+			case 33: // Page up
+				c = 'NORTHEAST';
+			case 34: // Page down
+				c = 'SOUTHEAST';
+			case 35: // End
+				c = 'SOUTHWEST';
+			case 36: // Home
+				c = 'NORTHWEST';
+			case 37:
+				c = 'WEST';
+			case 38:
+				c = 'NORTH';
+			case 39:
+				c = 'EAST';
+			case 40:
+				c = 'SOUTH';
+			case 45:
+				c = 'INSERT';
+			case 46:
+				c = 'DELETE';
+			case 93: // That weird thing to the right of alt gr.
+				c = 'APPS';
+
+			default:
+				c = String.fromCharCode(k);
+		}
+
+		if (c.length == 0) {
+			if (!e.shiftKey) {
+				c = c.toLowerCase();
+			}
+			runByond('byond://winset?mapwindow.map.focus=true;mainwindow.input.text='+c);
+			return false;
+		} else {
+			runByond('byond://winset?mapwindow.map.focus=true');
+			return false;
+		}
 	});
 
 	//Mildly hacky fix for scroll issues on mob change (interface gets resized sometimes, messing up snap-scroll)
@@ -972,12 +1033,20 @@ $(function() {
 	$('body').on('submit', '#highlightTermForm', function(e) {
 		e.preventDefault();
 
-		opts.highlightTerms = [];
-		for (var count = 0; count < opts.highlightLimit; count++) {
+		var count = 0;
+		while (count < opts.highlightLimit) {
 			var term = $('#highlightTermInput'+count).val();
-			if (term !== null && /\S/.test(term)) {
-				opts.highlightTerms.push(term.trim().toLowerCase());
+			if (term) {
+				term = term.trim();
+				if (term === '') {
+					opts.highlightTerms[count] = null;
+				} else {
+					opts.highlightTerms[count] = term.toLowerCase();
+				}
+			} else {
+				opts.highlightTerms[count] = null;
 			}
+			count++;
 		}
 
 		var color = $('#highlightColor').val();

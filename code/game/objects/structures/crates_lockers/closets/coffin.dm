@@ -1,31 +1,51 @@
 /obj/structure/closet/coffin
 	name = "coffin"
 	desc = "It's a burial receptacle for the dearly departed."
-	icon_state = "coffin"
-	icon_closed = "coffin"
-	icon_opened = "coffin_open"
-	build_amt = 5
+	icon = 'icons/obj/closets/coffin.dmi'
+	setup = 0
+	closet_appearance = null
 
-/obj/structure/closet/coffin/attackby(obj/item/W as obj, mob/user as mob)
-	if(opened)
-		if(istype(W, /obj/item/grab))
-			var/obj/item/grab/G = W
-			MouseDrop_T(G.affecting, user)      //act like they were dragged onto the closet
-			return 0
-		if(!dropsafety(W))
-			return
-		if(W)
-			user.drop_from_inventory(W,loc)
+	var/screwdriver_time_needed = 7.5 SECONDS
+
+/obj/structure/closet/coffin/examine(mob/user, distance)
+	. = ..()
+	if(distance <= 1 && !opened)
+		to_chat(user, "The lid is [locked ? "tightly secured with screws." : "unsecured and can be opened."]")
+		
+/obj/structure/closet/coffin/can_open()
+	. =  ..()
+	if(locked)
+		return FALSE
+
+/obj/structure/closet/coffin/attackby(obj/item/W, mob/user)
+	if(!opened && isScrewdriver(W))
+		to_chat(user, SPAN_NOTICE("You begin screwing [src]'s lid [locked ? "open" : "shut"]."))
+		playsound(src, 'sound/items/Screwdriver.ogg', 100, 1)
+		if(do_after(user, screwdriver_time_needed, src))	
+			locked = !locked
+			to_chat(user, SPAN_NOTICE("You [locked ? "screw down" : "unscrew"] [src]'s lid."))
 		else
-			user.drop_item()
-	else if(istype(W, /obj/item/stack/packageWrap))
-		return
+			to_chat(user, "You must remain still to [locked ? "unlock" : "lock"] [src].")
 	else
-		attack_hand(user)
-	return
+		..()
 
-/obj/structure/closet/coffin/update_icon()
-	if(!opened)
-		icon_state = icon_closed
-	else
-		icon_state = icon_opened
+/obj/structure/closet/coffin/toggle(mob/user as mob)
+	if(!(opened ? close() : open()))
+		to_chat(user, SPAN_NOTICE("It won't budge!"))
+
+/obj/structure/closet/coffin/req_breakout()
+	. = ..()
+	if(locked)
+		return TRUE
+
+
+/obj/structure/closet/coffin/break_open()
+	locked = FALSE
+	..()
+
+/obj/structure/closet/coffin/wooden
+	name = "coffin"
+	desc = "It's a burial receptacle for the dearly departed."
+	icon = 'icons/obj/closets/coffin_wood.dmi'
+	setup = 0
+	closet_appearance = null

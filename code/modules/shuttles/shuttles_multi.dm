@@ -19,18 +19,16 @@
 	destinations_cache.Cut()
 	for(var/destination_tag in destination_tags)
 		var/obj/effect/shuttle_landmark/landmark = SSshuttle.get_landmark(destination_tag)
-		if(istype(landmark))
+		if (istype(landmark))
 			destinations_cache["[landmark.name]"] = landmark
 
 //Antag play announcements when they leave/return to their home area
 /datum/shuttle/autodock/multi/antag
 	warmup_time = 10 SECONDS //replaced the old move cooldown
-	//This variable is type-abused initially: specify the landmark_tag, not the actual landmark.
+	 //This variable is type-abused initially: specify the landmark_tag, not the actual landmark.
 	var/obj/effect/shuttle_landmark/home_waypoint
 
-	var/cloaked = TRUE
-	var/returned = FALSE
-	var/return_warning_cooldown
+	var/cloaked = 1
 	var/announcer
 	var/arrival_message
 	var/departure_message
@@ -51,23 +49,12 @@
 		announce_departure()
 	..()
 
-/datum/shuttle/autodock/multi/antag/arrived()
-	if(current_location == home_waypoint)
-		returned = TRUE
-
-/datum/shuttle/autodock/multi/antag/launch(var/user)
-	if(returned)
-		if(user)
-			to_chat(user, SPAN_WARNING("You don't have enough fuel for another launch!"))
-		return //Nada, can't go back.
-	..(user)
-
 /datum/shuttle/autodock/multi/antag/proc/announce_departure()
 	if(cloaked || isnull(departure_message))
 		return
-	command_announcement.Announce(departure_message, announcer || "[current_map.boss_name]")
+	command_announcement.Announce(departure_message, announcer || "[GLOB.using_map.boss_name]")
 
 /datum/shuttle/autodock/multi/antag/proc/announce_arrival()
 	if(cloaked || isnull(arrival_message))
 		return
-	command_announcement.Announce(arrival_message, announcer || "[current_map.boss_name]")
+	command_announcement.Announce(arrival_message, announcer || "[GLOB.using_map.boss_name]")

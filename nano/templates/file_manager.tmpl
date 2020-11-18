@@ -1,8 +1,8 @@
 {{if data.error}}
-	<h2>An error has occured and this program can not continue.</h2>
+	<h2>An error has occured:</h2>
 	Additional information: {{:data.error}}<br>
 	<i>Please try again. If the problem persists contact your system administrator for assistance.</i>
-	{{:helper.link('Restart program', null, { "PRG_closefile" : 1 })}}
+	{{:helper.link('Back to menu', null, { "PRG_closefile" : 1 })}}
 {{else}}
 	{{if data.filename}}
 		<h2>Viewing file {{:data.filename}}</h2>
@@ -28,11 +28,6 @@
 					{{:helper.link('DELETE', null, { "PRG_deletefile" : value.name }, value.undeletable ? 'disabled' : null)}}
 					{{:helper.link('RENAME', null, { "PRG_rename" : value.name }, value.undeletable ? 'disabled' : null)}}
 					{{:helper.link('CLONE', null, { "PRG_clone" : value.name }, value.undeletable ? 'disabled' : null)}}
-					{{if !value.encrypted}}
-						{{:helper.link('ENCRYPT', null, { "PRG_encrypt" : value.name }, (value.undeletable) ? 'disabled' : null)}}
-					{{else}}
-						{{:helper.link('DECRYPT', null, { "PRG_decrypt" : value.name }, (value.undeletable) ? 'disabled' : null)}}
-					{{/if}}
 					{{if data.usbconnected}}
 						{{:helper.link('EXPORT', null, { "PRG_copytousb" : value.name }, value.undeletable ? 'disabled' : null)}}
 					{{/if}}

@@ -18,16 +18,16 @@ var/global/list/map_sectors = list()
 	opacity = 1
 	density = 1
 
-/turf/unsimulated/map/Initialize(mapload)
-	. = ..()
+/turf/unsimulated/map/New()
+	..()
 	name = "[x]-[y]"
 	var/list/numbers = list()
 
-	if(x == 1 || x == current_map.overmap_size)
+	if(x == 1 || x == GLOB.using_map.overmap_size)
 		numbers += list("[round(y/10)]","[round(y%10)]")
-		if(y == 1 || y == current_map.overmap_size)
+		if(y == 1 || y == GLOB.using_map.overmap_size)
 			numbers += "-"
-	if(y == 1 || y == current_map.overmap_size)
+	if(y == 1 || y == GLOB.using_map.overmap_size)
 		numbers += list("[round(x/10)]","[round(x%10)]")
 
 	for(var/i = 1 to numbers.len)
@@ -37,12 +37,12 @@ var/global/list/map_sectors = list()
 		if(y == 1)
 			I.pixel_y = 3
 			I.pixel_x = 5*i + 4
-		if(y == current_map.overmap_size)
+		if(y == GLOB.using_map.overmap_size)
 			I.pixel_y = world.icon_size - 9
 			I.pixel_x = 5*i + 4
 		if(x == 1)
 			I.pixel_x = 5*i - 2
-		if(x == current_map.overmap_size)
+		if(x == GLOB.using_map.overmap_size)
 			I.pixel_x = 5*i + 2
 		overlays += I
 
@@ -77,3 +77,8 @@ proc/toggle_move_stars(zlevel, direction)
 						AM.throw_at(get_step(T,reverse_direction(direction)), 5, 1)
 						CHECK_TICK
 			CHECK_TICK
+
+/proc/is_edge_turf(turf/T) //borrowed from random_map.dm:45
+	var/area/A = get_area(T)
+	var/list/dimensions = A.get_dimensions()
+	return T.x <= TRANSITIONEDGE || T.x >= (dimensions["x"] - TRANSITIONEDGE + 1) || T.y <= TRANSITIONEDGE || T.y >= (dimensions["y"] - TRANSITIONEDGE + 1)

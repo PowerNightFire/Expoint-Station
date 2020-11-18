@@ -6,7 +6,6 @@
 		)
 
 /datum/event/psi/wail/apply_psi_effect(var/datum/psi_complexus/psi)
-	..()
 	var/annoyed
 	if(prob(1))
 		psi.stunned(1)

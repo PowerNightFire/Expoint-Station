@@ -2,74 +2,67 @@
 // Other harvested materials from plants (that are not food)
 // **********************
 
-/obj/item/grown // Grown weapons
-	name = "grown_weapon"
-	icon = 'icons/obj/weapons.dmi'
-	item_icons = list(
-		slot_l_hand_str = 'icons/mob/items/lefthand_grown.dmi',
-		slot_r_hand_str = 'icons/mob/items/righthand_grown.dmi',
+/obj/item/weapon/bananapeel
+	name = "banana peel"
+	desc = "A peel from a banana."
+	icon = 'icons/obj/items.dmi'
+	icon_state = "banana_peel"
+	item_state = "banana_peel"
+	w_class = ITEM_SIZE_SMALL
+	throwforce = 0
+	throw_speed = 4
+	throw_range = 20
+
+/obj/item/weapon/carvable
+	name = "master carvable item"
+	desc = "you should not see this."
+	var/list/allow_tool_types = list(
+		/obj/item/weapon/material/knife,
+		/obj/item/weapon/material/hatchet,
+		/obj/item/weapon/circular_saw
+	)
+	var/carve_time = 5 SECONDS
+	var/result_type = null
+
+/obj/item/weapon/carvable/attackby(obj/item/weapon/W, mob/user)
+	..()
+	if (result_type && is_type_in_list(W, allow_tool_types))
+		user.visible_message(
+			SPAN_ITALIC("\The [user] starts to carve \the [src] with \a [W]."),
+			blind_message = SPAN_ITALIC("You can hear quiet scraping."),
+			range = 5
 		)
-	var/plantname
-	var/potency = 1
-
-/obj/item/grown/Initialize(newloc,planttype)
-	. = ..()
-
-	var/datum/reagents/R = new/datum/reagents(50)
-	reagents = R
-	R.my_atom = src
-
-	//Handle some post-spawn var stuff.
-	if(planttype)
-		plantname = planttype
-		var/datum/seed/S = SSplants.seeds[plantname]
-		if(!S || !S.chems)
+		if (!do_after(user, carve_time, src))
+			to_chat(user, SPAN_ITALIC("You stop carving \the [src]."))
 			return
+		var/result = new result_type()
+		user.put_in_hands(result)
+		user.visible_message(
+			SPAN_ITALIC("\The [user] finishes carving \a [result]."),
+			range = 5
+		)
+		qdel(src)
 
-		potency = S.get_trait(TRAIT_POTENCY)
-
-		for(var/rid in S.chems)
-			var/list/reagent_data = S.chems[rid]
-			var/rtotal = reagent_data[1]
-			if(reagent_data.len > 1 && potency > 0)
-				rtotal += round(potency/reagent_data[2])
-			reagents.add_reagent(rid,max(1,rtotal))
-
-/obj/item/corncob
+/obj/item/weapon/carvable/corncob
 	name = "corn cob"
 	desc = "A reminder of meals gone by."
 	icon = 'icons/obj/trash.dmi'
 	icon_state = "corncob"
 	item_state = "corncob"
-	w_class = ITEMSIZE_SMALL
+	w_class = ITEM_SIZE_SMALL
 	throwforce = 0
 	throw_speed = 4
 	throw_range = 20
+	result_type = /obj/item/clothing/mask/smokable/pipe/cobpipe
 
-/obj/item/corncob/attackby(obj/item/W as obj, mob/user as mob)
-	..()
-	if(istype(W, /obj/item/surgery/circular_saw) || istype(W, /obj/item/material/hatchet) || istype(W, /obj/item/material/kitchen/utensil/knife) || istype(W, /obj/item/material/knife) || istype(W, /obj/item/material/knife/ritual))
-		to_chat(user, "<span class='notice'>You use [W] to fashion a pipe out of the corn cob!</span>")
-		new /obj/item/clothing/mask/smokable/pipe/cobpipe (user.loc)
-		qdel(src)
-		return
+/obj/item/weapon/carvable/corncob/hollowpineapple
+	name = "hollow pineapple"
+	icon_state = "hollowpineapple"
+	item_state = "hollowpineapple"
+	result_type = /obj/item/weapon/reagent_containers/food/drinks/glass2/pineapple
 
-/obj/item/bananapeel
-	name = "banana peel"
-	desc = "A peel from a banana."
-	icon = 'icons/obj/trash.dmi'
-	item_icons = list(
-		slot_l_hand_str = 'icons/mob/items/lefthand_grown.dmi',
-		slot_r_hand_str = 'icons/mob/items/righthand_grown.dmi'
-		)
-	icon_state = "banana_peel"
-	item_state = "banana_peel"
-	w_class = ITEMSIZE_SMALL
-	throwforce = 0
-	throw_speed = 4
-	throw_range = 20
-
-/obj/item/bananapeel/Crossed(AM as mob|obj)
-	if (istype(AM, /mob/living))
-		var/mob/living/M = AM
-		M.slip("the [src.name]",4)
+/obj/item/weapon/carvable/corncob/hollowcoconut
+	name = "hollow coconut"
+	icon_state = "hollowcoconut"
+	item_state = "hollowcoconut"
+	result_type = /obj/item/weapon/reagent_containers/food/drinks/glass2/coconut

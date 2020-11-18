@@ -1,44 +1,28 @@
 /mob/living/silicon/robot/slip_chance(var/prob_slip)
-	if(module?.no_slip)
-		return FALSE
+	if(module && module.no_slip)
+		return 0
 	..(prob_slip)
+
+/mob/living/silicon/robot/Check_Shoegrip()
+	if(module && module.no_slip)
+		return 1
+	return 0
 
 /mob/living/silicon/robot/Allow_Spacemove()
 	if(module)
-		for(var/obj/item/tank/jetpack/J in module.modules)
+		for(var/obj/item/weapon/tank/jetpack/J in module.equipment)
 			if(J && J.allow_thrust(0.01))
-				return TRUE
+				return 1
 	. = ..()
 
-// NEW: Different power usage depending on whether driving or jetpacking. space movement is easier
-/mob/living/silicon/robot/SelfMove(turf/n, direct)
-	if(istype(n, /turf/space))
-		if(cell_use_power(jetpackComponent.active_usage))
-			return ..()
 
-	if(!is_component_functioning("actuator"))
-		return FALSE
-
-	if(cell_use_power(actuatorComponent.active_usage))
-		return ..()
-
-/mob/living/silicon/robot/Move()
-	. = ..()
-	
-	if(client)
-		var/turf/B = GetAbove(get_turf(src))
-		if(up_hint)
-			up_hint.icon_state = "uphint[(B ? !!B.is_hole : 0)]"
-
+ //No longer needed, but I'll leave it here incase we plan to re-use it.
 /mob/living/silicon/robot/movement_delay()
-	. = speed
-	. += get_pulling_movement_delay()
+	var/tally = ..() //Incase I need to add stuff other than "speed" later
 
-/mob/living/silicon/robot/get_pulling_movement_delay()
-	. = ..()
+	tally += speed
 
-	if(ishuman(pulling))
-		var/mob/living/carbon/human/H = pulling
-		if(H.species.slowdown > speed)
-			. += H.species.slowdown - speed
-		. += H.ClothesSlowdown()
+	if(module_active && istype(module_active,/obj/item/borg/combat/mobility))
+		tally-=3
+
+	return tally

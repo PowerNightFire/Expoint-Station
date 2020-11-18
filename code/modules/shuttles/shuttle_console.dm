@@ -1,23 +1,19 @@
 /obj/machinery/computer/shuttle_control
 	name = "shuttle control console"
 	icon = 'icons/obj/computer.dmi'
+	icon_keyboard = "atmos_key"
 	icon_screen = "shuttle"
-	light_color = LIGHT_COLOR_CYAN
+	base_type = /obj/machinery/computer/shuttle_control
 
-	var/shuttle_tag      // Used to coordinate data in shuttle controller.
-	var/hacked = FALSE   // Has been emagged, no access restrictions.
+	var/shuttle_tag  // Used to coordinate data in shuttle controller.
+	var/hacked = 0   // Has been emagged, no access restrictions.
 
 	var/ui_template = "shuttle_control_console.tmpl"
 
-/obj/machinery/computer/shuttle_control/attack_hand(mob/user)
-	ui_interact(user)
 
-/obj/machinery/computer/shuttle_control/attack_ai(mob/user)
+/obj/machinery/computer/shuttle_control/interface_interact(mob/user)
 	ui_interact(user)
-
-/obj/machinery/computer/shuttle_control/attack_ghost(var/mob/abstract/observer/user)
-	if(check_rights(R_ADMIN, 0, user))
-		ui_interact(user)
+	return TRUE
 
 /obj/machinery/computer/shuttle_control/proc/get_ui_data(var/datum/shuttle/autodock/shuttle)
 	var/shuttle_state
@@ -38,7 +34,7 @@
 				shuttle_status = "Standing-by at \the [shuttle.get_location_name()]."
 
 		if(WAIT_LAUNCH, FORCE_LAUNCH)
-			shuttle_status = "Shuttle has recieved command and will depart shortly."
+			shuttle_status = "Shuttle has received command and will depart shortly."
 		if(WAIT_ARRIVE)
 			shuttle_status = "Proceeding to \the [shuttle.get_destination_name()]."
 		if(WAIT_FINISH)
@@ -47,12 +43,14 @@
 	return list(
 		"shuttle_status" = shuttle_status,
 		"shuttle_state" = shuttle_state,
-		"has_docking" = shuttle.active_docking_controller? 1 : 0,
-		"docking_status" = shuttle.active_docking_controller? shuttle.active_docking_controller.get_docking_status() : null,
-		"docking_override" = shuttle.active_docking_controller? shuttle.active_docking_controller.override_enabled : null,
+		"has_docking" = shuttle.shuttle_docking_controller? 1 : 0,
+		"docking_status" = shuttle.shuttle_docking_controller? shuttle.shuttle_docking_controller.get_docking_status() : null,
+		"docking_override" = shuttle.shuttle_docking_controller? shuttle.shuttle_docking_controller.override_enabled : null,
 		"can_launch" = shuttle.can_launch(),
 		"can_cancel" = shuttle.can_cancel(),
 		"can_force" = shuttle.can_force(),
+		"timeleft" = max(round((shuttle.arrive_time - world.time) / 10, 1), 0),
+		"docking_codes" = shuttle.docking_codes
 	)
 
 // This is a subset of the actual checks; contains those that give messages to the user.
@@ -86,6 +84,12 @@
 		shuttle.cancel_launch(src)
 		return TOPIC_REFRESH
 
+	if(href_list["set_codes"])
+		var/newcode = input("Input new docking codes", "Docking codes", shuttle.docking_codes) as text|null
+		if (newcode && CanInteract(usr, GLOB.default_state))
+			shuttle.set_docking_codes(uppertext(newcode))
+		return TOPIC_REFRESH
+
 /obj/machinery/computer/shuttle_control/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1)
 	var/datum/shuttle/autodock/shuttle = SSshuttle.shuttles[shuttle_tag]
 	if (!istype(shuttle))
@@ -94,23 +98,22 @@
 
 	var/list/data = get_ui_data(shuttle)
 
-	ui = SSnanoui.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if(!ui)
 		ui = new(user, src, ui_key, ui_template, "[shuttle_tag] Shuttle Control", 470, 450)
 		ui.set_initial_data(data)
 		ui.open()
 		ui.set_auto_update(1)
 
-/obj/machinery/computer/shuttle_control/Topic(href_list, href_list)
-	..()
-	handle_topic_href(SSshuttle.shuttles[shuttle_tag], href_list, usr)
+/obj/machinery/computer/shuttle_control/OnTopic(user, href_list)
+	return handle_topic_href(SSshuttle.shuttles[shuttle_tag], href_list, user)
 
 /obj/machinery/computer/shuttle_control/emag_act(var/remaining_charges, var/mob/user)
-	if(!hacked)
+	if (!hacked)
 		req_access = list()
-		hacked = TRUE
+		hacked = 1
 		to_chat(user, "You short out the console's ID checking system. It's now available to everyone!")
-		return TRUE
+		return 1
 
 /obj/machinery/computer/shuttle_control/bullet_act(var/obj/item/projectile/Proj)
 	visible_message("\The [Proj] ricochets off \the [src]!")

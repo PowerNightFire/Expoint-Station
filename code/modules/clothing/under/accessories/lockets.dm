@@ -4,14 +4,11 @@
 	icon_state = "locket"
 	item_state = "locket"
 	slot_flags = 0
-	w_class = ITEMSIZE_SMALL
+	w_class = ITEM_SIZE_SMALL
 	slot_flags = SLOT_MASK | SLOT_TIE
 	var/base_icon
 	var/open
 	var/obj/item/held //Item inside locket.
-
-	drop_sound = 'sound/items/drop/ring.ogg'
-	pickup_sound = 'sound/items/pickup/ring.ogg'
 
 /obj/item/clothing/accessory/locket/attack_self(mob/user as mob)
 	if(!base_icon)
@@ -27,7 +24,7 @@
 		icon_state = "[base_icon]_open"
 		if(held)
 			to_chat(user, "\The [held] falls out!")
-			held.forceMove(get_turf(user))
+			held.dropInto(user.loc)
 			src.held = null
 	else
 		icon_state = "[base_icon]"
@@ -37,12 +34,13 @@
 		to_chat(user, "You have to open it first.")
 		return
 
-	if(istype(O,/obj/item/paper) || istype(O, /obj/item/photo))
+	if(istype(O,/obj/item/weapon/paper) || istype(O, /obj/item/weapon/photo))
 		if(held)
 			to_chat(usr, "\The [src] already has something inside it.")
 		else
+			if(!user.unEquip(O, src))
+				return
 			to_chat(usr, "You slip [O] into [src].")
-			user.drop_from_inventory(O,src)
 			src.held = O
 		return
 	..()

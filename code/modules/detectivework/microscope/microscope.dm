@@ -10,88 +10,109 @@
 	var/obj/item/sample = null
 	var/report_num = 0
 
-/obj/machinery/microscope/attackby(obj/item/W as obj, mob/user as mob)
+/obj/machinery/microscope/Destroy()
+	if(sample)
+		sample.dropInto(loc)
+	..()
+
+/obj/machinery/microscope/attackby(obj/item/W, mob/user)
 
 	if(sample)
 		to_chat(user, "<span class='warning'>There is already a slide in the microscope.</span>")
 		return
 
-	if(istype(W, /obj/item/forensics/slide) || istype(W, /obj/item/sample/print))
+	if(istype(W))
+		if(istype(W, /obj/item/weapon/evidencebag))
+			var/obj/item/weapon/evidencebag/B = W
+			if(B.stored_item)
+				to_chat(user, "<span class='notice'>You insert \the [B.stored_item] from \the [B] into the microscope.</span>")
+				B.stored_item.forceMove(src)
+				sample = B.stored_item
+				B.empty()
+				return
+		if(!user.unEquip(W, src))
+			return
 		to_chat(user, "<span class='notice'>You insert \the [W] into the microscope.</span>")
-		user.unEquip(W)
-		W.forceMove(src)
 		sample = W
 		update_icon()
-		return
 
-/obj/machinery/microscope/attack_hand(mob/user)
-
+/obj/machinery/microscope/physical_attack_hand(mob/user)
+	. = TRUE
 	if(!sample)
 		to_chat(user, "<span class='warning'>The microscope has no sample to examine.</span>")
 		return
 
 	to_chat(user, "<span class='notice'>The microscope whirrs as you examine \the [sample].</span>")
 
-	if(!do_after(user, 25) || !sample)
+	if(!user.do_skilled(25, SKILL_FORENSICS, src) || !sample)
+		to_chat(user, "<span class='notice'>You stop examining \the [sample].</span>")
+		return
+
+	if(!user.skill_check(SKILL_FORENSICS, SKILL_ADEPT))
+		to_chat(user, "<span class='warning'>You can't figure out what it means...</span>")
 		return
 
 	to_chat(user, "<span class='notice'>Printing findings now...</span>")
-	var/obj/item/paper/report = new()
-	var/pname
-	var/info
-	report.stamped = list(/obj/item/stamp)
+	var/obj/item/weapon/paper/report = new(get_turf(src))
+	report.stamped = list(/obj/item/weapon/stamp)
 	report.overlays = list("paper_stamped")
 	report_num++
 
-	if(istype(sample, /obj/item/forensics/slide))
-		var/obj/item/forensics/slide/slide = sample
-		if(slide.has_swab)
-			var/obj/item/forensics/swab/swab = slide.has_swab
+	var/list/evidence = list()
+	var/scaned_object = sample.name
+	if(istype(sample, /obj/item/weapon/forensics/swab))
+		var/obj/item/weapon/forensics/swab/swab = sample
+		evidence["gunshot_residue"] = swab.gunshot_residue_sample.Copy()
+	else if(istype(sample, /obj/item/weapon/sample/fibers))
+		var/obj/item/weapon/sample/fibers/fibers = sample
+		scaned_object = fibers.object
+		evidence["fibers"] = fibers.evidence.Copy()
+	else if(istype(sample, /obj/item/weapon/sample/print))
+		var/obj/item/weapon/sample/print/card = sample
+		scaned_object = card.object ? card.object : card.name
+		evidence["prints"] = card.evidence.Copy()
+	else
+		if(sample.fingerprints)
+			evidence["prints"] = sample.fingerprints.Copy()
+		if(sample.suit_fibers)
+			evidence["fibers"] = sample.suit_fibers.Copy()
+		if(sample.gunshot_residue)
+			evidence["gunshot_residue"] = sample.gunshot_residue.Copy()
 
-			pname = "GSR report #[++report_num]: [swab.name]"
-			info = "<b>Scanned item:</b><br>[swab.name]<br><br>"
-
-			if(swab.gsr)
-				info += "Residue from a [swab.gsr] bullet detected."
-			else
-				info += "No gunpowder residue found."
-
-		else if(slide.has_sample)
-			var/obj/item/sample/fibers/fibers = slide.has_sample
-			pname = "Fiber report #[++report_num]: [initial(fibers.name)]"
-			info = "<b>Scanned item:</b><br>[initial(fibers.name)]<br><br>"
-			if(fibers.evidence)
-				info = "Molecular analysis on provided sample has determined the presence of unique fiber strings.<br><br>"
-				for(var/fiber in fibers.evidence)
-					info += "<span class='notice'>Most likely match for fibers: [fiber]</span><br><br>"
-			else
-				info += "No fibers found."
+	report.SetName("Forensic report #[++report_num]: [sample.name]")
+	report.info = "<b>Scanned item:</b><br>[scaned_object]<br><br>"
+	if("gunshot_residue" in evidence)
+		report.info += "<b>Gunpowder residue analysis report #[report_num]</b>: [scaned_object]<br>"
+		if(evidence["gunshot_residue"])
+			report.info += "Residue from a [evidence["gunshot_residue"]] bullet detected."
 		else
-			pname = "Empty slide report #[report_num]"
-			info = "Evidence suggests that there's nothing in this slide."
-	else if(istype(sample, /obj/item/sample/print))
-		pname = "Fingerprint report #[report_num]: [sample.name]"
-		info = "<b>Fingerprint analysis report #[report_num]</b>: [sample.name]<br>"
-		var/obj/item/sample/print/card = sample
-		if(card.evidence && card.evidence.len)
-			info += "Surface analysis has determined unique fingerprint strings:<br><br>"
-			for(var/prints in card.evidence)
-				info += "<span class='notice'>Fingerprint string: </span>"
-				if(!is_complete_print(prints))
-					info += "INCOMPLETE PRINT"
+			report.info += "No gunpowder residue found."
+	if("fibers" in evidence)
+		if(LAZYLEN(evidence["fibers"]))
+			report.info += "Molecular analysis on provided sample has determined the presence of unique fiber strings.<br><br>"
+			for(var/fiber in evidence["fibers"])
+				report.info += "<span class='notice'>Most likely match for fibers: [fiber]</span><br><br>"
+		else
+			report.info += "No fibers found."
+	if("prints" in evidence)
+		report.info += "<b>Fingerprint analysis report</b>: [scaned_object]<br>"
+		if(LAZYLEN(evidence["prints"]))
+			report.info += "Surface analysis has determined unique fingerprint strings:<br><br>"
+			for(var/prints in evidence["prints"])
+				report.info += "<span class='notice'>Fingerprint string: </span>"
+				if(!is_complete_print(evidence["prints"][prints]))
+					report.info += "INCOMPLETE PRINT"
 				else
-					info += "[prints]"
-				info += "<br>"
+					report.info += "[prints]"
+				report.info += "<br>"
 		else
-			info += "No information available."
-
-	report.set_content_unsafe(pname, info)
+			report.info += "No information available."
 
 	if(report)
 		report.update_icon()
 		if(report.info)
 			to_chat(user, report.info)
-	print(report)
+	return
 
 /obj/machinery/microscope/proc/remove_sample(var/mob/living/remover)
 	if(!istype(remover) || remover.incapacitated() || !Adjacent(remover))
@@ -100,7 +121,6 @@
 		to_chat(remover, "<span class='warning'>\The [src] does not have a sample in it.</span>")
 		return
 	to_chat(remover, "<span class='notice'>You remove \the [sample] from \the [src].</span>")
-	sample.forceMove(get_turf(src))
 	remover.put_in_hands(sample)
 	sample = null
 	update_icon()
@@ -114,7 +134,9 @@
 	else
 		return ..()
 
-/obj/machinery/microscope/update_icon()
+/obj/machinery/microscope/on_update_icon()
 	icon_state = "microscope"
+	if(stat & NOPOWER)
+		icon_state += "_unpowered"
 	if(sample)
-		icon_state += "slide"
+		icon_state += "_slide"

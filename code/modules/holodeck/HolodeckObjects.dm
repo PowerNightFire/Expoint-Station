@@ -6,7 +6,11 @@
 /turf/simulated/floor/holofloor
 	thermal_conductivity = 0
 
-/turf/simulated/floor/holofloor/attackby(obj/item/W as obj, mob/user as mob)
+// the new Diona Death Prevention Feature: gives an average amount of lumination
+/turf/simulated/floor/holofloor/get_lumcount(var/minlum = 0, var/maxlum = 1)
+	return 0.8
+
+/turf/simulated/floor/holofloor/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	return
 	// HOLOFLOOR DOES NOT GIVE A FUCK
 
@@ -14,11 +18,22 @@
 	return
 
 /turf/simulated/floor/holofloor/carpet
-	name = "carpet"
+	name = "brown carpet"
 	icon = 'icons/turf/flooring/carpet.dmi'
-	icon_state = "carpet"
+	icon_state = "brown"
 	initial_flooring = /decl/flooring/carpet
-	footstep_sound = /decl/sound_category/carpet_footstep
+
+/turf/simulated/floor/holofloor/concrete
+	name = "brown carpet"
+	icon = 'icons/turf/flooring/carpet.dmi'
+	icon_state = "brown"
+	initial_flooring = /decl/flooring/carpet
+
+/turf/simulated/floor/holofloor/concrete
+	name = "floor"
+	icon = 'icons/turf/flooring/misc.dmi'
+	icon_state = "concrete"
+	initial_flooring = null
 
 /turf/simulated/floor/holofloor/tiled
 	name = "floor"
@@ -26,33 +41,27 @@
 	icon_state = "steel"
 	initial_flooring = /decl/flooring/tiling
 
-/turf/simulated/floor/holofloor/tiled/ramp
-	name = "foot ramp"
-	icon = 'icons/turf/flooring/tiles.dmi'
-	icon_state = "ramptop"
-	initial_flooring = /decl/flooring/reinforced/ramp
-
-/turf/simulated/floor/holofloor/tiled/ramp/bottom
-	name = "foot ramp"
-	icon = 'icons/turf/flooring/tiles.dmi'
-	icon_state = "rampbot"
-	initial_flooring = /decl/flooring/reinforced/ramp/bottom
-
 /turf/simulated/floor/holofloor/tiled/dark
 	name = "dark floor"
 	icon_state = "dark"
 	initial_flooring = /decl/flooring/tiling/dark
 
+/turf/simulated/floor/holofloor/tiled/stone
+	name = "stone floor"
+	icon_state = "stone"
+	initial_flooring = /decl/flooring/tiling/stone
+
 /turf/simulated/floor/holofloor/lino
 	name = "lino"
 	icon = 'icons/turf/flooring/linoleum.dmi'
-	icon_state = "lino_grey"
-	initial_flooring = /decl/flooring/linoleum/grey
+	icon_state = "lino"
+	initial_flooring = /decl/flooring/linoleum
 
 /turf/simulated/floor/holofloor/wood
 	name = "wooden floor"
 	icon = 'icons/turf/flooring/wood.dmi'
 	icon_state = "wood"
+	color = WOOD_COLOR_CHOCOLATE
 	initial_flooring = /decl/flooring/wood
 
 /turf/simulated/floor/holofloor/grass
@@ -60,7 +69,6 @@
 	icon = 'icons/turf/flooring/grass.dmi'
 	icon_state = "grass0"
 	initial_flooring = /decl/flooring/grass
-	footstep_sound = /decl/sound_category/grass_footstep
 
 /turf/simulated/floor/holofloor/snow
 	name = "snow"
@@ -69,57 +77,43 @@
 	base_icon = 'icons/turf/floors.dmi'
 	icon_state = "snow"
 	base_icon_state = "snow"
-	footstep_sound = /decl/sound_category/snow_footstep
+
+/turf/simulated/floor/holofloor/space
+	icon = 'icons/turf/space.dmi'
+	name = "\proper space"
+	icon_state = "0"
 
 /turf/simulated/floor/holofloor/reinforced
 	icon = 'icons/turf/flooring/tiles.dmi'
 	initial_flooring = /decl/flooring/reinforced
 	name = "reinforced holofloor"
 	icon_state = "reinforced"
-	footstep_sound = /decl/sound_category/tiles_footstep
 
-/turf/simulated/floor/holofloor/space
-	icon = 'icons/turf/space.dmi'
-	name = "\proper space"
-	icon_state = "0"
-	footstep_sound = null
-	plane = PLANE_SPACE_BACKGROUND
-	dynamic_lighting = 0
-
-/turf/simulated/floor/holofloor/space/Initialize()
-	. = ..()
+/turf/simulated/floor/holofloor/space/New()
 	icon_state = "[((x + y) ^ ~(x * y) + z) % 25]"
-	var/image/I = image('icons/turf/space_parallax1.dmi',"[icon_state]")
-	I.plane = PLANE_SPACE_DUST
-	I.alpha = 80
-	I.blend_mode = BLEND_ADD
-	add_overlay(I)
 
 /turf/simulated/floor/holofloor/beach
 	desc = "Uncomfortably gritty for a hologram."
 	base_desc = "Uncomfortably gritty for a hologram."
 	icon = 'icons/misc/beach.dmi'
-	icon_state = "sand"
-	base_icon_state = "sand"
 	base_icon = 'icons/misc/beach.dmi'
 	initial_flooring = null
-	footstep_sound = /decl/sound_category/sand_footstep
 
 /turf/simulated/floor/holofloor/beach/sand
 	name = "sand"
+	icon_state = "desert0"
+	base_icon_state = "desert0"
 
 /turf/simulated/floor/holofloor/beach/coastline
 	name = "coastline"
 	icon = 'icons/misc/beach2.dmi'
 	icon_state = "sandwater"
 	base_icon_state = "sandwater"
-	footstep_sound = /decl/sound_category/water_footstep
 
 /turf/simulated/floor/holofloor/beach/water
 	name = "water"
 	icon_state = "seashallow"
 	base_icon_state = "seashallow"
-	footstep_sound = /decl/sound_category/water_footstep
 
 /turf/simulated/floor/holofloor/desert
 	name = "desert sand"
@@ -131,12 +125,11 @@
 	icon = 'icons/turf/flooring/asteroid.dmi'
 	base_icon = 'icons/turf/flooring/asteroid.dmi'
 	initial_flooring = null
-	footstep_sound = /decl/sound_category/sand_footstep
 
-/turf/simulated/floor/holofloor/desert/Initialize()
-	. = ..()
+/turf/simulated/floor/holofloor/desert/New()
+	..()
 	if(prob(10))
-		add_overlay("asteroid[rand(0,9)]")
+		overlays += "asteroid[rand(0,9)]"
 
 /obj/structure/holostool
 	name = "stool"
@@ -151,24 +144,21 @@
 	icon_state = "boxing"
 	item_state = "boxing"
 
+/obj/structure/window/holowindow/full
+	dir = 5
+	icon_state = "window_full"
+
+/obj/structure/window/holowindow/full/Destroy()
+	..()
+
 /obj/structure/window/reinforced/holowindow/Destroy()
-	return ..()
+	..()
 
 /obj/structure/window/reinforced/holowindow/attackby(obj/item/W as obj, mob/user as mob)
-	if(!istype(W)) return//I really wish I did not need this
-	if (istype(W, /obj/item/grab) && get_dist(src,user)<2)
-		var/obj/item/grab/G = W
-		if(istype(G.affecting,/mob/living))
-			grab_smash_attack(G, PAIN)
-			return
 
-	if(W.flags & NOBLUDGEON) return
+	if(!istype(W) || W.item_flags & ITEM_FLAG_NO_BLUDGEON) return
 
-	if(W.isscrewdriver())
-		to_chat(user, ("<span class='notice'>It's a holowindow, you can't unfasten it!</span>"))
-	else if(W.iscrowbar() && reinf && state <= 1)
-		to_chat(user, ("<span class='notice'>It's a holowindow, you can't pry it!</span>"))
-	else if(W.iswrench() && !anchored && (!state || !reinf))
+	if(isScrewdriver(W) || isCrowbar(W) || isWrench(W))
 		to_chat(user, ("<span class='notice'>It's a holowindow, you can't dismantle it!</span>"))
 	else
 		if(W.damtype == BRUTE || W.damtype == BURN)
@@ -178,32 +168,32 @@
 				update_nearby_icons()
 				step(src, get_dir(user, src))
 		else
-			playsound(loc, 'sound/effects/glass_hit.ogg', 75, 1)
+			playsound(loc, 'sound/effects/Glasshit.ogg', 75, 1)
 		..()
 	return
 
 /obj/structure/window/reinforced/holowindow/shatter(var/display_message = 1)
-	playsound(src, /decl/sound_category/glass_break_sound, 70, 1)
+	playsound(src, "shatter", 70, 1)
 	if(display_message)
 		visible_message("[src] fades away as it shatters!")
 	qdel(src)
 	return
 
 /obj/structure/window/reinforced/holowindow/disappearing/Destroy()
-	return ..()
+	..()
 
 /obj/machinery/door/window/holowindoor/Destroy()
-	return ..()
+	..()
 
-/obj/machinery/door/window/holowindoor/attackby(obj/item/I as obj, mob/user as mob)
+/obj/machinery/door/window/holowindoor/attackby(obj/item/weapon/I as obj, mob/user as mob)
 
 	if (src.operating == 1)
 		return
 
-	if(src.density && istype(I, /obj/item) && !istype(I, /obj/item/card))
+	if(src.density && istype(I, /obj/item/weapon) && !istype(I, /obj/item/weapon/card))
 		var/aforce = I.force
-		playsound(src.loc, 'sound/effects/glass_hit.ogg', 75, 1)
-		visible_message("<span class='danger'>[src] was hit by [I].</span>")
+		playsound(src.loc, 'sound/effects/Glasshit.ogg', 75, 1)
+		visible_message("<span class='danger'>\The [src] was hit by \the [I].</span>")
 		if(I.damtype == BRUTE || I.damtype == BURN)
 			take_damage(aforce)
 		return
@@ -224,95 +214,90 @@
 	return
 
 /obj/machinery/door/window/holowindoor/shatter(var/display_message = 1)
-	src.density = 0
-	playsound(src, /decl/sound_category/glass_break_sound, 70, 1)
+	src.set_density(0)
+	playsound(src, "shatter", 70, 1)
 	if(display_message)
 		visible_message("[src] fades away as it shatters!")
 	qdel(src)
 
 /obj/structure/bed/chair/holochair/Destroy()
-	return ..()
+	..()
 
-/obj/structure/bed/chair/holochair/attackby(obj/item/W as obj, mob/user as mob)
-	if(W.iswrench())
+/obj/structure/bed/chair/holochair/attackby(obj/item/weapon/W as obj, mob/user as mob)
+	if(istype(W, /obj/item/weapon/wrench))
 		to_chat(user, ("<span class='notice'>It's a holochair, you can't dismantle it!</span>"))
 	return
 
-/obj/item/holo
+/obj/item/weapon/holo
 	damtype = PAIN
 	no_attack_log = 1
 
-/obj/item/holo/esword
-	name = "energy sword"
+/obj/item/weapon/holo/esword
+	icon = 'icons/obj/weapons/melee_energy.dmi'
+	name = "holosword"
 	desc = "May the force be within you. Sorta."
-	icon = 'icons/obj/weapons.dmi'
 	icon_state = "sword0"
 	force = 3.0
 	throw_speed = 1
 	throw_range = 5
 	throwforce = 0
-	w_class = ITEMSIZE_SMALL
-	flags = NOBLOODY
-	item_icons = list(
-		slot_l_hand_str = 'icons/mob/items/weapons/lefthand_energy.dmi',
-		slot_r_hand_str = 'icons/mob/items/weapons/righthand_energy.dmi'
-		)
+	w_class = ITEM_SIZE_SMALL
+	atom_flags = ATOM_FLAG_NO_TEMP_CHANGE | ATOM_FLAG_NO_BLOOD
+	base_parry_chance = 50
 	var/active = 0
 	var/item_color
 
-/obj/item/holo/esword/green
-	item_color = "green"
+/obj/item/weapon/holo/esword/green
+	New()
+		item_color = "green"
 
-/obj/item/holo/esword/red
-	item_color = "red"
+/obj/item/weapon/holo/esword/red
+	New()
+		item_color = "red"
 
-/obj/item/holo/esword/handle_shield(mob/user, var/on_back, var/damage, atom/damage_source = null, mob/attacker = null, var/def_zone = null, var/attack_text = "the attack")
-	if(active && default_parry_check(user, attacker, damage_source) && prob(50))
-		user.visible_message("<span class='danger'>\The [user] parries [attack_text] with \the [src]!</span>")
+/obj/item/weapon/holo/esword/handle_shield(mob/user, var/damage, atom/damage_source = null, mob/attacker = null, var/def_zone = null, var/attack_text = "the attack")
+	. = ..()
+	if(.)
+		var/datum/effect/effect/system/spark_spread/spark_system = new /datum/effect/effect/system/spark_spread()
+		spark_system.set_up(5, 0, user.loc)
+		spark_system.start()
+		playsound(user.loc, 'sound/weapons/blade1.ogg', 50, 1)
 
-		spark(user.loc, 5)
-		playsound(user.loc, 'sound/weapons/blade.ogg', 50, 1)
-		return 1
-	return 0
+/obj/item/weapon/holo/esword/get_parry_chance(mob/user)
+	return active ? ..() : 0
 
-/obj/item/holo/esword/New()
-	if(!item_color)
-		item_color = pick("red","blue","green","purple")
+/obj/item/weapon/holo/esword/New()
+	item_color = pick("red","blue","green","purple")
 
-/obj/item/holo/esword/attack_self(mob/living/user as mob)
+/obj/item/weapon/holo/esword/attack_self(mob/living/user as mob)
 	active = !active
 	if (active)
 		force = 30
 		icon_state = "sword[item_color]"
-		w_class = ITEMSIZE_LARGE
+		w_class = ITEM_SIZE_HUGE
 		playsound(user, 'sound/weapons/saberon.ogg', 50, 1)
 		to_chat(user, "<span class='notice'>[src] is now active.</span>")
 	else
 		force = 3
 		icon_state = "sword0"
-		w_class = ITEMSIZE_SMALL
+		w_class = ITEM_SIZE_SMALL
 		playsound(user, 'sound/weapons/saberoff.ogg', 50, 1)
 		to_chat(user, "<span class='notice'>[src] can now be concealed.</span>")
 
-	if(istype(user,/mob/living/carbon/human))
-		var/mob/living/carbon/human/H = user
-		H.update_inv_l_hand()
-		H.update_inv_r_hand()
+	update_held_icon()
 
 	add_fingerprint(user)
 	return
 
 //BASKETBALL OBJECTS
 
-/obj/item/beach_ball/holoball
+/obj/item/weapon/beach_ball/holoball
 	icon = 'icons/obj/basketball.dmi'
 	icon_state = "basketball"
 	name = "basketball"
 	item_state = "basketball"
 	desc = "Here's your chance, do your dance at the Space Jam."
-	w_class = ITEMSIZE_LARGE //Stops people from hiding it in their bags/pockets
-	drop_sound = 'sound/items/drop/basketball.ogg'
-	pickup_sound = 'sound/items/pickup/basketball.ogg'
+	w_class = ITEM_SIZE_LARGE //Stops people from hiding it in their pockets
 
 /obj/structure/holohoop
 	name = "basketball hoop"
@@ -323,29 +308,13 @@
 	density = 1
 	throwpass = 1
 
-/obj/structure/holohoop/attackby(obj/item/W as obj, mob/user as mob)
-	if (istype(W, /obj/item/grab) && get_dist(src,user)<2)
-		var/obj/item/grab/G = W
-		if(G.state<2)
-			to_chat(user, "<span class='warning'>You need a better grip to do that!</span>")
-			return
-		G.affecting.forceMove(src.loc)
-		G.affecting.Weaken(5)
-		visible_message("<span class='warning'>[G.assailant] dunks [G.affecting] into the [src]!</span>", range = 3)
-		qdel(W)
-		return
-	else if (istype(W, /obj/item) && get_dist(src,user)<2)
-		user.drop_from_inventory(W,get_turf(src))
-		visible_message("<span class='notice'>[user] dunks [W] into the [src]!</span>", range = 3)
-		return
-
 /obj/structure/holohoop/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
 	if (istype(mover,/obj/item) && mover.throwing)
 		var/obj/item/I = mover
 		if(istype(I, /obj/item/projectile))
 			return
 		if(prob(50))
-			I.forceMove(src.loc)
+			I.dropInto(loc)
 			visible_message("<span class='notice'>Swish! \the [I] lands in \the [src].</span>", range = 3)
 		else
 			visible_message("<span class='warning'>\The [I] bounces off of \the [src]'s rim!</span>", range = 3)
@@ -353,6 +322,43 @@
 	else
 		return ..(mover, target, height, air_group)
 
+//VOLEYBALL OBJECTS
+
+/obj/item/weapon/beach_ball/holovolleyball
+	icon = 'icons/obj/basketball.dmi'
+	icon_state = "volleyball"
+	name = "voleyball"
+	item_state = "volleyball"
+	desc = "You can be my wingman anytime."
+	w_class = ITEM_SIZE_LARGE //Stops people from hiding it in their pockets
+
+/obj/structure/holonet
+	name = "net"
+	desc = "Bullshit, you can be mine!"
+	icon = 'icons/obj/basketball.dmi'
+	icon_state = "volleynet_mid"
+	density = 1
+	anchored = 1
+	layer = TABLE_LAYER
+	throwpass = 1
+	dir = 4
+
+/obj/structure/holonet/end
+	icon_state = "volleynet_end"
+
+/obj/structure/holonet/CanPass(atom/movable/mover, turf/target, height=0, air_group=0)
+	if (istype(mover,/obj/item) && mover.throwing)
+		var/obj/item/I = mover
+		if(istype(I, /obj/item/projectile))
+			return
+		if(prob(10))
+			I.dropInto(loc)
+			visible_message("<span class='notice'>Swish! \the [I] gets caught in \the [src].</span>", range = 3)
+			return 0
+		else
+			return 1
+	else
+		return ..(mover, target, height, air_group)
 
 /obj/machinery/readybutton
 	name = "Ready Declaration Device"
@@ -364,31 +370,30 @@
 	var/eventstarted = 0
 
 	anchored = 1.0
-	use_power = 0 // reason is because the holodeck already takes power so this can be powered as a result.
+	idle_power_usage = 2
+	active_power_usage = 6
+	power_channel = ENVIRON
 
 /obj/machinery/readybutton/attack_ai(mob/user as mob)
-	to_chat(user, "The station AI is not to interact with these devices!")
+	to_chat(user, "The AI is not to interact with these devices!")
 	return
 
-/obj/machinery/readybutton/attackby(obj/item/W as obj, mob/user as mob)
+/obj/machinery/readybutton/New()
+	..()
+
+
+/obj/machinery/readybutton/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	to_chat(user, "The device is a solid button, there's nothing you can do with it!")
 
-/obj/machinery/readybutton/attack_hand(mob/user as mob)
-
-	if(user.stat || stat & (NOPOWER|BROKEN))
-		to_chat(user, "This device is not powered.")
-		return
-
-	if(!user.IsAdvancedToolUser())
-		return 0
-
-	currentarea = get_area(src.loc)
+/obj/machinery/readybutton/physical_attack_hand(mob/user)
+	currentarea = get_area(src)
 	if(!currentarea)
 		qdel(src)
+		return TRUE
 
 	if(eventstarted)
-		to_chat(usr, "The event has already begun!")
-		return
+		to_chat(user, "The event has already begun!")
+		return TRUE
 
 	ready = !ready
 
@@ -403,8 +408,9 @@
 
 	if(numbuttons == numready)
 		begin_event()
+	return TRUE
 
-/obj/machinery/readybutton/update_icon()
+/obj/machinery/readybutton/on_update_icon()
 	if(ready)
 		icon_state = "auth_on"
 	else
@@ -423,19 +429,28 @@
 //Holocarp
 
 /mob/living/simple_animal/hostile/carp/holodeck
-	icon = 'icons/mob/AI.dmi'
-	icon_state = "holo4"
-	icon_living = "holo4"
-	icon_dead = "holo4"
+	icon = 'icons/mob/hologram.dmi'
+	icon_state = "Carp"
+	icon_living = "Carp"
+	icon_dead = "Carp"
 	alpha = 127
 	icon_gib = null
 	meat_amount = 0
 	meat_type = null
-	light_range = 2
+
+/mob/living/simple_animal/hostile/carp/holodeck/carp_randomify()
+	return
+
+/mob/living/simple_animal/hostile/carp/holodeck/on_update_icon()
+	return
+
+/mob/living/simple_animal/hostile/carp/holodeck/New()
+	..()
+	set_light(0.5, 0.1, 2) //hologram lighting
 
 /mob/living/simple_animal/hostile/carp/holodeck/proc/set_safety(var/safe)
 	if (safe)
-		faction = "neutral"
+		faction = MOB_FACTION_NEUTRAL
 		melee_damage_lower = 0
 		melee_damage_upper = 0
 		environment_smash = 0
@@ -448,45 +463,8 @@
 		destroy_surroundings = initial(destroy_surroundings)
 
 /mob/living/simple_animal/hostile/carp/holodeck/gib()
-	derez() //holograms can't gib
+	death()
 
 /mob/living/simple_animal/hostile/carp/holodeck/death()
-	..()
-	derez()
-
-/mob/living/simple_animal/hostile/carp/holodeck/proc/derez()
-	visible_message("<span class='notice'>\The [src] fades away!</span>")
-	qdel(src)
-
-//Holo-penguin
-
-/mob/living/simple_animal/penguin/holodeck
-	icon = 'icons/mob/npc/penguins.dmi'
-	icon_state = "penguin"
-	icon_living = "penguin"
-	icon_dead = "penguin_dead"
-	icon_gib = null
-	meat_amount = 0
-	meat_type = null
-	light_range = 2
-	hunger_enabled = FALSE
-
-/mob/living/simple_animal/penguin/holodeck/baby
-	icon_state = "penguin_baby"
-	icon_living = "penguin_baby"
-	icon_dead = "penguin_baby_dead"
-
-/mob/living/simple_animal/penguin/holodeck/emperor
-	name = "emperor penguin"
-	desc = "Emperor of all he surveys."
-
-/mob/living/simple_animal/penguin/holodeck/gib()
-	derez() //holograms can't gib
-
-/mob/living/simple_animal/penguin/holodeck/death()
-	..()
-	derez()
-
-/mob/living/simple_animal/penguin/holodeck/proc/derez()
-	visible_message("<span class='notice'>\The [src] fades away!</span>")
+	..(null, "fades away!", "You have been destroyed.")
 	qdel(src)

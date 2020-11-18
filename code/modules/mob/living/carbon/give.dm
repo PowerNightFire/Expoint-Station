@@ -2,8 +2,9 @@
 	set category = "IC"
 	set name = "Give"
 
-	if(use_check(target))
-		to_chat(usr, SPAN_WARNING("[target.name] is in no condition to handle items!"))
+	if(incapacitated())
+		return
+	if(!istype(target) || target.incapacitated() || target.client == null)
 		return
 
 	var/obj/item/I = usr.get_active_hand()
@@ -13,12 +14,17 @@
 		to_chat(usr, SPAN_WARNING("You don't have anything in your hands to give to \the [target]."))
 		return
 
-	if(alert(target,"[usr] wants to give you \a [I]. Will you accept it?",,"Yes","No") == "No")
-		target.visible_message("<b>[target]</b> pushes [usr]'s hand away.")
+	if(istype(I, /obj/item/grab))
+		to_chat(usr, SPAN_WARNING("You can't give someone a grab."))
 		return
 
-	if(!I)
+	usr.visible_message(SPAN_NOTICE("\The [usr] holds out \the [I] to \the [target]."), SPAN_NOTICE("You hold out \the [I] to \the [target], waiting for them to accept it."))
+
+	if(alert(target,"[usr] wants to give you \a [I]. Will you accept it?",,"Yes","No") == "No")
+		target.visible_message(SPAN_NOTICE("\The [usr] tried to hand \the [I] to \the [target], but \the [target] didn't want it."))
 		return
+
+	if(!I) return
 
 	if(!Adjacent(target))
 		to_chat(usr, SPAN_WARNING("You need to stay in reaching distance while giving an object."))
@@ -36,7 +42,5 @@
 		return
 
 	if(usr.unEquip(I))
-		I.on_give(usr, target)
-		if(!QDELETED(I)) // if on_give deletes the item, we don't want runtimes below
-			target.put_in_hands(I) // If this fails it will just end up on the floor, but that's fitting for things like dionaea.
-			usr.visible_message("<b>[usr]</b> hands [target] \a [I].", SPAN_NOTICE("You give \the [target] a [I]."))
+		target.put_in_hands(I) // If this fails it will just end up on the floor, but that's fitting for things like dionaea.
+		usr.visible_message(SPAN_NOTICE("\The [usr] handed \the [I] to \the [target]."), SPAN_NOTICE("You give \the [I] to \the [target]."))

@@ -3,10 +3,11 @@ For the main html chat area
 *********************************/
 
 //Precaching a bunch of shit
-var/savefile/iconCache = new("data/tmp/iconCache.sav") //Cache of icons for the browser output
+GLOBAL_DATUM_INIT(iconCache, /savefile, new("data/tmp/iconCache.sav")) //Cache of icons for the browser output
 
 //Should match the value set in the browser js
 #define MAX_COOKIE_LENGTH 5
+#define SPAM_TRIGGER_AUTOMUTE 10
 
 //On client, created on login
 /datum/chatOutput
@@ -26,13 +27,7 @@ var/savefile/iconCache = new("data/tmp/iconCache.sav") //Cache of icons for the 
 	messageQueue = list()
 	connectionHistory = list()
 
-/**
-  * start: Tries to load the chat browser
-  * Aborts if a problem is encountered.
-  * Async because this is called from Client/New.
-  */
 /datum/chatOutput/proc/start()
-	set waitfor = FALSE
 	//Check for existing chat
 	if(!owner)
 		return FALSE
@@ -123,12 +118,21 @@ var/savefile/iconCache = new("data/tmp/iconCache.sav") //Cache of icons for the 
 	//do not convert to to_chat()
 	legacy_chat(owner, "<span class=\"userdanger\">Failed to load fancy chat, reverting to old chat. Certain features won't work.</span>")
 
+	pingLoop()
+
 /datum/chatOutput/proc/showChat()
 	winset(owner, "output", "is-visible=false")
 	winset(owner, "browseroutput", "is-disabled=false;is-visible=true")
 
+/datum/chatOutput/proc/pingLoop()
+	set waitfor = FALSE
+
+	while (owner)
+		ehjax_send(data = owner.is_afk(29) ? "softPang" : "pang") // SoftPang isn't handled anywhere but it'll always reset the opts.lastPang.
+		sleep(30)
+
 /proc/syncChatRegexes()
-	for (var/user in clients)
+	for (var/user in GLOB.clients)
 		var/client/C = user
 		var/datum/chatOutput/Cchat = C.chatOutput
 		if (Cchat && !Cchat.broken && Cchat.loaded)
@@ -210,7 +214,7 @@ var/savefile/iconCache = new("data/tmp/iconCache.sav") //Cache of icons for the 
 
 //Called by js client on js error
 /datum/chatOutput/proc/debug(error)
-	log_debug("\[[time2text(world.realtime, "YYYY-MM-DD hh:mm:ss")]\] Client: [(src.owner.key ? src.owner.key : src.owner)] triggered JS error: [error]")
+	log_world("\[[time2text(world.realtime, "YYYY-MM-DD hh:mm:ss")]\] Client: [(src.owner.key ? src.owner.key : src.owner)] triggered JS error: [error]")
 
 //Global chat procs
 /proc/to_chat_immediate(target, message, handle_whitespace = TRUE, trailing_newline = TRUE)
@@ -218,7 +222,7 @@ var/savefile/iconCache = new("data/tmp/iconCache.sav") //Cache of icons for the 
 		return
 
 	if(target == world)
-		target = clients
+		target = GLOB.clients
 
 	var/original_message = message
 	if(handle_whitespace)
@@ -278,7 +282,7 @@ var/savefile/iconCache = new("data/tmp/iconCache.sav") //Cache of icons for the 
 
 /proc/to_chat(target, message, handle_whitespace = TRUE, trailing_newline = TRUE)
 	set waitfor = FALSE
-	if(Master.initializing || !SSchat)
+	if(Master.current_runlevel == RUNLEVEL_INIT || !SSchat?.initialized)
 		to_chat_immediate(target, message, handle_whitespace, trailing_newline)
 		return
 	SSchat.queue(target, message, handle_whitespace, trailing_newline)

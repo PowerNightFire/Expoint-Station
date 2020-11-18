@@ -1,113 +1,71 @@
-/obj/item/stamp
+/obj/item/weapon/stamp
 	name = "rubber stamp"
 	desc = "A rubber stamp for stamping important documents."
 	icon = 'icons/obj/bureaucracy.dmi'
-	icon_state = "stamp-qm"
+	icon_state = "stamp-deckchief"
 	item_state = "stamp"
 	throwforce = 0
-	w_class = ITEMSIZE_TINY
+	w_class = ITEM_SIZE_TINY
 	throw_speed = 7
 	throw_range = 15
-	matter = list(DEFAULT_WALL_MATERIAL = 60)
+	matter = list(MATERIAL_STEEL = 60)
 	attack_verb = list("stamped")
 
-/obj/item/stamp/captain
+/obj/item/weapon/stamp/captain
 	name = "captain's rubber stamp"
 	icon_state = "stamp-cap"
 
-/obj/item/stamp/hop
-	name = "head of personnel's rubber stamp"
-	icon_state = "stamp-hop"
-
-/obj/item/stamp/hos
-	name = "head of security's rubber stamp"
-	icon_state = "stamp-hos"
-
-/obj/item/stamp/ce
+/obj/item/weapon/stamp/ce
 	name = "chief engineer's rubber stamp"
 	icon_state = "stamp-ce"
 
-/obj/item/stamp/rd
-	name = "research director's rubber stamp"
+/obj/item/weapon/stamp/rd
+	name = "chief science officer's rubber stamp"
 	icon_state = "stamp-rd"
 
-/obj/item/stamp/cmo
+/obj/item/weapon/stamp/cmo
 	name = "chief medical officer's rubber stamp"
 	icon_state = "stamp-cmo"
 
-/obj/item/stamp/denied
+/obj/item/weapon/stamp/denied
 	name = "\improper DENIED rubber stamp"
 	icon_state = "stamp-deny"
 
-/obj/item/stamp/clown
+/obj/item/weapon/stamp/clown
 	name = "clown's rubber stamp"
 	icon_state = "stamp-clown"
 
-/obj/item/stamp/internalaffairs
-	name = "internal affairs rubber stamp"
-	icon_state = "stamp-intaff"
+/obj/item/weapon/stamp/boss
+	name = "boss' rubber stamp"
+	icon_state = "stamp-boss"
 
-/obj/item/stamp/centcomm
-	name = "centcomm rubber stamp"
-	icon_state = "stamp-cent"
+/obj/item/weapon/stamp/boss/Initialize()
+	name = "[GLOB.using_map.boss_name]'s' rubber stamp"
+	. = ..()
 
-/obj/item/stamp/einstein
-	name = "einstein engines rubber stamp"
-	icon_state = "stamp-einstein"
-
-/obj/item/stamp/hephaestus
-	name = "hephaestus industries rubber stamp"
-	icon_state = "stamp-heph"
-
-/obj/item/stamp/idris
-	name = "idris incorporated rubber stamp"
-	icon_state = "stamp-idris"
-
-/obj/item/stamp/zavodskoi
-	name = "zavodskoi interstellar rubber stamp"
-	icon_state = "stamp-zavod"
-
-/obj/item/stamp/zeng_hu
-	name = "zeng-hu pharmaceuticals rubber stamp"
-	icon_state = "stamp-zenghu"
-
-/obj/item/stamp/biesel
-	name = "\improper Republic of Biesel rubber stamp"
-	icon_state = "stamp-biesel"
-
-/obj/item/stamp/sol
-	name = "\improper Sol Alliance rubber stamp"
-	icon_state = "stamp-sol"
+/obj/item/weapon/stamp/cargo
+	name = "cargo rubber stamp"
+	icon_state = "stamp-cargo"
 
 // Syndicate stamp to forge documents.
-/obj/item/stamp/chameleon/attack_self(mob/user as mob)
-	var/list/stamp_types = typesof(/obj/item/stamp) - src.type - subtypesof(/obj/item/stamp/fluff)
-	var/list/stamp_selection = list()
+/obj/item/weapon/stamp/chameleon/attack_self(mob/user as mob)
 
+	var/list/stamp_types = typesof(/obj/item/weapon/stamp) - src.type // Get all stamp types except our own
+	var/list/stamps = list()
+
+	// Generate them into a list
 	for(var/stamp_type in stamp_types)
-		var/obj/item/stamp/S = new stamp_type
-		stamp_selection[capitalize(S.name)] = S
+		var/obj/item/weapon/stamp/S = new stamp_type
+		stamps[capitalize(S.name)] = S
 
-	var/input_stamp = input("Choose a stamp to disguise as.", "Chameleon stamp.") as null|anything in sortList(stamp_selection)
-	if(isnull(input_stamp))
-		return
+	var/list/show_stamps = list("EXIT" = null) + sortList(stamps) // the list that will be shown to the user to pick from
+
+	var/input_stamp = input(user, "Choose a stamp to disguise as.", "Choose a stamp.") in show_stamps
 
 	if(user && (src in user.contents))
-		var/obj/item/stamp/chosen_stamp = stamp_selection[capitalize(input_stamp)]
+
+		var/obj/item/weapon/stamp/chosen_stamp = stamps[capitalize(input_stamp)]
 
 		if(chosen_stamp)
-			name = chosen_stamp.name
+			SetName(chosen_stamp.name)
 			icon_state = chosen_stamp.icon_state
-
-/obj/item/stamp/chameleon/verb/rename()
-	set name = "Rename stamp"
-	set category = "Object"
-	set src in usr
-
-	var/n_name = sanitizeSafe(input(usr, "Which faction or rank would you like your stamp to represent?", "Stamp Designation", null) as text, MAX_NAME_LEN)
-	if(loc == usr && n_name)
-		//Attempts to keep the custom stamp name consistent
-		n_name = replacetext(n_name," rubber stamp","")
-		n_name = replacetext(n_name," stamp","")
-		n_name = replacetext(n_name,"stamp","")
-		name = "[n_name] rubber stamp"

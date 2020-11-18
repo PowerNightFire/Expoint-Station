@@ -1,14 +1,12 @@
-var/datum/controller/subsystem/events/SSevents
-
-/datum/controller/subsystem/events
-	// Subsystem stuff.
-	name = "Events"
+SUBSYSTEM_DEF(event)
+	name = "Event Manager"
+	wait = 2 SECONDS
 	priority = SS_PRIORITY_EVENT
 
 	var/tmp/list/processing_events = list()
 	var/tmp/pos = EVENT_LEVEL_MUNDANE
 
-	// Event controller stuff.
+	//UI related
 	var/window_x = 700
 	var/window_y = 600
 	var/report_at_round_end = 0
@@ -21,33 +19,37 @@ var/datum/controller/subsystem/events/SSevents
 	var/list/datum/event/active_events = list()
 	var/list/datum/event/finished_events = list()
 
-	var/list/datum/event/allEvents
+	var/list/datum/event/all_events
 	var/list/datum/event_container/event_containers
 
 	var/datum/event_meta/new_event = new
 
-	var/initialized = FALSE
+//Subsystem procs
+/datum/controller/subsystem/event/Initialize()
+	if(!all_events)
+		all_events = subtypesof(/datum/event)
+	if(!event_containers)
+		event_containers = list(
+				EVENT_LEVEL_MUNDANE 	= new/datum/event_container/mundane,
+				EVENT_LEVEL_MODERATE	= new/datum/event_container/moderate,
+				EVENT_LEVEL_MAJOR 		= new/datum/event_container/major
+			)
+	if(GLOB.using_map.use_overmap)
+		overmap_event_handler.create_events(GLOB.using_map.overmap_z, GLOB.using_map.overmap_size, GLOB.using_map.overmap_event_areas)
+	GLOB.using_map.setup_events()
+	for(var/event_level in GLOB.using_map.map_event_container)
+		var/datum/event_container/receiver = event_containers[text2num(event_level)]
+		var/datum/event_container/donor = GLOB.using_map.map_event_container[event_level]
+		receiver.available_events += donor.available_events
+	. = ..()
 
-/datum/controller/subsystem/events/New()
-	NEW_SS_GLOBAL(SSevents)
+/datum/controller/subsystem/event/Recover()
+	active_events = SSevent.active_events
+	finished_events = SSevent.finished_events
+	all_events = SSevent.all_events
+	event_containers = SSevent.event_containers
 
-/datum/controller/subsystem/events/Initialize()
-	allEvents = subtypesof(/datum/event)
-	event_containers = list(
-		EVENT_LEVEL_MUNDANE  = new/datum/event_container/mundane,
-		EVENT_LEVEL_MODERATE = new/datum/event_container/moderate,
-		EVENT_LEVEL_MAJOR    = new/datum/event_container/major
-	)
-	initialized = TRUE
-
-/datum/controller/subsystem/events/Recover()
-	active_events = SSevents.active_events
-	finished_events = SSevents.finished_events
-	allEvents = SSevents.allEvents
-	event_containers = SSevents.event_containers
-	initialized = SSevents.initialized
-
-/datum/controller/subsystem/events/fire(resumed = FALSE)
+/datum/controller/subsystem/event/fire(resumed = FALSE)
 	if (!resumed)
 		processing_events = active_events.Copy()
 		pos = EVENT_LEVEL_MUNDANE
@@ -62,21 +64,22 @@ var/datum/controller/subsystem/events/SSevents
 			return
 
 	while (pos <= EVENT_LEVEL_MAJOR)
-		var/datum/event_container/EC = event_containers[pos]
-		EC.process()
+		event_containers[pos].process()
 		pos++
-
+		
 		if (MC_TICK_CHECK)
 			return
 
-/datum/controller/subsystem/events/stat_entry()
+/datum/controller/subsystem/event/stat_entry()
 	..("E:[active_events.len]")
 
-/datum/controller/subsystem/events/proc/event_complete(datum/event/E)
-	if(!E.event_meta || !E.severity)	// datum/event is used here and there for random reasons, maintaining "backwards compatibility"
-		log_debug("SSevents: Event of '[E.type]' with missing meta-data has completed.")
-		return
+//Actual event handling
+/datum/controller/subsystem/event/proc/event_complete(var/datum/event/E)
+	active_events -= E
 
+	if(!E.event_meta || !E.severity)	// datum/event is used here and there for random reasons, maintaining "backwards compatibility"
+		log_debug("Event of '[E.type]' with missing meta-data has completed.")
+		return
 	finished_events += E
 
 	// Add the event back to the list of available events
@@ -85,16 +88,13 @@ var/datum/controller/subsystem/events/SSevents
 	if(EM.add_to_queue)
 		EC.available_events += EM
 
-	log_debug("SSevents: Event '[EM.name]' has completed at [worldtime2text()].")
+	log_debug("Event '[EM.name]' has completed at [worldtime2stationtime(world.time)].")
 
-/datum/controller/subsystem/events/proc/delay_events(severity, delay)
+/datum/controller/subsystem/event/proc/delay_events(var/severity, var/delay)
 	var/datum/event_container/EC = event_containers[severity]
 	EC.next_event_time += delay
 
-/datum/controller/subsystem/events/proc/Interact(mob/living/user)
-	if (!initialized)
-		to_chat(user, "<span class='alert'>The [src] subsystem has not initialized yet. Please wait until server init completes before trying to use the Event Manager panel.</span>")
-		return
+/datum/controller/subsystem/event/proc/Interact(var/mob/living/user)
 
 	var/html = GetInteractWindow()
 
@@ -102,7 +102,7 @@ var/datum/controller/subsystem/events/SSevents
 	popup.set_content(html)
 	popup.open()
 
-/datum/controller/subsystem/events/proc/RoundEnd()
+/datum/controller/subsystem/event/proc/RoundEnd()
 	if(!report_at_round_end)
 		return
 
@@ -111,18 +111,19 @@ var/datum/controller/subsystem/events/SSevents
 		var/datum/event_meta/EM = E.event_meta
 		if(EM.name == "Nothing")
 			continue
-		var/message = "'[EM.name]' began at [worldtime2text(E.startedAt)] "
+		var/message = "'[EM.name]' began at [worldtime2stationtime(E.startedAt)] "
 		if(E.isRunning)
 			message += "and is still running."
 		else
 			if(E.endedAt - E.startedAt > MinutesToTicks(5)) // Only mention end time if the entire duration was more than 5 minutes
-				message += "and ended at [worldtime2text(E.endedAt)]."
+				message += "and ended at [worldtime2stationtime(E.endedAt)]."
 			else
 				message += "and ran to completion."
 
 		to_world(message)
 
-/datum/controller/subsystem/events/proc/GetInteractWindow()
+//Event manager UI 
+/datum/controller/subsystem/event/proc/GetInteractWindow()
 	var/html = "<A align='right' href='?src=\ref[src];refresh=1'>Refresh</A>"
 	html += "<A align='right' href='?src=\ref[src];pause_all=[!config.allow_random_events]'>Pause All - [config.allow_random_events ? "Pause" : "Resume"]</A>"
 
@@ -174,7 +175,7 @@ var/datum/controller/subsystem/events/SSevents
 			var/next_event_at = max(0, EC.next_event_time - world.time)
 			html += "<tr>"
 			html += "<td>[severity_to_string[severity]]</td>"
-			html += "<td>[worldtime2text(max(EC.next_event_time, world.time))]</td>"
+			html += "<td>[worldtime2stationtime(max(EC.next_event_time, world.time))]</td>"
 			html += "<td>[round(next_event_at / 600, 0.1)]</td>"
 			html += "<td>"
 			html +=   "<A align='right' href='?src=\ref[src];dec_timer=2;event=\ref[EC]'>--</A>"
@@ -222,7 +223,7 @@ var/datum/controller/subsystem/events/SSevents
 			html += "<tr>"
 			html += "<td>[severity_to_string[EM.severity]]</td>"
 			html += "<td>[EM.name]</td>"
-			html += "<td>[worldtime2text(ends_at)]</td>"
+			html += "<td>[worldtime2stationtime(ends_at)]</td>"
 			html += "<td>[ends_in]</td>"
 			html += "<td><A align='right' href='?src=\ref[src];stop=\ref[E]'>Stop</A></td>"
 			html += "</tr>"
@@ -231,7 +232,7 @@ var/datum/controller/subsystem/events/SSevents
 
 	return html
 
-/datum/controller/subsystem/events/Topic(href, list/href_list)
+/datum/controller/subsystem/event/Topic(href, href_list)
 	if(..())
 		return
 
@@ -272,7 +273,6 @@ var/datum/controller/subsystem/events/SSevents
 		var/datum/event/E = locate(href_list["stop"])
 		var/datum/event_meta/EM = E.event_meta
 		log_and_message_admins("has stopped the [severity_to_string[EM.severity]] event '[EM.name]'.")
-		E.end()
 		E.kill()
 	else if(href_list["view_events"])
 		selected_event_container = locate(href_list["view_events"])
@@ -284,7 +284,7 @@ var/datum/controller/subsystem/events/SSevents
 			var/datum/event_meta/EM = locate(href_list["set_name"])
 			EM.name = name
 	else if(href_list["set_type"])
-		var/type = input("Select event type.", "Select") as null|anything in allEvents
+		var/type = input("Select event type.", "Select") as null|anything in all_events
 		if(type)
 			var/datum/event_meta/EM = locate(href_list["set_type"])
 			EM.event_type = type
@@ -324,11 +324,13 @@ var/datum/controller/subsystem/events/SSevents
 		var/datum/event_container/EC = locate(href_list["clear"])
 		if(EC.next_event)
 			log_and_message_admins("has dequeued the [severity_to_string[EC.severity]] event '[EC.next_event.name]'.")
+			EC.available_events += EC.next_event
 			EC.next_event = null
 
 	Interact(usr)
 
-/client/proc/forceEvent(var/type in SSevents.allEvents)
+//Event admin verbs
+/client/proc/forceEvent(var/type in SSevent.all_events)
 	set name = "Trigger Event (Debug Only)"
 	set category = "Debug"
 
@@ -342,9 +344,6 @@ var/datum/controller/subsystem/events/SSevents
 /client/proc/event_manager_panel()
 	set name = "Event Manager Panel"
 	set category = "Admin"
-
-	if (!holder)
-		return
-
-	SSevents.Interact(usr)
-	feedback_add_details("admin_verb","EMP") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!
+	if(SSevent)
+		SSevent.Interact(usr)
+	SSstatistics.add_field_details("admin_verb","EMP") //If you are copy-pasting this, ensure the 2nd parameter is unique to the new proc!

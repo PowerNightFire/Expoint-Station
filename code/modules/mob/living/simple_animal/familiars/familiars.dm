@@ -7,223 +7,177 @@
 	response_disarm = "pushes"
 	response_harm = "hits"
 
-	universal_speak = 1
-	universal_understand = 1
+	universal_speak = FALSE
+	universal_understand = TRUE
 
-	min_oxy = 1 //still require a /bit/ of air.
-	max_co2 = 0
-	unsuitable_atoms_damage = 1
-
-	hunger_enabled = 0
-	supernatural = 1
+	min_gas = list(GAS_OXYGEN = 1)
+	max_gas = null
+	unsuitable_atmos_damage = 1
 
 	var/list/wizardy_spells = list()
 
-/mob/living/simple_animal/familiar/Initialize()
-	. = ..()
-	add_language(LANGUAGE_TCB)
+/mob/living/simple_animal/familiar/New()
+	..()
+	add_language(LANGUAGE_HUMAN_EURO)
 	for(var/spell in wizardy_spells)
 		src.add_spell(new spell, "const_spell_ready")
 
-/mob/living/simple_animal/familiar/do_animate_chat(var/message, var/datum/language/language, var/small, var/list/show_to, var/duration, var/list/message_override)
-	INVOKE_ASYNC(src, /atom/movable/proc/animate_chat, message, language, small, show_to, duration)
-
 /mob/living/simple_animal/familiar/carcinus
-	name = "crab"
+	name = "carcinus"
 	desc = "A small crab said to be made of stone and starlight."
-	icon = 'icons/mob/npc/animal.dmi'
+	icon = 'icons/mob/simple_animal/animal.dmi'
 	icon_state = "evilcrab"
 	icon_living = "evilcrab"
 	icon_dead = "evilcrab_dead"
 
 	speak_emote = list("chitters","clicks")
-	organ_names = list("head", "carapace")
+
 
 	health = 200
 	maxHealth = 200
 	melee_damage_lower = 10
 	melee_damage_upper = 15
-	friendly = "pinches"
-	attacktext = "pinched"
+	attacktext = "pinches"
 	resistance = 9
-	canbrush = TRUE
-	brush = /obj/item/reagent_containers/glass/rag
+	can_escape = TRUE //snip snip
+	density = 0
+
+/*familiar version of the Pike w/o all the other hostile/carp stuff getting in the way (namely life)
+*/
 
 /mob/living/simple_animal/familiar/pike
 	name = "space pike"
 	desc = "A bigger, more magical cousin of the space carp."
-	icon = 'icons/mob/npc/spaceshark.dmi'
+
+	icon = 'icons/mob/simple_animal/spaceshark.dmi'
 	icon_state = "shark"
 	icon_living = "shark"
 	icon_dead = "shark_dead"
-	icon_rest = "shark_rest"
 	pixel_x = -16
 
 	speak_emote = list("gnashes")
-	attacktext = "bitten"
-	attack_sound = 'sound/weapons/bite.ogg'
 
-	environment_smash = 2
 	health = 100
 	maxHealth = 100
-	melee_damage_lower = 15
-	melee_damage_upper = 15
-	canbrush = TRUE
-	brush = /obj/item/reagent_containers/glass/rag
-	meat_type = /obj/item/reagent_containers/food/snacks/fish/carpmeat
-	organ_names = list("head", "chest", "tail", "left flipper", "right flipper")
+	melee_damage_lower = 10
+	melee_damage_upper = 10
+	can_escape = TRUE
 
-	min_oxy = 0
+	min_gas = null
 
 	wizardy_spells = list(/spell/aoe_turf/conjure/forcewall)
 
-	flying = TRUE
-
 /mob/living/simple_animal/familiar/pike/Allow_Spacemove(var/check_drift = 0)
-	return 1
+	return 1	//No drifting in space for space carp!	//original comments do not steal
 
 /mob/living/simple_animal/familiar/horror
 	name = "horror"
-	desc = "A sanity-destroying otherthing."
+	desc = "Looking at it fills you with dread."
 	icon = 'icons/mob/mob.dmi'
 	icon_state = "horror"
 	icon_living = "horror"
-	icon_dead = "horror_dead"
-	organ_names = list("meaty core")
-
-/mob/living/simple_animal/familiar/horror/Initialize()
-	. = ..()
-	if(prob(25))
-		icon_state = "horror_alt"
-		icon_living = "horror_alt"
-		icon_dead = "horror_alt_dead"
-		organ_names = list("head", "chest", "tail", "leg")
-	else if(prob(25))
-		icon_state = "abomination"
-		icon_living = "abomination"
-		icon_dead = "abomination_dead"
-		organ_names = list("head", "chest", "tail", "leg")
 
 	speak_emote = list("moans", "groans")
 
 	response_help = "thinks better of touching"
 
-	environment_smash = 2
 	health = 150
 	maxHealth = 150
-	melee_damage_lower = 10
-	melee_damage_upper = 10
-	attacktext = "clawed"
+	melee_damage_lower = 5
+	melee_damage_upper = 8
+	attacktext = "touches"
 
 	wizardy_spells = list(/spell/targeted/torment)
 
-/mob/living/simple_animal/familiar/horror/death()
-	..(null,"rapidly deteriorates")
+/mob/living/simple_animal/familiar/horror/death(gibbed, deathmessage, show_dead_message)
+	..(null,"rapidly deteriorates","The bonds tying you to this mortal plane have been severed.")
 
 	ghostize()
 	gibs(src.loc)
 	qdel(src)
 
 
-/mob/living/simple_animal/familiar/goat
-	name = "goat"
-	desc = "A sprightly looking goat."
-	icon = 'icons/mob/npc/livestock.dmi'
-	icon_state = "goat"
-	icon_living = "goat"
-	icon_dead = "goat_dead"
-	speak_emote = list("brays")
-	attacktext = "kicked"
+/mob/living/simple_animal/familiar/minor_amaros
+	name = "minor amaros"
+	desc = "A small fluffy alien creature."
+	icon = 'icons/mob/mob.dmi'
+	icon_state = "baby roro"
+	icon_living = "baby roro"
+	icon_dead   = "baby roro dead"
 
-	health = 80
-	maxHealth = 80
-
-	melee_damage_lower = 8
-	melee_damage_upper = 12
-	mob_size = 4.5 //weight based on Chanthangi goats
+	speak_emote = list("entones")
+	mob_size = MOB_SMALL
 	density = 0
-	wizardy_spells = list(/spell/aoe_turf/smoke)
-	canbrush = TRUE
+	health = 25
+	maxHealth = 25
 
-	meat_type = /obj/item/reagent_containers/food/snacks/meat
-	meat_amount = 6
-	butchering_products = list(/obj/item/stack/material/animalhide = 3)
+	wizardy_spells = list(/spell/targeted/heal_target,
+						/spell/targeted/heal_target/area)
+
 
 
 /mob/living/simple_animal/familiar/pet //basically variants of normal animals with spells.
-	icon = 'icons/mob/npc/animal.dmi'
+	icon = 'icons/mob/simple_animal/animal.dmi'
+	var/icon_rest //so that we can have resting little guys.
 
-/mob/living/simple_animal/familiar/pet/MouseDrop(atom/over_object)
-	var/mob/living/carbon/H = over_object
-	if(!istype(H) || !Adjacent(H)) return ..()
-
-	if(H.a_intent == "help" && holder_type)
-		get_scooped(H)
+/mob/living/simple_animal/familiar/pet/Life()
+	. = ..()
+	if(!.)
+		return FALSE
+	if(!icon_rest)
 		return
-	else
-		return ..()
+	if(stat == UNCONSCIOUS || resting)
+		icon_state = icon_rest
+
+/mob/living/simple_animal/familiar/pet/mouse
+	name = "mouse"
+	desc = "A small rodent. It looks very old."
+	icon_state = "mouse_gray"
+	icon_living = "mouse_gray"
+	icon_dead = "mouse_gray_dead"
+	icon_rest = "mouse_gray_sleep"
+
+	speak_emote = list("squeeks")
+	holder_type = /obj/item/weapon/holder/mouse
+	pass_flags = PASS_FLAG_TABLE
+	mob_size = MOB_MINISCULE
+
+	response_harm = "stamps on"
+
+	health = 15
+	maxHealth = 15
+	melee_damage_lower = 1
+	melee_damage_upper = 1
+	can_escape = TRUE
+	attacktext = "nibbles"
+	density = 0
+
+	wizardy_spells = list(/spell/aoe_turf/smoke)
+
+/mob/living/simple_animal/familiar/pet/mouse/New()
+	..()
+
+	verbs += /mob/living/proc/ventcrawl
+	verbs += /mob/living/proc/hide
 
 /mob/living/simple_animal/familiar/pet/cat
 	name = "black cat"
 	desc = "A pitch black cat. Said to be especially unlucky."
-	icon = 'icons/mob/npc/pets.dmi'
 	icon_state = "cat3"
 	icon_living = "cat3"
 	icon_dead = "cat3_dead"
 	icon_rest = "cat3_rest"
-	can_nap = 1
 
-	see_in_dark = 8
-	see_invisible = SEE_INVISIBLE_NOLIGHTING
 
 	speak_emote = list("meows", "purrs")
-	holder_type = /obj/item/holder/cat/black/familiar
+	holder_type = /obj/item/weapon/holder/cat
 	mob_size = MOB_SMALL
-
-	health = 45
-	maxHealth = 45
-	melee_damage_lower = 3
-	melee_damage_upper = 4
-	attacktext = "clawed"
-	density = 0
-
-	wizardy_spells = list(/spell/targeted/subjugation)
-	canbrush = TRUE
-
-	meat_type = /obj/item/reagent_containers/food/snacks/meat
-	butchering_products = list(/obj/item/stack/material/animalhide/cat = 2)
-
-
-/mob/living/simple_animal/rat/familiar
-	name = "ancient rat"
-	desc = "A small rodent. It looks very old."
-	body_color = "gray"
-
-	see_in_dark = 8
-	see_invisible = SEE_INVISIBLE_NOLIGHTING
 
 	health = 25
 	maxHealth = 25
-	melee_damage_lower = 1
-	melee_damage_upper = 1
-	attacktext = "nibbled"
-	universal_speak = 1
-	universal_understand = 1
-	stop_automated_movement = TRUE
+	melee_damage_lower = 3
+	melee_damage_upper = 4
+	attacktext = "scratched"
+	density = 0
 
-	min_oxy = 1 //still require a /bit/ of air.
-	max_co2 = 0
-	unsuitable_atoms_damage = 1
-
-	supernatural = 1
-
-/mob/living/simple_animal/rat/familiar/Initialize()
-	. = ..()
-	add_spell(new /spell/targeted/heal_target, "const_spell_ready")
-	add_spell(new /spell/targeted/heal_target/area, "const_spell_ready")
-	add_language(LANGUAGE_TCB)
-	name = initial(name)
-	desc = initial(desc)
-
-/mob/living/simple_animal/rat/familiar/do_animate_chat(var/message, var/datum/language/language, var/small, var/list/show_to, var/duration, var/list/message_override)
-	INVOKE_ASYNC(src, /atom/movable/proc/animate_chat, message, language, small, show_to, duration)
+	wizardy_spells = list(/spell/targeted/subjugation)

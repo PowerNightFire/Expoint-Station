@@ -1,118 +1,139 @@
-/obj/item/storage/bible
+/obj/item/weapon/storage/bible
 	name = "bible"
-	desc = "A holy item, containing the written words of a religion."
-	icon_state = "bible"
-	item_state = "bible"
-	item_icons = list(
-		slot_l_hand_str = 'icons/mob/items/lefthand_books.dmi',
-		slot_r_hand_str = 'icons/mob/items/righthand_books.dmi'
-		)
-	icon = 'icons/obj/library.dmi'
+	desc = "Apply to head repeatedly."
+	icon_state ="bible"
 	throw_speed = 1
 	throw_range = 5
-	w_class = ITEMSIZE_SMALL // POKKET - geeves
+	w_class = ITEM_SIZE_NORMAL
+	max_w_class = ITEM_SIZE_SMALL
+	max_storage_space = 4
 	var/mob/affecting = null
-	use_sound = 'sound/bureaucracy/bookopen.ogg'
-	drop_sound = 'sound/bureaucracy/bookclose.ogg'
+	var/deity_name = "Christ"
+	var/renamed = 0
+	var/icon_changed = 0
 
-/obj/item/storage/bible/booze
+/obj/item/weapon/storage/bible/booze
 	name = "bible"
-	desc = "A holy item, containing the written words of a religion."
-	icon_state = "bible"
-	starts_with = list(
-		/obj/item/reagent_containers/food/drinks/bottle/small/beer = 2,
-		/obj/item/spacecash = 3
-	)
+	desc = "To be applied to the head repeatedly."
+	icon_state ="bible"
 
-/obj/item/storage/bible/afterattack(atom/A, mob/user as mob, proximity)
-	if(!proximity)
+	startswith = list(
+		/obj/item/weapon/reagent_containers/food/drinks/bottle/small/beer,
+		/obj/item/weapon/spacecash/bundle/c50,
+		/obj/item/weapon/spacecash/bundle/c50,
+		)
+
+/obj/item/weapon/storage/bible/bible
+	name = "\improper Bible"
+	desc = "The central religious text of Christianity."
+	renamed = 1
+	icon_changed = 1
+
+/obj/item/weapon/storage/bible/tanakh
+	name = "\improper Tanakh"
+	desc = "The central religious text of Judaism."
+	icon_state = "torah"
+	renamed = 1
+	icon_changed = 1
+
+/obj/item/weapon/storage/bible/quran
+	name = "\improper Quran"
+	desc = "The central religious text of Islam."
+	icon_state = "koran"
+	renamed = 1
+	icon_changed = 1
+
+/obj/item/weapon/storage/bible/kojiki
+	name = "\improper Kojiki"
+	desc = "A collection of myths from ancient Japan."
+	icon_state = "kojiki"
+	renamed = 1
+	icon_changed = 1
+
+/obj/item/weapon/storage/bible/aqdas
+	name = "\improper Kitab-i-Aqdas"
+	desc = "The central religious text of the Baha'i Faith."
+	icon_state = "ninestar"
+	renamed = 1
+	icon_changed = 1
+
+/obj/item/weapon/storage/bible/guru
+	name = "\improper Guru Granth Sahib"
+	desc = "The central religious text of the Sikh Faith."
+	icon_state = "guru"
+	renamed = 1
+	icon_changed = 1
+
+/obj/item/weapon/storage/bible/attack(mob/living/carbon/human/M, mob/living/carbon/human/user)
+	if(user == M || !ishuman(user) || !ishuman(M))
 		return
-	if(user.mind && (user.mind.assigned_role == "Chaplain"))
-		if(A.reagents && A.reagents.has_reagent(/datum/reagent/water)) //blesses all the water in the holder
-			if(A.reagents.get_reagent_amount(/datum/reagent/water) > 60)
-				to_chat(user, SPAN_NOTICE("There's too much water for you to bless at once!"))
+	if(user.mind && istype(user.mind.assigned_job, /datum/job/chaplain))
+		user.visible_message(SPAN_NOTICE("\The [user] places \the [src] on \the [M]'s forehead, reciting a prayer..."))
+		if(do_after(user, 5 SECONDS) && user.Adjacent(M))
+			user.visible_message("\The [user] finishes reciting \his prayer, removing \the [src] from \the [M]'s forehead.", "You finish reciting your prayer, removing \the [src] from \the [M]'s forehead.")
+			if(user.get_cultural_value(TAG_RELIGION) == M.get_cultural_value(TAG_RELIGION))
+				to_chat(M, SPAN_NOTICE("You feel calm and relaxed, at one with the universe."))
 			else
-				to_chat(user, SPAN_NOTICE("You bless the water in [A], turning it into holy water."))
-				var/water2holy = A.reagents.get_reagent_amount(/datum/reagent/water)
-				A.reagents.del_reagent(/datum/reagent/water)
-				A.reagents.add_reagent(/datum/reagent/water/holywater, water2holy)
+				to_chat(M, "Nothing happened.")
+		..()
 
-/obj/item/storage/bible/attackby(obj/item/W as obj, mob/user as mob)
-	if(src.use_sound)
+/obj/item/weapon/storage/bible/afterattack(atom/A, mob/user as mob, proximity)
+	if(!proximity) return
+	if(user.mind && istype(user.mind.assigned_job, /datum/job/chaplain))
+		if(A.reagents && A.reagents.has_reagent(/datum/reagent/water)) //blesses all the water in the holder
+			to_chat(user, "<span class='notice'>You bless \the [A].</span>") // I wish it was this easy in nethack
+			var/water2holy = A.reagents.get_reagent_amount(/datum/reagent/water)
+			A.reagents.del_reagent(/datum/reagent/water)
+			A.reagents.add_reagent(/datum/reagent/water/holywater,water2holy)
+
+/obj/item/weapon/storage/bible/attackby(obj/item/weapon/W as obj, mob/user as mob)
+	if (src.use_sound)
 		playsound(src.loc, src.use_sound, 50, 1, -5)
-	..()
+	return ..()
 
-/obj/item/storage/bible/proc/Set_Religion(mob/user)
-	if(use_check(user))
-		return
+/obj/item/weapon/storage/bible/attack_self(mob/living/carbon/human/user)
 	if(!ishuman(user))
 		return
+	if(user.mind && istype(user.mind.assigned_job, /datum/job/chaplain))
+		user.visible_message("\The [user] begins to read a passage from \the [src]...", "You begin to read a passage from \the [src]...")
+		if(do_after(user, 5 SECONDS))
+			user.visible_message("\The [user] reads a passage from \the [src].", "You read a passage from \the [src].")
+			for(var/mob/living/carbon/human/H in view(user))
+				if(user.get_cultural_value(TAG_RELIGION) == H.get_cultural_value(TAG_RELIGION))
+					to_chat(H, SPAN_NOTICE("You feel calm and relaxed, at one with the universe."))
 
-	var/religion_name = "Christianity"
-	var/new_religion = sanitize(input(user, "You are the crew services officer. Would you like to change your religion? Default is Christianity, in SPACE.", "Name change", religion_name), MAX_NAME_LEN)
+/obj/item/weapon/storage/bible/verb/rename_bible()
+	set name = "Rename Bible"
+	set category = "Object"
+	set desc = "Click to rename your bible."
 
-	if(!new_religion)
-		new_religion = religion_name
+	if(!renamed)
+		var/input = sanitizeSafe(input("What do you want to rename your bible to? You can only do this once.", ,""), MAX_NAME_LEN)
 
-	var/book_name = sanitize(input(user, "Would you like the change your bible name? Default is holy bible.", "Book name change", name), MAX_NAME_LEN)
+		var/mob/M = usr
+		if(src && input && !M.stat && in_range(M,src))
+			SetName(input)
+			to_chat(M, "You name your religious book [input].")
+			renamed = 1
+			return 1
 
-	if(book_name)
-		name = book_name
-		SSticker.Bible_name = book_name
+/obj/item/weapon/storage/bible/verb/set_icon()
+	set name = "Change Icon"
+	set category = "Object"
+	set desc = "Click to change your book's icon."
 
-	var/new_book_style = input(user,"Which bible style would you like?") in list("Generic", "Bible", "White Bible", "Melted Bible", "Quran", "Torah", "Holy Light", "Tome", "Scroll", "The King in Yellow", "Ithaqua", "Trinary", "Stars", "Scrapbook", "Atheist", "Necronomicon")
-	switch(new_book_style)
-		if("Bible")
-			icon_state = "bible"
-			item_state = "bible"
-		if("White Bible")
-			icon_state = "white"
-			item_state = "white"
-		if("Melted Bible")
-			icon_state = "melted"
-			item_state = "melted"
-		if("Quran")
-			icon_state = "quran"
-			item_state = "quran"
-		if("Torah")
-			icon_state = "torah"
-			item_state = "torah"
-		if("Kojiki")
-			icon_state = "kojiki"
-			item_state = "kojiki"
-		if("Holy Light")
-			icon_state = "holylight"
-			item_state = "holylight"
-		if("Tome")
-			icon_state = "tome"
-			item_state = "tome"
-		if("Scroll")
-			icon_state = "scroll"
-			item_state = "scroll"
-		if("Ithaqua")
-			icon_state = "ithaqua"
-			item_state = "ithaqua"
-		if("Trinary")
-			icon_state = "trinary"
-			item_state = "trinary"
-		if("Stars")
-			icon_state = "skrellbible"
-			item_state = "skrellbible"
-		if("Scrapbook")
-			icon_state = "scrapbook"
-			item_state = "scrapbook"
-		if("Atheist")
-			icon_state = "atheist"
-			item_state = "atheist"
-		if("Necronomicon")
-			icon_state = "necronomicon"
-			item_state = "necronomicon"
-		else
-			var/randbook = "book" + pick("1", "2", "3", "4", "5", "6" , "7", "8", "9", "10", "11", "12", "13" , "14", "15" , "16")
-			icon_state = randbook
-			item_state = randbook
+	if(!icon_changed)
+		var/mob/M = usr
 
-	SSticker.Bible_icon_state = icon_state
-	SSticker.Bible_item_state = item_state
-
-	verbs -= /obj/item/storage/bible/proc/Set_Religion
+		for(var/i = 10; i >= 0; i -= 1)
+			if(src && !M.stat && in_range(M,src))
+				var/icon_picked = input(M, "Icon?", "Book Icon", null) in list("don't change", "bible", "koran", "scrapbook", "white", "holylight", "atheist", "kojiki", "torah", "kingyellow", "ithaqua", "necronomicon", "ninestar")
+				if(icon_picked != "don't change" && icon_picked)
+					icon_state = icon_picked
+				if(i != 0)
+					var/confirm = alert(M, "Is this what you want? Chances remaining: [i]", "Confirmation", "Yes", "No")
+					if(confirm == "Yes")
+						icon_changed = 1
+						break
+				if(i == 0)
+					icon_changed = 1

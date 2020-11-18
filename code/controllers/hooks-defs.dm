@@ -1,4 +1,10 @@
 /**
+ * Global init hook.
+ * Called in global_init.dm when the server is initialized.
+ */
+/hook/global_init
+
+/**
  * Startup hook.
  * Called in world.dm when the server starts.
  */
@@ -6,15 +12,21 @@
 
 /**
  * Roundstart hook.
- * Called in gameticker.dm when a round starts.
+ * Called in ticker.dm when a round starts.
  */
 /hook/roundstart
 
 /**
  * Roundend hook.
- * Called in gameticker.dm when a round ends.
+ * Called in ticker.dm when a round ends.
  */
 /hook/roundend
+
+/**
+ * Shutdown hook.
+ * Called in world.dm when world/Del is called.
+ */
+/hook/shutdown
 
 /**
  * Death hook.
@@ -68,16 +80,16 @@
 /**
  * Employee reassignment hook.
  * Called in card.dm when someone's card is reassigned at the HoP's desk.
- * Parameters: var/obj/item/card/id
+ * Parameters: var/obj/item/weapon/card/id
  */
 /hook/reassign_employee
 
 /**
- * Employee suspension hook.
- * Called in card.dm when someone's card is suspended at the HoP's desk.
- * Parameters: var/obj/item/card/id
+ * Employee terminated hook.
+ * Called in card.dm when someone's card is terminated at the HoP's desk.
+ * Parameters: var/obj/item/weapon/card/id
  */
-/hook/suspend_employee
+/hook/terminate_employee
 
 /**
  * Crate sold hook.
@@ -85,17 +97,3 @@
  * Parameters: var/obj/structure/closet/crate/sold, var/area/shuttle
  */
 /hook/sell_crate
-
-/**
- * Captain spawned.
- * Called whenever a captain is spawned.
- * Parameters: var/mob/living/carbon/human
- */
-/hook/captain_spawned
-
-/**
- * Shuttle moved.
- * Called whenever a shuttle performs a "long jump" or "short jump"
- * Parameters: var/area/departing, var/area/destination
- */
-/hook/shuttle_moved

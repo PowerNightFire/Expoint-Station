@@ -5,26 +5,33 @@
 
 ///process()
 ///Called by the gameticker
-/datum/game_mode/process()
-	if(round_autoantag && world.time >= next_spawn && !emergency_shuttle.departed)
+/datum/game_mode/proc/process()
+	if(shall_process_autoantag())
 		process_autoantag()
 
-	// Process loop for objectives like the brig one.
-	if (process_objectives.len)
-		for (var/datum/objective/A in process_objectives)
-			A.process()
+/datum/game_mode/proc/shall_process_autoantag()
+	if(!round_autoantag || world.time < next_spawn)
+		return FALSE
+	if(evacuation_controller.is_evacuating() || evacuation_controller.has_evacuated())
+		return FALSE
+	// Don't create auto-antags in the last twenty minutes of the round, but only if the vote interval is longer than 20 minutes
+	if((config.vote_autotransfer_interval > 20 MINUTES) && (transfer_controller.time_till_transfer_vote() < 20 MINUTES))
+		return FALSE
+
+	return TRUE
 
 //This can be overriden in case a game mode needs to do stuff when a player latejoins
 /datum/game_mode/proc/handle_latejoin(var/mob/living/carbon/human/character)
+	if(character.mind)
+		character.mind.generate_goals(character.mind.assigned_job, is_spawning=TRUE)
+		character.show_goals()
+	return 0
+
+/datum/game_mode/proc/handle_offsite_latejoin(var/mob/living/carbon/human/character)
 	return 0
 
 /datum/game_mode/proc/process_autoantag()
 	message_admins("[uppertext(name)]: Attempting autospawn.")
-
-	if(emergency_shuttle.online())
-		message_admins("[uppertext(name)]: An evac or transfer shuttle is on the way. Aborted.")
-		next_spawn = world.time + min_autotraitor_delay
-		return
 
 	var/list/usable_templates = list()
 	for(var/datum/antagonist/A in antag_templates)

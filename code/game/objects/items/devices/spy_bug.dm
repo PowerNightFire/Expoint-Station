@@ -1,20 +1,20 @@
 /obj/item/device/spy_bug
 	name = "bug"
 	desc = ""	// Nothing to see here
-	icon = 'icons/obj/weapons.dmi'
+	icon = 'icons/obj/weapons/melee_energy.dmi'
 	icon_state = "eshield0"
 	item_state = "nothing"
-	layer = TURF_LAYER+0.2
+	layer = BELOW_TABLE_LAYER
 
-	flags = CONDUCT
+	obj_flags = OBJ_FLAG_CONDUCTIBLE
 	force = 5.0
-	w_class = ITEMSIZE_TINY
+	w_class = ITEM_SIZE_TINY
 	slot_flags = SLOT_EARS
 	throwforce = 5.0
 	throw_range = 15
 	throw_speed = 3
 
-	origin_tech = list(TECH_DATA = 1, TECH_ENGINEERING = 1, TECH_ILLEGAL = 3)
+	origin_tech = list(TECH_DATA = 1, TECH_ENGINEERING = 1, TECH_ESOTERIC = 3)
 
 	var/obj/item/device/radio/spy/radio
 	var/obj/machinery/camera/spy/camera
@@ -23,21 +23,21 @@
 	..()
 	radio = new(src)
 	camera = new(src)
-	listening_objects += src
+	GLOB.listening_objects += src
 
 /obj/item/device/spy_bug/Destroy()
-	listening_objects -= src
+	QDEL_NULL(radio)
+	QDEL_NULL(camera)
+	GLOB.listening_objects -= src
 	return ..()
 
-/obj/item/device/spy_bug/examine(mob/user)
-	. = ..(user, 0)
-	if(.)
+/obj/item/device/spy_bug/examine(mob/user, distance)
+	. = ..()
+	if(distance <= 0)
 		to_chat(user, "It's a tiny camera, microphone, and transmission device in a happy union.")
 		to_chat(user, "Needs to be both configured and brought in contact with monitor device to be fully functional.")
 
 /obj/item/device/spy_bug/attack_self(mob/user)
-	radio.broadcasting = !radio.broadcasting
-	to_chat(user, "\The [src]'s radio is [radio.broadcasting ? "broadcasting" : "not broadcasting"] now. The current frequency is [radio.frequency].")
 	radio.attack_self(user)
 
 /obj/item/device/spy_bug/attackby(obj/W as obj, mob/living/user as mob)
@@ -54,13 +54,12 @@
 /obj/item/device/spy_monitor
 	name = "\improper PDA"
 	desc = "A portable microcomputer by Thinktronic Systems, LTD. Functionality determined by a preprogrammed ROM cartridge."
-	icon = 'icons/obj/pda.dmi'
+	icon = 'icons/obj/modular_pda.dmi'
 	icon_state = "pda"
-	item_state = "electronic"
 
-	w_class = ITEMSIZE_SMALL
+	w_class = ITEM_SIZE_SMALL
 
-	origin_tech = list(TECH_DATA = 1, TECH_ENGINEERING = 1, TECH_ILLEGAL = 3)
+	origin_tech = list(TECH_DATA = 1, TECH_ENGINEERING = 1, TECH_ESOTERIC = 3)
 
 	var/operating = 0
 	var/obj/item/device/radio/spy/radio
@@ -68,16 +67,17 @@
 	var/list/obj/machinery/camera/spy/cameras = new()
 
 /obj/item/device/spy_monitor/New()
+	..()
 	radio = new(src)
-	listening_objects += src
+	GLOB.listening_objects += src
 
 /obj/item/device/spy_monitor/Destroy()
-	listening_objects -= src
+	GLOB.listening_objects -= src
 	return ..()
 
-/obj/item/device/spy_monitor/examine(mob/user)
-	. = ..(user, 1)
-	if(.)
+/obj/item/device/spy_monitor/examine(mob/user, distance)
+	. = ..()
+	if(distance <= 1)
 		to_chat(user, "The time '12:00' is blinking in the corner of the screen and \the [src] looks very cheaply made.")
 
 /obj/item/device/spy_monitor/attack_self(mob/user)
@@ -149,18 +149,18 @@
 	// These cheap toys are accessible from the mercenary camera console as well
 	network = list(NETWORK_MERCENARY)
 
-/obj/machinery/camera/spy/Initialize()
-	. = ..()
-	name = "DV-136ZB #[rand(1000,9999)]"
+/obj/machinery/camera/spy/New()
+	..()
+	name = "DV-136ZB #[random_id(/obj/machinery/camera/spy, 1000,9999)]"
 	c_tag = name
 
 /obj/machinery/camera/spy/check_eye(var/mob/user as mob)
 	return 0
 
 /obj/item/device/radio/spy
-	listening = FALSE
+	listening = 0
 	frequency = 1473
-	broadcasting = FALSE
-	canhear_range = 7
+	broadcasting = 0
+	canhear_range = 1
 	name = "spy device"
 	icon_state = "syn_cypherkey"

@@ -10,7 +10,7 @@
 
 /datum/medical_effect/proc/manifest(mob/living/carbon/human/H)
 	for(var/R in cures)
-		if(H.reagents.has_reagent(R))
+		if(!H.reagents || H.reagents.has_reagent(R))
 			return 0
 	for(var/R in triggers)
 		if(H.reagents.get_reagent_amount(R) >= triggers[R])
@@ -83,17 +83,19 @@
 /datum/medical_effect/headache
 	name = "Headache"
 	triggers = list(/datum/reagent/cryoxadone = 10, /datum/reagent/bicaridine = 15, /datum/reagent/tricordrazine = 15)
-	cures = list(/datum/reagent/alkysine, /datum/reagent/mortaphenyl, /datum/reagent/perconol, /datum/reagent/oxycomorphine)
+	cures = list(/datum/reagent/alkysine, /datum/reagent/tramadol, /datum/reagent/paracetamol, /datum/reagent/tramadol/oxycodone)
 	cure_message = "Your head stops throbbing..."
 
 /datum/medical_effect/headache/on_life(mob/living/carbon/human/H, strength)
-	switch(strength)
-		if(1 to 10)
-			H.custom_pain("You feel a light pain in your head.",0)
-		if(11 to 30)
-			H.custom_pain("You feel a throbbing pain in your head!",1)
-		if(31 to INFINITY)
-			H.custom_pain("You feel an excrutiating pain in your head!",1)
+	var/obj/item/organ/external/head/head = H.get_organ("head")
+	if(istype(head))
+		switch(strength)
+			if(1 to 10)
+				H.custom_pain("You feel a light pain in your head.",0, affecting = head)
+			if(11 to 30)
+				H.custom_pain("You feel a throbbing pain in your head!",1, affecting = head)
+			if(31 to INFINITY)
+				H.custom_pain("You feel an excrutiating pain in your head!",1, affecting = head)
 
 // BAD STOMACH
 // ===========
@@ -116,7 +118,7 @@
 // ======
 /datum/medical_effect/cramps
 	name = "Cramps"
-	triggers = list(/datum/reagent/dylovene = 30, /datum/reagent/mortaphenyl = 15)
+	triggers = list(/datum/reagent/dylovene = 30, /datum/reagent/tramadol = 15)
 	cures = list(/datum/reagent/inaprovaline)
 	cure_message = "The cramps let up..."
 
@@ -127,7 +129,7 @@
 		if(11 to 30)
 			H.custom_pain("The muscles in your body cramp up painfully.",0)
 		if(31 to INFINITY)
-			H.visible_message("<b>[H]</b> flinches!")
+			H.visible_message("<B>\The [src]</B> flinches as all the muscles in their body cramp up.")
 			H.custom_pain("There's pain all over your body.",1)
 
 // ITCH
@@ -145,5 +147,5 @@
 		if(11 to 30)
 			H.custom_pain("You want to scratch your itch badly.",0)
 		if(31 to INFINITY)
-			H.visible_message("<b>[H]</b> shivers slightly.")
+			H.visible_message("<B>\The [src]</B> shivers slightly.")
 			H.custom_pain("This itch makes it really hard to concentrate.",1)

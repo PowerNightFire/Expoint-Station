@@ -6,7 +6,6 @@
 	var/list/valid_species = list()
 	var/list/valid_hairstyles = list()
 	var/list/valid_facial_hairstyles = list()
-	var/list/valid_accents = list()
 
 	var/check_whitelist
 	var/list/whitelist
@@ -19,7 +18,7 @@
 	src.whitelist = species_whitelist
 	src.blacklist = species_blacklist
 
-/datum/nano_module/appearance_changer/Topic(ref, href_list, var/datum/topic_state/state = default_state)
+/datum/nano_module/appearance_changer/Topic(ref, href_list, var/datum/topic_state/state = GLOB.default_state)
 	if(..())
 		return 1
 
@@ -29,15 +28,15 @@
 				cut_and_generate_data()
 				return 1
 	if(href_list["gender"])
-		if(can_change(APPEARANCE_GENDER))
+		if(can_change(APPEARANCE_GENDER) && (href_list["gender"] in owner.species.genders))
 			if(owner.change_gender(href_list["gender"]))
 				cut_and_generate_data()
 				return 1
 	if(href_list["skin_tone"])
 		if(can_change_skin_tone())
-			var/new_s_tone = input(usr, "Choose your character's skin-tone:\n(Light 30 - 220 Dark)", "Skin Tone", -owner.s_tone + 35) as num|null
-			if(isnum(new_s_tone) && can_still_topic(state))
-				new_s_tone = 35 - max(min( round(new_s_tone), 220),30)
+			var/new_s_tone = input(usr, "Choose your character's skin-tone:\n1 (lighter) - [owner.species.max_skin_tone()] (darker)", "Skin Tone", -owner.s_tone + 35) as num|null
+			if(isnum(new_s_tone) && can_still_topic(state) && owner.species.appearance_flags & HAS_SKIN_TONE_NORMAL)
+				new_s_tone = 35 - max(min(round(new_s_tone), owner.species.max_skin_tone()), 1)
 				return owner.change_skin_tone(new_s_tone)
 	if(href_list["skin_color"])
 		if(can_change_skin_color())
@@ -46,17 +45,6 @@
 				var/r_skin = hex2num(copytext(new_skin, 2, 4))
 				var/g_skin = hex2num(copytext(new_skin, 4, 6))
 				var/b_skin = hex2num(copytext(new_skin, 6, 8))
-				if(owner.change_skin_color(r_skin, g_skin, b_skin))
-					update_dna()
-					return 1
-	if(href_list["skin_preset"])
-		if(can_change_skin_preset())
-			var/new_preset = input(usr, "Choose your character's body color preset:", "Character Preference", rgb(owner.r_skin, owner.g_skin, owner.b_skin)) as null|anything in owner.species.character_color_presets
-			if(new_preset && can_still_topic(state))
-				new_preset = owner.species.character_color_presets[new_preset]
-				var/r_skin = GetRedPart(new_preset)
-				var/g_skin = GetGreenPart(new_preset)
-				var/b_skin = GetBluePart(new_preset)
 				if(owner.change_skin_color(r_skin, g_skin, b_skin))
 					update_dna()
 					return 1
@@ -100,15 +88,10 @@
 				if(owner.change_eye_color(r_eyes, g_eyes, b_eyes))
 					update_dna()
 					return 1
-	if(href_list["accent"])
-		if(can_change(APPEARANCE_GENDER) && (href_list["accent"] in valid_accents))
-			if(owner.set_accent(href_list["accent"]))
-				cut_and_generate_data()
-			return 1
 
 	return 0
 
-/datum/nano_module/appearance_changer/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = default_state)
+/datum/nano_module/appearance_changer/ui_interact(mob/user, ui_key = "main", var/datum/nanoui/ui = null, var/force_open = 1, var/datum/topic_state/state = GLOB.default_state)
 	if(!owner || !owner.species)
 		return
 
@@ -125,17 +108,13 @@
 		data["species"] = species
 
 	data["change_gender"] = can_change(APPEARANCE_GENDER)
-	data["accent"] = owner.accent
-	data["change_accent"] = can_change(APPEARANCE_GENDER)
-	if(data["change_accent"])
-		var/accents[0]
-		for(var/accent in valid_accents)
-			accents[++accents.len] =  list("accent" = accent)
-		data["accents"] = accents
-
+	if(data["change_gender"])
+		var/genders[0]
+		for(var/gender in owner.species.genders)
+			genders[++genders.len] =  list("gender_name" = gender2text(gender), "gender_key" = gender)
+		data["genders"] = genders
 	data["change_skin_tone"] = can_change_skin_tone()
 	data["change_skin_color"] = can_change_skin_color()
-	data["change_skin_preset"] = can_change_skin_preset()
 	data["change_eye_color"] = can_change(APPEARANCE_EYE_COLOR)
 	data["change_hair"] = can_change(APPEARANCE_HAIR)
 	if(data["change_hair"])
@@ -155,7 +134,7 @@
 
 	data["change_hair_color"] = can_change(APPEARANCE_HAIR_COLOR)
 	data["change_facial_hair_color"] = can_change(APPEARANCE_FACIAL_HAIR_COLOR)
-	ui = SSnanoui.try_update_ui(user, src, ui_key, ui, data, force_open)
+	ui = SSnano.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if (!ui)
 		ui = new(user, src, ui_key, "appearance_changer.tmpl", "[src]", 800, 450, state = state)
 		ui.set_initial_data(data)
@@ -170,19 +149,15 @@
 	return owner && (flags & flag)
 
 /datum/nano_module/appearance_changer/proc/can_change_skin_tone()
-	return owner && (flags & APPEARANCE_SKIN) && owner.species.appearance_flags & HAS_SKIN_TONE
+	return owner && (flags & APPEARANCE_SKIN) && owner.species.appearance_flags & HAS_A_SKIN_TONE
 
 /datum/nano_module/appearance_changer/proc/can_change_skin_color()
 	return owner && (flags & APPEARANCE_SKIN) && owner.species.appearance_flags & HAS_SKIN_COLOR
-
-/datum/nano_module/appearance_changer/proc/can_change_skin_preset()
-	return owner && (flags & APPEARANCE_SKIN) && owner.species.appearance_flags & HAS_SKIN_PRESET
 
 /datum/nano_module/appearance_changer/proc/cut_and_generate_data()
 	// Making the assumption that the available species remain constant
 	valid_facial_hairstyles.Cut()
 	valid_facial_hairstyles.Cut()
-	valid_accents.Cut()
 	generate_data()
 
 /datum/nano_module/appearance_changer/proc/generate_data()
@@ -193,5 +168,3 @@
 	if(!valid_hairstyles.len || !valid_facial_hairstyles.len)
 		valid_hairstyles = owner.generate_valid_hairstyles(check_gender = 0)
 		valid_facial_hairstyles = owner.generate_valid_facial_hairstyles()
-	if(!valid_accents.len)
-		valid_accents = owner.generate_valid_accent()

@@ -1,43 +1,29 @@
 /* Gifts and wrapping paper
  * Contains:
  *		Gifts
- *		X-mas Gifts
+ *		Wrapping Paper
  */
 
 /*
  * Gifts
  */
-/obj/item/a_gift
+/obj/item/weapon/a_gift
 	name = "gift"
 	desc = "PRESENTS!!!! eek!"
 	icon = 'icons/obj/items.dmi'
 	icon_state = "gift1"
 	item_state = "gift1"
-	drop_sound = 'sound/items/drop/cardboardbox.ogg'
-	pickup_sound = 'sound/items/pickup/cardboardbox.ogg'
+	randpixel = 10
 
-/obj/item/a_gift/New()
+/obj/item/weapon/a_gift/New()
 	..()
-	pixel_x = rand(-10,10)
-	pixel_y = rand(-10,10)
-	if(w_class > 0 && w_class < ITEMSIZE_LARGE)
+	if(w_class > 0 && w_class < ITEM_SIZE_HUGE)
 		icon_state = "gift[w_class]"
 	else
 		icon_state = "gift[pick(1, 2, 3)]"
 	return
 
-/obj/item/gift/attack_self(mob/user as mob)
-	user.drop_item()
-	playsound(src.loc, 'sound/items/package_unwrap.ogg', 50,1)
-	if(src.gift)
-		user.put_in_active_hand(gift)
-		src.gift.add_fingerprint(user)
-	else
-		to_chat(user, "<span class='warning'>The gift was empty!</span>")
-	qdel(src)
-	return
-
-/obj/item/a_gift/ex_act(var/severity = 2.0)
+/obj/item/weapon/a_gift/ex_act()
 	qdel(src)
 	return
 
@@ -46,47 +32,46 @@
 		return
 	to_chat(user, "<span class='warning'>You can't move.</span>")
 
-/obj/effect/spresent/attackby(obj/item/W as obj, mob/user as mob)
+/obj/effect/spresent/attackby(obj/item/weapon/W as obj, mob/user as mob)
 	..()
 
-	if (!W.iswirecutter())
+	if(!isWirecutter(W))
 		to_chat(user, "<span class='warning'>I need wirecutters for that.</span>")
 		return
 
 	to_chat(user, "<span class='notice'>You cut open the present.</span>")
 
 	for(var/mob/M in src) //Should only be one but whatever.
-		M.forceMove(src.loc)
+		M.dropInto(loc)
 		if (M.client)
 			M.client.eye = M.client.mob
 			M.client.perspective = MOB_PERSPECTIVE
 
 	qdel(src)
 
-/obj/item/a_gift/attack_self(mob/M as mob)
+/obj/item/weapon/a_gift/attack_self(mob/M as mob)
 	var/gift_type = pick(
-		/obj/item/storage/wallet,
-		/obj/item/storage/photo_album,
-		/obj/item/storage/box/snappops,
-		/obj/item/storage/box/fancy/crayons,
-		/obj/item/storage/backpack/holding,
-		/obj/item/storage/belt/champion,
-		/obj/item/soap/deluxe,
-		/obj/item/pickaxe/silver,
-		/obj/item/pen/invisible,
-		/obj/item/lipstick/random,
-		/obj/item/grenade/smokebomb,
-		/obj/item/corncob,
-		/obj/item/contraband/poster,
-		/obj/item/book/manual/barman_recipes,
-		/obj/item/book/manual/chef_recipes,
-		/obj/item/bikehorn,
-		/obj/item/beach_ball,
-		/obj/item/beach_ball/holoball,
-		/obj/item/toy/balloon,
+		/obj/item/weapon/storage/wallet,
+		/obj/item/weapon/storage/photo_album,
+		/obj/item/weapon/storage/box/snappops,
+		/obj/item/weapon/storage/fancy/crayons,
+		/obj/item/weapon/storage/backpack/holding,
+		/obj/item/weapon/storage/belt/champion,
+		/obj/item/weapon/pickaxe/silver,
+		/obj/item/weapon/pen/invisible,
+		/obj/item/weapon/lipstick/random,
+		/obj/item/weapon/grenade/smokebomb,
+		/obj/item/weapon/carvable/corncob,
+		/obj/item/weapon/contraband/poster,
+		/obj/item/weapon/book/manual/barman_recipes,
+		/obj/item/weapon/book/manual/chef_recipes,
+		/obj/item/weapon/bikehorn,
+		/obj/item/weapon/beach_ball,
+		/obj/item/weapon/beach_ball/holoball,
+		/obj/item/toy/water_balloon,
 		/obj/item/toy/blink,
 		/obj/item/toy/crossbow,
-		/obj/item/gun/projectile/revolver/capgun,
+		/obj/item/weapon/gun/projectile/revolver/capgun,
 		/obj/item/toy/katana,
 		/obj/item/toy/prize/deathripley,
 		/obj/item/toy/prize/durand,
@@ -97,243 +82,131 @@
 		/obj/item/toy/prize/mauler,
 		/obj/item/toy/prize/odysseus,
 		/obj/item/toy/prize/phazon,
-		/obj/item/toy/prize/ripley,
+		/obj/item/toy/prize/powerloader,
 		/obj/item/toy/prize/seraph,
 		/obj/item/toy/spinningtoy,
 		/obj/item/toy/sword,
-		/obj/item/reagent_containers/food/snacks/grown/ambrosiadeus,
-		/obj/item/reagent_containers/food/snacks/grown/ambrosiavulgaris,
+		/obj/item/weapon/reagent_containers/food/snacks/grown/ambrosiadeus,
+		/obj/item/weapon/reagent_containers/food/snacks/grown/ambrosiavulgaris,
 		/obj/item/device/paicard,
-		/obj/item/device/violin,
-		/obj/item/storage/belt/utility/full,
-		/obj/item/clothing/accessory/horrible)
+		/obj/item/device/synthesized_instrument/violin,
+		/obj/item/weapon/storage/belt/utility/full,
+		/obj/item/clothing/accessory/horrible,
+		/obj/item/weapon/storage/box/large/foam_gun,
+		/obj/item/weapon/storage/box/large/foam_gun/burst,
+		/obj/item/weapon/storage/box/large/foam_gun/revolver)
 
 	if(!ispath(gift_type,/obj/item))	return
 
 	var/obj/item/I = new gift_type(M)
-	M.remove_from_mob(src)
 	M.put_in_hands(I)
 	I.add_fingerprint(M)
 	qdel(src)
-	return
 
 /*
- * Wrapping Paper
+ * Wrapping Paper and Gifts
  */
 
-/*
- * Xmas Gifts
- */
-/obj/item/xmasgift
-	name = "christmas gift"
-	desc = "PRESENTS!!!! eek!"
+/obj/item/weapon/gift
+	name = "gift"
+	desc = "A wrapped item."
 	icon = 'icons/obj/items.dmi'
-	icon_state = "gift1"
-	item_state = "gift1"
-	w_class = ITEMSIZE_TINY
-
-/obj/item/xmasgift/Initialize()
-	..()
-	pixel_x = rand(-10,10)
-	pixel_y = rand(-10,10)
-	var/gift_benefactor = pick("the NanoTrasen Department of Christmas Affairs", "Miranda Trasen", "Joseph Dorne", "Isaac Asimov", "Baal D. Griffon", "the Sol Alliance (Sorry about the blockade!)",
-		"Hephaestus Industries", "Idris Incorporated", "Glorsh Omega II", "the Jargon Federation", "the People's Republic of Adhomai", "the Adhomai Liberation Army", "the Izweski Hegemony",
-		"the Zo'ra Hive","the Coalition of Colonies", "Digital Dingo", "Optimum Jeffrey", "Lemmy and the Clockworks", "President Hadii", "King Azunja","Supreme Commander Nated'Hakhan",
-		"Lord-Regent Not'zar","Jesus Christ","Santa Claus","Mrs. Claus","Sandy Claws","Buddha","Gary","Jesus Christ!","the True Queen of Biesel, God-Lady Seon-rin von Illdenberg, First of Her Name",
-		"Admiral Frost","Pirate King Frost", "The Secret NanoTrasen Cabal of Duty Officers", "The Society for the Preservation of Rats", "Officer Beepsky","Lieutenant Columbo","Crew of the NSS Upsilon","Runtime",
-		"Bones","Chauncey","Ian","Pun Pun","Nup Nup","Waldo","Odlaw","Crew of the NSS Exodus", "Custodial Staff of the NTCC Odin","ERT Phoenix","grey slime (357)","Bob the Blob","People for the Ethical Treatment of Bluespace Bears",
-		"Mr. Clown and Mrs. Mime from New Puerto Rico","the Grinch","the Krampus","Satan","Mega-Satan","<span class='danger'>\[BENEFACTOR REDACTED]\</span>","Bluespace Cat","Union of Bluespace Technicians Tau Ceti","the New Kingdom of Adhomai",
-		"Ginny", "Boleslaw Keesler", "The Queen in Blue", "Cuban Pete", "Ceres' Lance", "the real Odin Killer (Still out here, guys!)", "the K'lax Hive", "the C'thur Hive")
-	var/pick_emotion = pick("love","platonic admiration","approval","love (not in a sexual way or anything, though)","apathy", "schadenfreude","love","God's blessing","Santa's blessing","Non-demoninational deity's blessing","love","compassion","appreciation",
-		"respect","begrudging respect","love", "seasonal obligation")
-	desc = "To: <i>The [station_name()]</i><BR>From: <i>[gift_benefactor], with [pick_emotion]</i>"
-
-	return
-
-/obj/item/xmasgift/ex_act(var/severity = 2.0)
-	qdel(src)
-	return
-
-/obj/item/xmasgift/small/attack_self(mob/user)
-	var/gift_type = pick(
-		/obj/random/action_figure,
-		/obj/random/coin,
-		/obj/random/spacecash,
-		/obj/random/glowstick,
-		/obj/random/gloves,
-		/obj/item/storage/wallet,
-		/obj/item/storage/photo_album,
-		/obj/item/storage/box/snappops,
-		/obj/item/storage/box/fancy/crayons,
-		/obj/item/soap/deluxe,
-		/obj/item/pen/invisible,
-		/obj/item/clothing/gloves/watch,
-		/obj/item/lipstick/random,
-		/obj/item/clothing/shoes/carp,
-		/obj/item/bikehorn,
-		/obj/item/toy/balloon,
-		/obj/item/toy/blink,
-		/obj/item/gun/projectile/revolver/capgun,
-		/obj/item/toy/prize/deathripley,
-		/obj/item/toy/prize/durand,
-		/obj/item/toy/prize/fireripley,
-		/obj/item/toy/prize/gygax,
-		/obj/item/toy/prize/honk,
-		/obj/item/toy/prize/marauder,
-		/obj/item/toy/prize/mauler,
-		/obj/item/toy/prize/odysseus,
-		/obj/item/toy/prize/phazon,
-		/obj/item/toy/prize/ripley,
-		/obj/item/toy/prize/seraph,
-		/obj/item/device/paicard,
-		/obj/item/clothing/accessory/horrible,
-		/obj/item/device/camera,
-		/obj/item/bluespace_crystal,
-		/obj/item/flame/lighter/zippo,
-		/obj/item/device/taperecorder,
-		/obj/item/storage/box/fancy/cigarettes/dromedaryco,
-		/obj/item/toy/bosunwhistle,
-		/obj/item/clothing/mask/fakemoustache,
-		/obj/item/clothing/mask/gas/clown_hat,
-		/obj/item/clothing/mask/gas/mime,
-		/obj/item/clothing/head/festive/santa,
-		/obj/item/stack/material/animalhide/lizard,
-		/obj/item/stack/material/animalhide/cat,
-		/obj/item/stack/material/animalhide/corgi,
-		/obj/item/stack/material/animalhide/human,
-		/obj/item/stack/material/animalhide/monkey,
-		/obj/item/stack/material/animalhide/xeno,
-		/obj/item/xmasgift/medium,
-		/obj/item/toy/syndicateballoon,
-		/obj/item/toy/xmastree,
-		/obj/item/bluespace_crystal,
-		/obj/item/gun/energy/mousegun,
-		/obj/item/gun/energy/wand/toy,
-		/obj/item/mirror,
-		/obj/item/ore/coal,
-		/obj/item/ore/coal,
-		/obj/item/ore/coal,
-		/obj/item/stamp/clown,
-		/obj/item/organ/internal/heart/skrell,
-		/obj/item/latexballon)
-
-	var/atom/movable/I = new gift_type(get_turf(user))
-	user.remove_from_mob(src)
-	user.put_in_hands(I)
-	to_chat(user, SPAN_NOTICE("You open the gift, revealing your new [I.name]! Just what you always wanted!"))
-	qdel(src)
-	return
-
-/obj/item/xmasgift/medium
-	icon_state = "gift2"
-	item_state = "gift2"
-	w_class = ITEMSIZE_SMALL
-
-/obj/item/xmasgift/medium/attack_self(mob/user)
-	var/gift_type = pick(
-		/obj/item/sord,
-		/obj/random/booze,
-		/obj/random/random_flag,
-		/obj/item/storage/belt/champion,
-		/obj/item/pickaxe/silver,
-		/obj/item/grenade/smokebomb,
-		/obj/item/contraband/poster,
-		/obj/item/book/manual/barman_recipes,
-		/obj/item/book/manual/chef_recipes,
-		/obj/item/banhammer,
-		/obj/item/clothing/shoes/cowboy,
-		/obj/item/toy/crossbow,
-		/obj/item/toy/katana,
-		/obj/item/toy/spinningtoy,
-		/obj/item/toy/sword,
-		/obj/item/reagent_containers/food/snacks/grown/ambrosiadeus,
-		/obj/item/reagent_containers/food/snacks/grown/ambrosiavulgaris,
-		/obj/item/device/paicard,
-		/obj/item/clothing/accessory/horrible,
-		/obj/item/clothing/shoes/heels,
-		/obj/item/storage/box/donkpockets,
-		/obj/item/reagent_containers/food/drinks/teapot,
-		/obj/item/device/flashlight/lantern,
-		/obj/item/clothing/mask/balaclava,
-		/obj/item/clothing/accessory/badge/old,
-		/obj/item/clothing/mask/gas/clown_hat,
-		/obj/item/clothing/mask/gas/mime,
-		/obj/item/clothing/shoes/galoshes,
-		/mob/living/simple_animal/lizard,
-		/mob/living/simple_animal/rat/brown,
-		/mob/living/simple_animal/rat/gray,
-		/mob/living/simple_animal/rat/white,
-		/obj/item/xmasgift/small,
-		/obj/item/tank/jetpack/void,
-		/obj/item/xmasgift/large,
-		/obj/item/reagent_containers/food/snacks/pudding,
-		/obj/item/contraband/poster,
-		/obj/item/clothing/head/hardhat/red/atmos,
-		/mob/living/bot/cleanbot,
-		/obj/item/device/binoculars,
-		/obj/item/device/camera,
-		/obj/item/device/gps,
-		/obj/item/device/uv_light,
-		/obj/random/loot,
-		/obj/random/contraband,
-		/obj/item/autochisel,
-		/obj/item/ore/coal,
-		/obj/item/ore/coal,
-		/obj/item/ore/coal,
-		/obj/item/phone,
-		/obj/item/device/dociler,
-		/obj/item/device/flashlight/maglight,
-		/obj/item/device/megaphone,
-		/obj/item/device/violin)
-
-	var/atom/movable/I = new gift_type(get_turf(user))
-	user.remove_from_mob(src)
-	if (!user.put_in_hands(I))
-		user.forceMove(get_turf(src))
-	to_chat(user, SPAN_NOTICE("You open the gift, revealing your new [I.name]! Just what you always wanted!"))
-	qdel(src)
-	return
-
-/obj/item/xmasgift/large
 	icon_state = "gift3"
-	item_state = "gift3"
-	w_class = ITEMSIZE_NORMAL
+	var/size = 3.0
+	var/obj/item/gift = null
+	item_state = "gift"
+	w_class = ITEM_SIZE_HUGE
 
-/obj/item/xmasgift/large/attack_self(mob/user)
-	var/gift_type = pick(
-		/obj/random/plushie,
-		/obj/random/backpack,
-		/obj/item/inflatable_duck,
-		/obj/item/beach_ball,
-		/obj/item/clothing/under/syndicate/tracksuit,
-		/obj/item/clothing/under/rank/clown,
-		/obj/item/clothing/under/mime,
-		/obj/item/clothing/under/rank/fatigues/marine,
-		/obj/item/clothing/under/rank/dress/marine,
-		/obj/random/hoodie,
-		/mob/living/simple_animal/cat/kitten,
-		/mob/living/simple_animal/chick,
-		/mob/living/simple_animal/corgi/puppy,
-		/mob/living/simple_animal/mushroom,
-		/mob/living/simple_animal/ice_tunneler,
-		/mob/living/simple_animal/carp/baby,
-		/mob/living/carbon/human/monkey/nupnup,
-		/obj/item/xmasgift/medium,
-		/obj/item/tank/jetpack,
-		/obj/item/toy/plushie/drone,
-		/obj/item/toy/plushie/ivancarp,
-		/obj/item/ore/coal,
-		/obj/item/ore/coal,
-		/obj/item/ore/coal,
-		/obj/item/mass_driver_diy,
-		/mob/living/simple_animal/crab,
-		/mob/living/simple_animal/parrot,
-		/mob/living/simple_animal/hostile/commanded/dog/pug,
-		/obj/item/target/alien)
+/obj/item/weapon/gift/New(newloc, obj/item/wrapped = null)
+	..(newloc)
 
-	var/atom/movable/I = new gift_type(get_turf(user))
-	user.remove_from_mob(src)
-	user.put_in_hands(I)
-	to_chat(user, SPAN_NOTICE("You open the gift, revealing your new [I.name]! Just what you always wanted!"))
+	if(istype(wrapped))
+		gift = wrapped
+		w_class = gift.w_class
+		gift.forceMove(src)
+
+		//a good example of where we don't want to use the w_class defines
+		switch(gift.w_class)
+			if(1) icon_state = "gift1"
+			if(2) icon_state = "gift1"
+			if(3) icon_state = "gift2"
+			if(4) icon_state = "gift2"
+			if(5) icon_state = "gift3"
+
+/obj/item/weapon/gift/attack_self(mob/user as mob)
+	user.drop_item()
+	if(src.gift)
+		user.put_in_active_hand(gift)
+		src.gift.add_fingerprint(user)
+	else
+		to_chat(user, "<span class='warning'>The gift was empty!</span>")
 	qdel(src)
 	return
+
+/obj/item/weapon/wrapping_paper
+	name = "wrapping paper"
+	desc = "You can use this to wrap items in."
+	icon = 'icons/obj/items.dmi'
+	icon_state = "wrap_paper"
+	var/amount = 2.5*BASE_STORAGE_COST(ITEM_SIZE_HUGE)
+
+/obj/item/weapon/wrapping_paper/attackby(obj/item/W as obj, mob/user as mob)
+	..()
+	if (!( locate(/obj/structure/table, src.loc) ))
+		to_chat(user, "<span class='warning'>You MUST put the paper on a table!</span>")
+	if (W.w_class < ITEM_SIZE_HUGE)
+		if(isWirecutter(user.l_hand) || isWirecutter(user.r_hand))
+			var/a_used = W.get_storage_cost()
+			if (a_used == ITEM_SIZE_NO_CONTAINER)
+				to_chat(user, "<span class='warning'>You can't wrap that!</span>")//no gift-wrapping lit welders
+
+				return
+			if (src.amount < a_used)
+				to_chat(user, "<span class='warning'>You need more paper!</span>")
+				return
+			else
+				if(istype(W, /obj/item/smallDelivery) || istype(W, /obj/item/weapon/gift)) //No gift wrapping gifts!
+					return
+
+				if(user.unEquip(W))
+					var/obj/item/weapon/gift/G = new /obj/item/weapon/gift( src.loc, W )
+					G.add_fingerprint(user)
+					W.add_fingerprint(user)
+					src.amount -= a_used
+
+			if (src.amount <= 0)
+				new /obj/item/weapon/c_tube( src.loc )
+				qdel(src)
+				return
+		else
+			to_chat(user, "<span class='warning'>You need scissors!</span>")
+	else
+		to_chat(user, "<span class='warning'>The object is FAR too large!</span>")
+	return
+
+
+/obj/item/weapon/wrapping_paper/examine(mob/user, distance)
+	. = ..()
+	if(distance <= 1)
+		to_chat(user, text("There is about [] square units of paper left!", src.amount))
+
+/obj/item/weapon/wrapping_paper/attack(mob/target as mob, mob/user as mob)
+	if (!istype(target, /mob/living/carbon/human)) return
+	var/mob/living/carbon/human/H = target
+
+	if (istype(H.wear_suit, /obj/item/clothing/suit/straight_jacket) || H.stat)
+		if (src.amount > 2)
+			var/obj/effect/spresent/present = new /obj/effect/spresent (H.loc)
+			src.amount -= 2
+
+			if (H.client)
+				H.client.perspective = EYE_PERSPECTIVE
+				H.client.eye = present
+
+			H.forceMove(present)
+			admin_attack_log(user, H, "Used \a [src] to wrap their victim", "Was wrapepd with \a [src]", "used \the [src] to wrap")
+
+		else
+			to_chat(user, "<span class='warning'>You need more paper.</span>")
+	else
+		to_chat(user, "They are moving around too much. A straightjacket would help.")

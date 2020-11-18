@@ -1,6 +1,5 @@
 /mob/living/silicon/ai/examine(mob/user)
-	if(!..(user))
-		return
+	. = ..()
 
 	var/msg = ""
 	if (src.stat == DEAD)
@@ -17,7 +16,7 @@
 				msg += "It looks slightly charred.\n"
 			else
 				msg += "<B>Its casing is melted and heat-warped!</B>\n"
-		if (src.getOxyLoss() && (ai_restore_power_routine != 0 && !APU_power))
+		if (!has_power())
 			if (src.getOxyLoss() > 175)
 				msg += "<B>It seems to be running on backup power. Its display is blinking a \"BACKUP POWER CRITICAL\" warning.</B>\n"
 			else if(src.getOxyLoss() > 100)
@@ -39,6 +38,6 @@
 /mob/proc/showLaws(var/mob/living/silicon/S)
 	return
 
-/mob/abstract/observer/showLaws(var/mob/living/silicon/S)
+/mob/observer/ghost/showLaws(var/mob/living/silicon/S)
 	if(antagHUD || is_admin(src))
 		S.laws.show_laws(src)

@@ -34,20 +34,19 @@ somewhere on that shuttle. Subtypes of these can be then used to perform ship ov
 	popup.set_content("<center><strong><font color = 'red'>Error</strong></font><br>Unable to connect to [flavor].<br><a href='?src=\ref[src];sync=1'>Reconnect</a></center>")
 	popup.open()
 
-/obj/machinery/computer/ship/attack_hand(mob/user)
-	if(use_check_and_message(user))
-		return
-	
-	user.set_machine(src)
+/obj/machinery/computer/ship/interface_interact(var/mob/user)
 	ui_interact(user)
+	return TRUE
 
-/obj/machinery/computer/ship/Topic(href, href_list)
+/obj/machinery/computer/ship/OnTopic(var/mob/user, var/list/href_list)
+	if(..())
+		return TOPIC_HANDLED
 	if(href_list["sync"])
 		sync_linked()
 		return TOPIC_REFRESH
 	if(href_list["close"])
-		unlook(usr)
-		usr.unset_machine()
+		unlook(user)
+		user.unset_machine()
 		return TOPIC_HANDLED
 	return TOPIC_NOACTION
 
@@ -58,18 +57,20 @@ somewhere on that shuttle. Subtypes of these can be then used to perform ship ov
 		user.reset_view(linked)
 	if(user.client)
 		user.client.view = world.view + extra_view
-	moved_event.register(user, src, /obj/machinery/computer/ship/proc/unlook)
-	LAZYDISTINCTADD(viewers, WEAKREF(user))
+	GLOB.moved_event.register(user, src, /obj/machinery/computer/ship/proc/unlook)
+	GLOB.stat_set_event.register(user, src, /obj/machinery/computer/ship/proc/unlook)
+	LAZYDISTINCTADD(viewers, weakref(user))
 
 /obj/machinery/computer/ship/proc/unlook(var/mob/user)
-	user.reset_view()
+	user.reset_view(null, FALSE)
 	if(user.client)
 		user.client.view = world.view
-	moved_event.unregister(user, src, /obj/machinery/computer/ship/proc/unlook)
-	LAZYREMOVE(viewers, WEAKREF(user))
+	GLOB.moved_event.unregister(user, src, /obj/machinery/computer/ship/proc/unlook)
+	GLOB.stat_set_event.unregister(user, src, /obj/machinery/computer/ship/proc/unlook)
+	LAZYREMOVE(viewers, weakref(user))
 
 /obj/machinery/computer/ship/proc/viewing_overmap(mob/user)
-	return (WEAKREF(user) in viewers)
+	return (weakref(user) in viewers)
 
 /obj/machinery/computer/ship/CouldNotUseTopic(mob/user)
 	. = ..()
@@ -90,7 +91,7 @@ somewhere on that shuttle. Subtypes of these can be then used to perform ship ov
 /obj/machinery/computer/ship/sensors/Destroy()
 	sensors = null
 	if(LAZYLEN(viewers))
-		for(var/datum/weakref/W in viewers)
+		for(var/weakref/W in viewers)
 			var/M = W.resolve()
 			if(M)
 				unlook(M)

@@ -1,32 +1,53 @@
-var/datum/antagonist/renegade/renegades
+GLOBAL_DATUM_INIT(renegades, /datum/antagonist/renegade, new)
 
 /datum/antagonist/renegade
 	role_text = "Renegade"
 	role_text_plural = "Renegades"
-	welcome_text = "You're extremely paranoid today. For your entire life, you've theorized about a shadow corporation out for your blood and yours only. Something's here to kill you, but you don't know what... Remember that you're not a full antagonist. You can prepare to murder someone and kill, but you shouldn't actively seek conflict."
+	blacklisted_jobs = list(/datum/job/ai, /datum/job/submap)
+	restricted_jobs = list(/datum/job/officer, /datum/job/warden, /datum/job/captain, /datum/job/hop, /datum/job/hos, /datum/job/chief_engineer, /datum/job/rd, /datum/job/cmo)
+	welcome_text = "Something's going to go wrong today, you can just feel it. You're paranoid, you've got a gun, and you're going to survive."
+	antag_text = "You are a <b>minor</b> antagonist! Within the rules, \
+		try to protect yourself and what's important to you. You aren't here to <i>cause</i> trouble, \
+		you're just willing (and equipped) to go to extremes to <b>stop</b> it. \
+		Your job is to oppose the other antagonists, should they threaten you, in ways that aren't quite legal. \
+		Try to make sure other players have <i>fun</i>! If you are confused or at a loss, always adminhelp, \
+		and before taking extreme actions, please try to also contact the administration! \
+		Think through your actions and make the roleplay immersive! <b>Please remember all \
+		rules aside from those without explicit exceptions apply to antagonists.</b>"
+
 	id = MODE_RENEGADE
-	flags = ANTAG_SUSPICIOUS | ANTAG_IMPLANT_IMMUNE | ANTAG_VOTABLE
-	hard_cap = 5
-	hard_cap_round = 7
+	flags = ANTAG_SUSPICIOUS | ANTAG_IMPLANT_IMMUNE | ANTAG_RANDSPAWN | ANTAG_VOTABLE
+	hard_cap = 3
+	hard_cap_round = 5
 
-	hard_cap = 8
-	hard_cap_round = 12
-	initial_spawn_req = 3
-	initial_spawn_target = 6
+	initial_spawn_req = 1
+	initial_spawn_target = 3
+	antaghud_indicator = "hud_renegade"
+	skill_setter = /datum/antag_skill_setter/station
 
-	bantype = "renegade"
-
-/datum/antagonist/renegade/New()
-	..()
-	renegades = src
-
-/datum/antagonist/renegade/can_become_antag(var/datum/mind/player, var/ignore_role)
-	if(..())
-		if(player.current && ishuman(player.current))
-			return TRUE
-	return FALSE
+	var/list/spawn_guns = list(
+		/obj/item/weapon/gun/energy/retro,
+		/obj/item/weapon/gun/energy/gun,
+		/obj/item/weapon/gun/energy/crossbow,
+		/obj/item/weapon/gun/energy/pulse_rifle/pistol,
+		/obj/item/weapon/gun/projectile/automatic,
+		/obj/item/weapon/gun/projectile/automatic/machine_pistol,
+		/obj/item/weapon/gun/projectile/automatic/sec_smg,
+		/obj/item/weapon/gun/projectile/pistol/magnum_pistol,
+		/obj/item/weapon/gun/projectile/pistol/military,
+		/obj/item/weapon/gun/projectile/pistol/military/alt,
+		/obj/item/weapon/gun/projectile/pistol/sec/lethal,
+		/obj/item/weapon/gun/projectile/pistol/holdout,
+		/obj/item/weapon/gun/projectile/revolver,
+		/obj/item/weapon/gun/projectile/revolver/medium,
+		/obj/item/weapon/gun/projectile/shotgun/doublebarrel/sawn,
+		/obj/item/weapon/gun/projectile/pistol/magnum_pistol,
+		/obj/item/weapon/gun/projectile/revolver/holdout,
+		/obj/item/weapon/gun/projectile/pistol/throwback
+		)
 
 /datum/antagonist/renegade/create_objectives(var/datum/mind/player)
+
 	if(!..())
 		return
 
@@ -35,17 +56,31 @@ var/datum/antagonist/renegade/renegades
 	player.objectives |= survive
 
 /datum/antagonist/renegade/equip(var/mob/living/carbon/human/player)
+
 	if(!..())
 		return
 
-	if(!player.back)
-		player.equip_to_slot_or_del(new /obj/item/storage/backpack/satchel(player), slot_back) // if they have no backpack, spawn one
-	player.equip_to_slot_or_del(new /obj/item/storage/box/syndie_kit/random_weapon/concealable(player), slot_in_backpack)
+	var/gun_type = pick(spawn_guns)
+	if(islist(gun_type))
+		gun_type = pick(gun_type)
+	var/obj/item/gun = new gun_type(get_turf(player))
+
+	// Attempt to put into a container.
+	if(player.equip_to_storage(gun))
+		return
+
+	// If that failed, attempt to put into any valid non-handslot
+	if(player.equip_to_appropriate_slot(gun))
+		return
+
+	// If that failed, then finally attempt to at least let the player carry the weapon
+	player.put_in_hands(gun)
+
 
 /proc/rightandwrong()
 	to_chat(usr, "<B>You summoned guns!</B>")
 	message_admins("[key_name_admin(usr, 1)] summoned guns!")
-	for(var/mob/living/carbon/human/H in player_list)
+	for(var/mob/living/carbon/human/H in GLOB.player_list)
 		if(H.stat == 2 || !(H.client)) continue
 		if(is_special_character(H)) continue
-		renegades.add_antagonist(H.mind)
+		GLOB.renegades.add_antagonist(H.mind)
